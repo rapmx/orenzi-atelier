@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orenzi — mapa 3D do código</title>
+<style>
+  :root {
+    --surface: #12120f;
+    --panel: #1a1a17;
+    --ink: #f5f4ef;
+    --ink-2: #c3c2b7;
+    --muted: #8a8880;
+    --line: rgba(245,244,239,0.12);
+    /* 3 slots categóricos validados all-pairs contra esta superfície
+       (CVD ΔE 9.4 · visão normal ΔE 20.9). Não acrescentar um 4º: nenhuma
+       combinação de 4 hues passa o piso, por isso comunidade virou posição. */
+    --t0: #3987e5;   /* código */
+    --t1: #d95926;   /* infra e conceitos */
+    --t2: #199e70;   /* regras e decisões */
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--surface); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+  canvas { display: block; cursor: grab; touch-action: none; }
+  canvas.dragging { cursor: grabbing; }
+
+  aside {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 268px; z-index: 10;
+    background: color-mix(in srgb, var(--panel) 92%, transparent);
+    border-right: 1px solid var(--line);
+    padding: 18px 16px; overflow-y: auto;
+    backdrop-filter: blur(8px);
+  }
+  h1 { font-size: 14px; margin: 0 0 2px; letter-spacing: 0.01em; }
+  .sub { font-size: 11.5px; color: var(--muted); margin-bottom: 16px; }
+  h2 {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--muted); margin: 18px 0 8px; font-weight: 600;
+  }
+  #busca {
+    width: 100%; background: var(--surface); border: 1px solid var(--line);
+    color: var(--ink); border-radius: 8px; padding: 7px 10px; font-size: 12.5px;
+    font-family: inherit;
+  }
+  #busca::placeholder { color: var(--muted); }
+  #busca:focus { outline: 2px solid var(--t0); outline-offset: -1px; }
+
+  .legenda { display: flex; flex-direction: column; gap: 7px; }
+  .leg { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-2); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .leg .qtd { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+  .com {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    background: none; border: none; color: var(--ink-2); font-family: inherit;
+    font-size: 12px; text-align: left; padding: 5px 7px; border-radius: 7px;
+    cursor: pointer; line-height: 1.25;
+  }
+  .com:hover { background: rgba(245,244,239,0.06); color: var(--ink); }
+  .com[aria-pressed="true"] { background: rgba(57,135,229,0.16); color: var(--ink); }
+  .com .qtd { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+  .acoes { display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+  .btn {
+    background: none; border: 1px solid var(--line); color: var(--ink-2);
+    font-family: inherit; font-size: 11.5px; padding: 6px 10px; border-radius: 999px; cursor: pointer;
+  }
+  .btn:hover { border-color: var(--muted); color: var(--ink); }
+  .btn[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+  #tip {
+    position: fixed; z-index: 20; pointer-events: none; opacity: 0;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
+    padding: 9px 11px; max-width: 300px; font-size: 12px; line-height: 1.45;
+    box-shadow: 0 8px 26px rgba(0,0,0,0.5); transition: opacity .12s;
+  }
+  #tip .n { font-weight: 650; margin-bottom: 3px; word-break: break-word; }
+  #tip .m { color: var(--muted); font-size: 11px; }
+
+  #painelNo {
+    position: fixed; right: 16px; top: 16px; z-index: 15; width: 280px;
+    background: color-mix(in srgb, var(--panel) 94%, transparent);
+    border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+    backdrop-filter: blur(8px); display: none;
+  }
+  #painelNo.on { display: block; }
+  #painelNo .n { font-weight: 650; font-size: 13.5px; margin-bottom: 5px; word-break: break-word; }
+  #painelNo .m { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+  #painelNo ul { margin: 10px 0 0; padding-left: 16px; font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+  #painelNo .fechar {
+    position: absolute; top: 9px; right: 9px; background: none; border: none;
+    color: var(--muted); font-size: 15px; cursor: pointer; line-height: 1; padding: 2px 5px;
+  }
+
+  #dica {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    color: var(--muted); font-size: 11.5px; z-index: 12; pointer-events: none;
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    padding: 5px 12px; border-radius: 999px;
+  }
+
+  #tabela {
+    position: fixed; inset: 0; z-index: 30; background: var(--surface);
+    overflow: auto; padding: 26px 30px; display: none;
+  }
+  #tabela.on { display: block; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; position: sticky; top: 0; background: var(--surface); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; }
+
+  @media (max-width: 720px) {
+    aside { width: 100%; height: 46%; bottom: auto; border-right: none; border-bottom: 1px solid var(--line); }
+    canvas { margin-top: 0; }
+    #painelNo { right: 10px; left: 10px; width: auto; top: auto; bottom: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<aside>
+  <h1>Orenzi — mapa 3D do código</h1>
+  <div class="sub" id="resumo"></div>
+
+  <h2>Buscar</h2>
+  <input id="busca" type="search" placeholder="função, arquivo, conceito…" autocomplete="off">
+
+  <h2>O que é cada ponto</h2>
+  <div class="legenda" id="legenda"></div>
+
+  <h2>Comunidades <span style="text-transform:none;letter-spacing:0">(clique p/ isolar)</span></h2>
+  <div id="coms"></div>
+
+  <div class="acoes">
+    <button class="btn" id="btnGirar" aria-pressed="true">Girar</button>
+    <button class="btn" id="btnReset">Recentrar</button>
+    <button class="btn" id="btnTabela" aria-pressed="false">Tabela</button>
+  </div>
+</aside>
+
+<div id="tip" role="tooltip"></div>
+
+<div id="painelNo">
+  <button class="fechar" id="fecharNo" aria-label="Fechar">&times;</button>
+  <div class="n" id="noNome"></div>
+  <div class="m" id="noMeta"></div>
+  <ul id="noVizinhos"></ul>
+</div>
+
+<div id="dica">arraste para girar · scroll para aproximar · clique num ponto para focar</div>
+
+<section id="tabela" aria-label="Tabela de nós">
+  <table>
+    <thead><tr><th>Nó</th><th>Tipo</th><th>Comunidade</th><th class="num">Conexões</th><th>Arquivo</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</section>
+
+<script>
+const DATA = /*__DATA__*/;
+
+const TIPOS = [
+  { nome: 'Código',              cor: getComputedStyle(document.documentElement).getPropertyValue('--t0').trim() },
+  { nome: 'Infra e conceitos',   cor: getComputedStyle(document.documentElement).getPropertyValue('--t1').trim() },
+  { nome: 'Regras e decisões',   cor: getComputedStyle(document.documentElement).getPropertyValue('--t2').trim() },
+];
+
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const tip = document.getElementById('tip');
+
+const N = DATA.nodes, L = DATA.links;
+const nomeCom = {}; DATA.communities.forEach(c => nomeCom[c.id] = c.n);
+
+// vizinhança, pra realçar o que se liga ao nó em foco
+const viz = N.map(() => []);
+L.forEach(([a, b, rel]) => { viz[a].push([b, rel]); viz[b].push([a, rel]); });
+
+const grauMax = Math.max(...N.map(n => n.d));
+
+let yaw = 0.6, pitch = -0.3, zoom = 1, girar = true;
+let arrastando = false, ultX = 0, ultY = 0, moveu = false;
+let hover = -1, foco = -1, comIsolada = null, busca = '';
+const proj = N.map(() => ({ x: 0, y: 0, z: 0, r: 0, vis: true }));
+
+const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduzido) { girar = false; document.getElementById('btnGirar').setAttribute('aria-pressed', 'false'); }
+
+function dim() {
+  const r = devicePixelRatio || 1;
+  cv.width = innerWidth * r; cv.height = innerHeight * r;
+  cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
+  ctx.setTransform(r, 0, 0, r, 0, 0);
+}
+addEventListener('resize', dim); dim();
+
+// Um nó está "ativo" quando passa pelos filtros; os inativos não somem — ficam
+// fantasmas, senão a estrutura ao redor perde o contexto.
+function ativo(i) {
+  const n = N[i];
+  if (comIsolada !== null && n.c !== comIsolada) return false;
+  if (busca && !(n.l.toLowerCase().includes(busca) || (n.f || '').toLowerCase().includes(busca))) return false;
+  return true;
+}
+
+function projetar() {
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const cx = innerWidth / 2 + (innerWidth > 720 ? 134 : 0), cyy = innerHeight / 2;
+  const esc = Math.min(innerWidth, innerHeight) * 0.42 * zoom;
+  for (let i = 0; i < N.length; i++) {
+    const [x, y, z] = N[i].p;
+    const x1 = x * cy - z * sy, z1 = x * sy + z * cy;
+    const y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+    const persp = 2.6 / (2.6 + z2);       // perspectiva suave: dá profundidade sem distorcer as pontas
+    const p = proj[i];
+    p.x = cx + x1 * esc * persp;
+    p.y = cyy + y2 * esc * persp;
+    p.z = z2;
+    p.r = (2.1 + Math.sqrt(N[i].d / grauMax) * 7.4) * persp * Math.min(zoom, 1.7);
+    p.vis = ativo(i);
+  }
+}
+
+// névoa por profundidade: o que está atrás recua, e o volume vira legível
+function nevoa(z) { return Math.max(0.16, Math.min(1, 0.62 - z * 0.42)); }
+
+function desenhar() {
+  projetar();
+  ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+  const emFoco = foco >= 0 ? new Set(viz[foco].map(v => v[0]).concat([foco])) : null;
+
+  // arestas primeiro, atrás de tudo
+  ctx.lineWidth = 1;
+  for (const [a, b] of L) {
+    const pa = proj[a], pb = proj[b];
+    const vis = pa.vis && pb.vis;
+    let alfa = nevoa((pa.z + pb.z) / 2) * (vis ? 0.30 : 0.05);
+    if (emFoco) alfa = (emFoco.has(a) && emFoco.has(b)) ? 0.75 : alfa * 0.22;
+    if (alfa < 0.02) continue;
+    ctx.strokeStyle = `rgba(245,244,239,${alfa})`;
+    ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+  }
+
+  // nós de trás pra frente, pra sobreposição respeitar a profundidade
+  const ordem = proj.map((_, i) => i).sort((i, j) => proj[j].z - proj[i].z);
+  for (const i of ordem) {
+    const p = proj[i], n = N[i];
+    let alfa = nevoa(p.z) * (p.vis ? 1 : 0.14);
+    if (emFoco && !emFoco.has(i)) alfa *= 0.3;
+    if (alfa < 0.02) continue;
+
+    const destaque = i === hover || i === foco;
+    ctx.globalAlpha = Math.min(1, alfa + (destaque ? 0.4 : 0));
+    ctx.fillStyle = TIPOS[n.t].cor;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (destaque ? 1.5 : 1), 0, 6.2832); ctx.fill();
+
+    // anel na cor da superfície separa nós que se sobrepõem
+    if (p.r > 3) {
+      ctx.globalAlpha = Math.min(1, alfa);
+      ctx.strokeStyle = '#12120f'; ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+    if (destaque) {
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#f5f4ef'; ctx.lineWidth = 1.6; ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // rótulo direto nos mais conectados: identidade não fica só na cor
+  ctx.font = '600 11px system-ui, -apple-system, "Segoe UI", sans-serif';
+  ctx.textAlign = 'center';
+  for (const i of ordem) {
+    const p = proj[i], n = N[i];
+    const vale = n.d >= 10 || i === hover || i === foco;
+    if (!vale || !p.vis) continue;
+    const a = i === hover || i === foco ? 1 : Math.min(0.85, nevoa(p.z) + 0.25);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = '#12120f'; ctx.lineWidth = 3;
+    ctx.strokeStyle = '#12120f'; ctx.strokeText(n.l, p.x, p.y - p.r - 5);
+    ctx.fillStyle = '#f5f4ef';
+    ctx.fillText(n.l, p.x, p.y - p.r - 5);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function laco() {
+  if (girar && !arrastando) { yaw += 0.0016; }
+  desenhar();
+  requestAnimationFrame(laco);
+}
+
+function noEm(mx, my) {
+  let melhor = -1, dist = 15 * 15;
+  for (let i = 0; i < N.length; i++) {
+    const p = proj[i];
+    if (!p.vis) continue;
+    const d = (p.x - mx) ** 2 + (p.y - my) ** 2;
+    const alcance = Math.max(9, p.r + 5) ** 2;
+    if (d < alcance && d < dist) { dist = d; melhor = i; }
+  }
+  return melhor;
+}
+
+cv.addEventListener('pointerdown', e => {
+  arrastando = true; moveu = false; ultX = e.clientX; ultY = e.clientY;
+  cv.classList.add('dragging'); cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => {
+  if (arrastando) {
+    const dx = e.clientX - ultX, dy = e.clientY - ultY;
+    if (Math.abs(dx) + Math.abs(dy) > 3) moveu = true;
+    yaw += dx * 0.006; pitch += dy * 0.006;
+    pitch = Math.max(-1.5, Math.min(1.5, pitch));
+    ultX = e.clientX; ultY = e.clientY;
+    tip.style.opacity = 0;
+    return;
+  }
+  const i = noEm(e.clientX, e.clientY);
+  if (i !== hover) { hover = i; cv.style.cursor = i >= 0 ? 'pointer' : 'grab'; }
+  if (i >= 0) {
+    const n = N[i];
+    tip.innerHTML = `<div class="n">${esc(n.l)}</div>
+      <div class="m">${TIPOS[n.t].nome} · ${n.d} conexões<br>${esc(nomeCom[n.c] || '—')}${n.f ? '<br>' + esc(n.f) : ''}</div>`;
+    tip.style.opacity = 1;
+    const w = 300, x = Math.min(e.clientX + 14, innerWidth - w - 10);
+    tip.style.left = x + 'px'; tip.style.top = (e.clientY + 16) + 'px';
+  } else tip.style.opacity = 0;
+});
+cv.addEventListener('pointerup', e => {
+  arrastando = false; cv.classList.remove('dragging');
+  if (!moveu) {
+    const i = noEm(e.clientX, e.clientY);
+    foco = i === foco ? -1 : i;
+    mostrarNo(foco);
+  }
+});
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom = Math.max(0.4, Math.min(4, zoom * (e.deltaY < 0 ? 1.12 : 0.89)));
+}, { passive: false });
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function mostrarNo(i) {
+  const box = document.getElementById('painelNo');
+  if (i < 0) { box.classList.remove('on'); return; }
+  const n = N[i];
+  document.getElementById('noNome').textContent = n.l;
+  document.getElementById('noMeta').innerHTML =
+    `${TIPOS[n.t].nome} · ${n.d} conexões<br>${esc(nomeCom[n.c] || '—')}${n.f ? '<br>' + esc(n.f) : ''}`;
+  const ul = document.getElementById('noVizinhos');
+  const vs = viz[i].slice().sort((a, b) => N[b[0]].d - N[a[0]].d).slice(0, 10);
+  ul.innerHTML = vs.map(([j, rel]) => `<li>${esc(N[j].l)} <span style="color:var(--muted)">· ${esc(rel)}</span></li>`).join('');
+  box.classList.add('on');
+}
+document.getElementById('fecharNo').onclick = () => { foco = -1; mostrarNo(-1); };
+
+// ── painel ──
+document.getElementById('resumo').textContent =
+  `${N.length} nós · ${L.length} conexões · ${DATA.communities.length} comunidades`;
+
+const cont = [0, 0, 0]; N.forEach(n => cont[n.t]++);
+document.getElementById('legenda').innerHTML = TIPOS.map((t, i) =>
+  `<div class="leg"><span class="dot" style="background:${t.cor}"></span>${t.nome}<span class="qtd">${cont[i]}</span></div>`
+).join('');
+
+document.getElementById('coms').innerHTML = DATA.communities.map(c =>
+  `<button class="com" data-com="${c.id}" aria-pressed="false">${esc(c.n)}<span class="qtd">${c.q}</span></button>`
+).join('');
+document.querySelectorAll('.com').forEach(b => {
+  b.onclick = () => {
+    const id = +b.dataset.com;
+    comIsolada = comIsolada === id ? null : id;
+    document.querySelectorAll('.com').forEach(o =>
+      o.setAttribute('aria-pressed', String(+o.dataset.com === comIsolada)));
+  };
+});
+
+document.getElementById('busca').addEventListener('input', e => {
+  busca = e.target.value.trim().toLowerCase();
+});
+
+const bg = document.getElementById('btnGirar');
+bg.onclick = () => { girar = !girar; bg.setAttribute('aria-pressed', String(girar)); };
+document.getElementById('btnReset').onclick = () => {
+  yaw = 0.6; pitch = -0.3; zoom = 1; foco = -1; comIsolada = null; busca = '';
+  document.getElementById('busca').value = '';
+  document.querySelectorAll('.com').forEach(o => o.setAttribute('aria-pressed', 'false'));
+  mostrarNo(-1);
+};
+
+const bt = document.getElementById('btnTabela'), tb = document.getElementById('tabela');
+bt.onclick = () => {
+  const on = !tb.classList.contains('on');
+  tb.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on));
+  if (on && !tb.dataset.pronta) {
+    document.getElementById('tbody').innerHTML = N.map((n, i) => ({ n, i }))
+      .sort((a, b) => b.n.d - a.n.d)
+      .map(({ n }) => `<tr>
+        <td>${esc(n.l)}</td>
+        <td><span class="pill"><span class="dot" style="background:${TIPOS[n.t].cor}"></span>${TIPOS[n.t].nome}</span></td>
+        <td>${esc(nomeCom[n.c] || '—')}</td>
+        <td class="num">${n.d}</td>
+        <td style="color:var(--muted)">${esc(n.f || '')}</td>
+      </tr>`).join('');
+    tb.dataset.pronta = '1';
+  }
+};
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { tb.classList.remove('on'); bt.setAttribute('aria-pressed', 'false'); foco = -1; mostrarNo(-1); }
+});
+
+laco();
+</script>
+</body>
+</html>

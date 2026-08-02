@@ -22,3 +22,6 @@ Thumbs.db
 desktop.ini
 .DS_Store
 node_modules/
+
+# Dados derivados do layout 3D (regerados a partir de graph.json)
+graphify-out/.graph3d-data.json

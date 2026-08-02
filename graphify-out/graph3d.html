@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orenzi — mapa 3D do código</title>
+<style>
+  :root {
+    --surface: #12120f;
+    --panel: #1a1a17;
+    --ink: #f5f4ef;
+    --ink-2: #c3c2b7;
+    --muted: #8a8880;
+    --line: rgba(245,244,239,0.12);
+    /* 3 slots categóricos validados all-pairs contra esta superfície
+       (CVD ΔE 9.4 · visão normal ΔE 20.9). Não acrescentar um 4º: nenhuma
+       combinação de 4 hues passa o piso, por isso comunidade virou posição. */
+    --t0: #3987e5;   /* código */
+    --t1: #d95926;   /* infra e conceitos */
+    --t2: #199e70;   /* regras e decisões */
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--surface); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+  canvas { display: block; cursor: grab; touch-action: none; }
+  canvas.dragging { cursor: grabbing; }
+
+  aside {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 268px; z-index: 10;
+    background: color-mix(in srgb, var(--panel) 92%, transparent);
+    border-right: 1px solid var(--line);
+    padding: 18px 16px; overflow-y: auto;
+    backdrop-filter: blur(8px);
+  }
+  h1 { font-size: 14px; margin: 0 0 2px; letter-spacing: 0.01em; }
+  .sub { font-size: 11.5px; color: var(--muted); margin-bottom: 16px; }
+  h2 {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--muted); margin: 18px 0 8px; font-weight: 600;
+  }
+  #busca {
+    width: 100%; background: var(--surface); border: 1px solid var(--line);
+    color: var(--ink); border-radius: 8px; padding: 7px 10px; font-size: 12.5px;
+    font-family: inherit;
+  }
+  #busca::placeholder { color: var(--muted); }
+  #busca:focus { outline: 2px solid var(--t0); outline-offset: -1px; }
+
+  .legenda { display: flex; flex-direction: column; gap: 7px; }
+  .leg { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-2); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .leg .qtd { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+  .com {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    background: none; border: none; color: var(--ink-2); font-family: inherit;
+    font-size: 12px; text-align: left; padding: 5px 7px; border-radius: 7px;
+    cursor: pointer; line-height: 1.25;
+  }
+  .com:hover { background: rgba(245,244,239,0.06); color: var(--ink); }
+  .com[aria-pressed="true"] { background: rgba(57,135,229,0.16); color: var(--ink); }
+  .com .qtd { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+  .acoes { display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+  .btn {
+    background: none; border: 1px solid var(--line); color: var(--ink-2);
+    font-family: inherit; font-size: 11.5px; padding: 6px 10px; border-radius: 999px; cursor: pointer;
+  }
+  .btn:hover { border-color: var(--muted); color: var(--ink); }
+  .btn[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+  #tip {
+    position: fixed; z-index: 20; pointer-events: none; opacity: 0;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
+    padding: 9px 11px; max-width: 300px; font-size: 12px; line-height: 1.45;
+    box-shadow: 0 8px 26px rgba(0,0,0,0.5); transition: opacity .12s;
+  }
+  #tip .n { font-weight: 650; margin-bottom: 3px; word-break: break-word; }
+  #tip .m { color: var(--muted); font-size: 11px; }
+
+  #painelNo {
+    position: fixed; right: 16px; top: 16px; z-index: 15; width: 280px;
+    background: color-mix(in srgb, var(--panel) 94%, transparent);
+    border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+    backdrop-filter: blur(8px); display: none;
+  }
+  #painelNo.on { display: block; }
+  #painelNo .n { font-weight: 650; font-size: 13.5px; margin-bottom: 5px; word-break: break-word; }
+  #painelNo .m { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+  #painelNo ul { margin: 10px 0 0; padding-left: 16px; font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+  #painelNo .fechar {
+    position: absolute; top: 9px; right: 9px; background: none; border: none;
+    color: var(--muted); font-size: 15px; cursor: pointer; line-height: 1; padding: 2px 5px;
+  }
+
+  #dica {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    color: var(--muted); font-size: 11.5px; z-index: 12; pointer-events: none;
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    padding: 5px 12px; border-radius: 999px;
+  }
+
+  #tabela {
+    position: fixed; inset: 0; z-index: 30; background: var(--surface);
+    overflow: auto; padding: 26px 30px; display: none;
+  }
+  #tabela.on { display: block; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; position: sticky; top: 0; background: var(--surface); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; }
+
+  @media (max-width: 720px) {
+    aside { width: 100%; height: 46%; bottom: auto; border-right: none; border-bottom: 1px solid var(--line); }
+    canvas { margin-top: 0; }
+    #painelNo { right: 10px; left: 10px; width: auto; top: auto; bottom: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<aside>
+  <h1>Orenzi — mapa 3D do código</h1>
+  <div class="sub" id="resumo"></div>
+
+  <h2>Buscar</h2>
+  <input id="busca" type="search" placeholder="função, arquivo, conceito…" autocomplete="off">
+
+  <h2>O que é cada ponto</h2>
+  <div class="legenda" id="legenda"></div>
+
+  <h2>Comunidades <span style="text-transform:none;letter-spacing:0">(clique p/ isolar)</span></h2>
+  <div id="coms"></div>
+
+  <div class="acoes">
+    <button class="btn" id="btnGirar" aria-pressed="true">Girar</button>
+    <button class="btn" id="btnReset">Recentrar</button>
+    <button class="btn" id="btnTabela" aria-pressed="false">Tabela</button>
+  </div>
+</aside>
+
+<div id="tip" role="tooltip"></div>
+
+<div id="painelNo">
+  <button class="fechar" id="fecharNo" aria-label="Fechar">&times;</button>
+  <div class="n" id="noNome"></div>
+  <div class="m" id="noMeta"></div>
+  <ul id="noVizinhos"></ul>
+</div>
+
+<div id="dica">arraste para girar · scroll para aproximar · clique num ponto para focar</div>
+
+<section id="tabela" aria-label="Tabela de nós">
+  <table>
+    <thead><tr><th>Nó</th><th>Tipo</th><th>Comunidade</th><th class="num">Conexões</th><th>Arquivo</th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</section>
+
+<script>
+const DATA = {"nodes":[{"l":"manifest.json","t":0,"c":10,"d":7,"f":"manifest.json","p":[-0.3592,-0.4514,-0.8019]},{"l":"name","t":0,"c":10,"d":1,"f":"manifest.json","p":[-0.3571,-0.4448,-0.8024]},{"l":"short_name","t":0,"c":10,"d":1,"f":"manifest.json","p":[-0.3638,-0.4495,-0.8083]},{"l":"start_url","t":0,"c":10,"d":1,"f":"manifest.json","p":[-0.3588,-0.4498,-0.7948]},{"l":"display","t":0,"c":10,"d":1,"f":"manifest.json","p":[-0.3664,-0.4541,-0.8025]},{"l":"background_color","t":0,"c":10,"d":1,"f":"manifest.json","p":[-0.3579,-0.4535,-0.81]},{"l":"theme_color","t":0,"c":10,"d":1,"f":"manifest.json","p":[-0.3609,-0.4587,-0.8053]},{"l":"icons","t":0,"c":10,"d":1,"f":"manifest.json","p":[-0.3531,-0.455,-0.8016]},{"l":"agenda.js","t":0,"c":9,"d":10,"f":"modules/agenda.js","p":[0.6029,-0.622,0.1427]},{"l":"WEEKDAY_LABELS","t":0,"c":9,"d":1,"f":"modules/agenda.js","p":[0.6111,-0.6263,0.1408]},{"l":"sameDay()","t":0,"c":9,"d":3,"f":"modules/agenda.js","p":[0.5957,-0.6225,0.1413]},{"l":"segmentsOf()","t":0,"c":9,"d":2,"f":"modules/agenda.js","p":[0.6006,-0.6208,0.1483]},{"l":"layoutAppts()","t":0,"c":9,"d":2,"f":"modules/agenda.js","p":[0.6018,-0.6154,0.1456]},{"l":"startOfWeek()","t":0,"c":9,"d":2,"f":"modules/agenda.js","p":[0.6027,-0.6206,0.1365]},{"l":"prefersReducedMotion()","t":0,"c":9,"d":2,"f":"modules/agenda.js","p":[0.6022,-0.6299,0.1425]},{"l":"irParaDia()","t":0,"c":9,"d":4,"f":"modules/agenda.js","p":[0.5986,-0.6257,0.1418]},{"l":"renderAgenda()","t":0,"c":9,"d":7,"f":"modules/agenda.js","p":[0.5993,-0.6189,0.142]},{"l":"openMonthCalendar()","t":0,"c":9,"d":2,"f":"modules/agenda.js","p":[0.603,-0.6153,0.1397]},{"l":"clientStats()","t":0,"c":9,"d":1,"f":"modules/agenda.js","p":[0.6098,-0.6262,0.1475]},{"l":"estoque.js","t":0,"c":11,"d":7,"f":"modules/estoque.js","p":[0.7142,0.161,-0.6099]},{"l":"UNIDADES","t":0,"c":11,"d":1,"f":"modules/estoque.js","p":[0.7184,0.1662,-0.615]},{"l":"fmtQtd()","t":0,"c":11,"d":2,"f":"modules/estoque.js","p":[0.7085,0.1582,-0.6116]},{"l":"precisaRepor()","t":0,"c":11,"d":3,"f":"modules/estoque.js","p":[0.713,0.1606,-0.6034]},{"l":"loadProducts()","t":0,"c":11,"d":2,"f":"modules/estoque.js","p":[0.7204,0.1587,-0.6142]},{"l":"renderStock()","t":0,"c":11,"d":5,"f":"modules/estoque.js","p":[0.7115,0.1581,-0.6073]},{"l":"ajustarQuantidade()","t":0,"c":11,"d":3,"f":"modules/estoque.js","p":[0.7104,0.1629,-0.6054]},{"l":"openProductModal()","t":0,"c":11,"d":3,"f":"modules/estoque.js","p":[0.717,0.1566,-0.6111]},{"l":"novo-agendamento.js","t":0,"c":7,"d":12,"f":"modules/novo-agendamento.js","p":[0.2734,0.8275,0.0063]},{"l":"profissionaisAtivos()","t":0,"c":7,"d":4,"f":"modules/novo-agendamento.js","p":[0.277,0.8314,0.0077]},{"l":"novoRascunho()","t":0,"c":7,"d":3,"f":"modules/novo-agendamento.js","p":[0.2781,0.8352,0.0047]},{"l":"closeModal()","t":0,"c":7,"d":2,"f":"modules/novo-agendamento.js","p":[0.2785,0.8226,0.003]},{"l":"openNewApptModal()","t":0,"c":7,"d":3,"f":"modules/novo-agendamento.js","p":[0.277,0.8315,0.0014]},{"l":"duracaoTotal()","t":0,"c":7,"d":5,"f":"modules/novo-agendamento.js","p":[0.2713,0.8235,0.0097]},{"l":"fmtDuracao()","t":0,"c":7,"d":3,"f":"modules/novo-agendamento.js","p":[0.2676,0.8281,0.0037]},{"l":"carregarSlots()","t":0,"c":7,"d":3,"f":"modules/novo-agendamento.js","p":[0.2747,0.8241,0.0133]},{"l":"refreshSlots()","t":0,"c":7,"d":7,"f":"modules/novo-agendamento.js","p":[0.2727,0.8278,0.0105]},{"l":"renderSlots()","t":0,"c":7,"d":5,"f":"modules/novo-agendamento.js","p":[0.2676,0.8276,0.0093]},{"l":"renderAviso()","t":0,"c":7,"d":3,"f":"modules/novo-agendamento.js","p":[0.2692,0.8317,0.0118]},{"l":"mostrarErro()","t":0,"c":7,"d":2,"f":"modules/novo-agendamento.js","p":[0.273,0.8252,-0.0014]},{"l":"renderNewApptModal()","t":0,"c":7,"d":8,"f":"modules/novo-agendamento.js","p":[0.2739,0.8258,0.0041]},{"l":"questionario.js","t":0,"c":12,"d":5,"f":"modules/questionario.js","p":[0.8016,0.529,-0.202]},{"l":"setKioskMode()","t":0,"c":12,"d":2,"f":"modules/questionario.js","p":[0.8072,0.5307,-0.2044]},{"l":"quizTransitionTo()","t":0,"c":12,"d":4,"f":"modules/questionario.js","p":[0.798,0.5254,-0.2016]},{"l":"renderQuizMessage()","t":0,"c":12,"d":3,"f":"modules/questionario.js","p":[0.7971,0.5275,-0.2052]},{"l":"renderQuizQuestion()","t":0,"c":12,"d":3,"f":"modules/questionario.js","p":[0.8012,0.5244,-0.199]},{"l":"renderQuestionario()","t":0,"c":12,"d":5,"f":"modules/questionario.js","p":[0.8024,0.5264,-0.2039]},{"l":"salon.js","t":0,"c":8,"d":12,"f":"shared/salon.js","p":[-0.0119,-0.8926,-0.2711]},{"l":"salonOffsetMinutes()","t":0,"c":8,"d":2,"f":"shared/salon.js","p":[-0.0049,-0.8894,-0.2733]},{"l":"salonTimeToInstant()","t":0,"c":8,"d":3,"f":"shared/salon.js","p":[-0.0083,-0.8863,-0.2739]},{"l":"salonToday()","t":0,"c":8,"d":1,"f":"shared/salon.js","p":[-0.0126,-0.9014,-0.2751]},{"l":"salonClock24()","t":0,"c":8,"d":1,"f":"shared/salon.js","p":[-0.0193,-0.8976,-0.2714]},{"l":"salonClock12()","t":0,"c":8,"d":1,"f":"shared/salon.js","p":[-0.017,-0.8944,-0.2782]},{"l":"segmentsOf()","t":0,"c":8,"d":1,"f":"shared/salon.js","p":[-0.0052,-0.8986,-0.2706]},{"l":"workBlocks()","t":0,"c":8,"d":2,"f":"shared/salon.js","p":[-0.0102,-0.8936,-0.2633]},{"l":"totalMinutes()","t":0,"c":8,"d":1,"f":"shared/salon.js","p":[-0.0085,-0.8965,-0.2786]},{"l":"semCadeiraLivre()","t":0,"c":8,"d":2,"f":"shared/salon.js","p":[-0.0174,-0.8895,-0.2662]},{"l":"slotStatus()","t":0,"c":8,"d":3,"f":"shared/salon.js","p":[-0.0136,-0.8905,-0.2638]},{"l":"fetchOccupancy()","t":0,"c":8,"d":2,"f":"shared/salon.js","p":[-0.0127,-0.8858,-0.2753]},{"l":"fetchChairs()","t":0,"c":8,"d":1,"f":"shared/salon.js","p":[-0.0124,-0.9013,-0.2679]},{"l":"state (estado global do painel)","t":0,"c":1,"d":9,"f":"painel.html","p":[-0.0598,0.0462,0.0589]},{"l":"sb (cliente Supabase)","t":0,"c":3,"d":4,"f":"painel.html","p":[-0.0508,0.0208,0.0252]},{"l":"SUPABASE_URL","t":0,"c":3,"d":3,"f":"painel.html","p":[-0.0476,0.0223,0.0423]},{"l":"app (container #app)","t":0,"c":18,"d":0,"f":"painel.html","p":[-0.3332,-0.4981,0.9699]},{"l":"modalContainer","t":0,"c":3,"d":5,"f":"painel.html","p":[-0.0364,0.0452,0.0631]},{"l":"showToast","t":0,"c":1,"d":8,"f":"painel.html","p":[-0.0566,0.0434,0.0611]},{"l":"initials","t":0,"c":1,"d":4,"f":"painel.html","p":[-0.0456,0.048,0.0549]},{"l":"fmtTime","t":0,"c":1,"d":5,"f":"painel.html","p":[-0.0503,0.0322,0.0735]},{"l":"fmtDate","t":0,"c":1,"d":4,"f":"painel.html","p":[-0.0415,0.0398,0.0456]},{"l":"colorForId","t":0,"c":1,"d":5,"f":"painel.html","p":[-0.0538,0.0472,0.057]},{"l":"colorForStaff","t":0,"c":5,"d":3,"f":"painel.html","p":[-0.0621,0.0419,0.0807]},{"l":"hairSelectHtml","t":0,"c":1,"d":1,"f":"painel.html","p":[-0.0322,0.0409,0.0465]},{"l":"loadAppointments","t":0,"c":3,"d":7,"f":"painel.html","p":[-0.0601,0.03,0.0359]},{"l":"loadBookingVisits","t":0,"c":3,"d":2,"f":"painel.html","p":[-0.0585,0.0421,0.0387]},{"l":"loadClients","t":0,"c":3,"d":1,"f":"painel.html","p":[-0.051,0.0342,0.0154]},{"l":"loadStaff","t":0,"c":3,"d":1,"f":"painel.html","p":[-0.0463,0.0326,0.0174]},{"l":"loadServices","t":0,"c":3,"d":1,"f":"painel.html","p":[-0.0483,0.0384,0.0162]},{"l":"loadClientPhotos","t":0,"c":1,"d":4,"f":"painel.html","p":[-0.0538,0.0524,0.05]},{"l":"loadApptPhotos","t":0,"c":1,"d":5,"f":"painel.html","p":[-0.0611,0.0401,0.0585]},{"l":"compressImage","t":0,"c":1,"d":2,"f":"painel.html","p":[-0.0442,0.0562,0.0509]},{"l":"uploadClientPhoto","t":0,"c":1,"d":6,"f":"painel.html","p":[-0.0508,0.0497,0.0541]},{"l":"uploadApptPhoto","t":0,"c":1,"d":6,"f":"painel.html","p":[-0.0524,0.0458,0.0545]},{"l":"deleteClientPhoto","t":0,"c":1,"d":3,"f":"painel.html","p":[-0.0528,0.0482,0.0482]},{"l":"deleteApptPhoto","t":0,"c":1,"d":3,"f":"painel.html","p":[-0.0598,0.0342,0.0549]},{"l":"loadAll","t":0,"c":3,"d":11,"f":"painel.html","p":[-0.0554,0.0354,0.0292]},{"l":"todayAppointments","t":0,"c":1,"d":3,"f":"painel.html","p":[-0.0552,0.0538,0.0648]},{"l":"occupancyPct","t":0,"c":2,"d":4,"f":"painel.html","p":[-0.063,0.0296,0.114]},{"l":"formatCurrency","t":0,"c":4,"d":5,"f":"painel.html","p":[-0.0883,0.0853,0.1129]},{"l":"appointmentRevenue","t":0,"c":2,"d":5,"f":"painel.html","p":[-0.0652,0.0672,0.1253]},{"l":"serviceDurationMinutes","t":0,"c":2,"d":5,"f":"painel.html","p":[-0.0563,0.0401,0.1268]},{"l":"startOfWeekMonday","t":0,"c":2,"d":6,"f":"painel.html","p":[-0.0648,0.0538,0.1134]},{"l":"appointmentsOnDate","t":0,"c":2,"d":7,"f":"painel.html","p":[-0.0573,0.0522,0.1033]},{"l":"tomorrowAppointments","t":0,"c":2,"d":2,"f":"painel.html","p":[-0.0498,0.0556,0.1058]},{"l":"statusLabel","t":0,"c":2,"d":1,"f":"painel.html","p":[-0.0409,0.0495,0.105]},{"l":"statusClass","t":0,"c":2,"d":1,"f":"painel.html","p":[-0.0433,0.0527,0.1084]},{"l":"distributionBarsHtml","t":0,"c":4,"d":2,"f":"painel.html","p":[-0.0682,0.0727,0.1036]},{"l":"animateCounters (sem uso hoje)","t":0,"c":4,"d":1,"f":"painel.html","p":[-0.0995,0.0923,0.1458]},{"l":"animateFills","t":0,"c":2,"d":2,"f":"painel.html","p":[-0.0628,0.0583,0.1041]},{"l":"dayAggregate","t":0,"c":2,"d":8,"f":"painel.html","p":[-0.0566,0.0337,0.1121]},{"l":"dayPanoramaCardHtml","t":0,"c":2,"d":3,"f":"painel.html","p":[-0.0518,0.039,0.111]},{"l":"CLOSED_WEEKDAYS (cópia local do painel)","t":0,"c":5,"d":2,"f":"painel.html","p":[-0.0363,0.0295,0.1093]},{"l":"isSalonOpenDay","t":0,"c":2,"d":8,"f":"painel.html","p":[-0.0479,0.0408,0.1133]},{"l":"weekAppointmentCounts","t":0,"c":2,"d":3,"f":"painel.html","p":[-0.0522,0.0523,0.1092]},{"l":"strongestWeakestDay","t":0,"c":2,"d":2,"f":"painel.html","p":[-0.0451,0.0454,0.1103]},{"l":"bestDayForEncaixe","t":0,"c":2,"d":4,"f":"painel.html","p":[-0.0539,0.0433,0.1098]},{"l":"formatDurationShort","t":0,"c":2,"d":1,"f":"painel.html","p":[-0.0424,0.0557,0.104]},{"l":"nextAvailableSlot","t":0,"c":2,"d":5,"f":"painel.html","p":[-0.052,0.0383,0.1047]},{"l":"weekTrend","t":0,"c":2,"d":3,"f":"painel.html","p":[-0.0566,0.0516,0.1119]},{"l":"renderHome","t":0,"c":2,"d":21,"f":"painel.html","p":[-0.0552,0.0479,0.0983]},{"l":"currentWeekRevenue","t":0,"c":2,"d":4,"f":"painel.html","p":[-0.0641,0.0615,0.1139]},{"l":"weekRevenueForStart","t":0,"c":2,"d":3,"f":"painel.html","p":[-0.0592,0.0623,0.1183]},{"l":"monthlyRevenueHistory","t":0,"c":4,"d":4,"f":"painel.html","p":[-0.0801,0.0876,0.1176]},{"l":"monthlyRevenueForOffset","t":0,"c":2,"d":2,"f":"painel.html","p":[-0.0639,0.0728,0.1312]},{"l":"currentMonthAppointments","t":0,"c":2,"d":2,"f":"painel.html","p":[-0.0715,0.0619,0.1209]},{"l":"newClientsThisMonth","t":0,"c":2,"d":1,"f":"painel.html","p":[-0.0687,0.0594,0.1452]},{"l":"monthOccupancyPct","t":0,"c":2,"d":3,"f":"painel.html","p":[-0.0641,0.0395,0.1283]},{"l":"topServicesThisMonth","t":0,"c":4,"d":1,"f":"painel.html","p":[-0.0841,0.0894,0.1044]},{"l":"demandProfileThisMonth","t":0,"c":5,"d":2,"f":"painel.html","p":[-0.0736,0.0459,0.1021]},{"l":"recentBookingHistory","t":0,"c":4,"d":1,"f":"painel.html","p":[-0.0787,0.0904,0.107]},{"l":"deltaInfo","t":0,"c":4,"d":2,"f":"painel.html","p":[-0.0884,0.0857,0.1079]},{"l":"periodComparisons","t":0,"c":2,"d":4,"f":"painel.html","p":[-0.0654,0.066,0.1192]},{"l":"currentWeekAppointments","t":0,"c":2,"d":1,"f":"painel.html","p":[-0.0638,0.0591,0.1452]},{"l":"newClientsThisWeek","t":0,"c":2,"d":1,"f":"painel.html","p":[-0.0722,0.0557,0.1446]},{"l":"weekOccupancyPct","t":0,"c":2,"d":3,"f":"painel.html","p":[-0.0548,0.0459,0.1284]},{"l":"weekRangeLabel","t":0,"c":2,"d":1,"f":"painel.html","p":[-0.0689,0.0523,0.1453]},{"l":"currentMonthLabel","t":0,"c":2,"d":1,"f":"painel.html","p":[-0.0644,0.0543,0.1458]},{"l":"trendXAt","t":0,"c":4,"d":2,"f":"painel.html","p":[-0.0935,0.1097,0.1247]},{"l":"trendYAt","t":0,"c":4,"d":2,"f":"painel.html","p":[-0.093,0.1077,0.1283]},{"l":"easeInOutCubic","t":0,"c":4,"d":1,"f":"painel.html","p":[-0.0873,0.1108,0.1272]},{"l":"trendPosFor","t":0,"c":4,"d":3,"f":"painel.html","p":[-0.0975,0.1057,0.1255]},{"l":"buildTrendChartMarkup","t":0,"c":4,"d":5,"f":"painel.html","p":[-0.0918,0.0937,0.1178]},{"l":"settleTrendPath","t":0,"c":4,"d":2,"f":"painel.html","p":[-0.0869,0.1042,0.1211]},{"l":"formatIndicatorValue","t":0,"c":4,"d":3,"f":"painel.html","p":[-0.0884,0.0836,0.1198]},{"l":"animateIndicatorValue","t":0,"c":4,"d":3,"f":"painel.html","p":[-0.0928,0.0864,0.1339]},{"l":"INDICATOR_HELP","t":0,"c":3,"d":2,"f":"painel.html","p":[-0.0559,0.0666,0.0778]},{"l":"showIndicatorHelp","t":0,"c":3,"d":4,"f":"painel.html","p":[-0.0483,0.0574,0.0711]},{"l":"computeIndicatorsData","t":0,"c":2,"d":13,"f":"painel.html","p":[-0.0663,0.0554,0.1301]},{"l":"renderIndicatorsSection","t":0,"c":4,"d":3,"f":"painel.html","p":[-0.0835,0.0779,0.1245]},{"l":"renderTrendChartSection","t":0,"c":4,"d":5,"f":"painel.html","p":[-0.0844,0.0927,0.1151]},{"l":"animateTrendTransition","t":0,"c":4,"d":8,"f":"painel.html","p":[-0.0864,0.0976,0.1191]},{"l":"bookingConversionThisMonth","t":0,"c":6,"d":3,"f":"painel.html","p":[-0.0824,0.0549,0.0569]},{"l":"renderInsights","t":0,"c":4,"d":23,"f":"painel.html","p":[-0.0782,0.076,0.104]},{"l":"weekChartSvg","t":0,"c":4,"d":4,"f":"painel.html","p":[-0.0863,0.0786,0.1093]},{"l":"AGENDA_START_HOUR","t":0,"c":5,"d":5,"f":"painel.html","p":[-0.0677,0.0328,0.0982]},{"l":"AGENDA_END_HOUR","t":0,"c":2,"d":1,"f":"painel.html","p":[-0.0555,0.0232,0.1244]},{"l":"sameDay","t":0,"c":5,"d":5,"f":"painel.html","p":[-0.0688,0.0446,0.0929]},{"l":"startOfWeek (domingo)","t":0,"c":5,"d":3,"f":"painel.html","p":[-0.073,0.042,0.0929]},{"l":"renderAgenda","t":0,"c":5,"d":9,"f":"painel.html","p":[-0.0746,0.0368,0.0786]},{"l":"openMonthCalendar","t":0,"c":5,"d":4,"f":"painel.html","p":[-0.0703,0.0408,0.0825]},{"l":"clientStats","t":0,"c":1,"d":3,"f":"painel.html","p":[-0.0401,0.0435,0.0438]},{"l":"renderClients","t":0,"c":1,"d":10,"f":"painel.html","p":[-0.0509,0.044,0.0484]},{"l":"renderClientDetail","t":0,"c":1,"d":17,"f":"painel.html","p":[-0.0479,0.0414,0.0525]},{"l":"openLightbox","t":0,"c":3,"d":4,"f":"painel.html","p":[-0.0382,0.0417,0.0542]},{"l":"apptPhotoSectionHtml","t":0,"c":1,"d":1,"f":"painel.html","p":[-0.0393,0.0267,0.047]},{"l":"renderApptDetail","t":0,"c":1,"d":14,"f":"painel.html","p":[-0.0516,0.0362,0.0528]},{"l":"qaBlock","t":0,"c":1,"d":1,"f":"painel.html","p":[-0.0313,0.0539,0.0355]},{"l":"renderQuestionnaireReport","t":0,"c":1,"d":4,"f":"painel.html","p":[-0.0436,0.0477,0.0442]},{"l":"setKioskMode","t":0,"c":1,"d":1,"f":"painel.html","p":[-0.0646,0.0092,0.0478]},{"l":"quizTransitionTo","t":0,"c":1,"d":4,"f":"painel.html","p":[-0.0652,0.0235,0.0543]},{"l":"renderQuizMessage","t":0,"c":1,"d":2,"f":"painel.html","p":[-0.0654,0.0134,0.0524]},{"l":"renderQuizQuestion","t":0,"c":1,"d":2,"f":"painel.html","p":[-0.069,0.0145,0.052]},{"l":"renderQuestionario","t":0,"c":1,"d":8,"f":"painel.html","p":[-0.0639,0.0245,0.0509]},{"l":"staffStatus","t":0,"c":1,"d":2,"f":"painel.html","p":[-0.0502,0.0711,0.0437]},{"l":"renderTeam","t":0,"c":1,"d":7,"f":"painel.html","p":[-0.0556,0.0575,0.05]},{"l":"render (roteador de telas)","t":0,"c":1,"d":21,"f":"painel.html","p":[-0.0595,0.0424,0.0566]},{"l":"renderLogin","t":0,"c":3,"d":3,"f":"painel.html","p":[-0.0484,0.0166,0.0103]},{"l":"checkSession","t":0,"c":3,"d":4,"f":"painel.html","p":[-0.0526,0.0239,0.0152]},{"l":"closeModal","t":0,"c":3,"d":4,"f":"painel.html","p":[-0.0379,0.0498,0.0598]},{"l":"openNewApptModal","t":0,"c":3,"d":1,"f":"painel.html","p":[-0.0243,0.04,0.0441]},{"l":"renderNewApptModal","t":0,"c":3,"d":6,"f":"painel.html","p":[-0.0407,0.0398,0.0482]},{"l":"canal realtime 'novos-agendamentos'","t":0,"c":3,"d":4,"f":"painel.html","p":[-0.0538,0.0324,0.0467]},{"l":"Orenzi Atelier — salão da Juliane (Dublin)","t":2,"c":5,"d":7,"f":"CLAUDE.md","p":[-0.0372,0.0252,0.082]},{"l":"shared/salon.js — a regra do salão","t":2,"c":5,"d":8,"f":"CLAUDE.md","p":[-0.0406,0.0294,0.0981]},{"l":"Módulos como scripts clássicos (não ES modules)","t":2,"c":5,"d":3,"f":"CLAUDE.md","p":[-0.0327,0.0329,0.0879]},{"l":"Modelo de segmentos (trabalho → pausa → finalização)","t":2,"c":5,"d":3,"f":"CLAUDE.md","p":[-0.0419,0.0277,0.1144]},{"l":"Regra de conflito (só bloco de trabalho conflita)","t":2,"c":5,"d":2,"f":"CLAUDE.md","p":[-0.0343,0.0234,0.111]},{"l":"Fuso Europe/Dublin e expediente 9h–18h","t":2,"c":5,"d":3,"f":"CLAUDE.md","p":[-0.058,0.0332,0.0989]},{"l":"Só a Juliane atende","t":2,"c":1,"d":2,"f":"CLAUDE.md","p":[-0.0536,0.0718,0.0438]},{"l":"RPC get_busy_slots (SECURITY DEFINER)","t":1,"c":2,"d":2,"f":"CLAUDE.md","p":[-0.0491,0.0265,0.0943]},{"l":"RPC get_chair_load (ocupação das cadeiras)","t":1,"c":2,"d":2,"f":"CLAUDE.md","p":[-0.057,0.0224,0.0981]},{"l":"Trigger trg_notify_new_appointment","t":1,"c":3,"d":3,"f":"CLAUDE.md","p":[-0.0426,0.0274,0.049]},{"l":"Escrita autenticada precisa de .select()","t":2,"c":1,"d":4,"f":"CLAUDE.md","p":[-0.052,0.0277,0.0527]},{"l":"Painel em relógio de 12h","t":2,"c":1,"d":1,"f":"CLAUDE.md","p":[-0.0432,0.019,0.0795]},{"l":"Tema claro (escuro recusado)","t":2,"c":5,"d":1,"f":"CLAUDE.md","p":[-0.0231,0.0182,0.0849]},{"l":"Bloco da agenda é <button>","t":2,"c":5,"d":1,"f":"CLAUDE.md","p":[-0.088,0.0319,0.0827]},{"l":"Âncoras de seção em painel.html","t":2,"c":1,"d":11,"f":"CLAUDE.md","p":[-0.0509,0.0371,0.0581]},{"l":"Dívida conhecida (duplicações e CSS inline)","t":2,"c":1,"d":5,"f":"CLAUDE.md","p":[-0.0444,0.0374,0.0661]},{"l":"Banco Supabase (projeto gsagtsxkhqlpxuvrijgw)","t":1,"c":3,"d":7,"f":"CLAUDE.md","p":[-0.0486,0.0226,0.0562]},{"l":"Grafo do projeto (graphify-out)","t":2,"c":5,"d":1,"f":"CLAUDE.md","p":[-0.0256,0.0146,0.085]},{"l":"setLang (troca PT/EN)","t":0,"c":14,"d":2,"f":"index.html","p":[-0.6475,0.6547,-0.6218]},{"l":"translations (dicionário i18n PT/EN)","t":0,"c":14,"d":1,"f":"index.html","p":[-0.6521,0.6522,-0.6229]},{"l":"openVideoLightbox","t":0,"c":13,"d":1,"f":"index.html","p":[-0.9851,0.3792,0.4894]},{"l":"Galeria editorial (vídeos + parallax de letras)","t":1,"c":13,"d":2,"f":"index.html","p":[-0.987,0.3837,0.4897]},{"l":"Reveal on scroll via IntersectionObserver","t":1,"c":13,"d":1,"f":"index.html","p":[-0.9927,0.3865,0.4924]},{"l":"Crossfade entre os dois vídeos do hero","t":1,"c":16,"d":1,"f":"index.html","p":[0.9075,-0.3127,0.4159]},{"l":"Parallax do vídeo do hero no scroll","t":1,"c":16,"d":1,"f":"index.html","p":[0.9019,-0.3112,0.4132]},{"l":"Marquee infinito de marcas (auto-clonagem de grupos)","t":1,"c":17,"d":0,"f":"index.html","p":[0.2168,-0.4287,1.0]},{"l":"Carrossel de depoimentos em loop (clones head/tail)","t":1,"c":0,"d":2,"f":"index.html","p":[-0.1292,0.0272,-0.0624]},{"l":"Slider Antes & Depois (clip-path arrastável)","t":1,"c":0,"d":1,"f":"index.html","p":[-0.1331,0.0258,-0.0749]},{"l":"Vitrine de serviços (acordeão + imagem sincronizada)","t":1,"c":14,"d":1,"f":"index.html","p":[-0.6451,0.6593,-0.6228]},{"l":"CTAs de agendamento do site (links para agendar.html)","t":1,"c":6,"d":1,"f":"index.html","p":[-0.094,-0.021,0.0198]},{"l":"Tokens visuais Orenzi (paleta papel/tinta + Poppins/Jost)","t":1,"c":6,"d":1,"f":"index.html","p":[-0.0975,-0.0207,0.0222]},{"l":"state (estado do fluxo de agendamento)","t":0,"c":0,"d":3,"f":"agendar.html","p":[-0.1245,0.022,-0.0295]},{"l":"renderTransition (slide entre passos)","t":0,"c":0,"d":4,"f":"agendar.html","p":[-0.1239,0.0293,-0.0444]},{"l":"setBackArrow","t":0,"c":0,"d":2,"f":"agendar.html","p":[-0.1369,0.0322,-0.0334]},{"l":"setBottomBar","t":0,"c":0,"d":2,"f":"agendar.html","p":[-0.137,0.0282,-0.0371]},{"l":"pad2","t":0,"c":0,"d":1,"f":"agendar.html","p":[-0.1644,0.0162,-0.0315]},{"l":"initials (iniciais do nome)","t":0,"c":0,"d":2,"f":"agendar.html","p":[-0.1359,0.0405,-0.0425]},{"l":"formatMoney (€)","t":0,"c":0,"d":2,"f":"agendar.html","p":[-0.1503,0.0362,-0.0612]},{"l":"formatPrice (preço com asterisco quando varia)","t":0,"c":0,"d":2,"f":"agendar.html","p":[-0.1389,0.0349,-0.0467]},{"l":"groupByCategory (agrupa serviços)","t":0,"c":0,"d":1,"f":"agendar.html","p":[-0.1326,0.0394,-0.0363]},{"l":"setStep (avança/volta passo do wizard)","t":0,"c":0,"d":3,"f":"agendar.html","p":[-0.1259,0.0346,-0.0413]},{"l":"loadServices (Supabase: services)","t":0,"c":0,"d":2,"f":"agendar.html","p":[-0.1136,0.0192,-0.0322]},{"l":"loadStaffForService (Supabase: staff_services)","t":0,"c":0,"d":2,"f":"agendar.html","p":[-0.1086,0.0388,-0.0401]},{"l":"loadAvailableSlots (calcula horários livres)","t":0,"c":0,"d":6,"f":"agendar.html","p":[-0.1283,0.02,-0.0187]},{"l":"normalizePhone (só dígitos)","t":0,"c":0,"d":1,"f":"agendar.html","p":[-0.1147,0.0232,-0.0444]},{"l":"confirmBooking (cria cliente + agendamento)","t":0,"c":0,"d":6,"f":"agendar.html","p":[-0.1137,0.0273,-0.031]},{"l":"buildCalendarGrid","t":0,"c":0,"d":3,"f":"agendar.html","p":[-0.1524,0.0196,-0.0262]},{"l":"renderStep3 (calendário + horários)","t":0,"c":0,"d":5,"f":"agendar.html","p":[-0.1412,0.0261,-0.0314]},{"l":"updateStep3Bar","t":0,"c":0,"d":3,"f":"agendar.html","p":[-0.145,0.0227,-0.0374]},{"l":"refreshSlots (re-renderiza grade de horários)","t":0,"c":0,"d":3,"f":"agendar.html","p":[-0.1401,0.0196,-0.0295]},{"l":"advanceFromStep1","t":0,"c":0,"d":3,"f":"agendar.html","p":[-0.1201,0.0375,-0.0402]},{"l":"render (roteador de telas do wizard)","t":0,"c":0,"d":12,"f":"agendar.html","p":[-0.1248,0.0333,-0.0282]},{"l":"logBookingVisit (contador de visitas, falha em silêncio)","t":0,"c":6,"d":2,"f":"agendar.html","p":[-0.0933,0.0526,0.0204]},{"l":"Expediente do salão no cliente (OPEN_HOUR 9, CLOSE_HOUR 18, SLOT 30min, fecha dom/seg)","t":1,"c":0,"d":3,"f":"agendar.html","p":[-0.1416,0.0199,-0.0137]},{"l":"RPC find_or_create_client (tabela clients não é legível publicamente)","t":1,"c":0,"d":2,"f":"agendar.html","p":[-0.1041,0.0266,-0.037]},{"l":"Wizard de agendamento em 4 passos","t":1,"c":6,"d":3,"f":"agendar.html","p":[-0.0925,-0.008,0.0245]},{"l":"Regra de conflito de horário (slot livre = não sobrepõe agendamento existente)","t":1,"c":0,"d":1,"f":"agendar.html","p":[-0.137,0.0113,-0.0243]},{"l":"mockData (dados de exemplo por tabela)","t":0,"c":6,"d":2,"f":"painel_demo.html","p":[-0.0903,0.0483,0.0226]},{"l":"Stub de window.supabase (auth/channel/from falsos)","t":1,"c":6,"d":4,"f":"painel_demo.html","p":[-0.0835,0.0375,0.0158]},{"l":"state (estado do painel demo)","t":0,"c":6,"d":2,"f":"painel_demo.html","p":[-0.0961,0.0473,0.029]},{"l":"loadAppointments","t":0,"c":0,"d":6,"f":"painel_demo.html","p":[-0.1041,0.0269,-0.0095]},{"l":"loadBookingVisits","t":0,"c":6,"d":3,"f":"painel_demo.html","p":[-0.0886,0.0433,0.0102]},{"l":"loadClients","t":0,"c":0,"d":2,"f":"painel_demo.html","p":[-0.0968,0.0286,-0.0273]},{"l":"loadStaff","t":0,"c":0,"d":2,"f":"painel_demo.html","p":[-0.1,0.0359,-0.0283]},{"l":"loadServices","t":0,"c":0,"d":2,"f":"painel_demo.html","p":[-0.1026,0.0238,-0.0245]},{"l":"loadAll (carrega tudo em paralelo)","t":0,"c":0,"d":8,"f":"painel_demo.html","p":[-0.0939,0.0312,-0.0107]},{"l":"compressImage (max 1600px, JPEG 82%)","t":0,"c":15,"d":2,"f":"painel_demo.html","p":[-0.1419,-0.8863,0.6143]},{"l":"uploadClientPhoto","t":0,"c":15,"d":2,"f":"painel_demo.html","p":[-0.1423,-0.8906,0.6185]},{"l":"uploadApptPhoto","t":0,"c":15,"d":2,"f":"painel_demo.html","p":[-0.1407,-0.8859,0.6184]},{"l":"initials (iniciais do nome)","t":0,"c":0,"d":1,"f":"painel_demo.html","p":[-0.1439,0.0452,-0.0527]},{"l":"formatCurrency","t":0,"c":0,"d":1,"f":"painel_demo.html","p":[-0.1582,0.037,-0.0714]},{"l":"colorForId (cor determinística por hash do id)","t":0,"c":0,"d":1,"f":"painel_demo.html","p":[-0.1278,0.0268,0.0211]},{"l":"occupancyPct (ocupação do profissional no dia)","t":0,"c":0,"d":1,"f":"painel_demo.html","p":[-0.1463,0.0188,0.0026]},{"l":"nextAvailableSlot (próximo encaixe livre)","t":0,"c":0,"d":2,"f":"painel_demo.html","p":[-0.1362,0.0188,-0.0088]},{"l":"bookingConversionThisMonth (visitas → agendamentos online)","t":0,"c":6,"d":5,"f":"painel_demo.html","p":[-0.0907,0.0529,0.0369]},{"l":"renderHome (dashboard executivo)","t":0,"c":6,"d":2,"f":"painel_demo.html","p":[-0.0788,0.04,0.0511]},{"l":"renderInsights","t":0,"c":6,"d":3,"f":"painel_demo.html","p":[-0.0871,0.051,0.051]},{"l":"renderAgenda (timeline por hora)","t":0,"c":0,"d":4,"f":"painel_demo.html","p":[-0.1145,0.03,0.021]},{"l":"renderClients","t":0,"c":1,"d":3,"f":"painel_demo.html","p":[-0.0618,0.0434,0.0362]},{"l":"renderClientDetail","t":0,"c":1,"d":2,"f":"painel_demo.html","p":[-0.0502,0.0439,0.0378]},{"l":"renderApptDetail","t":0,"c":6,"d":2,"f":"painel_demo.html","p":[-0.0762,0.0334,0.0348]},{"l":"renderQuestionario (quiz em modo quiosque)","t":0,"c":6,"d":3,"f":"painel_demo.html","p":[-0.0867,0.0141,0.0307]},{"l":"renderTeam","t":0,"c":1,"d":2,"f":"painel_demo.html","p":[-0.0686,0.0526,0.0385]},{"l":"render (roteador de abas do painel)","t":0,"c":6,"d":11,"f":"painel_demo.html","p":[-0.0886,0.0369,0.0277]},{"l":"renderLogin","t":0,"c":3,"d":2,"f":"painel_demo.html","p":[-0.05,0.0159,-0.0007]},{"l":"checkSession (sessão sempre válida no demo)","t":0,"c":3,"d":3,"f":"painel_demo.html","p":[-0.0583,0.0236,0.0035]},{"l":"Janela da agenda no painel (AGENDA_START_HOUR 8, AGENDA_END_HOUR 19)","t":1,"c":0,"d":4,"f":"painel_demo.html","p":[-0.1334,0.0227,0.003]},{"l":"Realtime: canal novos-agendamentos (INSERT em appointments)","t":1,"c":0,"d":2,"f":"painel_demo.html","p":[-0.1101,0.0252,-0.0224]}],"links":[[0,5,"contains"],[0,4,"contains"],[0,7,"contains"],[0,1,"contains"],[0,2,"contains"],[0,3,"contains"],[0,6,"contains"],[8,18,"contains"],[8,15,"contains"],[8,12,"contains"],[8,17,"contains"],[8,14,"contains"],[8,16,"contains"],[8,10,"contains"],[8,11,"contains"],[8,13,"contains"],[8,9,"contains"],[15,10,"calls"],[16,10,"calls"],[16,11,"calls"],[16,12,"calls"],[16,13,"calls"],[15,14,"calls"],[16,15,"calls"],[16,17,"calls"],[19,25,"contains"],[19,21,"contains"],[19,23,"contains"],[19,26,"contains"],[19,22,"contains"],[19,24,"contains"],[19,20,"contains"],[24,21,"calls"],[25,22,"calls"],[24,22,"indirect_call"],[26,23,"calls"],[25,24,"calls"],[24,26,"calls"],[27,34,"contains"],[27,30,"contains"],[27,32,"contains"],[27,33,"contains"],[27,38,"contains"],[27,29,"contains"],[27,31,"contains"],[27,28,"contains"],[27,35,"contains"],[27,37,"contains"],[27,39,"contains"],[27,36,"contains"],[29,28,"calls"],[35,28,"calls"],[39,28,"calls"],[31,29,"calls"],[39,30,"calls"],[31,39,"calls"],[34,32,"calls"],[35,32,"calls"],[39,32,"calls"],[36,32,"calls"],[39,33,"calls"],[36,33,"calls"],[35,34,"calls"],[35,37,"calls"],[35,36,"calls"],[39,35,"calls"],[36,37,"calls"],[39,38,"calls"],[40,42,"contains"],[40,45,"contains"],[40,43,"contains"],[40,44,"contains"],[40,41,"contains"],[45,41,"calls"],[45,42,"calls"],[43,42,"calls"],[44,42,"calls"],[45,43,"calls"],[45,44,"calls"],[46,58,"contains"],[46,57,"contains"],[46,51,"contains"],[46,50,"contains"],[46,47,"contains"],[46,48,"contains"],[46,49,"contains"],[46,52,"contains"],[46,55,"contains"],[46,56,"contains"],[46,54,"contains"],[46,53,"contains"],[48,47,"calls"],[57,48,"calls"],[56,53,"calls"],[56,55,"calls"],[184,59,"references"],[90,59,"shares_data_with"],[139,59,"shares_data_with"],[71,59,"shares_data_with"],[77,59,"shares_data_with"],[72,59,"shares_data_with"],[76,59,"shares_data_with"],[163,59,"shares_data_with"],[84,59,"shares_data_with"],[165,60,"shares_data_with"],[71,60,"shares_data_with"],[164,60,"shares_data_with"],[60,61,"references"],[184,61,"references"],[186,61,"references"],[172,63,"references"],[166,63,"shares_data_with"],[151,63,"shares_data_with"],[168,63,"shares_data_with"],[134,63,"shares_data_with"],[169,64,"calls"],[153,64,"calls"],[150,64,"calls"],[140,64,"calls"],[168,64,"calls"],[160,64,"calls"],[80,64,"calls"],[79,64,"calls"],[185,65,"references"],[150,65,"calls"],[149,65,"calls"],[162,65,"calls"],[184,66,"references"],[181,66,"rationale_for"],[97,66,"calls"],[153,66,"calls"],[107,66,"calls"],[148,67,"calls"],[153,67,"calls"],[150,67,"calls"],[155,67,"calls"],[184,68,"references"],[69,68,"calls"],[150,68,"calls"],[149,68,"calls"],[162,68,"calls"],[146,69,"calls"],[107,69,"calls"],[150,70,"calls"],[186,71,"shares_data_with"],[230,71,"semantically_similar_to"],[83,71,"calls"],[169,71,"calls"],[153,71,"calls"],[83,72,"calls"],[83,73,"calls"],[83,74,"calls"],[83,75,"calls"],[81,76,"calls"],[149,76,"calls"],[79,76,"calls"],[82,77,"calls"],[146,77,"calls"],[150,77,"calls"],[80,77,"calls"],[80,78,"calls"],[79,78,"calls"],[150,79,"calls"],[79,163,"calls"],[79,80,"semantically_similar_to"],[153,80,"calls"],[80,163,"calls"],[81,163,"calls"],[150,81,"calls"],[82,163,"calls"],[153,82,"calls"],[184,83,"references"],[165,83,"calls"],[235,83,"semantically_similar_to"],[228,83,"conceptually_related_to"],[83,163,"calls"],[168,83,"calls"],[107,84,"calls"],[162,84,"calls"],[178,85,"semantically_similar_to"],[85,142,"references"],[85,97,"semantically_similar_to"],[85,114,"semantically_similar_to"],[129,86,"calls"],[118,86,"calls"],[131,86,"calls"],[140,86,"calls"],[141,86,"calls"],[135,87,"calls"],[108,87,"calls"],[111,87,"calls"],[110,87,"calls"],[109,87,"calls"],[173,88,"conceptually_related_to"],[135,88,"calls"],[97,88,"calls"],[114,88,"calls"],[122,88,"calls"],[135,89,"calls"],[108,89,"calls"],[119,89,"calls"],[107,89,"calls"],[145,89,"semantically_similar_to"],[106,89,"calls"],[103,90,"calls"],[108,90,"calls"],[105,90,"calls"],[91,90,"calls"],[101,90,"calls"],[109,90,"calls"],[107,91,"calls"],[107,92,"calls"],[107,93,"calls"],[107,94,"calls"],[140,94,"calls"],[95,132,"semantically_similar_to"],[107,96,"calls"],[140,96,"calls"],[103,97,"calls"],[97,143,"references"],[97,142,"references"],[98,97,"calls"],[105,97,"semantically_similar_to"],[98,100,"calls"],[107,98,"calls"],[171,99,"semantically_similar_to"],[100,99,"references"],[171,100,"semantically_similar_to"],[103,100,"calls"],[105,100,"calls"],[107,100,"calls"],[102,100,"calls"],[122,100,"calls"],[107,101,"calls"],[106,101,"calls"],[107,102,"calls"],[107,103,"calls"],[107,104,"calls"],[177,105,"semantically_similar_to"],[107,105,"calls"],[107,106,"calls"],[184,107,"references"],[245,107,"semantically_similar_to"],[163,107,"calls"],[107,144,"calls"],[140,108,"calls"],[119,109,"calls"],[138,110,"calls"],[140,110,"calls"],[137,110,"calls"],[119,111,"calls"],[135,112,"calls"],[140,112,"calls"],[135,113,"calls"],[135,114,"calls"],[140,115,"calls"],[116,142,"references"],[140,116,"calls"],[140,117,"calls"],[140,118,"calls"],[140,119,"calls"],[135,120,"calls"],[135,121,"calls"],[135,122,"calls"],[135,123,"calls"],[135,124,"calls"],[138,125,"calls"],[128,125,"calls"],[138,126,"calls"],[128,126,"calls"],[138,127,"calls"],[129,128,"calls"],[138,129,"calls"],[137,129,"calls"],[141,129,"semantically_similar_to"],[138,130,"calls"],[137,130,"calls"],[132,131,"calls"],[140,131,"calls"],[136,132,"calls"],[140,133,"references"],[134,133,"references"],[140,134,"calls"],[134,166,"calls"],[136,135,"calls"],[140,135,"calls"],[140,136,"calls"],[138,137,"calls"],[140,137,"calls"],[140,138,"calls"],[244,139,"semantically_similar_to"],[140,139,"calls"],[246,140,"semantically_similar_to"],[163,140,"calls"],[140,141,"calls"],[141,144,"calls"],[175,142,"conceptually_related_to"],[146,142,"references"],[175,144,"conceptually_related_to"],[147,144,"calls"],[146,144,"calls"],[147,145,"calls"],[146,145,"calls"],[183,146,"rationale_for"],[247,146,"semantically_similar_to"],[163,146,"calls"],[146,147,"calls"],[147,163,"calls"],[150,148,"calls"],[149,148,"calls"],[184,149,"references"],[248,149,"semantically_similar_to"],[163,149,"calls"],[150,149,"calls"],[149,153,"calls"],[149,155,"calls"],[184,150,"references"],[185,150,"references"],[180,150,"rationale_for"],[249,150,"semantically_similar_to"],[153,150,"calls"],[150,151,"calls"],[150,163,"calls"],[151,166,"calls"],[153,151,"calls"],[153,152,"calls"],[184,153,"references"],[180,153,"rationale_for"],[250,153,"semantically_similar_to"],[163,153,"calls"],[155,154,"calls"],[155,163,"calls"],[160,156,"calls"],[157,163,"calls"],[160,157,"calls"],[158,157,"calls"],[159,157,"calls"],[160,158,"calls"],[160,159,"calls"],[180,160,"rationale_for"],[251,160,"semantically_similar_to"],[163,160,"calls"],[176,161,"conceptually_related_to"],[162,161,"calls"],[176,162,"rationale_for"],[252,162,"semantically_similar_to"],[163,162,"calls"],[184,163,"references"],[185,163,"references"],[253,163,"semantically_similar_to"],[169,163,"calls"],[165,164,"calls"],[254,164,"semantically_similar_to"],[255,165,"semantically_similar_to"],[168,166,"calls"],[167,168,"calls"],[179,168,"conceptually_related_to"],[179,169,"conceptually_related_to"],[170,184,"references"],[170,186,"references"],[170,185,"references"],[170,187,"references"],[170,172,"references"],[170,171,"references"],[182,170,"conceptually_related_to"],[185,171,"conceptually_related_to"],[171,175,"references"],[171,173,"references"],[171,174,"references"],[171,172,"conceptually_related_to"],[174,173,"conceptually_related_to"],[186,177,"references"],[186,178,"references"],[186,179,"references"],[180,186,"conceptually_related_to"],[188,198,"shares_data_with"],[188,189,"references"],[191,190,"calls"],[191,192,"conceptually_related_to"],[194,193,"shares_data_with"],[197,196,"semantically_similar_to"],[196,202,"semantically_similar_to"],[199,225,"references"],[200,225,"conceptually_related_to"],[213,201,"shares_data_with"],[211,201,"shares_data_with"],[221,201,"shares_data_with"],[215,202,"calls"],[202,221,"calls"],[210,202,"calls"],[221,203,"calls"],[217,203,"calls"],[221,204,"calls"],[218,204,"calls"],[216,205,"calls"],[206,239,"semantically_similar_to"],[221,206,"calls"],[207,240,"semantically_similar_to"],[208,207,"calls"],[221,208,"calls"],[221,209,"calls"],[220,210,"calls"],[221,210,"calls"],[211,234,"shares_data_with"],[220,212,"calls"],[212,233,"shares_data_with"],[213,223,"implements"],[213,226,"implements"],[213,230,"shares_data_with"],[213,243,"semantically_similar_to"],[219,213,"calls"],[215,214,"calls"],[215,224,"calls"],[215,221,"calls"],[215,230,"shares_data_with"],[215,257,"shares_data_with"],[216,223,"implements"],[217,216,"calls"],[221,217,"calls"],[217,219,"calls"],[217,218,"calls"],[219,218,"calls"],[221,220,"references"],[221,253,"semantically_similar_to"],[222,244,"shares_data_with"],[222,231,"shares_data_with"],[223,256,"semantically_similar_to"],[224,232,"shares_data_with"],[225,251,"semantically_similar_to"],[227,244,"shares_data_with"],[228,227,"calls"],[230,228,"references"],[231,228,"references"],[244,229,"shares_data_with"],[253,229,"shares_data_with"],[235,230,"calls"],[257,230,"calls"],[235,231,"calls"],[235,232,"calls"],[235,233,"calls"],[235,234,"calls"],[255,235,"calls"],[235,253,"calls"],[238,236,"calls"],[237,236,"calls"],[238,237,"semantically_similar_to"],[247,241,"calls"],[242,256,"implements"],[243,256,"implements"],[246,244,"calls"],[253,245,"calls"],[253,246,"calls"],[253,247,"calls"],[247,256,"implements"],[253,248,"calls"],[248,249,"calls"],[253,250,"calls"],[253,251,"calls"],[253,252,"calls"],[255,254,"calls"]],"communities":[{"id":0,"n":"Wizard de agendamento publico","q":39},{"id":1,"n":"Painel: clientes, fotos e convencoes","q":38},{"id":2,"n":"Indicadores e ocupacao das cadeiras","q":35},{"id":3,"n":"Sessao, login e carga de dados","q":22},{"id":4,"n":"Grafico de tendencia e animacoes","q":20},{"id":5,"n":"Regras do salao (CLAUDE.md)","q":17},{"id":6,"n":"Landing, conversao e demo","q":15},{"id":7,"n":"Modulo: novo agendamento","q":13},{"id":8,"n":"shared/salon.js - fuso e expediente","q":13},{"id":9,"n":"Modulo: agenda","q":11},{"id":10,"n":"Manifesto PWA","q":8},{"id":11,"n":"Modulo: estoque","q":8},{"id":12,"n":"Modulo: questionario","q":6},{"id":13,"n":"Galeria editorial e reveal","q":3},{"id":14,"n":"Idiomas e vitrine de servicos","q":3},{"id":15,"n":"Upload e compressao de fotos","q":3},{"id":16,"n":"Hero: crossfade e parallax","q":2},{"id":17,"n":"Marquee de marcas","q":1},{"id":18,"n":"Container do app","q":1}]};
+
+const TIPOS = [
+  { nome: 'Código',              cor: getComputedStyle(document.documentElement).getPropertyValue('--t0').trim() },
+  { nome: 'Infra e conceitos',   cor: getComputedStyle(document.documentElement).getPropertyValue('--t1').trim() },
+  { nome: 'Regras e decisões',   cor: getComputedStyle(document.documentElement).getPropertyValue('--t2').trim() },
+];
+
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const tip = document.getElementById('tip');
+
+const N = DATA.nodes, L = DATA.links;
+const nomeCom = {}; DATA.communities.forEach(c => nomeCom[c.id] = c.n);
+
+// vizinhança, pra realçar o que se liga ao nó em foco
+const viz = N.map(() => []);
+L.forEach(([a, b, rel]) => { viz[a].push([b, rel]); viz[b].push([a, rel]); });
+
+const grauMax = Math.max(...N.map(n => n.d));
+
+let yaw = 0.6, pitch = -0.3, zoom = 1, girar = true;
+let arrastando = false, ultX = 0, ultY = 0, moveu = false;
+let hover = -1, foco = -1, comIsolada = null, busca = '';
+const proj = N.map(() => ({ x: 0, y: 0, z: 0, r: 0, vis: true }));
+
+const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduzido) { girar = false; document.getElementById('btnGirar').setAttribute('aria-pressed', 'false'); }
+
+function dim() {
+  const r = devicePixelRatio || 1;
+  cv.width = innerWidth * r; cv.height = innerHeight * r;
+  cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
+  ctx.setTransform(r, 0, 0, r, 0, 0);
+}
+addEventListener('resize', dim); dim();
+
+// Um nó está "ativo" quando passa pelos filtros; os inativos não somem — ficam
+// fantasmas, senão a estrutura ao redor perde o contexto.
+function ativo(i) {
+  const n = N[i];
+  if (comIsolada !== null && n.c !== comIsolada) return false;
+  if (busca && !(n.l.toLowerCase().includes(busca) || (n.f || '').toLowerCase().includes(busca))) return false;
+  return true;
+}
+
+function projetar() {
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const cx = innerWidth / 2 + (innerWidth > 720 ? 134 : 0), cyy = innerHeight / 2;
+  const esc = Math.min(innerWidth, innerHeight) * 0.42 * zoom;
+  for (let i = 0; i < N.length; i++) {
+    const [x, y, z] = N[i].p;
+    const x1 = x * cy - z * sy, z1 = x * sy + z * cy;
+    const y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+    const persp = 2.6 / (2.6 + z2);       // perspectiva suave: dá profundidade sem distorcer as pontas
+    const p = proj[i];
+    p.x = cx + x1 * esc * persp;
+    p.y = cyy + y2 * esc * persp;
+    p.z = z2;
+    p.r = (2.1 + Math.sqrt(N[i].d / grauMax) * 7.4) * persp * Math.min(zoom, 1.7);
+    p.vis = ativo(i);
+  }
+}
+
+// névoa por profundidade: o que está atrás recua, e o volume vira legível
+function nevoa(z) { return Math.max(0.16, Math.min(1, 0.62 - z * 0.42)); }
+
+function desenhar() {
+  projetar();
+  ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+  const emFoco = foco >= 0 ? new Set(viz[foco].map(v => v[0]).concat([foco])) : null;
+
+  // arestas primeiro, atrás de tudo
+  ctx.lineWidth = 1;
+  for (const [a, b] of L) {
+    const pa = proj[a], pb = proj[b];
+    const vis = pa.vis && pb.vis;
+    let alfa = nevoa((pa.z + pb.z) / 2) * (vis ? 0.30 : 0.05);
+    if (emFoco) alfa = (emFoco.has(a) && emFoco.has(b)) ? 0.75 : alfa * 0.22;
+    if (alfa < 0.02) continue;
+    ctx.strokeStyle = `rgba(245,244,239,${alfa})`;
+    ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+  }
+
+  // nós de trás pra frente, pra sobreposição respeitar a profundidade
+  const ordem = proj.map((_, i) => i).sort((i, j) => proj[j].z - proj[i].z);
+  for (const i of ordem) {
+    const p = proj[i], n = N[i];
+    let alfa = nevoa(p.z) * (p.vis ? 1 : 0.14);
+    if (emFoco && !emFoco.has(i)) alfa *= 0.3;
+    if (alfa < 0.02) continue;
+
+    const destaque = i === hover || i === foco;
+    ctx.globalAlpha = Math.min(1, alfa + (destaque ? 0.4 : 0));
+    ctx.fillStyle = TIPOS[n.t].cor;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (destaque ? 1.5 : 1), 0, 6.2832); ctx.fill();
+
+    // anel na cor da superfície separa nós que se sobrepõem
+    if (p.r > 3) {
+      ctx.globalAlpha = Math.min(1, alfa);
+      ctx.strokeStyle = '#12120f'; ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+    if (destaque) {
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#f5f4ef'; ctx.lineWidth = 1.6; ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // rótulo direto nos mais conectados: identidade não fica só na cor
+  ctx.font = '600 11px system-ui, -apple-system, "Segoe UI", sans-serif';
+  ctx.textAlign = 'center';
+  for (const i of ordem) {
+    const p = proj[i], n = N[i];
+    const vale = n.d >= 10 || i === hover || i === foco;
+    if (!vale || !p.vis) continue;
+    const a = i === hover || i === foco ? 1 : Math.min(0.85, nevoa(p.z) + 0.25);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = '#12120f'; ctx.lineWidth = 3;
+    ctx.strokeStyle = '#12120f'; ctx.strokeText(n.l, p.x, p.y - p.r - 5);
+    ctx.fillStyle = '#f5f4ef';
+    ctx.fillText(n.l, p.x, p.y - p.r - 5);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function laco() {
+  if (girar && !arrastando) { yaw += 0.0016; }
+  desenhar();
+  requestAnimationFrame(laco);
+}
+
+function noEm(mx, my) {
+  let melhor = -1, dist = 15 * 15;
+  for (let i = 0; i < N.length; i++) {
+    const p = proj[i];
+    if (!p.vis) continue;
+    const d = (p.x - mx) ** 2 + (p.y - my) ** 2;
+    const alcance = Math.max(9, p.r + 5) ** 2;
+    if (d < alcance && d < dist) { dist = d; melhor = i; }
+  }
+  return melhor;
+}
+
+cv.addEventListener('pointerdown', e => {
+  arrastando = true; moveu = false; ultX = e.clientX; ultY = e.clientY;
+  cv.classList.add('dragging'); cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => {
+  if (arrastando) {
+    const dx = e.clientX - ultX, dy = e.clientY - ultY;
+    if (Math.abs(dx) + Math.abs(dy) > 3) moveu = true;
+    yaw += dx * 0.006; pitch += dy * 0.006;
+    pitch = Math.max(-1.5, Math.min(1.5, pitch));
+    ultX = e.clientX; ultY = e.clientY;
+    tip.style.opacity = 0;
+    return;
+  }
+  const i = noEm(e.clientX, e.clientY);
+  if (i !== hover) { hover = i; cv.style.cursor = i >= 0 ? 'pointer' : 'grab'; }
+  if (i >= 0) {
+    const n = N[i];
+    tip.innerHTML = `<div class="n">${esc(n.l)}</div>
+      <div class="m">${TIPOS[n.t].nome} · ${n.d} conexões<br>${esc(nomeCom[n.c] || '—')}${n.f ? '<br>' + esc(n.f) : ''}</div>`;
+    tip.style.opacity = 1;
+    const w = 300, x = Math.min(e.clientX + 14, innerWidth - w - 10);
+    tip.style.left = x + 'px'; tip.style.top = (e.clientY + 16) + 'px';
+  } else tip.style.opacity = 0;
+});
+cv.addEventListener('pointerup', e => {
+  arrastando = false; cv.classList.remove('dragging');
+  if (!moveu) {
+    const i = noEm(e.clientX, e.clientY);
+    foco = i === foco ? -1 : i;
+    mostrarNo(foco);
+  }
+});
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom = Math.max(0.4, Math.min(4, zoom * (e.deltaY < 0 ? 1.12 : 0.89)));
+}, { passive: false });
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function mostrarNo(i) {
+  const box = document.getElementById('painelNo');
+  if (i < 0) { box.classList.remove('on'); return; }
+  const n = N[i];
+  document.getElementById('noNome').textContent = n.l;
+  document.getElementById('noMeta').innerHTML =
+    `${TIPOS[n.t].nome} · ${n.d} conexões<br>${esc(nomeCom[n.c] || '—')}${n.f ? '<br>' + esc(n.f) : ''}`;
+  const ul = document.getElementById('noVizinhos');
+  const vs = viz[i].slice().sort((a, b) => N[b[0]].d - N[a[0]].d).slice(0, 10);
+  ul.innerHTML = vs.map(([j, rel]) => `<li>${esc(N[j].l)} <span style="color:var(--muted)">· ${esc(rel)}</span></li>`).join('');
+  box.classList.add('on');
+}
+document.getElementById('fecharNo').onclick = () => { foco = -1; mostrarNo(-1); };
+
+// ── painel ──
+document.getElementById('resumo').textContent =
+  `${N.length} nós · ${L.length} conexões · ${DATA.communities.length} comunidades`;
+
+const cont = [0, 0, 0]; N.forEach(n => cont[n.t]++);
+document.getElementById('legenda').innerHTML = TIPOS.map((t, i) =>
+  `<div class="leg"><span class="dot" style="background:${t.cor}"></span>${t.nome}<span class="qtd">${cont[i]}</span></div>`
+).join('');
+
+document.getElementById('coms').innerHTML = DATA.communities.map(c =>
+  `<button class="com" data-com="${c.id}" aria-pressed="false">${esc(c.n)}<span class="qtd">${c.q}</span></button>`
+).join('');
+document.querySelectorAll('.com').forEach(b => {
+  b.onclick = () => {
+    const id = +b.dataset.com;
+    comIsolada = comIsolada === id ? null : id;
+    document.querySelectorAll('.com').forEach(o =>
+      o.setAttribute('aria-pressed', String(+o.dataset.com === comIsolada)));
+  };
+});
+
+document.getElementById('busca').addEventListener('input', e => {
+  busca = e.target.value.trim().toLowerCase();
+});
+
+const bg = document.getElementById('btnGirar');
+bg.onclick = () => { girar = !girar; bg.setAttribute('aria-pressed', String(girar)); };
+document.getElementById('btnReset').onclick = () => {
+  yaw = 0.6; pitch = -0.3; zoom = 1; foco = -1; comIsolada = null; busca = '';
+  document.getElementById('busca').value = '';
+  document.querySelectorAll('.com').forEach(o => o.setAttribute('aria-pressed', 'false'));
+  mostrarNo(-1);
+};
+
+const bt = document.getElementById('btnTabela'), tb = document.getElementById('tabela');
+bt.onclick = () => {
+  const on = !tb.classList.contains('on');
+  tb.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on));
+  if (on && !tb.dataset.pronta) {
+    document.getElementById('tbody').innerHTML = N.map((n, i) => ({ n, i }))
+      .sort((a, b) => b.n.d - a.n.d)
+      .map(({ n }) => `<tr>
+        <td>${esc(n.l)}</td>
+        <td><span class="pill"><span class="dot" style="background:${TIPOS[n.t].cor}"></span>${TIPOS[n.t].nome}</span></td>
+        <td>${esc(nomeCom[n.c] || '—')}</td>
+        <td class="num">${n.d}</td>
+        <td style="color:var(--muted)">${esc(n.f || '')}</td>
+      </tr>`).join('');
+    tb.dataset.pronta = '1';
+  }
+};
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { tb.classList.remove('on'); bt.setAttribute('aria-pressed', 'false'); foco = -1; mostrarNo(-1); }
+});
+
+laco();
+</script>
+</body>
+</html>
