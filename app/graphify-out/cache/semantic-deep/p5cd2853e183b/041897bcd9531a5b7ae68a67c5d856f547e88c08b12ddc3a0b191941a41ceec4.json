@@ -1,1 +1,0 @@
-{"nodes": [{"id": "painel_html", "label": "Orenzi Admin Panel", "file_type": "code", "source_file": "painel.html"}, {"id": "painel_sb", "label": "Supabase Client Instance", "file_type": "code", "source_file": "painel.html"}], "edges": [], "hyperedges": []}
