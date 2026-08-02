@@ -33,9 +33,13 @@ function mockData(table){
     {id:'s5', name:'Hidratação', category:'Tratamentos', price:70, duration_minutes:50},
   ];
 
+  // Rebecca existe só pra simular o histórico (igual às 4 profissionais
+  // inativas do banco real) — não conta em profissionaisAtivos() e por isso
+  // o campo "Profissional" some sozinho no modal, igual em produção. Nunca
+  // reative ela sem reativar de verdade a lógica de múltiplas profissionais.
   if (table === 'staff') return [
-    {id:'st1', name:'Juliane Orenzi', role:'Colorista'},
-    {id:'st2', name:'Rebecca Silva', role:'Cabeleireira'},
+    {id:'st1', name:'Juliane Orenzi', role:'Colorista', active:true},
+    {id:'st2', name:'Rebecca Silva', role:'Cabeleireira', active:false},
   ];
 
   // Mesmo catálogo que está no banco. Luvas e shampoo entram no mínimo de
@@ -70,7 +74,9 @@ function mockData(table){
     ];
     const clientNames = ['Marina Costa','Beatriz Lima','Ana Souza','Carla Reis','Fernanda Alves','Julia Prado',
       'Patrícia Nunes','Camila Rocha','Larissa Dias','Renata Melo'];
-    const staff = [{id:'st1',name:'Juliane Orenzi'},{id:'st2',name:'Rebecca Silva'}];
+    // Só a Juliane atende — igual em produção. Rebecca é profissional
+    // inativa (existe só no histórico), não entra nos agendamentos novos.
+    const juliane = {id:'st1',name:'Juliane Orenzi'};
     let n = 0;
     function push(dt, durMin, status, i){
       const s = new Date(dt);
@@ -83,7 +89,7 @@ function mockData(table){
         created_at: createdAt.toISOString(),
         source: (i % 6 === 0) ? 'online' : 'manual',
         client: { id: 'c' + (i % clientNames.length), name: clientNames[i % clientNames.length] },
-        staff: staff[i % 2],
+        staff: juliane,
         // ...svc e não só id/name/price: os campos de segmento (pausa) precisam
         // chegar na timeline, é deles que sai a faixa listrada do bloco.
         service: { ...svc },

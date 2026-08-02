@@ -276,6 +276,17 @@ autenticada e os dados já estão carregados (não tem o problema de RLS que o
 mudam no modal (`onchange` nos três campos) — antes de ter os três
 preenchidos, o campo fica desabilitado com um aviso.
 
+**Decisão 02/08/2026: o campo "Profissional" fica, mas só aparece se um dia
+houver mais de uma ativa.** Não é código morto — é a mesma lógica que já
+protege o resto do app (`profissionaisAtivos()`), e ela some sozinha quando
+só há uma ativa, sem precisar mexer em nada se a Juliane contratar alguém.
+O que estava errado era o **mock do demo**: `painel_demo.html` tinha Rebecca
+Silva como segunda profissional "ativa" (sem `active:false`), e por isso o
+campo aparecia lá mesmo sem existir em produção. Corrigido: Rebecca agora tem
+`active:false` no mock de `staff` (mesmo papel das 4 inativas do banco real —
+existe só pro histórico) e todo agendamento gerado no mock sai no nome da
+Juliane (`staff: juliane`, não mais `staff[i % 2]`).
+
 **Achado, não investigado:** `painel_demo.html` solta 2 erros no console já
 ao carregar, antes de qualquer clique. Confirmado com `git stash` que é
 anterior a 02/08 — não é regressão de nenhuma mudança recente, e a tela
