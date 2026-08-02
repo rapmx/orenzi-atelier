@@ -263,6 +263,19 @@ toque pareceria não ter feito nada.
 `HOUR_HEIGHT` foi de 64 pra 68px — mais respiro vertical nos eventos, sem
 mexer em nenhuma fórmula (tudo deriva da constante).
 
+**Horário do modal de novo agendamento virou dropdown** (`refreshApptTimeOptions()`,
+perto de `openNewApptModal`) — antes era texto livre, digitado. As opções vêm
+de `computeAvailableSlots(staffId, dateStr, durationMin)`, que aplica a mesma
+regra do `agendar.html`: expediente (`OPEN_HOUR`–`CLOSE_HOUR`), grade de
+`SLOT_MINUTES` (30min), e só os blocos de **trabalho** (`wb`/`wa`) de cada
+atendimento da profissional bloqueiam — a pausa (`gp`) fica livre de
+propósito, mesmo espírito da RPC `get_busy_slots`. Diferença: aqui lê
+`state.appointments` direto em vez de RPC, porque a sessão do painel já é
+autenticada e os dados já estão carregados (não tem o problema de RLS que o
+`agendar.html` tinha). Recalcula sozinho quando serviço, profissional ou data
+mudam no modal (`onchange` nos três campos) — antes de ter os três
+preenchidos, o campo fica desabilitado com um aviso.
+
 **Achado, não investigado:** `painel_demo.html` solta 2 erros no console já
 ao carregar, antes de qualquer clique. Confirmado com `git stash` que é
 anterior a 02/08 — não é regressão de nenhuma mudança recente, e a tela

@@ -657,6 +657,7 @@
     background: var(--color-neutral-100); font-family: var(--font-body); font-size: 14px;
     margin-bottom: 10px; color: var(--color-text); appearance: none;
   }
+  select:disabled { opacity: 0.55; cursor: not-allowed; }
   textarea {
     width: 100%; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--color-divider);
     background: var(--color-neutral-100); font-family: var(--font-body); font-size: 14px;
@@ -2260,6 +2261,9 @@ const WEEKDAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 const OPEN_HOUR = 9;
 const CLOSE_HOUR = 18;
 const WORK_MINUTES_PER_DAY = (CLOSE_HOUR - OPEN_HOUR) * 60;
+// Mesma granularidade do agendar.html — o dropdown de horário do modal de
+// novo agendamento usa essa grade.
+const SLOT_MINUTES = 30;
 
 function sameDay(a, b) {
   return a.toDateString() === b.toDateString();
@@ -3516,10 +3520,88 @@ function openNewApptModal() {
   renderNewApptModal();
 }
 
+// Blocos ocupados da profissional no dia — só o trabalho (wb/wa), a pausa
+// fica de fora de propósito, igual a RPC get_busy_slots que o agendar.html
+// usa: durante a pausa a profissional está livre pra atender outra cliente.
+function busyBlocksForStaffOnDate(staffId, dayDate) {
+  return state.appointments
+    .filter(a => a.staff?.id === staffId && a.status !== 'cancelled' && sameDay(new Date(a.starts_at), dayDate))
+    .flatMap(a => {
+      const seg = segmentsOf(a);
+      const start = new Date(a.starts_at);
+      const end = new Date(a.ends_at);
+      const blocks = [];
+      if (seg.wb > 0) blocks.push([start, new Date(start.getTime() + seg.wb * 60000)]);
+      if (seg.wa > 0) blocks.push([new Date(end.getTime() - seg.wa * 60000), end]);
+      return blocks;
+    });
+}
+
+// Horários "HH:MM" livres pra um serviço, profissional e dia — mesma regra
+// do agendar.html (expediente + grade de 30 min), só que lendo
+// state.appointments direto em vez de RPC, já que aqui a sessão é
+// autenticada e os dados já estão carregados.
+function computeAvailableSlots(staffId, dateStr, durationMin) {
+  if (!staffId || !dateStr || !durationMin) return [];
+  const dayDate = new Date(`${dateStr}T00:00:00`);
+  const busy = busyBlocksForStaffOnDate(staffId, dayDate);
+
+  const slots = [];
+  for (let m = OPEN_HOUR * 60; m + durationMin <= CLOSE_HOUR * 60; m += SLOT_MINUTES) {
+    const slotStart = new Date(dayDate);
+    slotStart.setHours(0, m, 0, 0); // setHours rola o overflow de minuto pra hora sozinho
+    const slotEnd = new Date(slotStart.getTime() + durationMin * 60000);
+    const overlaps = busy.some(([bs, be]) => slotStart < be && slotEnd > bs);
+    if (!overlaps) {
+      const hh = String(Math.floor(m / 60)).padStart(2, '0');
+      const mm = String(m % 60).padStart(2, '0');
+      slots.push(`${hh}:${mm}`);
+    }
+  }
+  return slots;
+}
+
+// Profissional em uso no modal: o campo, se existir, ou a única ativa
+// quando o campo nem é desenhado — mesma lógica do onclick de "Salvar".
+function currentModalStaffId() {
+  const staffEl = document.getElementById('staffSelect');
+  if (staffEl) return staffEl.value;
+  const ativos = profissionaisAtivos();
+  return ativos.length === 1 ? ativos[0].id : '';
+}
+
+// Recalcula o dropdown de horário sempre que serviço, profissional ou data
+// mudam no modal. Tenta manter o horário já escolhido se ele continuar
+// disponível na nova combinação; senão volta pro placeholder.
+function refreshApptTimeOptions() {
+  const timeEl = document.getElementById('apptTime');
+  if (!timeEl) return;
+  const service = state.services.find(s => s.id === document.getElementById('serviceSelect').value);
+  const staffId = currentModalStaffId();
+  const dateStr = document.getElementById('apptDate').value;
+  const previous = timeEl.value;
+
+  if (!service || !staffId || !dateStr) {
+    timeEl.innerHTML = '<option value="">Escolha serviço e data…</option>';
+    timeEl.disabled = true;
+    return;
+  }
+
+  const slots = computeAvailableSlots(staffId, dateStr, service.duration_minutes);
+  timeEl.disabled = false;
+  if (!slots.length) {
+    timeEl.innerHTML = '<option value="">Sem horário livre nesse dia</option>';
+    return;
+  }
+  timeEl.innerHTML = `
+    <option value="">Selecione…</option>
+    ${slots.map(t => `<option value="${t}" ${t === previous ? 'selected' : ''}>${t}</option>`).join('')}
+  `;
+}
+
 function renderNewApptModal(errorMsg) {
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
-  const nowTime = now.toTimeString().slice(0, 5);
 
   modalContainer.innerHTML = `
     <div class="modal-overlay" id="modalOverlay">
@@ -3553,7 +3635,9 @@ function renderNewApptModal(errorMsg) {
           <label class="modal-field-label">Data</label>
           <input type="date" id="apptDate" value="${todayStr}">
           <label class="modal-field-label">Horário</label>
-          <input type="text" id="apptTime" placeholder="14:30" value="${nowTime}">
+          <select id="apptTime" disabled>
+            <option value="">Escolha serviço e data…</option>
+          </select>
         </div>
 
         <button class="btn btn-primary" id="saveAppt">Salvar agendamento</button>
@@ -3585,6 +3669,15 @@ function renderNewApptModal(errorMsg) {
   }
   renderClientFields();
 
+  // Horário depende de serviço (duração), profissional e data — recalcula
+  // sempre que um desses três muda, e uma vez já de cara pro caso de o
+  // errorMsg ter trazido tudo de volta preenchido.
+  document.getElementById('serviceSelect').onchange = refreshApptTimeOptions;
+  document.getElementById('apptDate').onchange = refreshApptTimeOptions;
+  const staffSelectForRefresh = document.getElementById('staffSelect');
+  if (staffSelectForRefresh) staffSelectForRefresh.onchange = refreshApptTimeOptions;
+  refreshApptTimeOptions();
+
   document.getElementById('modalClose').onclick = closeModal;
   document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
   document.getElementById('modeExisting').onclick = () => { newApptClientMode = 'existing'; renderClientFields(); document.getElementById('modeExisting').classList.add('active'); document.getElementById('modeNew').classList.remove('active'); };
@@ -3603,8 +3696,8 @@ function renderNewApptModal(errorMsg) {
 
       if (!serviceId || !staffId || !date || !/^\d{1,2}:\d{2}$/.test(time)) {
         renderNewApptModal(staffEl
-          ? 'Preencha serviço, profissional, data e horário (ex: 14:30).'
-          : 'Preencha serviço, data e horário (ex: 14:30).');
+          ? 'Preencha serviço, profissional, data e escolha um horário.'
+          : 'Preencha serviço, data e escolha um horário.');
         return;
       }
 

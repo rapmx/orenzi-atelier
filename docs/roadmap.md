@@ -59,6 +59,11 @@ vermelho que "Agenda praticamente lotada" já usa. Documentado em
       referência velha de `state.agendaDate` depois do primeiro toque leve
       (não são reamarrados nesse caminho) — o segundo toque em sequência
       podia virar no-op silencioso.
+- [x] Campo "Horário" do modal de novo agendamento virou dropdown com os
+      horários livres (antes era texto digitado). Mesma regra do
+      `agendar.html`: expediente + grade de 30min, só bloco de trabalho
+      ocupa (pausa fica livre, permite encaixe). Recalcula sozinho quando
+      serviço/profissional/data mudam.
 
 Achado pré-existente, não relacionado a esta fase: `painel_demo.html` solta 2
 erros no console já ao carregar (antes de qualquer interação), confirmado por
