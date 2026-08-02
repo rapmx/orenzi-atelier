@@ -447,12 +447,18 @@ window.supabase = {
     color: var(--color-neutral-600); cursor: pointer; line-height: 1; padding: 0;
   }
 
-  .appt-modern-card {
+  /* ── Padrão de linha (modelo: Início/Insights) ─────────────────
+     Base que toda lista do app usa: cartão em --color-surface com borda
+     e leve elevação ao toque, não o cinza plano de --color-neutral-100
+     que Clientes/Estoque/Agenda ainda tinham. `.appt-modern-card` (Início)
+     e `.list-row` (as outras abas) partem do mesmo bloco de propósito —
+     mudar aqui muda a família inteira. */
+  .appt-modern-card, .list-row {
     display: flex; align-items: center; gap: 12px; background: var(--color-surface);
     border: 1px solid var(--color-divider); border-radius: 16px; padding: 12px 14px; margin-bottom: 8px;
-    transition: transform .2s ease, box-shadow .2s ease;
+    transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
   }
-  .appt-modern-card:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(43,36,32,0.06); }
+  .appt-modern-card:hover, .list-row:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(43,36,32,0.06); }
   .appt-modern-card .am-time-col { width: 46px; flex-shrink: 0; text-align: center; }
   .appt-modern-card .am-time { font-family: var(--font-heading); font-weight: 600; font-size: 13.5px; }
   .appt-modern-card .am-bar { width: 3px; align-self: stretch; border-radius: 3px; flex-shrink: 0; min-height: 34px; }
@@ -800,13 +806,19 @@ window.supabase = {
     border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer;
   }
   /* ── Estoque ── */
-  .stock-row {
-    display: flex; align-items: center; gap: 10px; background: var(--color-neutral-100);
-    border-radius: 16px; padding: 10px 12px; margin-bottom: 10px;
-    border-left: 3px solid transparent;
+  /* No mínimo ou abaixo: usa o mesmo par accent-2 que já é a cor de "atenção"
+     no resto do painel (agenda lotada, indicador em queda) — não uma cor nova.
+     Tinge a linha inteira, engrossa a borda esquerda e marca o nome e a
+     quantidade, pra pular aos olhos sem precisar ler o número. */
+  .stock-row.low {
+    background: var(--color-accent-2-100);
+    border-color: var(--color-accent-2-700);
+    border-left: 4px solid var(--color-accent-2-700);
   }
-  /* No mínimo ou abaixo: a linha se marca sozinha, sem precisar procurar. */
-  .stock-row.low { border-left-color: var(--color-accent); }
+  .stock-row.low .stock-info .title { color: var(--color-accent-2-700); }
+  .stock-row.low .qty-num { color: var(--color-accent-2-700); }
+  .stock-row.low .qty-btn { border-color: var(--color-accent-2-700); color: var(--color-accent-2-700); }
+  .tag-alert { background: var(--color-accent-2-100); color: var(--color-accent-2-700); margin-left: 6px; vertical-align: middle; }
   .stock-info {
     flex: 1; min-width: 0; background: none; border: none; padding: 0;
     font-family: inherit; text-align: left; cursor: pointer; color: inherit;
@@ -3101,9 +3113,9 @@ function renderStock() {
   app.innerHTML = `
     <h2>Produtos</h2>
     ${lista.length ? lista.map(p => `
-      <div class="stock-row${precisaRepor(p) ? ' low' : ''}">
+      <div class="list-row stock-row${precisaRepor(p) ? ' low' : ''}">
         <button type="button" class="stock-info" data-edit="${p.id}" aria-label="Editar ${p.name}">
-          <div class="title">${p.name}</div>
+          <div class="title">${p.name}${precisaRepor(p) ? ' <span class="tag tag-alert">Repor</span>' : ''}</div>
           <div class="sub">${[p.brand, p.category].filter(Boolean).join(' · ') || 'Sem marca'} · mínimo ${fmtQtd(p.min_quantity)} ${p.unit}</div>
         </button>
         <div class="stock-qty">

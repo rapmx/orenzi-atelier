@@ -131,6 +131,28 @@ saía cinco vezes maior que o salão. Num dia com 525 dos 540 minutos reservados
 o painel mostrava **19% de ocupação e "36h livres"** — num expediente de 9
 horas. Com o filtro, 97% e "Agenda praticamente lotada".
 
+## Padrão visual (modelo: Início/Insights)
+
+02/08/2026: começou um roadmap pra levar Agenda, Clientes, Estoque e
+Questionário ao mesmo padrão visual de Início/Insights. Ver `docs/roadmap.md`
+pra lista completa e fases.
+
+O modelo é `.appt-modern-card` (o card de agendamento da Home): fundo
+`--color-surface` + borda `--color-divider` + `border-radius: 16px` + leve
+elevação ao toque — não o cinza chapado de `--color-neutral-100` sem borda que
+`.card`, `.client-list-card` e o `.stock-row` antigo usavam. `.list-row` é essa
+mesma base, reaproveitada nas outras abas; as duas classes compartilham a regra
+em CSS, então mudar o modelo muda a família inteira de uma vez.
+
+Cor de alerta (estoque baixo, e qualquer "isso precisa de atenção" que apareça
+depois) é sempre o par `--color-accent-2-100`/`--color-accent-2-700` — é o
+mesmo vermelho que `.pc-status.is-busy` ("Agenda praticamente lotada") e a seta
+de queda dos indicadores já usam. Não introduzir uma cor de alerta nova.
+
+Piloto feito: Estoque (`.list-row.stock-row`, alerta de mínimo com fundo
+tingido + borda grossa + tag "Repor"). Agenda, Clientes e Questionário ainda
+não entraram.
+
 ## Convenções
 
 - Comentários em português, explicando **por que**, não o que.
