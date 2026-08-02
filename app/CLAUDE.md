@@ -197,6 +197,28 @@ cartão surface+borda do resto do app) com `.modal-field-label` no lugar de
 `<label>` solto. Isso é só desse modal — não mudei o `<label>` global nem o
 modal de produto do Estoque.
 
+**Refino "estilo Apple Calendar"** (02/08/2026, a pedido do Raphael com print
+de referência): grade sem card — `.timeline` perdeu fundo/borda/raio,
+`.hour-row` ficou com linha quase invisível (`rgba(43,36,32,0.07)`). Título
+`.agenda-date-title` entre a faixa de dias e a grade ("Domingo, 2 de agosto de
+2026"). Linha do horário atual (`.current-time-line`, cor de marca — nunca
+vermelho) só existe se `state.agendaDate` for hoje e a hora estiver dentro de
+`AGENDA_START_HOUR`–`AGENDA_END_HOUR`; `updateCurrentTimeLine()` reposiciona a
+cada 30s sem re-renderizar. O antigo link "Ir para hoje" (`.view-toggle`,
+dentro do fluxo) virou `.fab-today`, botão fixo canto inferior esquerdo,
+espelhando o `+` no lado oposto — sempre visível na aba Agenda, não só quando
+fora do dia de hoje. `prevWeek`/`nextWeek`/"Hoje" passaram a usar
+`renderAgendaTransition()` (mesmo slide do toque no dia), com a duração
+ajustada de .32s pra .22s pra ficar na faixa pedida (180–250ms).
+
+De brinde: `text-transform: capitalize` no `.day-label` (mês no cabeçalho e no
+calendário de mês) maiusculizava **todo** "de" — "Agosto **De** 2026". Virou
+`monthLabelRaw.charAt(0).toUpperCase() + slice(1)`, mesmo padrão que
+`currentMonthLabel()` já usava em Insights. Se algum título com preposição no
+meio (dia, mês) aparecer errado de novo, é isso — CSS `capitalize` maiusculiza
+palavra por palavra, não é o mesmo que maiusculizar só a primeira letra da
+frase.
+
 **Achado, não investigado:** `painel_demo.html` solta 2 erros no console já
 ao carregar, antes de qualquer clique. Confirmado com `git stash` que é
 anterior a 02/08 — não é regressão de nenhuma mudança recente, e a tela

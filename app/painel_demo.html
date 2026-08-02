@@ -516,37 +516,42 @@ window.supabase = {
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
 
+  /* Header inspirado no princípio do Calendar da Apple: seta · mês · seta,
+     tudo centralizado, com respiro de sobra — não é cópia, é o mesmo tipo de
+     hierarquia aplicado aos tokens do Orenzi. */
   .day-nav {
-    display: flex; align-items: center; justify-content: center; gap: 14px;
-    margin: 20px 0 18px;
+    display: flex; align-items: center; justify-content: center; gap: 22px;
+    margin: 22px 0 20px;
   }
-  .day-nav .day-label { font-family: var(--font-heading); font-weight: 600; font-size: 19px; text-transform: capitalize; }
+  .day-nav .day-label { font-family: var(--font-heading); font-weight: 600; font-size: 19px; }
   .day-nav .day-label-btn {
-    display: flex; align-items: center; gap: 6px; background: none; border: none;
+    display: flex; align-items: center; gap: 7px; background: none; border: none;
     cursor: pointer; padding: 4px; color: inherit;
   }
   .day-nav .day-label-btn svg { width: 11px; height: 11px; color: var(--color-neutral-600); flex-shrink: 0; }
   .day-nav .day-label-btn:hover .day-label { color: var(--color-accent-700); }
-  .today-btn {
-    font-size: 11px; font-weight: 700; color: var(--color-accent-700);
-    background: var(--color-accent-100); border: none; border-radius: 999px;
-    padding: 4px 10px; margin-left: 8px; cursor: pointer;
-  }
   .day-nav button.arrow {
-    width: 30px; height: 30px; border-radius: 50%; border: none;
+    width: 34px; height: 34px; border-radius: 50%; border: none;
     background: var(--color-neutral-100); color: var(--color-text);
     font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+    flex-shrink: 0; transition: background .15s ease;
   }
   .day-nav button.arrow:hover { background: var(--color-neutral-200); }
 
+  /* Título entre a faixa de dias e a agenda — hierarquia própria, não
+     duplica o "Agenda" do cabeçalho nem o mês do day-nav. */
+  .agenda-date-title {
+    font-family: var(--font-heading); font-weight: 600; font-size: 17px;
+    color: var(--color-text); margin: 20px 2px 16px;
+  }
+
   .week-strip {
-    display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;
     margin-bottom: 10px;
   }
   .week-day {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-    padding: 10px 4px; border-radius: 12px; cursor: pointer;
+    padding: 12px 4px; border-radius: 12px; cursor: pointer;
     border: 1.5px solid var(--color-divider);
     background: var(--color-surface); font-family: var(--font-body);
     transition: border-color .15s ease, background .15s ease, transform .12s ease;
@@ -574,21 +579,6 @@ window.supabase = {
   }
   .week-day.has-appts .wd-dot { visibility: visible; }
   .week-day.selected .wd-dot { background: var(--color-accent-2); }
-  .view-toggle {
-    display: flex; justify-content: center; margin-bottom: 18px;
-  }
-  .view-toggle button {
-    font-family: var(--font-body); font-size: 12px; font-weight: 700;
-    color: var(--color-neutral-600); background: none; border: none;
-    cursor: pointer; display: flex; align-items: center; gap: 4px;
-    padding: 4px 8px; letter-spacing: 0.01em;
-  }
-  .view-toggle button:hover { color: var(--color-text); }
-  .view-toggle svg { width: 11px; height: 11px; }
-  .view-toggle-today {
-    color: var(--color-accent-700) !important; font-weight: 700;
-  }
-
   .month-cal-overlay {
     position: fixed; inset: 0; background: rgba(43,36,32,0.45);
     display: flex; align-items: center; justify-content: center;
@@ -603,7 +593,7 @@ window.supabase = {
     margin-bottom: 16px;
   }
   .month-cal-header .day-label {
-    font-family: var(--font-heading); font-weight: 600; font-size: 17px; text-transform: capitalize;
+    font-family: var(--font-heading); font-weight: 600; font-size: 17px;
   }
   .month-cal-weekdays {
     display: grid; grid-template-columns: repeat(7, 1fr);
@@ -639,11 +629,14 @@ window.supabase = {
      transparente, sem efeito no layout. */
   .agenda-viewport { position: relative; overflow: hidden; }
   .agenda-pane { position: absolute; top: 0; left: 0; width: 100%; will-change: transform; }
+  /* Sem card: a grade fica "solta" (referência: Apple Calendar) — só linhas
+     de hora extremamente discretas, sem fundo nem borda envolvendo tudo.
+     O padding-left de 52px continua sendo geometria, não estilo. */
   .timeline {
-    position: relative; background: var(--color-surface); border: 1px solid var(--color-divider);
-    border-radius: 22px;
+    position: relative;
     padding: 0 0 0 52px; margin-top: 4px;
-    max-height: 60vh; overflow-y: auto; overflow-x: hidden;
+    max-height: 62vh; overflow-y: auto; overflow-x: hidden;
+    scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
     /* Some por padrão, só aparece durante a rolagem (classe .is-scrolling,
        ligada/desligada por JS — CSS não tem "faz 1s que parou de rolar"). */
     scrollbar-width: thin; scrollbar-color: transparent transparent;
@@ -654,7 +647,7 @@ window.supabase = {
   .timeline.is-scrolling { scrollbar-color: var(--color-neutral-300) transparent; }
   .timeline.is-scrolling::-webkit-scrollbar-thumb { background: var(--color-neutral-300); }
   .hour-row {
-    position: relative; height: 64px; border-top: 1px solid var(--color-divider);
+    position: relative; height: 64px; border-top: 1px solid rgba(43,36,32,0.07);
   }
   .hour-row:first-child { border-top: none; }
   .hour-label {
@@ -662,6 +655,26 @@ window.supabase = {
     font-size: 11px; color: var(--color-neutral-600);
   }
   .timeline-body { position: relative; }
+  /* Linha do horário atual — cor de marca (marrom/caramelo), não vermelho.
+     Só existe no dia de hoje; updateCurrentTimeLine() reposiciona a cada
+     30s pra acompanhar o relógio sem re-renderizar a agenda inteira. */
+  .current-time-line {
+    position: absolute; left: -52px; right: 0; display: flex; align-items: center;
+    z-index: 30; pointer-events: none; animation: currentTimeFadeIn .22s ease;
+  }
+  .current-time-line::after {
+    content: ''; flex: 1; height: 1.5px; background: var(--color-accent-700); margin-left: 5px;
+  }
+  .current-time-badge {
+    font-family: var(--font-body); font-size: 10.5px; font-weight: 700; color: var(--color-bg);
+    background: var(--color-accent-700); padding: 2px 6px; border-radius: 999px;
+    width: 38px; text-align: center; flex-shrink: 0;
+  }
+  .current-time-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent-700);
+    flex-shrink: 0; margin-left: 5px;
+  }
+  @keyframes currentTimeFadeIn { from { opacity: 0; } to { opacity: 1; } }
   .timeline-appt {
     position: absolute; left: 6px; right: 6px; border-radius: 10px;
     padding: 6px 10px; overflow: hidden; box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.08));
@@ -756,10 +769,23 @@ window.supabase = {
     transition: transform .12s ease; -webkit-tap-highlight-color: transparent;
   }
   .fab:active { transform: scale(0.9); }
+  /* Botão fixo "Hoje", espelhado no + (mesma posição/tamanho de toque, lado
+     oposto) mas na linguagem secundária (accent-100/700) — o + é a ação
+     principal da tela, "Hoje" é navegação, não cadastro. */
+  .fab-today {
+    position: fixed; bottom: 84px; left: 20px; height: 44px; padding: 0 18px;
+    border-radius: 999px; background: var(--color-accent-100); color: var(--color-accent-700);
+    border: none; cursor: pointer; font-family: var(--font-body); font-weight: 700; font-size: 13.5px;
+    box-shadow: var(--shadow-md, 0 3px 10px rgba(0,0,0,0.12));
+    display: flex; align-items: center; justify-content: center; z-index: 50;
+    transition: transform .12s ease; -webkit-tap-highlight-color: transparent;
+  }
+  .fab-today:active { transform: scale(0.92); }
   @media (prefers-reduced-motion: reduce) {
-    .week-day, .timeline-appt, .fab { transition: none; }
-    .week-day:active, .timeline-appt:active, .fab:active { transform: none; }
+    .week-day, .timeline-appt, .fab, .fab-today { transition: none; }
+    .week-day:active, .timeline-appt:active, .fab:active, .fab-today:active { transform: none; }
     .modal-overlay, .modal-sheet { animation: none; }
+    .current-time-line { animation: none; }
   }
   .modal-overlay {
     position: fixed; inset: 0; background: color-mix(in srgb, #201e1d 45%, transparent);
@@ -974,6 +1000,7 @@ window.supabase = {
 </header>
 <main id="app"></main>
 <button class="fab" id="fabNewAppt" style="display:none;">+</button>
+<button class="fab-today" id="gotoTodayFab" style="display:none;">Hoje</button>
 <div id="modalContainer"></div>
 <nav>
   <button data-tab="inicio" class="active">Início</button>
@@ -2445,12 +2472,43 @@ function layoutAppts(appts) {
   return itens;
 }
 
+// Posição (px) e rótulo da linha do horário atual dentro da grade, ou null
+// se agora estiver fora da janela desenhada (AGENDA_START_HOUR–END_HOUR).
+function currentTimeInfo() {
+  const now = new Date();
+  const minsFromStart = (now.getHours() - AGENDA_START_HOUR) * 60 + now.getMinutes();
+  const totalMins = (AGENDA_END_HOUR - AGENDA_START_HOUR) * 60;
+  if (minsFromStart < 0 || minsFromStart > totalMins) return null;
+  return {
+    top: (minsFromStart / 60) * HOUR_HEIGHT,
+    label: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+  };
+}
+
+// Reposiciona a linha existente sem re-renderizar a agenda inteira — chamado
+// no intervalo de 30s. Só faz algo se a tela mostrada agora for a de hoje.
+function updateCurrentTimeLine() {
+  if (state.tab !== 'agenda' || !sameDay(state.agendaDate, new Date())) return;
+  const el = document.getElementById('currentTimeLine');
+  if (!el) return;
+  const info = currentTimeInfo();
+  if (!info) { el.remove(); return; }
+  el.style.top = info.top + 'px';
+  el.querySelector('.current-time-badge').textContent = info.label;
+}
+
 function renderAgenda() {
   document.getElementById('greeting').textContent = 'Agenda';
   document.getElementById('greetingSub').textContent = '';
   const day = state.agendaDate;
   const isToday = sameDay(day, new Date());
-  const monthLabel = day.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  // Só a primeira letra maiúscula (mesmo padrão de currentMonthLabel()) — o
+  // text-transform:capitalize que existia antes maiusculizava o "De" também,
+  // errado em português.
+  const monthLabelRaw = day.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const monthLabel = monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
+  const dateTitle = day.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const currentTime = isToday ? currentTimeInfo() : null;
 
   const weekStart = startOfWeek(day);
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -2522,7 +2580,7 @@ function renderAgenda() {
         `;
       }).join('')}
     </div>
-    ${!isToday ? '<div class="view-toggle"><button id="gotoToday" class="view-toggle-today">Ir para hoje</button></div>' : ''}
+    <div class="agenda-date-title">${dateTitle.charAt(0).toUpperCase() + dateTitle.slice(1)}</div>
     <div class="agenda-viewport" id="agendaViewport">
       <div class="timeline" id="timelineEl">
         <div class="timeline-body" style="height:${(AGENDA_END_HOUR - AGENDA_START_HOUR) * HOUR_HEIGHT}px;">
@@ -2532,21 +2590,27 @@ function renderAgenda() {
             </div>
           `).join('')}
           ${blocksHtml}
+          ${currentTime ? `
+            <div class="current-time-line" id="currentTimeLine" style="top:${currentTime.top}px;">
+              <span class="current-time-badge">${currentTime.label}</span>
+              <span class="current-time-dot"></span>
+            </div>
+          ` : ''}
         </div>
       </div>
     </div>
   `;
 
+  // prevWeek/nextWeek deslizam igual ao toque no dia — mesma grade, mesma
+  // sensação de continuidade que o toque na semana já tem.
   document.getElementById('prevWeek').onclick = () => {
     state.agendaDate = new Date(day.getTime() - 7 * 86400000);
-    render();
+    renderAgendaTransition('back');
   };
   document.getElementById('nextWeek').onclick = () => {
     state.agendaDate = new Date(day.getTime() + 7 * 86400000);
-    render();
+    renderAgendaTransition('forward');
   };
-  const todayBtn = document.getElementById('gotoToday');
-  if (todayBtn) todayBtn.onclick = () => { state.agendaDate = new Date(); render(); };
   document.getElementById('openMonthView').onclick = () => openMonthCalendar(day);
 
   // Só a grade de horários desliza (não a semana toda nem o cabeçalho do mês):
@@ -2625,8 +2689,8 @@ function renderAgendaTransition(direction) {
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      newPane.style.transition = 'transform .32s cubic-bezier(.22,.61,.36,1)';
-      clone.style.transition = 'transform .32s cubic-bezier(.22,.61,.36,1)';
+      newPane.style.transition = 'transform .22s cubic-bezier(.22,.61,.36,1)';
+      clone.style.transition = 'transform .22s cubic-bezier(.22,.61,.36,1)';
       newPane.style.transform = 'translateX(0)';
       clone.style.transform = `translateX(${exitTo})`;
     });
@@ -2663,7 +2727,8 @@ function openMonthCalendar(initialDate) {
   }
 
   function renderCal() {
-    const monthLabel = viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const monthLabelRaw = viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const monthLabel = monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
     const firstOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
     const gridStart = startOfWeek(firstOfMonth);
     const cells = Array.from({ length: 42 }, (_, i) => {
@@ -3430,6 +3495,7 @@ function render() {
   // O + serve as duas telas que cadastram: agendamento na agenda, produto no estoque.
   const abaComFab = state.tab === 'agenda' || state.tab === 'estoque';
   document.getElementById('fabNewAppt').style.display = (abaComFab && !state.selectedApptId) ? 'flex' : 'none';
+  document.getElementById('gotoTodayFab').style.display = (state.tab === 'agenda' && !state.selectedApptId) ? 'flex' : 'none';
   if (state.selectedApptId) { renderApptDetail(); return; }
   if (state.tab === 'inicio') renderHome();
   else if (state.tab === 'insights') renderInsights();
@@ -3455,6 +3521,7 @@ function renderLogin(errorMsg) {
   document.querySelector('nav').style.display = 'none';
   document.getElementById('logoutBtn').style.display = 'none';
   document.getElementById('fabNewAppt').style.display = 'none';
+  document.getElementById('gotoTodayFab').style.display = 'none';
   app.innerHTML = `
     <div class="login-wrap">
       <div class="wordmark">ORENZI</div>
@@ -3650,6 +3717,22 @@ document.getElementById('fabNewAppt').onclick = () => {
   if (state.tab === 'estoque') openProductModal();
   else openNewApptModal();
 };
+
+// "Hoje" é elemento fixo fora do #app, então o clique é amarrado uma vez só
+// aqui — diferente de prevWeek/nextWeek/week-day, que são recriados a cada
+// renderAgenda() e precisam ser reamarrados toda vez.
+document.getElementById('gotoTodayFab').onclick = () => {
+  if (state.tab !== 'agenda') return;
+  const hoje = new Date();
+  if (sameDay(state.agendaDate, hoje)) return;
+  const direction = hoje > state.agendaDate ? 'forward' : 'back';
+  state.agendaDate = hoje;
+  renderAgendaTransition(direction);
+};
+
+// A cada 30s, se a agenda de hoje estiver na tela, reposiciona a linha do
+// horário atual sem re-renderizar a tela inteira.
+setInterval(updateCurrentTimeLine, 30000);
 
 checkSession();
 

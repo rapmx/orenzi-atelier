@@ -39,6 +39,13 @@ vermelho que "Agenda praticamente lotada" já usa. Documentado em
       pra trás na data), pop-up no modal de novo agendamento (modelo: balão
       de ajuda de Insights) com a UI interna também no padrão de cartão, e
       barra de rolagem da agenda que só aparece durante o toque
+- [x] Refino "estilo Apple Calendar" (a partir de print de referência):
+      grade sem card (linhas quase invisíveis), título de data por extenso,
+      linha do horário atual (cor de marca, não vermelho, atualiza sozinha),
+      botão "Hoje" fixo substituindo o link antigo, header com mais respiro,
+      prevWeek/nextWeek/Hoje deslizando igual ao toque no dia. De brinde:
+      corrigido "Agosto **De** 2026" (bug de `text-transform: capitalize`
+      pré-existente no mês do cabeçalho e do calendário)
 
 Achado pré-existente, não relacionado a esta fase: `painel_demo.html` solta 2
 erros no console já ao carregar (antes de qualquer interação), confirmado por
