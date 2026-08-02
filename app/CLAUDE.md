@@ -219,6 +219,50 @@ meio (dia, mês) aparecer errado de novo, é isso — CSS `capitalize` maiusculi
 palavra por palavra, não é o mesmo que maiusculizar só a primeira letra da
 frase.
 
+**Segunda leva de refino (mesmo dia), a partir de um prompt de UX mais
+detalhado — dois níveis de slide, não um só.** A Agenda tem DOIS painéis que
+deslizam independentes, cada um só quando o que ele mostra realmente muda:
+
+- `#agendaWeekViewport` > `#agendaWeekPane` (faixa de dias + título de data +
+  grade, tudo junto) — desliza quando a **semana** muda: `prevWeek`,
+  `nextWeek`, "Hoje" indo pra outro dia. `renderAgendaTransition()`.
+- `#agendaViewport` > `#timelineEl` (só a grade) — desliza quando só o **dia**
+  muda dentro da mesma semana: toque num dia da faixa. `renderAgendaGridTransition()`.
+  Nesse caminho a faixa **não é recriada** — só troca a classe `.selected` nos
+  mesmos 7 botões (`updateWeekStripSelection()`), que é o que faz a
+  transição de `background`/`border-color` já declarada em `.week-day`
+  animar de verdade (elemento novo nunca anima o próprio nascimento).
+
+As duas passam pelo mesmo motor genérico, `slidePane(direction, viewportId,
+paneId, drawFn)` — clona o painel antigo pelo id, deixa `drawFn()` desenhar o
+novo, anima os dois por cima um do outro. `renderAgenda()` (a função "cheia")
+sempre recria os dois níveis; por isso as duas transições reduzem a chamadas
+de `slidePane` com ids diferentes.
+
+**Armadilha que já mordeu uma vez:** os `onclick` dos botões de dia são
+amarrados só quando `renderAgenda()` roda (render cheio). No caminho leve
+(troca de dia dentro da mesma semana) eles **não são reamarrados** — então o
+handler não pode usar a variável `day` capturada no escopo de quando foi
+criado (fica presa no dia do último render cheio); tem que ler
+`state.agendaDate` na hora do clique. Sem isso, o segundo toque em sequência
+compara contra a data errada e pode virar no-op silencioso.
+
+**Scroll inteligente** (`computeRelevantScrollTop()`): hoje → perto de agora;
+outro dia com atendimento → perto do primeiro; sem atendimento → perto da
+abertura (`OPEN_HOUR`). Sempre sobra ~1h30 de contexto acima do alvo.
+`scrollTimelineTo(el, top, {animate})` — sem `animate` (padrão, todo render)
+pula direto pra posição desligando o `scroll-behavior:smooth` do CSS por um
+instante, senão a grade pareceria rolar sozinha toda vez que troca de dia;
+`animate:true` é só do botão "Hoje", que pede um scroll visível de propósito.
+
+**Botão "Hoje"** nunca é no-op: se o dia visto não é hoje, desliza a semana
+(`renderAgendaTransition`) e pulsa a linha; se já é hoje (nada pra deslizar),
+só recentraliza com scroll animado + `highlightCurrentTimeLine()` — senão o
+toque pareceria não ter feito nada.
+
+`HOUR_HEIGHT` foi de 64 pra 68px — mais respiro vertical nos eventos, sem
+mexer em nenhuma fórmula (tudo deriva da constante).
+
 **Achado, não investigado:** `painel_demo.html` solta 2 erros no console já
 ao carregar, antes de qualquer clique. Confirmado com `git stash` que é
 anterior a 02/08 — não é regressão de nenhuma mudança recente, e a tela

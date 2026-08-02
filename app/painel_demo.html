@@ -517,11 +517,14 @@ window.supabase = {
   #toast.show { transform: translateX(-50%) translateY(0); }
 
   /* Header inspirado no princípio do Calendar da Apple: seta · mês · seta,
-     tudo centralizado, com respiro de sobra — não é cópia, é o mesmo tipo de
-     hierarquia aplicado aos tokens do Orenzi. */
+     tudo centralizado — não é cópia, é o mesmo tipo de hierarquia aplicado
+     aos tokens do Orenzi. Cabeçalho e faixa de dias ficam próximos (gap
+     pequeno abaixo) pra ler como UM sistema de navegação, não dois blocos
+     separados; o respiro "de verdade" fica pro título de data, que é onde a
+     tela realmente muda de assunto (controle → conteúdo). */
   .day-nav {
     display: flex; align-items: center; justify-content: center; gap: 22px;
-    margin: 22px 0 20px;
+    margin: 22px 0 14px;
   }
   .day-nav .day-label { font-family: var(--font-heading); font-weight: 600; font-size: 19px; }
   .day-nav .day-label-btn {
@@ -539,10 +542,12 @@ window.supabase = {
   .day-nav button.arrow:hover { background: var(--color-neutral-200); }
 
   /* Título entre a faixa de dias e a agenda — hierarquia própria, não
-     duplica o "Agenda" do cabeçalho nem o mês do day-nav. */
+     duplica o "Agenda" do cabeçalho nem o mês do day-nav. É o único respiro
+     grande da zona de navegação, de propósito: marca onde o controle acaba
+     e o conteúdo começa. */
   .agenda-date-title {
     font-family: var(--font-heading); font-weight: 600; font-size: 17px;
-    color: var(--color-text); margin: 20px 2px 16px;
+    color: var(--color-text); margin: 22px 2px 18px;
   }
 
   .week-strip {
@@ -554,11 +559,16 @@ window.supabase = {
     padding: 12px 4px; border-radius: 12px; cursor: pointer;
     border: 1.5px solid var(--color-divider);
     background: var(--color-surface); font-family: var(--font-body);
-    transition: border-color .15s ease, background .15s ease, transform .12s ease;
+    /* border-color/background em .2s: é a seleção "deslizando" de um dia
+       pro outro quando os botões continuam os mesmos elementos (ver
+       updateWeekStripSelection). transform tem easing "com molinha" —
+       retorno elástico discreto no toque, não instantâneo. */
+    transition: border-color .2s ease, background .2s ease,
+      transform .14s cubic-bezier(.34,1.56,.64,1), opacity .12s ease;
     -webkit-tap-highlight-color: transparent;
   }
   .week-day:hover { border-color: var(--color-neutral-300); }
-  .week-day:active { transform: scale(0.94); }
+  .week-day:active { transform: scale(0.97); opacity: 0.85; }
   .week-day .wd-label {
     font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--color-neutral-600);
     letter-spacing: 0.03em;
@@ -647,20 +657,25 @@ window.supabase = {
   .timeline.is-scrolling { scrollbar-color: var(--color-neutral-300) transparent; }
   .timeline.is-scrolling::-webkit-scrollbar-thumb { background: var(--color-neutral-300); }
   .hour-row {
-    position: relative; height: 64px; border-top: 1px solid rgba(43,36,32,0.07);
+    position: relative; height: 68px; border-top: 1px solid rgba(43,36,32,0.07);
   }
   .hour-row:first-child { border-top: none; }
+  /* Hierarquia da timeline: hora é o elemento de MENOR peso (só orienta),
+     evento é o de destaque, linha do horário atual é o mais importante de
+     todos — ver z-index e cor abaixo. */
   .hour-label {
     position: absolute; left: -52px; top: -8px; width: 46px; text-align: right;
-    font-size: 11px; color: var(--color-neutral-600);
+    font-size: 10.5px; color: var(--color-neutral-600); opacity: 0.8;
   }
   .timeline-body { position: relative; }
   /* Linha do horário atual — cor de marca (marrom/caramelo), não vermelho.
      Só existe no dia de hoje; updateCurrentTimeLine() reposiciona a cada
-     30s pra acompanhar o relógio sem re-renderizar a agenda inteira. */
+     30s. transition:top faz o reposicionamento deslizar suave (parecer
+     contínuo) em vez de saltar de 30 em 30s. */
   .current-time-line {
     position: absolute; left: -52px; right: 0; display: flex; align-items: center;
     z-index: 30; pointer-events: none; animation: currentTimeFadeIn .22s ease;
+    transition: top 1s linear;
   }
   .current-time-line::after {
     content: ''; flex: 1; height: 1.5px; background: var(--color-accent-700); margin-left: 5px;
@@ -675,13 +690,20 @@ window.supabase = {
     flex-shrink: 0; margin-left: 5px;
   }
   @keyframes currentTimeFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  /* Destaque de um instante, disparado pelo botão "Hoje" — pulso discreto,
+     não pisca nem muda de cor. */
+  @keyframes currentTimePulse { 0% { transform: scale(1); } 35% { transform: scale(1.22); } 100% { transform: scale(1); } }
+  .current-time-line.is-highlighted .current-time-badge,
+  .current-time-line.is-highlighted .current-time-dot { animation: currentTimePulse .6s ease; }
+  /* Evento: sem sombra (o contraste de cor já separa do fundo), cantos mais
+     soltos e padding mais confortável — leitura em primeiro lugar. */
   .timeline-appt {
-    position: absolute; left: 6px; right: 6px; border-radius: 10px;
-    padding: 6px 10px; overflow: hidden; box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.08));
-    cursor: pointer; transition: transform .12s ease, box-shadow .12s ease;
+    position: absolute; left: 6px; right: 6px; border-radius: 12px;
+    padding: 8px 12px; overflow: hidden;
+    cursor: pointer; transition: transform .16s cubic-bezier(.34,1.56,.64,1), opacity .12s ease;
     -webkit-tap-highlight-color: transparent;
   }
-  .timeline-appt:active { transform: scale(0.97); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+  .timeline-appt:active { transform: scale(0.98); opacity: 0.92; }
   .timeline-appt .title { font-weight: 700; font-size: 12.5px; }
   .timeline-appt .sub { font-size: 11px; opacity: 0.85; }
   /* Pausa: a profissional está livre aqui, então o bloco fica "vazado" —
@@ -766,9 +788,11 @@ window.supabase = {
     background: var(--color-accent); color: var(--color-bg); border: none; cursor: pointer;
     font-size: 26px; box-shadow: var(--shadow-md, 0 3px 10px rgba(0,0,0,0.18));
     display: flex; align-items: center; justify-content: center; z-index: 50; line-height: 1;
-    transition: transform .12s ease; -webkit-tap-highlight-color: transparent;
+    /* Curva "com molinha": o retorno ao soltar tem uma leve sobreposta
+       elástica, não só volta linear — pequena, "nada exagerado". */
+    transition: transform .18s cubic-bezier(.34,1.56,.64,1); -webkit-tap-highlight-color: transparent;
   }
-  .fab:active { transform: scale(0.9); }
+  .fab:active { transform: scale(0.93); }
   /* Botão fixo "Hoje", espelhado no + (mesma posição/tamanho de toque, lado
      oposto) mas na linguagem secundária (accent-100/700) — o + é a ação
      principal da tela, "Hoje" é navegação, não cadastro. */
@@ -778,14 +802,17 @@ window.supabase = {
     border: none; cursor: pointer; font-family: var(--font-body); font-weight: 700; font-size: 13.5px;
     box-shadow: var(--shadow-md, 0 3px 10px rgba(0,0,0,0.12));
     display: flex; align-items: center; justify-content: center; z-index: 50;
-    transition: transform .12s ease; -webkit-tap-highlight-color: transparent;
+    transition: transform .18s cubic-bezier(.34,1.56,.64,1); -webkit-tap-highlight-color: transparent;
   }
-  .fab-today:active { transform: scale(0.92); }
+  .fab-today:active { transform: scale(0.95); }
   @media (prefers-reduced-motion: reduce) {
     .week-day, .timeline-appt, .fab, .fab-today { transition: none; }
     .week-day:active, .timeline-appt:active, .fab:active, .fab-today:active { transform: none; }
+    .week-day:active, .timeline-appt:active { opacity: 1; }
     .modal-overlay, .modal-sheet { animation: none; }
-    .current-time-line { animation: none; }
+    .current-time-line { animation: none; transition: none; }
+    .current-time-line.is-highlighted .current-time-badge,
+    .current-time-line.is-highlighted .current-time-dot { animation: none; }
   }
   .modal-overlay {
     position: fixed; inset: 0; background: color-mix(in srgb, #201e1d 45%, transparent);
@@ -2416,7 +2443,7 @@ function weekChartSvg(values, days) {
 // aparecerem na tela em vez de ficarem cortados fora dela.
 const AGENDA_START_HOUR = 8;
 const AGENDA_END_HOUR = 19;
-const HOUR_HEIGHT = 64;
+const HOUR_HEIGHT = 68;
 const WEEKDAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
 // Expediente de verdade — o que o agendar.html oferece à cliente. Ocupação e
@@ -2486,7 +2513,8 @@ function currentTimeInfo() {
 }
 
 // Reposiciona a linha existente sem re-renderizar a agenda inteira — chamado
-// no intervalo de 30s. Só faz algo se a tela mostrada agora for a de hoje.
+// no intervalo de 30s. A transição de `top` em CSS (ver .current-time-line)
+// é que faz ela deslizar suave entre uma posição e outra, em vez de saltar.
 function updateCurrentTimeLine() {
   if (state.tab !== 'agenda' || !sameDay(state.agendaDate, new Date())) return;
   const el = document.getElementById('currentTimeLine');
@@ -2497,30 +2525,61 @@ function updateCurrentTimeLine() {
   el.querySelector('.current-time-badge').textContent = info.label;
 }
 
-function renderAgenda() {
-  document.getElementById('greeting').textContent = 'Agenda';
-  document.getElementById('greetingSub').textContent = '';
-  const day = state.agendaDate;
-  const isToday = sameDay(day, new Date());
-  // Só a primeira letra maiúscula (mesmo padrão de currentMonthLabel()) — o
-  // text-transform:capitalize que existia antes maiusculizava o "De" também,
-  // errado em português.
-  const monthLabelRaw = day.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  const monthLabel = monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
-  const dateTitle = day.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const currentTime = isToday ? currentTimeInfo() : null;
-
-  const weekStart = startOfWeek(day);
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
-    return d;
+// Destaca a linha do horário atual por um instante — usado pelo botão
+// "Hoje", que precisa de algum feedback mesmo quando o dia já é hoje e não
+// há troca de tela pra animar.
+function highlightCurrentTimeLine() {
+  requestAnimationFrame(() => {
+    const line = document.getElementById('currentTimeLine');
+    if (!line) return;
+    line.classList.add('is-highlighted');
+    setTimeout(() => line.classList.remove('is-highlighted'), 700);
   });
+}
 
+// Horário mais relevante pra abrir a grade: se for hoje, perto de agora; se
+// tiver atendimento, perto do primeiro; senão, perto da abertura do salão.
+// Sempre com ~1h30 de contexto acima, pra não colar o alvo na borda de cima.
+function computeRelevantScrollTop(day, dayAppts) {
+  if (sameDay(day, new Date())) {
+    const info = currentTimeInfo();
+    if (info) return Math.max(0, info.top - HOUR_HEIGHT * 1.5);
+  }
+  if (dayAppts.length) {
+    const first = dayAppts.slice().sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0];
+    const fs = new Date(first.starts_at);
+    const startMins = (fs.getHours() - AGENDA_START_HOUR) * 60 + fs.getMinutes();
+    return Math.max(0, (startMins / 60) * HOUR_HEIGHT - HOUR_HEIGHT * 1.5);
+  }
+  return Math.max(0, (OPEN_HOUR - AGENDA_START_HOUR) * HOUR_HEIGHT - HOUR_HEIGHT * 0.5);
+}
+
+// `animate:false` (padrão): pula direto pra posição, sem herdar o
+// scroll-behavior:smooth do CSS — é assim que a grade "já abre no lugar
+// certo" sem parecer que rolou sozinha. `animate:true` é só pro botão
+// "Hoje", que pede explicitamente um scroll visível.
+function scrollTimelineTo(el, top, opts) {
+  const animate = !!(opts && opts.animate);
+  if (!el) return;
+  if (!animate || prefersReducedMotion()) {
+    const prev = el.style.scrollBehavior;
+    el.style.scrollBehavior = 'auto';
+    el.scrollTop = Math.max(0, top);
+    el.style.scrollBehavior = prev;
+  } else {
+    el.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  }
+}
+
+// Miolo da grade (linhas de hora + eventos + linha do horário atual), sem o
+// wrapper .timeline em volta — extraído pra ser recalculado sozinho quando
+// só o dia muda dentro da mesma semana (renderAgendaGridTransition), sem
+// precisar refazer a faixa de dias e o cabeçalho do mês.
+function buildAgendaGrid(day) {
   const dayAppts = state.appointments.filter(a => sameDay(new Date(a.starts_at), day));
-
   const hours = [];
   for (let h = AGENDA_START_HOUR; h < AGENDA_END_HOUR; h++) hours.push(h);
+  const currentTime = sameDay(day, new Date()) ? currentTimeInfo() : null;
 
   const blocksHtml = layoutAppts(dayAppts).map(it => {
     const a = it.a;
@@ -2557,6 +2616,88 @@ function renderAgenda() {
     `;
   }).join('');
 
+  const html = `
+    <div class="timeline-body" style="height:${(AGENDA_END_HOUR - AGENDA_START_HOUR) * HOUR_HEIGHT}px;">
+      ${hours.map((h, i) => `
+        <div class="hour-row" style="position:absolute; top:${i * HOUR_HEIGHT}px; left:0; right:0; height:${HOUR_HEIGHT}px;">
+          <div class="hour-label">${h}h</div>
+        </div>
+      `).join('')}
+      ${blocksHtml}
+      ${currentTime ? `
+        <div class="current-time-line" id="currentTimeLine" style="top:${currentTime.top}px;">
+          <span class="current-time-badge">${currentTime.label}</span>
+          <span class="current-time-dot"></span>
+        </div>
+      ` : ''}
+    </div>
+  `;
+  return { html, dayAppts };
+}
+
+function weekDayButtonHtml(d, selectedDay) {
+  const selected = sameDay(d, selectedDay);
+  const today = sameDay(d, new Date());
+  const hasAppts = state.appointments.some(a => sameDay(new Date(a.starts_at), d));
+  return `
+    <button class="week-day ${selected ? 'selected' : ''} ${today ? 'is-today' : ''} ${hasAppts ? 'has-appts' : ''}" data-date="${d.toISOString()}">
+      <div class="wd-label">${WEEKDAY_LABELS[d.getDay()]}</div>
+      <div class="wd-num">${d.getDate()}</div>
+      <div class="wd-dot"></div>
+    </button>
+  `;
+}
+
+// Toca só a classe .selected nos botões que já existem — nada de refazer o
+// HTML da faixa. É isso que deixa a transição de background/border já
+// declarada em .week-day animar de verdade, em vez de nascer pronta.
+function updateWeekStripSelection(newDay) {
+  document.querySelectorAll('.week-day').forEach(b => {
+    const bd = new Date(b.dataset.date);
+    b.classList.toggle('selected', sameDay(bd, newDay));
+    b.classList.toggle('is-today', sameDay(bd, new Date()));
+  });
+}
+
+function updateAgendaDateTitle(newDay) {
+  const el = document.getElementById('agendaDateTitle');
+  if (!el) return;
+  const raw = newDay.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  el.textContent = raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+function bindTimelineApptClicks() {
+  app.querySelectorAll('.timeline-appt[data-appt-id]').forEach(block => {
+    block.onclick = async () => {
+      const apptId = block.dataset.apptId;
+      if (!state.apptPhotos[apptId]) await loadApptPhotos(apptId);
+      state.selectedApptId = apptId;
+      render();
+    };
+  });
+}
+
+function renderAgenda() {
+  document.getElementById('greeting').textContent = 'Agenda';
+  document.getElementById('greetingSub').textContent = '';
+  const day = state.agendaDate;
+  // Só a primeira letra maiúscula (mesmo padrão de currentMonthLabel()) — o
+  // text-transform:capitalize que existia antes maiusculizava o "De" também,
+  // errado em português.
+  const monthLabelRaw = day.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const monthLabel = monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
+  const dateTitleRaw = day.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const dateTitle = dateTitleRaw.charAt(0).toUpperCase() + dateTitleRaw.slice(1);
+
+  const weekStart = startOfWeek(day);
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  const { html: gridHtml, dayAppts } = buildAgendaGrid(day);
+
   app.innerHTML = `
     <div class="day-nav">
       <button class="arrow" id="prevWeek">‹</button>
@@ -2566,43 +2707,21 @@ function renderAgenda() {
       </button>
       <button class="arrow" id="nextWeek">›</button>
     </div>
-    <div class="week-strip">
-      ${weekDays.map(d => {
-        const selected = sameDay(d, day);
-        const today = sameDay(d, new Date());
-        const hasAppts = state.appointments.some(a => sameDay(new Date(a.starts_at), d));
-        return `
-          <button class="week-day ${selected ? 'selected' : ''} ${today ? 'is-today' : ''} ${hasAppts ? 'has-appts' : ''}" data-date="${d.toISOString()}">
-            <div class="wd-label">${WEEKDAY_LABELS[d.getDay()]}</div>
-            <div class="wd-num">${d.getDate()}</div>
-            <div class="wd-dot"></div>
-          </button>
-        `;
-      }).join('')}
-    </div>
-    <div class="agenda-date-title">${dateTitle.charAt(0).toUpperCase() + dateTitle.slice(1)}</div>
-    <div class="agenda-viewport" id="agendaViewport">
-      <div class="timeline" id="timelineEl">
-        <div class="timeline-body" style="height:${(AGENDA_END_HOUR - AGENDA_START_HOUR) * HOUR_HEIGHT}px;">
-          ${hours.map((h, i) => `
-            <div class="hour-row" style="position:absolute; top:${i * HOUR_HEIGHT}px; left:0; right:0; height:${HOUR_HEIGHT}px;">
-              <div class="hour-label">${h}h</div>
-            </div>
-          `).join('')}
-          ${blocksHtml}
-          ${currentTime ? `
-            <div class="current-time-line" id="currentTimeLine" style="top:${currentTime.top}px;">
-              <span class="current-time-badge">${currentTime.label}</span>
-              <span class="current-time-dot"></span>
-            </div>
-          ` : ''}
+    <div class="agenda-viewport" id="agendaWeekViewport">
+      <div id="agendaWeekPane">
+        <div class="week-strip" id="weekStrip">
+          ${weekDays.map(d => weekDayButtonHtml(d, day)).join('')}
+        </div>
+        <div class="agenda-date-title" id="agendaDateTitle">${dateTitle}</div>
+        <div class="agenda-viewport" id="agendaViewport">
+          <div class="timeline" id="timelineEl">${gridHtml}</div>
         </div>
       </div>
     </div>
   `;
 
-  // prevWeek/nextWeek deslizam igual ao toque no dia — mesma grade, mesma
-  // sensação de continuidade que o toque na semana já tem.
+  // prevWeek/nextWeek/Hoje trocam a semana inteira, então deslizam o bloco
+  // faixa+título+grade junto — ver renderAgendaTransition().
   document.getElementById('prevWeek').onclick = () => {
     state.agendaDate = new Date(day.getTime() - 7 * 86400000);
     renderAgendaTransition('back');
@@ -2613,30 +2732,29 @@ function renderAgenda() {
   };
   document.getElementById('openMonthView').onclick = () => openMonthCalendar(day);
 
-  // Só a grade de horários desliza (não a semana toda nem o cabeçalho do mês):
-  // dia mais à frente entra pela direita empurrando a grade atual pra
-  // esquerda, dia anterior entra pela esquerda. Clicar no dia já selecionado
-  // não faz nada — não tem transição pra fazer.
+  // Toque num dia dentro da MESMA semana: a faixa continua com as mesmas 7
+  // datas, só a seleção muda (updateWeekStripSelection, sem refazer o HTML),
+  // e só a grade desliza (renderAgendaGridTransition) — não tem por que
+  // mover o cabeçalho se ele não mudou.
   app.querySelectorAll('.week-day').forEach(btn => {
     btn.onclick = () => {
+      // Lê state.agendaDate na hora, não a variável `day` capturada aqui:
+      // no caminho leve (mesma semana) esses onclick não são reamarrados a
+      // cada toque, então `day` ficaria presa no dia do último render cheio.
       const novaData = new Date(btn.dataset.date);
-      if (sameDay(novaData, day)) return;
-      const direction = novaData > day ? 'forward' : 'back';
+      const diaAtual = state.agendaDate;
+      if (sameDay(novaData, diaAtual)) return;
+      const direction = novaData > diaAtual ? 'forward' : 'back';
       state.agendaDate = novaData;
-      renderAgendaTransition(direction);
+      updateWeekStripSelection(novaData);
+      updateAgendaDateTitle(novaData);
+      renderAgendaGridTransition(direction);
     };
   });
 
-  app.querySelectorAll('.timeline-appt[data-appt-id]').forEach(block => {
-    block.onclick = async () => {
-      const apptId = block.dataset.apptId;
-      if (!state.apptPhotos[apptId]) await loadApptPhotos(apptId);
-      state.selectedApptId = apptId;
-      render();
-    };
-  });
-
+  bindTimelineApptClicks();
   attachTimelineScrollbarFade(document.getElementById('timelineEl'));
+  scrollTimelineTo(document.getElementById('timelineEl'), computeRelevantScrollTop(day, dayAppts), { animate: false });
 }
 
 // #timelineEl é recriado a cada renderAgenda(), então o listener é
@@ -2651,24 +2769,23 @@ function attachTimelineScrollbarFade(el) {
   });
 }
 
-// Slide da grade de horários ao trocar de dia. Mesma técnica de
-// agendar.html (clona a tela antiga, desenha a nova, anima as duas por
-// cima uma da outra) — mas aqui #app é compartilhado por todas as abas e
-// renderAgenda() reescreve o innerHTML inteiro a cada chamada, então
-// #agendaViewport também é recriado. Por isso o clone é tirado ANTES de
-// chamar renderAgenda() e só é anexado DEPOIS, no viewport novo — anexar
-// no antigo seria perder o clone junto quando o innerHTML for trocado.
-function renderAgendaTransition(direction) {
-  if (prefersReducedMotion()) { renderAgenda(); return; }
-  const oldPane = document.getElementById('timelineEl');
+// Motor genérico do slide: clona o painel antigo (por id), deixa uma função
+// desenhar o novo conteúdo, anima os dois por cima um do outro. Mesma
+// técnica de agendar.html, parametrizada pra servir dois níveis diferentes
+// — ver as duas funções abaixo. O clone é tirado ANTES de drawFn() e só
+// anexado DEPOIS: se drawFn() reescrever o innerHTML de um ancestral (caso
+// da semana), o viewport antigo (e o clone nele) morreria junto.
+function slidePane(direction, viewportId, paneId, drawFn) {
+  if (prefersReducedMotion()) { drawFn(); return; }
+  const oldPane = document.getElementById(paneId);
   const oldHeight = oldPane ? oldPane.offsetHeight : null;
   const clone = oldPane ? oldPane.cloneNode(true) : null;
   if (clone) clone.removeAttribute('id');
 
-  renderAgenda();
+  drawFn();
 
-  const viewport = document.getElementById('agendaViewport');
-  const newPane = document.getElementById('timelineEl');
+  const viewport = document.getElementById(viewportId);
+  const newPane = document.getElementById(paneId);
   if (!clone || !viewport || !newPane) return;
 
   clone.classList.add('agenda-pane');
@@ -2712,6 +2829,26 @@ function renderAgendaTransition(direction) {
   }
   newPane.addEventListener('transitionend', onTransitionEnd);
   setTimeout(cleanup, 500);
+}
+
+// Semana muda (prevWeek/nextWeek/Hoje pra outro dia/escolha no calendário de
+// mês): a faixa de dias inteira troca de data, então desliza junto com a
+// grade — o cabeçalho de setas/mês fica de fora (é controle, não conteúdo).
+function renderAgendaTransition(direction) {
+  slidePane(direction, 'agendaWeekViewport', 'agendaWeekPane', renderAgenda);
+}
+
+// Toque num dia dentro da mesma semana: só a grade precisa deslizar — a
+// faixa de dias já foi atualizada no lugar por updateWeekStripSelection().
+function renderAgendaGridTransition(direction) {
+  slidePane(direction, 'agendaViewport', 'timelineEl', () => {
+    const day = state.agendaDate;
+    const { html, dayAppts } = buildAgendaGrid(day);
+    const el = document.getElementById('timelineEl');
+    el.innerHTML = html;
+    bindTimelineApptClicks();
+    scrollTimelineTo(el, computeRelevantScrollTop(day, dayAppts), { animate: false });
+  });
 }
 
 function openMonthCalendar(initialDate) {
@@ -3724,10 +3861,20 @@ document.getElementById('fabNewAppt').onclick = () => {
 document.getElementById('gotoTodayFab').onclick = () => {
   if (state.tab !== 'agenda') return;
   const hoje = new Date();
-  if (sameDay(state.agendaDate, hoje)) return;
-  const direction = hoje > state.agendaDate ? 'forward' : 'back';
-  state.agendaDate = hoje;
-  renderAgendaTransition(direction);
+  if (!sameDay(state.agendaDate, hoje)) {
+    const direction = hoje > state.agendaDate ? 'forward' : 'back';
+    state.agendaDate = hoje;
+    renderAgendaTransition(direction);
+    highlightCurrentTimeLine();
+    return;
+  }
+  // Já é hoje: não tem o que deslizar, então o feedback é recentralizar a
+  // grade no agora com scroll animado + destacar a linha — senão o toque
+  // no botão pareceria não ter feito nada.
+  const el = document.getElementById('timelineEl');
+  const info = currentTimeInfo();
+  if (el && info) scrollTimelineTo(el, info.top - HOUR_HEIGHT * 1.5, { animate: true });
+  highlightCurrentTimeLine();
 };
 
 // A cada 30s, se a agenda de hoje estiver na tela, reposiciona a linha do

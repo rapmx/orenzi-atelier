@@ -46,6 +46,19 @@ vermelho que "Agenda praticamente lotada" já usa. Documentado em
       prevWeek/nextWeek/Hoje deslizando igual ao toque no dia. De brinde:
       corrigido "Agosto **De** 2026" (bug de `text-transform: capitalize`
       pré-existente no mês do cabeçalho e do calendário)
+- [x] Segunda leva — refino premium de UX/microinterações (prompt mais
+      detalhado, mesmo dia): faixa de dias "viva" (seleção desliza porque os
+      botões deixaram de ser recriados a cada toque), dois níveis de slide
+      (semana inteira vs. só o dia, ver `app/CLAUDE.md`), scroll inteligente
+      (abre perto do horário relevante), linha do horário atual com
+      transição contínua + pulso de destaque no botão "Hoje", hierarquia da
+      timeline (hora discreta, evento sem sombra e com mais padding),
+      cabeçalho+faixa mais coesos (menos espaço entre eles, mais no título
+      de data), toque com retorno elástico discreto. `HOUR_HEIGHT` 64→68.
+      Achado e corrigido no caminho: os botões de dia ficavam com uma
+      referência velha de `state.agendaDate` depois do primeiro toque leve
+      (não são reamarrados nesse caminho) — o segundo toque em sequência
+      podia virar no-op silencioso.
 
 Achado pré-existente, não relacionado a esta fase: `painel_demo.html` solta 2
 erros no console já ao carregar (antes de qualquer interação), confirmado por
