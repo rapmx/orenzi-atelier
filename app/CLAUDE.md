@@ -1,6 +1,6 @@
 # Orenzi Atelier — salão da Juliane (Dublin)
 
-Três páginas HTML estáticas, sem build, sem framework, sem npm. Cada arquivo carrega
+Páginas HTML estáticas, sem build, sem framework, sem npm. Cada arquivo carrega
 o Supabase por CDN e tem todo o CSS e JS inline. Abrir com um servidor estático
 qualquer (`npx serve .`) — não existe passo de compilação.
 
@@ -8,32 +8,28 @@ qualquer (`npx serve .`) — não existe passo de compilação.
 
 | Arquivo | Linhas | O que é |
 |---|---|---|
-| `index.html` | ~1370 | Landing pública: hero em vídeo, galeria, antes/depois, PT/EN |
-| `agendar.html` | ~1060 | Agendamento pela cliente, 4 passos (serviço → profissional → data/hora → dados) |
-| `painel.html` | ~1415 | Painel da Juliane: config, dados, tela inicial, clientes, login, `render()` |
-| `shared/salon.js` | 166 | **A regra do salão.** Usada pelas duas páginas |
-| `modules/agenda.js` | 344 | Timeline, tira da semana, calendário do mês, slide entre dias |
-| `modules/novo-agendamento.js` | 382 | Modal do botão +, grade de horários, `closeModal()` |
-| `modules/estoque.js` | 188 | Aba Estoque e o modal de produto |
-| `modules/questionario.js` | 182 | Questionário em modo quiosque |
+| `index.html` | ~1290 | Landing pública: hero em vídeo, galeria, antes/depois, PT/EN |
+| `agendar.html` | ~740 | Agendamento pela cliente, 4 passos (serviço → profissional → data/hora → dados) |
+| `painel.html` | ~2990 | Painel da Juliane. **Tudo inline** — config, dados, todas as telas |
+| `painel_demo.html` | ~3160 | Cópia do painel com stub do Supabase, pra demonstrar sem login |
 | `manifest.json` | — | PWA (nome, ícones, cor) |
 | `assets/` | — | Fotos e vídeos da landing |
 
-**Vá direto ao arquivo do assunto.** Mexer na agenda é abrir `modules/agenda.js`
-(344 linhas), não varrer o painel inteiro.
+### `modules/` e `shared/` NÃO são carregados
 
-Todos os módulos são **scripts clássicos**, carregados antes do `<script>` inline
-do painel. Não são módulos ES: o painel guarda o resto do JS num bloco inline e
-`type="module"` mudaria o escopo dele inteiro. Na prática isso significa:
+Existem no disco, **nenhum HTML os inclui** — a única tag `<script src>` do
+projeto é o CDN do supabase-js. Uma refatoração de 30/07/2026 quebrou o painel
+em módulos e o arquivo foi sobrescrito depois por uma versão inline vinda de
+outra sessão; a sobrescrita venceu.
 
-- funções de módulo enxergam `state`, `sb`, `app`, `render`, `showToast` na hora
-  da chamada — o inline já rodou;
-- **nada de `getElementById` no topo de um módulo**: eles rodam antes do DOM. Por
-  isso `const modalContainer` continua no `painel.html`;
-- nome declarado duas vezes derruba a página inteira. Ao mover código, apague a
-  versão antiga.
+O conteúdo que valia a pena (sobreposição da agenda com pausa, aba Estoque)
+já foi trazido de volta para o `painel.html` inline em 02/08/2026. Os arquivos
+ficaram como registro histórico.
 
-## Âncoras do que sobrou em `painel.html`
+**Editar `modules/*.js` ou `shared/salon.js` não muda nada na tela.** O código
+que roda é o bloco inline do `painel.html`.
+
+## Âncoras em `painel.html`
 
 Comentários `// ── SEÇÃO ──` marcam os blocos. As linhas saem do lugar a cada
 edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
@@ -41,18 +37,26 @@ edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
 | Assunto | Onde procurar |
 |---|---|
 | Supabase URL/key, `state` global | `// ── CONFIGURAÇÃO` |
-| Cor por serviço (hash → tom HSL) | `// ── COR POR SERVIÇO`, `montarCoresServico()` |
-| Leitura do banco | `// ── CARREGAMENTO DE DADOS`, `loadAll()` |
-| Relógio de 12h do painel | `// ── RELÓGIO DO SALÃO`, `fmtTime()`, `fmtHora12()` |
-| Tela inicial, KPIs, ocupação | `renderHome()` |
+| Cor por profissional (hash → paleta) | `STAFF_COLORS`, `colorForId()`, `colorForStaff()` |
+| Leitura do banco | `loadAll()`, `load*()` |
+| Hora no painel | `fmtTime()` |
+| Tela inicial, KPIs, ocupação | `renderHome()`, `occupancyPct()` |
+| Insights, gráfico de tendência | `renderInsights()`, `computeIndicatorsData()` |
+| Agenda, sobreposição, pausa | `renderAgenda()`, `layoutAppts()`, `segmentsOf()` |
+| Estoque | `// ── ESTOQUE`, `renderStock()`, `openProductModal()` |
 | Clientes, fotos, detalhe | `renderClients()`, `renderClientDetail()`, `renderApptDetail()` |
-| Login | `// ── AUTENTICAÇÃO` |
+| Login | `checkSession()`, `renderLogin()` |
 | Qual tela aparece | `render()` |
+
+Abas da nav: **Início · Insights · Agenda · Clientes · Estoque · Questionário**.
+Estoque ocupou o lugar de Equipe em 02/08/2026 — com uma profissional só,
+"Profissionais" era uma tela de uma linha.
 
 ## Banco (Supabase, projeto `gsagtsxkhqlpxuvrijgw`)
 
-Tabelas: `appointments`, `clients`, `staff`, `services`, `salon_settings`,
-`products`, `client_photos`, `appointment_photos`, `client_questionnaires`.
+Tabelas: `appointments`, `clients`, `staff`, `staff_services`, `services`,
+`salon_settings`, `products`, `client_photos`, `client_questionnaires`,
+`booking_visits`, `lookup_attempts`.
 
 Duas RPCs `SECURITY DEFINER` — a página da cliente usa a chave anônima e a RLS de
 `appointments` só permite SELECT autenticado, então leitura direta voltava vazia e
@@ -75,12 +79,28 @@ configuração, tudo vira trabalho inicial (comportamento antigo).
 Os valores podem ser gravados no próprio agendamento e sobrescrevem o padrão do
 serviço. Leitura sempre `a.campo ?? s.campo ?? default`.
 
+Na timeline a pausa aparece como faixa listrada dentro do bloco, e o encaixe
+entra por cima recuado à esquerda (`layoutAppts()` empilha por nível, estilo
+calendário do iPhone). Dividir em colunas espremia os dois e escondia a pausa.
+
 **Conflito** só existe quando um *bloco de trabalho* encosta em outro. Pausa
 sobreposta a pausa, ou trabalho dentro de pausa alheia, é permitido.
 
-**Fuso.** O expediente é `Europe/Dublin`, não o do aparelho. `salonTimeToInstant()`
-converte "data + minutos do dia" no instante absoluto e cobre o horário de verão.
-Expediente 9h–18h, o atendimento tem que **terminar** até as 18h; fecha domingo.
+**Fuso.** O expediente é `Europe/Dublin`, não o do aparelho.
+
+**Expediente: 9h–18h, fecha domingo e segunda.** O atendimento tem que
+**terminar** até as 18h.
+
+Duas faixas de hora convivem no painel e não podem ser confundidas:
+
+| Constante | Valor | Serve pra |
+|---|---|---|
+| `OPEN_HOUR` / `CLOSE_HOUR` / `WORK_MINUTES_PER_DAY` | 9h–18h (540 min) | **contas** — ocupação, capacidade, próximo horário livre |
+| `AGENDA_START_HOUR` / `AGENDA_END_HOUR` | 8h–19h | **desenho** — altura e linhas da timeline, com uma hora de respiro nas pontas |
+
+Medir ocupação contra 8h–19h dava um denominador que o `agendar.html` nunca
+consegue preencher, e a ocupação saía estruturalmente baixa. Capacidade só conta
+dias em que o salão abriu (`isSalonOpenDay`).
 
 **Só a Juliane atende.** Outras profissionais existem com `active = false` e são
 mantidas por causa do histórico. Onde há uma só ativa, a escolha de profissional
@@ -89,46 +109,35 @@ some da interface.
 ## Convenções
 
 - Comentários em português, explicando **por que**, não o que.
-- Painel em relógio de 12h (`fmtTime`, `fmtHoraCheia`); `agendar.html` ainda em 24h.
 - Escrita autenticada precisa de `.select()` no fim: com a sessão expirada a RLS
   deixa o `update` passar sem tocar em linha nenhuma, e a tela mentiria.
 - Tema claro. O tema escuro foi recusado pela cliente — não reintroduzir.
-- Bloco da agenda é `<button>`: precisa de `display:flex; justify-content:flex-start`,
-  senão o navegador centraliza o texto verticalmente e ele some atrás da pausa.
-
-## `shared/salon.js` — a regra mora aqui
-
-Expediente, fuso, segmentos e conflito ficam em `shared/salon.js`, carregado pelas
-duas páginas **antes** do `<script>` inline. É script clássico com namespace
-(`window.OrenziSalon`), não módulo ES: as páginas guardam todo o JS num bloco
-inline e `type="module"` mudaria o escopo do arquivo inteiro.
-
-Exporta: `SALON_TZ`, `OPEN_HOUR`, `CLOSE_HOUR`, `SLOT_MINUTES`, `CLOSED_WEEKDAYS`,
-`salonTimeToInstant`, `salonToday`, `salonClock24`/`salonClock12`, `segmentsOf`,
-`workBlocks`, `totalMinutes`, `semCadeiraLivre`, `slotStatus`, `fetchOccupancy`,
-`fetchChairs`.
-
-**Mudou expediente, pausa, cadeiras ou conflito? Mexe só aqui.** Antes isso estava
-escrito duas vezes e já tinha divergido.
-
-As duas telas usam `salonClock12` ("4:00 pm"). `salonClock24` continua exportado,
-sem uso hoje.
+- Bloco da agenda é `<div class="timeline-appt">` com `position:absolute`; o
+  recuo da sobreposição vai em `left`/`width` inline, por isso o `right` do CSS
+  é neutralizado com `right:auto`.
+- `painel_demo.html` é espelho do `painel.html`: **toda mudança de tela precisa
+  entrar nos dois**. O que difere é só o stub de `window.supabase` no topo do
+  demo (leitura vem de `mockData(table)`, escrita devolve sucesso sem persistir).
 
 ## Dívida conhecida
 
-Ainda duplicados entre as duas páginas, mas sem risco de overbooking:
-`initials`, `prefersReducedMotion`, `render` e `refreshSlots` (mesmo nome,
-implementações legitimamente diferentes por tela).
+`agendar.html` tem a própria cópia de `OPEN_HOUR`/`CLOSE_HOUR`/`CLOSED_WEEKDAYS`.
+Hoje bate com o painel, mas é duplicação com risco de overbooking se divergir —
+é o que `shared/salon.js` resolveria se voltasse a ser carregado.
 
-`painel.html` ainda carrega clientes + fotos + detalhe do agendamento (~370
-linhas) — é o último bloco grande que daria um módulo próprio.
+`shared/salon.js` também tem a implementação boa de fuso (`salonTimeToInstant`
+cobre horário de verão) e de conflito (`slotStatus`), que hoje não roda.
 
-Todo o CSS continua inline em cada HTML, inclusive o das telas que já viraram
-módulo. Mexer no visual do estoque é editar o `<style>` do `painel.html`, não o
-`modules/estoque.js`.
+Duplicados entre painel e demo por natureza do arquivo, e entre as duas páginas:
+`initials`, `render`, `refreshSlots` (mesmo nome, implementações legitimamente
+diferentes por tela).
+
+Todo o CSS é inline em cada HTML. Mexer no visual do estoque é editar o
+`<style>` do `painel.html` **e** do `painel_demo.html`.
 
 ## Grafo do projeto
 
-Existe um grafo navegável em `C:\Users\schul\test\graphify-out\` (`graph.html`
-interativo, `graph.json` para consulta). Para responder "o que chama o quê", use
-`graphify query "<pergunta>"` a partir daquela pasta em vez de varrer os arquivos.
+Grafo navegável em `../graphify-out/` (`graph.html` interativo, `graph.json` para
+consulta), construído sobre esta pasta `app/`. Para responder "o que chama o
+quê", rodar `graphify query "<pergunta>"` da raiz do projeto em vez de varrer os
+arquivos. Depois de mudança grande, `/graphify app --update`.

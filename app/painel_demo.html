@@ -19,17 +19,31 @@ function mockData(table){
   const now = new Date();
   const startOfDay = (d) => { const x=new Date(d); x.setHours(0,0,0,0); return x; };
 
+  // Coloração e Mechas têm pausa: a tinta age sozinha, a profissional fica
+  // livre no meio. É o que abre espaço pro encaixe e o que a timeline mostra
+  // como faixa listrada.
   if (table === 'services') return [
-    {id:'s1', name:'Coloração', price:180, duration_minutes:120},
+    {id:'s1', name:'Coloração', price:180, duration_minutes:120, work_before_minutes:45, gap_minutes:40, work_after_minutes:35},
     {id:'s2', name:'Corte', price:80, duration_minutes:45},
     {id:'s3', name:'Escova', price:60, duration_minutes:40},
-    {id:'s4', name:'Mechas', price:220, duration_minutes:150},
+    {id:'s4', name:'Mechas', price:220, duration_minutes:150, work_before_minutes:60, gap_minutes:50, work_after_minutes:40},
     {id:'s5', name:'Hidratação', price:70, duration_minutes:50},
   ];
 
   if (table === 'staff') return [
     {id:'st1', name:'Juliane Orenzi', role:'Colorista'},
     {id:'st2', name:'Rebecca Silva', role:'Cabeleireira'},
+  ];
+
+  // Mesmo catálogo que está no banco. Luvas e shampoo entram no mínimo de
+  // propósito: é o estado "precisa repor" que a tela existe pra mostrar.
+  if (table === 'products') return [
+    {id:'p1', name:'Água oxigenada 20 vol', brand:'Welloxon', category:'Descoloração', unit:'ml', quantity:900, min_quantity:500, cost:0.01, notes:null, active:true},
+    {id:'p2', name:'Luvas descartáveis', brand:null, category:'Descartáveis', unit:'cx', quantity:2, min_quantity:2, cost:6, notes:null, active:true},
+    {id:'p3', name:'Máscara de reconstrução', brand:'Olaplex', category:'Tratamento', unit:'g', quantity:500, min_quantity:250, cost:0.12, notes:null, active:true},
+    {id:'p4', name:'Pó descolorante', brand:'Blondor', category:'Descoloração', unit:'g', quantity:450, min_quantity:200, cost:0.09, notes:null, active:true},
+    {id:'p5', name:'Shampoo pós-química', brand:'Sebastian', category:'Finalização', unit:'ml', quantity:250, min_quantity:300, cost:0.04, notes:null, active:true},
+    {id:'p6', name:'Tinta 7.0 louro médio', brand:'Koleston', category:'Coloração', unit:'un', quantity:3, min_quantity:2, cost:7.5, notes:null, active:true},
   ];
 
   if (table === 'clients') {
@@ -45,10 +59,10 @@ function mockData(table){
   if (table === 'appointments') {
     const appts = [];
     const services = [
-      {id:'s1', name:'Coloração', price:180},
+      {id:'s1', name:'Coloração', price:180, work_before_minutes:45, gap_minutes:40, work_after_minutes:35},
       {id:'s2', name:'Corte', price:80},
       {id:'s3', name:'Escova', price:60},
-      {id:'s4', name:'Mechas', price:220},
+      {id:'s4', name:'Mechas', price:220, work_before_minutes:60, gap_minutes:50, work_after_minutes:40},
       {id:'s5', name:'Hidratação', price:70},
     ];
     const clientNames = ['Marina Costa','Beatriz Lima','Ana Souza','Carla Reis','Fernanda Alves','Julia Prado',
@@ -67,7 +81,9 @@ function mockData(table){
         source: (i % 6 === 0) ? 'online' : 'manual',
         client: { id: 'c' + (i % clientNames.length), name: clientNames[i % clientNames.length] },
         staff: staff[i % 2],
-        service: { id: svc.id, name: svc.name, price: svc.price },
+        // ...svc e não só id/name/price: os campos de segmento (pausa) precisam
+        // chegar na timeline, é deles que sai a faixa listrada do bloco.
+        service: { ...svc },
       });
     }
 
@@ -159,14 +175,29 @@ window.supabase = {
       },
       channel: function () { return { on: function () { return { subscribe: function () {} }; } }; },
       from: function (table) {
+        const lista = function () { return Promise.resolve({ data: mockData(table), error: null }); };
+
+        // Escrita no demo não sai daqui: devolve sucesso pra tela seguir o fluxo
+        // normal (inclusive o .select() que o painel usa pra provar que gravou).
+        // O valor que aparece é o que o painel já pôs no state antes de chamar,
+        // então o + e o − do estoque mexem de verdade — só não persistem.
+        const ok = function () { return Promise.resolve({ data: [{ id: 'demo' }], error: null }); };
+        const escrita = {
+          select: ok, eq: function () { return escrita; },
+          then: function (res, rej) { return ok().then(res, rej); },
+        };
+
         return {
           select: function () {
             return {
-              order: function () { return Promise.resolve({ data: mockData(table), error: null }); },
-              eq: function () { return { order: function () { return Promise.resolve({ data: [], error: null }); }, maybeSingle: function () { return Promise.resolve({ data: null }); } }; },
-              neq: function () { return { order: function () { return Promise.resolve({ data: mockData(table), error: null }); } }; },
+              order: lista,
+              eq: function () { return { order: lista, maybeSingle: function () { return Promise.resolve({ data: null }); } }; },
+              neq: function () { return { order: lista }; },
             };
           },
+          insert: function () { return escrita; },
+          update: function () { return escrita; },
+          delete: function () { return escrita; },
         };
       },
     };
@@ -610,6 +641,22 @@ window.supabase = {
   }
   .timeline-appt .title { font-weight: 700; font-size: 12.5px; }
   .timeline-appt .sub { font-size: 11px; opacity: 0.85; }
+  /* Pausa: a profissional está livre aqui, então o bloco fica "vazado" —
+     listrado e sem fundo cheio, pra ler como buraco e não como atendimento. */
+  .appt-gap {
+    position: absolute; left: 0; right: 0; pointer-events: none;
+    background: repeating-linear-gradient(
+      -45deg, transparent, transparent 5px,
+      rgba(255,255,255,0.55) 5px, rgba(255,255,255,0.55) 10px);
+    border-top: 1px dashed rgba(0,0,0,0.18);
+    border-bottom: 1px dashed rgba(0,0,0,0.18);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gap-label {
+    font-size: 9.5px; font-weight: 600; letter-spacing: 0.03em;
+    color: var(--color-neutral-600); background: var(--color-bg);
+    padding: 1px 6px; border-radius: 999px; white-space: nowrap;
+  }
 
   .login-wrap {
     max-width: 340px; margin: 80px auto 0; padding: 0 20px; text-align: center;
@@ -752,6 +799,35 @@ window.supabase = {
     display: flex; align-items: center; gap: 12px; background: var(--color-neutral-100);
     border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer;
   }
+  /* ── Estoque ── */
+  .stock-row {
+    display: flex; align-items: center; gap: 10px; background: var(--color-neutral-100);
+    border-radius: 16px; padding: 10px 12px; margin-bottom: 10px;
+    border-left: 3px solid transparent;
+  }
+  /* No mínimo ou abaixo: a linha se marca sozinha, sem precisar procurar. */
+  .stock-row.low { border-left-color: var(--color-accent); }
+  .stock-info {
+    flex: 1; min-width: 0; background: none; border: none; padding: 0;
+    font-family: inherit; text-align: left; cursor: pointer; color: inherit;
+  }
+  .stock-info .title { font-weight: 600; font-size: 14px; }
+  .stock-info .sub {
+    font-size: 11.5px; color: var(--color-neutral-600); margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .stock-qty { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .qty-btn {
+    width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--color-divider);
+    background: var(--color-bg); color: var(--color-neutral-600); font-size: 17px;
+    line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .qty-btn:active { background: var(--color-neutral-100); }
+  .qty-num {
+    min-width: 52px; text-align: center; font-weight: 700; font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  .qty-unit { font-size: 10px; font-weight: 500; color: var(--color-neutral-600); margin-left: 2px; }
   .avatar-round {
     border-radius: 50%; color: var(--color-bg); font-family: var(--font-heading); font-style: normal; font-weight: 600;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
@@ -841,7 +917,7 @@ window.supabase = {
   <button data-tab="insights">Insights</button>
   <button data-tab="agenda">Agenda</button>
   <button data-tab="clients">Clientes</button>
-  <button data-tab="team">Equipe</button>
+  <button data-tab="estoque">Estoque</button>
   <button data-tab="questionario">Questionário</button>
 </nav>
 
@@ -852,7 +928,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month' };
+const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month' };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -1017,7 +1093,7 @@ async function deleteApptPhoto(appointmentId, photoId) {
 }
 
 async function loadAll() {
-  await Promise.all([loadAppointments(), loadClients(), loadStaff(), loadServices(), loadBookingVisits()]);
+  await Promise.all([loadAppointments(), loadClients(), loadStaff(), loadServices(), loadProducts(), loadBookingVisits()]);
   render();
 }
 
@@ -2237,6 +2313,38 @@ function startOfWeek(date) {
   return d;
 }
 
+// Segmentos do atendimento: trabalho inicial / pausa / trabalho final.
+// O agendamento pode sobrescrever o padrão do serviço (cabelo que demorou mais).
+function segmentsOf(a) {
+  const s = a.service || {};
+  const total = Math.round((new Date(a.ends_at) - new Date(a.starts_at)) / 60000);
+  const wb = a.work_before_minutes ?? s.work_before_minutes ?? total;
+  const gp = a.gap_minutes ?? s.gap_minutes ?? 0;
+  const wa = a.work_after_minutes ?? s.work_after_minutes ?? 0;
+  return { wb, gp, wa };
+}
+
+// Sobreposição empilhada, como no calendário do iPhone: o atendimento mais
+// longo fica de fundo ocupando a faixa inteira e o encaixe entra por cima,
+// recuado à esquerda. Dividir em colunas espremia os dois e escondia a pausa.
+const NIVEL_RECUO = 18;   // px que cada camada entra pra dentro
+const NIVEL_MAX = 3;      // além disso o bloco ficaria fino demais pra ler
+
+function layoutAppts(appts) {
+  const itens = appts
+    .map(a => ({ a, s: new Date(a.starts_at).getTime(), e: new Date(a.ends_at).getTime() }))
+    // Quem começa antes vai pro fundo; empatou, o mais longo é o fundo.
+    .sort((x, y) => x.s - y.s || y.e - x.e);
+
+  itens.forEach((it, i) => {
+    // Quantos atendimentos já desenhados ainda estavam abertos quando este
+    // começou — é o que faz o encaixe subir por cima da pausa.
+    const nivel = itens.slice(0, i).filter(o => o.s <= it.s && o.e > it.s).length;
+    it.nivel = Math.min(nivel, NIVEL_MAX);
+  });
+  return itens;
+}
+
 function renderAgenda() {
   document.getElementById('greeting').textContent = 'Agenda';
   document.getElementById('greetingSub').textContent = '';
@@ -2256,7 +2364,8 @@ function renderAgenda() {
   const hours = [];
   for (let h = AGENDA_START_HOUR; h < AGENDA_END_HOUR; h++) hours.push(h);
 
-  const blocksHtml = dayAppts.map(a => {
+  const blocksHtml = layoutAppts(dayAppts).map(it => {
+    const a = it.a;
     const start = new Date(a.starts_at);
     const end = new Date(a.ends_at);
     const startMins = (start.getHours() - AGENDA_START_HOUR) * 60 + start.getMinutes();
@@ -2264,8 +2373,26 @@ function renderAgenda() {
     const top = (startMins / 60) * HOUR_HEIGHT;
     const height = (durMins / 60) * HOUR_HEIGHT - 4;
     const c = colorForStaff(a.staff?.id);
+
+    // Cada camada de sobreposição entra um pouco mais pra dentro; a borda
+    // direita continua alinhada, então o bloco de baixo aparece à esquerda.
+    const recuo = 6 + it.nivel * NIVEL_RECUO;
+
+    // Faixa de pausa, quando o serviço tiver uma: é ela que mostra por que
+    // cabe um encaixe no meio de um atendimento longo.
+    const seg = segmentsOf(a);
+    let gapHtml = '';
+    if (seg.gp > 0) {
+      const gapTop = (seg.wb / 60) * HOUR_HEIGHT;
+      const gapH = (seg.gp / 60) * HOUR_HEIGHT;
+      gapHtml = `<div class="appt-gap" style="top:${gapTop}px; height:${gapH}px;">
+        ${gapH >= 22 ? `<span class="gap-label">pausa · ${seg.gp}min</span>` : ''}
+      </div>`;
+    }
+
     return `
-      <div class="timeline-appt" data-appt-id="${a.id}" style="top:${top}px; height:${height}px; background:${c.bg}; border-left:3px solid ${c.border};">
+      <div class="timeline-appt" data-appt-id="${a.id}" style="top:${top}px; height:${height}px; left:${recuo}px; width:calc(100% - ${recuo + 6}px); right:auto; z-index:${10 + it.nivel}; background:${c.bg}; border-left:3px solid ${c.border};">
+        ${gapHtml}
         <div class="title" style="color:${c.text}">${a.client?.name || 'Cliente'}</div>
         <div class="sub" style="color:${c.text}">${a.service?.name || ''} · ${a.staff?.name || ''}</div>
       </div>
@@ -2932,47 +3059,197 @@ function renderQuestionario() {
   }
 }
 
-function staffStatus(staffId) {
-  const now = new Date();
-  const isBusy = state.appointments.some(a =>
-    a.staff?.id === staffId && new Date(a.starts_at) <= now && new Date(a.ends_at) > now
-  );
-  return isBusy ? 'Ocupada' : 'Disponível';
+// ── ESTOQUE ──────────────────────────────────────────────────
+// Ocupou o lugar da aba Equipe: com uma profissional só, "Profissionais" era
+// uma tela de uma linha, e o que falta no balcão é decisão de todo dia.
+
+const UNIDADES = ['un', 'ml', 'g', 'cx'];
+
+// Quantidade sem casas decimais à toa: 3 em vez de 3.00, mas 2.5 continua 2,5.
+function fmtQtd(n) {
+  const v = Number(n);
+  return (Number.isInteger(v) ? v : v.toFixed(2).replace(/0$/, '')).toString().replace('.', ',');
 }
 
-function renderTeam() {
-  document.getElementById('greeting').textContent = 'Equipe';
-  document.getElementById('greetingSub').textContent = '';
-  const today = todayAppointments();
+function precisaRepor(p) {
+  return Number(p.quantity) <= Number(p.min_quantity);
+}
+
+async function loadProducts() {
+  const { data, error } = await sb.from('products').select('*').eq('active', true).order('name');
+  if (error) { console.error(error); return; }
+  state.products = data;
+}
+
+function renderStock() {
+  document.getElementById('greeting').textContent = 'Estoque';
+  const repor = state.products.filter(precisaRepor);
+  document.getElementById('greetingSub').textContent =
+    repor.length ? `${repor.length} produto(s) para repor` : 'Tudo em dia';
+
+  // Quem está no fim primeiro: é o que precisa de decisão hoje.
+  const lista = [...state.products].sort((a, b) => (precisaRepor(b) - precisaRepor(a)) || a.name.localeCompare(b.name));
+
   app.innerHTML = `
-    <h2>Profissionais</h2>
-    ${state.staff.length ? state.staff.map(s => {
-      const apptsToday = today.filter(a => a.staff?.id === s.id).length;
-      const color = colorForId(s.id);
-      const status = staffStatus(s.id);
-      return `
-        <div class="client-list-card" style="cursor:default;">
-          <div class="avatar-round" style="width:44px;height:44px;font-size:14px;background:${color.border}">${initials(s.name)}</div>
-          <div style="flex:1">
-            <div class="title">${s.name}</div>
-            <div class="sub">${s.role || ''} · ${apptsToday} hoje</div>
-          </div>
-          <span class="tag ${status === 'Disponível' ? 'tag-accent-2' : 'tag-accent'}">${status}</span>
+    <h2>Produtos</h2>
+    ${lista.length ? lista.map(p => `
+      <div class="stock-row${precisaRepor(p) ? ' low' : ''}">
+        <button type="button" class="stock-info" data-edit="${p.id}" aria-label="Editar ${p.name}">
+          <div class="title">${p.name}</div>
+          <div class="sub">${[p.brand, p.category].filter(Boolean).join(' · ') || 'Sem marca'} · mínimo ${fmtQtd(p.min_quantity)} ${p.unit}</div>
+        </button>
+        <div class="stock-qty">
+          <button type="button" class="qty-btn" data-dec="${p.id}" aria-label="Tirar 1 de ${p.name}">−</button>
+          <div class="qty-num">${fmtQtd(p.quantity)}<span class="qty-unit">${p.unit}</span></div>
+          <button type="button" class="qty-btn" data-inc="${p.id}" aria-label="Adicionar 1 em ${p.name}">+</button>
         </div>
-      `;
-    }).join('') : '<div class="empty">Nenhum profissional cadastrado.</div>'}
+      </div>
+    `).join('') : '<div class="empty">Nenhum produto cadastrado. Use o + para incluir o primeiro.</div>'}
   `;
+
+  app.querySelectorAll('[data-edit]').forEach(el => {
+    el.onclick = () => openProductModal(el.dataset.edit);
+  });
+  app.querySelectorAll('[data-inc]').forEach(el => {
+    el.onclick = () => ajustarQuantidade(el.dataset.inc, 1);
+  });
+  app.querySelectorAll('[data-dec]').forEach(el => {
+    el.onclick = () => ajustarQuantidade(el.dataset.dec, -1);
+  });
+}
+
+// Ajuste rápido do balcão: usou um, tira um. Atualiza a tela na hora e só
+// depois confirma no banco — se der erro, volta ao valor anterior.
+async function ajustarQuantidade(id, delta) {
+  const p = state.products.find(x => x.id === id);
+  if (!p) return;
+  const anterior = Number(p.quantity);
+  const nova = Math.max(0, anterior + delta);
+  if (nova === anterior) return;
+  p.quantity = nova;
+  renderStock();
+
+  // O .select() é o que prova que gravou: com a sessão expirada a RLS deixa o
+  // update passar sem tocar em nenhuma linha, e sem isso a tela mentiria.
+  const { data, error } = await sb.from('products')
+    .update({ quantity: nova, updated_at: new Date().toISOString() }).eq('id', id).select('id');
+  if (error || !data || !data.length) {
+    p.quantity = anterior;
+    renderStock();
+    showToast(error ? 'Não deu pra salvar: ' + error.message : 'Não foi possível salvar — faça login novamente.');
+    return;
+  }
+  if (precisaRepor(p)) showToast(`${p.name} chegou no mínimo — hora de repor`);
+}
+
+function openProductModal(id) {
+  const p = id ? state.products.find(x => x.id === id) : null;
+  const v = (x, alt = '') => (x == null ? alt : String(x));
+
+  modalContainer.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet">
+        <button class="modal-close" id="modalClose" aria-label="Fechar">✕</button>
+        <h2>${p ? 'Editar produto' : 'Novo produto'}</h2>
+
+        <label for="prodName">Produto</label>
+        <input type="text" id="prodName" placeholder="Ex.: Pó descolorante" value="${p ? v(p.name).replace(/"/g, '&quot;') : ''}">
+
+        <label for="prodBrand">Marca</label>
+        <input type="text" id="prodBrand" placeholder="Ex.: Wella" value="${p ? v(p.brand).replace(/"/g, '&quot;') : ''}">
+
+        <label for="prodCategory">Categoria</label>
+        <input type="text" id="prodCategory" placeholder="Ex.: Coloração" value="${p ? v(p.category).replace(/"/g, '&quot;') : ''}">
+
+        <div class="seg-row">
+          <div>
+            <label for="prodQty">Quantidade</label>
+            <input type="number" id="prodQty" min="0" step="0.5" inputmode="decimal" value="${p ? v(p.quantity, '0') : '0'}">
+          </div>
+          <div>
+            <label for="prodMin">Mínimo</label>
+            <input type="number" id="prodMin" min="0" step="0.5" inputmode="decimal" value="${p ? v(p.min_quantity, '0') : '0'}">
+          </div>
+          <div>
+            <label for="prodUnit">Unidade</label>
+            <select id="prodUnit" style="border-radius:999px;">
+              ${UNIDADES.map(u => `<option value="${u}" ${p && p.unit === u ? 'selected' : ''}>${u}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="slot-note">O aviso de repor aparece quando a quantidade chega no mínimo.</div>
+
+        <label for="prodCost">Custo por unidade (€)</label>
+        <input type="number" id="prodCost" min="0" step="0.01" inputmode="decimal" value="${p && p.cost != null ? v(p.cost) : ''}">
+
+        <label for="prodNotes">Observações</label>
+        <textarea id="prodNotes" placeholder="Fornecedor, validade, onde fica guardado…">${p ? v(p.notes) : ''}</textarea>
+
+        <button class="btn btn-primary" id="saveProduct">Salvar produto</button>
+        ${p ? '<button class="btn btn-ghost" id="deleteProduct">Remover do estoque</button>' : ''}
+        <div id="prodError"></div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('modalClose').onclick = closeModal;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+
+  const erro = (msg) => {
+    document.getElementById('prodError').innerHTML = msg ? `<div class="login-error">${msg}</div>` : '';
+  };
+
+  document.getElementById('saveProduct').onclick = async () => {
+    const name = document.getElementById('prodName').value.trim();
+    if (!name) { erro('Dê um nome ao produto.'); return; }
+    const custo = document.getElementById('prodCost').value.trim();
+    const payload = {
+      name,
+      brand: document.getElementById('prodBrand').value.trim() || null,
+      category: document.getElementById('prodCategory').value.trim() || null,
+      unit: document.getElementById('prodUnit').value,
+      quantity: Math.max(0, Number(document.getElementById('prodQty').value) || 0),
+      min_quantity: Math.max(0, Number(document.getElementById('prodMin').value) || 0),
+      cost: custo === '' ? null : Number(custo),
+      notes: document.getElementById('prodNotes').value.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = p
+      ? await sb.from('products').update(payload).eq('id', p.id).select('id')
+      : await sb.from('products').insert(payload).select('id');
+    if (error) { erro(error.message); return; }
+    if (!data || !data.length) { erro('Não foi possível salvar — faça login novamente.'); return; }
+    closeModal();
+    showToast(p ? 'Produto atualizado' : 'Produto cadastrado');
+    await loadProducts();
+    render();
+  };
+
+  const btnDel = document.getElementById('deleteProduct');
+  if (btnDel) btnDel.onclick = async () => {
+    // Some da lista mas o registro fica: o histórico de custo não se perde.
+    const { data, error } = await sb.from('products')
+      .update({ active: false, updated_at: new Date().toISOString() }).eq('id', p.id).select('id');
+    if (error) { erro(error.message); return; }
+    if (!data || !data.length) { erro('Não foi possível remover — faça login novamente.'); return; }
+    closeModal();
+    showToast('Produto removido do estoque');
+    await loadProducts();
+    render();
+  };
 }
 
 function render() {
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === state.tab));
-  document.getElementById('fabNewAppt').style.display = (state.tab === 'agenda' && !state.selectedApptId) ? 'flex' : 'none';
+  // O + serve as duas telas que cadastram: agendamento na agenda, produto no estoque.
+  const abaComFab = state.tab === 'agenda' || state.tab === 'estoque';
+  document.getElementById('fabNewAppt').style.display = (abaComFab && !state.selectedApptId) ? 'flex' : 'none';
   if (state.selectedApptId) { renderApptDetail(); return; }
   if (state.tab === 'inicio') renderHome();
   else if (state.tab === 'insights') renderInsights();
   else if (state.tab === 'agenda') renderAgenda();
   else if (state.tab === 'clients') renderClients();
-  else if (state.tab === 'team') renderTeam();
+  else if (state.tab === 'estoque') renderStock();
   else if (state.tab === 'questionario') renderQuestionario();
 }
 
@@ -3172,7 +3449,10 @@ function renderNewApptModal(errorMsg) {
   };
 }
 
-document.getElementById('fabNewAppt').onclick = openNewApptModal;
+document.getElementById('fabNewAppt').onclick = () => {
+  if (state.tab === 'estoque') openProductModal();
+  else openNewApptModal();
+};
 
 checkSession();
 
