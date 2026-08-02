@@ -9,7 +9,7 @@ qualquer (`npx serve .`) — não existe passo de compilação.
 | Arquivo | Linhas | O que é |
 |---|---|---|
 | `index.html` | ~1290 | Landing pública: hero em vídeo, galeria, antes/depois, PT/EN |
-| `agendar.html` | ~740 | Agendamento pela cliente, 4 passos (serviço → profissional → data/hora → dados) |
+| `agendar.html` | ~760 | Agendamento pela cliente, 3 passos (serviço → data/hora → dados) |
 | `painel.html` | ~2990 | Painel da Juliane. **Tudo inline** — config, dados, todas as telas |
 | `painel_demo.html` | ~3160 | Cópia do painel com stub do Supabase, pra demonstrar sem login |
 | `manifest.json` | — | PWA (nome, ícones, cor) |
@@ -110,6 +110,21 @@ dias em que o salão abriu (`isSalonOpenDay`).
 **Só a Juliane atende.** Outras profissionais existem com `active = false` e são
 mantidas por causa do histórico. Onde há uma só ativa, a escolha de profissional
 some da interface.
+
+No `agendar.html` isso é o passo 2: ele sai do fluxo, a profissional é escolhida
+sozinha e a cliente vê **3 passos**, não 4. Quem manda é `state.pulaEscolhaStaff`
+— o `init()` chuta pelo total de ativas e o `advanceFromStep1()` confirma pela
+lista do serviço escolhido. `etapasVisiveis()` cuida dos pontinhos e do "Passo X
+de Y": o número interno do passo continua 1–4, só a contagem exibida muda. Se
+uma segunda profissional voltar a ficar ativa, a tela reaparece sozinha.
+
+`loadStaffForService()` **filtra por `active`**. Todas as cinco profissionais
+estão ligadas a todos os 15 serviços em `staff_services`, então sem esse filtro
+a cliente escolhia entre cinco pessoas — quatro fora do salão, incluindo a
+recepcionista — e podia agendar com quem não atende.
+
+O painel não tem esse tratamento: o modal de novo agendamento ainda mostra o
+`<select>` de profissional sempre (`painel.html`, `staffSelect`).
 
 ## Convenções
 

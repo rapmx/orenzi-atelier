@@ -233,12 +233,9 @@
 <button class="back-arrow" id="backArrow" aria-label="Voltar">←</button>
 <div class="wrap">
   <div class="brand">Orenzi</div>
-  <div class="steps">
-    <div class="dot" data-step="1"></div>
-    <div class="dot" data-step="2"></div>
-    <div class="dot" data-step="3"></div>
-    <div class="dot" data-step="4"></div>
-  </div>
+  <!-- Os pontinhos são montados pelo setStep(): quantos aparecem depende de o
+       passo da profissional entrar no fluxo ou não. -->
+  <div class="steps" id="steps"></div>
   <div class="step-caption" id="stepCaption"></div>
   <div id="errorBanner"></div>
   <div class="app-viewport" id="appViewport">
@@ -307,12 +304,16 @@ function salonToday() {
 }
 
 const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const STEP_LABELS = { 1: 'Passo 1 de 4', 2: 'Passo 2 de 4', 3: 'Passo 3 de 4', 4: 'Passo 4 de 4' };
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const state = {
   step: 1,
+  // Com uma profissional só atendendo não existe escolha a fazer, e o passo 2
+  // sai do fluxo: a cliente vai do serviço direto pra data. Começa true porque
+  // hoje só a Juliane atende; o init confere no banco e corrige se outra voltar
+  // a ficar ativa, e o advanceFromStep1() confirma pelo serviço escolhido.
+  pulaEscolhaStaff: true,
   services: [],
   staff: [],
   selectedService: null,
@@ -429,13 +430,22 @@ function groupByCategory(services) {
   return groups;
 }
 
+// Os passos que a cliente realmente vê. O número interno continua o mesmo
+// (1 serviço · 2 profissional · 3 data/hora · 4 dados) — o que muda é a
+// contagem exibida, senão o fluxo curto anunciaria "Passo 3 de 4" na tela 2.
+function etapasVisiveis() {
+  return state.pulaEscolhaStaff ? [1, 3, 4] : [1, 2, 3, 4];
+}
+
 function setStep(n) {
   const direction = n >= state.step ? 'forward' : 'back';
   state.step = n;
-  document.querySelectorAll('.dot').forEach(d => {
-    d.classList.toggle('active', Number(d.dataset.step) <= n);
-  });
-  document.getElementById('stepCaption').textContent = state.done ? '' : (STEP_LABELS[n] || '');
+  const etapas = etapasVisiveis();
+  const pos = etapas.indexOf(n) + 1;
+  document.getElementById('steps').innerHTML = etapas
+    .map((_, i) => `<div class="dot${i < pos ? ' active' : ''}"></div>`).join('');
+  document.getElementById('stepCaption').textContent =
+    (state.done || pos < 1) ? '' : `Passo ${pos} de ${etapas.length}`;
   if (!hasRenderedOnce) { hasRenderedOnce = true; render(); }
   else { renderTransition(direction); }
 }
@@ -449,10 +459,25 @@ async function loadServices() {
 async function loadStaffForService(serviceId) {
   const { data, error } = await sb
     .from('staff_services')
-    .select('staff:staff_id(id, name, role)')
+    .select('staff:staff_id(id, name, role, active)')
     .eq('service_id', serviceId);
   if (error) { state.error = error.message; return; }
-  state.staff = data.map(row => row.staff);
+  // Só quem atende de verdade. As inativas continuam no banco por causa do
+  // histórico de agendamentos, e todas estão ligadas a todos os serviços — sem
+  // este filtro a cliente escolhia entre cinco pessoas, quatro delas fora do
+  // salão, inclusive a recepção.
+  state.staff = data.map(row => row.staff).filter(s => s && s.active !== false);
+}
+
+// Quantas atendem hoje, independente de serviço. Serve só pra saber, já no
+// primeiro passo, se o fluxo tem 3 ou 4 telas.
+async function loadActiveStaffCount() {
+  const { count, error } = await sb
+    .from('staff')
+    .select('id', { count: 'exact', head: true })
+    .eq('active', true);
+  if (error) return;   // no erro, mantém o padrão de uma profissional só
+  state.pulaEscolhaStaff = count === 1;
 }
 
 // Calcula horários livres pro profissional escolhido, na data escolhida,
@@ -606,7 +631,8 @@ function renderStep3() {
     <div id="slotsWrap"></div>
   `;
 
-  setBackArrow(true, () => setStep(2));
+  // Sem o passo da profissional, a seta volta pro serviço.
+  setBackArrow(true, () => setStep(state.pulaEscolhaStaff ? 1 : 2));
 
   document.getElementById('calPrev').onclick = () => {
     state.calViewMonth--;
@@ -667,7 +693,16 @@ async function advanceFromStep1() {
   advanceBtn.disabled = true;
   advanceBtn.textContent = 'Carregando…';
   await loadStaffForService(state.selectedService.id);
-  setStep(2);
+  // Uma só atendendo: o agendamento já sai no nome dela e a cliente vai direto
+  // pra data. Zero é outra história — cai no passo 2, que tem o aviso de que
+  // ninguém atende esse serviço.
+  state.pulaEscolhaStaff = state.staff.length === 1;
+  if (state.pulaEscolhaStaff) {
+    state.selectedStaff = state.staff[0];
+    setStep(3);
+  } else {
+    setStep(2);
+  }
 }
 
 function render() {
@@ -838,7 +873,7 @@ function logBookingVisit() {
 
 (async function init() {
   logBookingVisit();
-  await loadServices();
+  await Promise.all([loadServices(), loadActiveStaffCount()]);
   setStep(1);
 })();
 </script>
