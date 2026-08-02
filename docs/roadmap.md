@@ -35,6 +35,10 @@ vermelho que "Agenda praticamente lotada" já usa. Documentado em
       defeito.
 - [x] Animação de toque nos cards de dia da semana, nos bookings e no botão +
       (`scale()` rápido no `:active`, com `prefers-reduced-motion` respeitado)
+- [x] Slide da grade ao trocar de dia (direção depende de ir pra frente ou
+      pra trás na data), pop-up no modal de novo agendamento (modelo: balão
+      de ajuda de Insights) com a UI interna também no padrão de cartão, e
+      barra de rolagem da agenda que só aparece durante o toque
 
 Achado pré-existente, não relacionado a esta fase: `painel_demo.html` solta 2
 erros no console já ao carregar (antes de qualquer interação), confirmado por

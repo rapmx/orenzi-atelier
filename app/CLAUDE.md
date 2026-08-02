@@ -168,6 +168,35 @@ Animações de toque (`:active { transform: scale(...) }`) sempre com
 `@media (prefers-reduced-motion: reduce)` zerando `transition`/`transform` —
 ver o bloco perto do `.fab` em `painel.html`.
 
+**Slide da agenda ao trocar de dia** (`renderAgendaTransition()`, perto de
+`renderAgenda()`): clona a `.timeline` antiga, deixa `renderAgenda()` desenhar
+a nova, e anima as duas por cima uma da outra — mesma técnica de
+`renderTransition()` em `agendar.html`. A diferença importante: aqui `#app` é
+compartilhado por todas as abas e é reescrito inteiro a cada `render()`, então
+o clone **não pode** ser anexado no viewport antigo (ele morre junto quando o
+innerHTML troca) — tem que ser anexado no viewport novo, depois de
+`renderAgenda()` já ter rodado. Só a grade (`#timelineEl`) desliza, não a
+`week-strip` nem o cabeçalho do mês. Animações feitas em JS (essa e o pop-up
+de modal) checam `prefersReducedMotion()` no início e pulam pra
+`renderAgenda()`/render direto sem animação — não dá pra confiar só no CSS
+`@media` aqui porque a sequência inteira (clone, RAF duplo, cleanup) é
+orquestrada em JS.
+
+**Scrollbar da agenda** (`.timeline`, `attachTimelineScrollbarFade()`):
+invisível por padrão, aparece com a classe `.is-scrolling` enquanto rola e
+some sozinha 1s depois do último evento de scroll. `#timelineEl` é recriado a
+cada render, então o listener é reamarrado no fim de `renderAgenda()` — mesmo
+padrão dos outros binds da função.
+
+**Modal de novo agendamento** (`renderNewApptModal()`): abre com a mesma
+animação de "pop" do balão de ajuda dos indicadores (Insights) — fade + scale
+com a curva "com molinha" (`cubic-bezier(.34,1.56,.64,1)`), só que subindo de
+baixo em vez de nascer centralizado, porque aqui é uma folha de formulário
+comprida, não um balão curto. Os campos entram em `.modal-section` (mesmo
+cartão surface+borda do resto do app) com `.modal-field-label` no lugar de
+`<label>` solto. Isso é só desse modal — não mudei o `<label>` global nem o
+modal de produto do Estoque.
+
 **Achado, não investigado:** `painel_demo.html` solta 2 erros no console já
 ao carregar, antes de qualquer clique. Confirmado com `git stash` que é
 anterior a 02/08 — não é regressão de nenhuma mudança recente, e a tela
