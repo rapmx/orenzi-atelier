@@ -1,426 +1,585 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Orenzi — mapa 3D do código</title>
+<title>graphify 3D - graphify-out</title>
 <style>
-  :root {
-    --surface: #12120f;
-    --panel: #1a1a17;
-    --ink: #f5f4ef;
-    --ink-2: #c3c2b7;
-    --muted: #8a8880;
-    --line: rgba(245,244,239,0.12);
-    /* 3 slots categóricos validados all-pairs contra esta superfície
-       (CVD ΔE 9.4 · visão normal ΔE 20.9). Não acrescentar um 4º: nenhuma
-       combinação de 4 hues passa o piso, por isso comunidade virou posição. */
-    --t0: #3987e5;   /* código */
-    --t1: #d95926;   /* infra e conceitos */
-    --t2: #199e70;   /* regras e decisões */
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    margin: 0; background: var(--surface); color: var(--ink);
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    overflow: hidden;
-  }
-  canvas { display: block; cursor: grab; touch-action: none; }
-  canvas.dragging { cursor: grabbing; }
+  /* CSS copiado do graph.html sem alteração — a sidebar tem que ficar idêntica.
+     Só o que é novo (barra de câmera, tooltip, aviso de validação) vem depois. */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0f1a; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; display: flex; height: 100vh; overflow: hidden; }
+  #graph { flex: 1; position: relative; }
+  #sidebar { width: 280px; background: #1a1a2e; border-left: 1px solid #2a2a4e; display: flex; flex-direction: column; overflow: hidden; }
+  #search-wrap { padding: 12px; border-bottom: 1px solid #2a2a4e; }
+  #search { width: 100%; background: #0f0f1a; border: 1px solid #3a3a5e; color: #e0e0e0; padding: 7px 10px; border-radius: 6px; font-size: 13px; outline: none; }
+  #search:focus { border-color: #4E79A7; }
+  #search-results { max-height: 140px; overflow-y: auto; padding: 4px 12px; border-bottom: 1px solid #2a2a4e; display: none; }
+  .search-item { padding: 4px 6px; cursor: pointer; border-radius: 4px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .search-item:hover { background: #2a2a4e; }
+  #info-panel { padding: 14px; border-bottom: 1px solid #2a2a4e; min-height: 140px; }
+  #info-panel h3 { font-size: 13px; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  #info-content { font-size: 13px; color: #ccc; line-height: 1.6; }
+  #info-content .field { margin-bottom: 5px; }
+  #info-content .field b { color: #e0e0e0; }
+  #info-content .empty { color: #555; font-style: italic; }
+  .neighbor-link { display: block; padding: 2px 6px; margin: 2px 0; border-radius: 3px; cursor: pointer; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 3px solid #333; }
+  .neighbor-link:hover { background: #2a2a4e; }
+  #neighbors-list { max-height: 160px; overflow-y: auto; margin-top: 4px; }
+  #legend-wrap { flex: 1; overflow-y: auto; padding: 12px; }
+  #legend-wrap h3 { font-size: 13px; color: #aaa; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .legend-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; border-radius: 4px; font-size: 12px; }
+  .legend-item:hover { background: #2a2a4e; padding-left: 4px; }
+  .legend-item.dimmed { opacity: 0.35; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .legend-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend-count { color: #666; font-size: 11px; }
+  #stats { padding: 10px 14px; border-top: 1px solid #2a2a4e; font-size: 11px; color: #555; }
+  #legend-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 4px 0; }
+  #legend-controls label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: #aaa; user-select: none; }
+  #legend-controls label:hover { color: #e0e0e0; }
+  .legend-cb, #select-all-cb { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; border: 1.5px solid #3a3a5e; border-radius: 3px; background: #0f0f1a; cursor: pointer; position: relative; flex-shrink: 0; }
+  .legend-cb:checked, #select-all-cb:checked { background: #4E79A7; border-color: #4E79A7; }
+  .legend-cb:checked::after, #select-all-cb:checked::after { content: ''; position: absolute; left: 3.5px; top: 1px; width: 4px; height: 7px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  #select-all-cb:indeterminate { background: #4E79A7; border-color: #4E79A7; }
+  #select-all-cb:indeterminate::after { content: ''; position: absolute; left: 2px; top: 5px; width: 8px; height: 2px; background: #fff; border: none; transform: none; }
 
-  aside {
-    position: fixed; top: 0; left: 0; bottom: 0; width: 268px; z-index: 10;
-    background: color-mix(in srgb, var(--panel) 92%, transparent);
-    border-right: 1px solid var(--line);
-    padding: 18px 16px; overflow-y: auto;
-    backdrop-filter: blur(8px);
+  /* ── novo: controles de câmera 3D ── */
+  #cam {
+    position: absolute; top: 12px; left: 12px; z-index: 5; display: flex; gap: 6px;
+    align-items: center; flex-wrap: wrap; max-width: calc(100% - 24px);
   }
-  h1 { font-size: 14px; margin: 0 0 2px; letter-spacing: 0.01em; }
-  .sub { font-size: 11.5px; color: var(--muted); margin-bottom: 16px; }
-  h2 {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em;
-    color: var(--muted); margin: 18px 0 8px; font-weight: 600;
+  #cam button {
+    background: #1a1a2e; border: 1px solid #3a3a5e; color: #e0e0e0;
+    font-family: inherit; font-size: 12px; padding: 6px 11px; border-radius: 6px; cursor: pointer;
   }
-  #busca {
-    width: 100%; background: var(--surface); border: 1px solid var(--line);
-    color: var(--ink); border-radius: 8px; padding: 7px 10px; font-size: 12.5px;
-    font-family: inherit;
+  #cam button:hover { border-color: #4E79A7; }
+  #cam button.on { background: #4E79A7; border-color: #4E79A7; color: #fff; }
+  #depth-wrap {
+    display: flex; align-items: center; gap: 7px; background: #1a1a2e;
+    border: 1px solid #3a3a5e; border-radius: 6px; padding: 5px 11px; font-size: 12px; color: #aaa;
   }
-  #busca::placeholder { color: var(--muted); }
-  #busca:focus { outline: 2px solid var(--t0); outline-offset: -1px; }
-
-  .legenda { display: flex; flex-direction: column; gap: 7px; }
-  .leg { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-2); }
-  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-  .leg .qtd { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-
-  .com {
-    display: flex; align-items: center; gap: 8px; width: 100%;
-    background: none; border: none; color: var(--ink-2); font-family: inherit;
-    font-size: 12px; text-align: left; padding: 5px 7px; border-radius: 7px;
-    cursor: pointer; line-height: 1.25;
+  #depth { width: 96px; accent-color: #4E79A7; }
+  #depth-val { color: #e0e0e0; font-variant-numeric: tabular-nums; min-width: 30px; }
+  #tooltip {
+    position: absolute; z-index: 6; pointer-events: none; display: none;
+    background: #1a1a2e; border: 1px solid #3a3a5e; border-radius: 5px;
+    padding: 5px 9px; font-size: 12px; color: #e0e0e0; max-width: 320px;
   }
-  .com:hover { background: rgba(245,244,239,0.06); color: var(--ink); }
-  .com[aria-pressed="true"] { background: rgba(57,135,229,0.16); color: var(--ink); }
-  .com .qtd { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-
-  .acoes { display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
-  .btn {
-    background: none; border: 1px solid var(--line); color: var(--ink-2);
-    font-family: inherit; font-size: 11.5px; padding: 6px 10px; border-radius: 999px; cursor: pointer;
+  #valid {
+    position: absolute; bottom: 12px; left: 12px; z-index: 5; font-size: 11px;
+    padding: 5px 10px; border-radius: 5px; background: #1a1a2e; border: 1px solid #2a2a4e;
   }
-  .btn:hover { border-color: var(--muted); color: var(--ink); }
-  .btn[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
-
-  #tip {
-    position: fixed; z-index: 20; pointer-events: none; opacity: 0;
-    background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
-    padding: 9px 11px; max-width: 300px; font-size: 12px; line-height: 1.45;
-    box-shadow: 0 8px 26px rgba(0,0,0,0.5); transition: opacity .12s;
-  }
-  #tip .n { font-weight: 650; margin-bottom: 3px; word-break: break-word; }
-  #tip .m { color: var(--muted); font-size: 11px; }
-
-  #painelNo {
-    position: fixed; right: 16px; top: 16px; z-index: 15; width: 280px;
-    background: color-mix(in srgb, var(--panel) 94%, transparent);
-    border: 1px solid var(--line); border-radius: 12px; padding: 14px;
-    backdrop-filter: blur(8px); display: none;
-  }
-  #painelNo.on { display: block; }
-  #painelNo .n { font-weight: 650; font-size: 13.5px; margin-bottom: 5px; word-break: break-word; }
-  #painelNo .m { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
-  #painelNo ul { margin: 10px 0 0; padding-left: 16px; font-size: 12px; color: var(--ink-2); line-height: 1.6; }
-  #painelNo .fechar {
-    position: absolute; top: 9px; right: 9px; background: none; border: none;
-    color: var(--muted); font-size: 15px; cursor: pointer; line-height: 1; padding: 2px 5px;
-  }
-
-  #dica {
-    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
-    color: var(--muted); font-size: 11.5px; z-index: 12; pointer-events: none;
-    background: color-mix(in srgb, var(--surface) 80%, transparent);
-    padding: 5px 12px; border-radius: 999px;
-  }
-
-  #tabela {
-    position: fixed; inset: 0; z-index: 30; background: var(--surface);
-    overflow: auto; padding: 26px 30px; display: none;
-  }
-  #tabela.on { display: block; }
-  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; position: sticky; top: 0; background: var(--surface); }
-  td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .pill { display: inline-flex; align-items: center; gap: 6px; }
-
-  @media (max-width: 720px) {
-    aside { width: 100%; height: 46%; bottom: auto; border-right: none; border-bottom: 1px solid var(--line); }
-    canvas { margin-top: 0; }
-    #painelNo { right: 10px; left: 10px; width: auto; top: auto; bottom: 10px; }
-  }
+  #valid.ok { color: #59A14F; }
+  #valid.bad { color: #E15759; border-color: #E15759; }
 </style>
 </head>
 <body>
-
-<canvas id="c"></canvas>
-
-<aside>
-  <h1>Orenzi — mapa 3D do código</h1>
-  <div class="sub" id="resumo"></div>
-
-  <h2>Buscar</h2>
-  <input id="busca" type="search" placeholder="função, arquivo, conceito…" autocomplete="off">
-
-  <h2>O que é cada ponto</h2>
-  <div class="legenda" id="legenda"></div>
-
-  <h2>Comunidades <span style="text-transform:none;letter-spacing:0">(clique p/ isolar)</span></h2>
-  <div id="coms"></div>
-
-  <div class="acoes">
-    <button class="btn" id="btnGirar" aria-pressed="true">Girar</button>
-    <button class="btn" id="btnReset">Recentrar</button>
-    <button class="btn" id="btnTabela" aria-pressed="false">Tabela</button>
+<div id="graph">
+  <div id="cam">
+    <button id="btn-front">Front View</button>
+    <button id="btn-recenter">Recenter</button>
+    <button id="btn-proj">Perspective</button>
+    <button id="btn-spin">Spin</button>
+    <div id="depth-wrap">
+      <label for="depth">Depth</label>
+      <input id="depth" type="range" min="0" max="900" step="10">
+      <span id="depth-val"></span>
+    </div>
   </div>
-</aside>
-
-<div id="tip" role="tooltip"></div>
-
-<div id="painelNo">
-  <button class="fechar" id="fecharNo" aria-label="Fechar">&times;</button>
-  <div class="n" id="noNome"></div>
-  <div class="m" id="noMeta"></div>
-  <ul id="noVizinhos"></ul>
+  <div id="tooltip"></div>
+  <div id="valid"></div>
+</div>
+<div id="sidebar">
+  <div id="search-wrap">
+    <input id="search" type="text" placeholder="Search nodes..." autocomplete="off">
+    <div id="search-results"></div>
+  </div>
+  <div id="info-panel">
+    <h3>Node Info</h3>
+    <div id="info-content"><span class="empty">Click a node to inspect it</span></div>
+  </div>
+  <div id="legend-wrap">
+    <h3>Communities</h3>
+    <div id="legend-controls">
+      <label><input type="checkbox" id="select-all-cb" checked>Select All</label>
+    </div>
+    <div id="legend"></div>
+  </div>
+  <div id="stats">__STATS__</div>
 </div>
 
-<div id="dica">arraste para girar · scroll para aproximar · clique num ponto para focar</div>
-
-<section id="tabela" aria-label="Tabela de nós">
-  <table>
-    <thead><tr><th>Nó</th><th>Tipo</th><th>Comunidade</th><th class="num">Conexões</th><th>Arquivo</th></tr></thead>
-    <tbody id="tbody"></tbody>
-  </table>
-</section>
-
 <script>
-const DATA = /*__DATA__*/;
+// ── Dados: exatamente os mesmos arrays do graph.html, copiados sem edição ──
+const RAW_NODES = /*__NODES__*/;
+const RAW_EDGES = /*__EDGES__*/;
+const LEGEND = /*__LEGEND__*/;
+const HYPEREDGES = /*__HYPEREDGES__*/;
+// Coordenadas x/y capturadas de network.getPositions() do graph.html depois da
+// estabilização. O graph.html não persiste posições e não fixa randomSeed, então
+// re-rodar a física daria um mapa diferente a cada abertura; congelar aqui é o
+// que torna "Front View == o mapa 2D" uma afirmação verificável.
+const LAYOUT = /*__LAYOUT__*/;
+</script>
 
-const TIPOS = [
-  { nome: 'Código',              cor: getComputedStyle(document.documentElement).getPropertyValue('--t0').trim() },
-  { nome: 'Infra e conceitos',   cor: getComputedStyle(document.documentElement).getPropertyValue('--t1').trim() },
-  { nome: 'Regras e decisões',   cor: getComputedStyle(document.documentElement).getPropertyValue('--t2').trim() },
-];
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
 
-const cv = document.getElementById('c');
-const ctx = cv.getContext('2d');
-const tip = document.getElementById('tip');
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const N = DATA.nodes, L = DATA.links;
-const nomeCom = {}; DATA.communities.forEach(c => nomeCom[c.id] = c.n);
+// Profundidade conservadora por padrão: o mapa 2D ganhando volume, não um mapa
+// novo. O span de x/y passa de 3300 unidades; 260 aqui é ~8% disso.
+let DEPTH_SCALE = 260;
 
-// vizinhança, pra realçar o que se liga ao nó em foco
-const viz = N.map(() => []);
-L.forEach(([a, b, rel]) => { viz[a].push([b, rel]); viz[b].push([a, rel]); });
+const POS = new Map(LAYOUT.pos.map(p => [p[0], { x: p[1], y: p[2] }]));
+const byId = new Map(RAW_NODES.map(n => [n.id, n]));
 
-const grauMax = Math.max(...N.map(n => n.d));
+// z derivado da comunidade — a camada que o graphify já tem (regra 1 do pedido).
+// Centrado em zero pro volume crescer pros dois lados do plano original.
+const nCom = Math.max(1, LEGEND.length - 1);
+function zOf(n) { return (n.community / nCom - 0.5) * DEPTH_SCALE; }
 
-let yaw = 0.6, pitch = -0.3, zoom = 1, girar = true;
-let arrastando = false, ultX = 0, ultY = 0, moveu = false;
-let hover = -1, foco = -1, comIsolada = null, busca = '';
-const proj = N.map(() => ({ x: 0, y: 0, z: 0, r: 0, vis: true }));
+// x3D = x2D, y3D = -y2D. A inversão do Y é obrigatória e não é layout novo: no
+// vis-network o Y cresce pra baixo, no three cresce pra cima. Sem ela o mapa
+// sairia espelhado na vertical.
+function xyOf(id) { const p = POS.get(id); return { x: p.x, y: -p.y }; }
 
-const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
-if (reduzido) { girar = false; document.getElementById('btnGirar').setAttribute('aria-pressed', 'false'); }
+const host = document.getElementById('graph');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0f0f1a);
 
-function dim() {
-  const r = devicePixelRatio || 1;
-  cv.width = innerWidth * r; cv.height = innerHeight * r;
-  cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
-  ctx.setTransform(r, 0, 0, r, 0, 0);
+// centro e extensão do mapa 2D, pra câmera enquadrar como o fit do vis
+const xs = RAW_NODES.map(n => xyOf(n.id).x), ys = RAW_NODES.map(n => xyOf(n.id).y);
+const CX = (Math.min(...xs) + Math.max(...xs)) / 2, CY = (Math.min(...ys) + Math.max(...ys)) / 2;
+const SPAN = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+const DIST = SPAN * 1.15;
+
+let W = host.clientWidth, H = host.clientHeight;
+const persp = new THREE.PerspectiveCamera(50, W / H, 1, SPAN * 12);
+const orthoH = SPAN * 0.62;
+const ortho = new THREE.OrthographicCamera(-orthoH * (W / H), orthoH * (W / H), orthoH, -orthoH, 1, SPAN * 12);
+let camera = persp;
+[persp, ortho].forEach(c => c.position.set(CX, CY, DIST));
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(W, H);
+host.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;       // rotação orbital suave
+controls.dampingFactor = 0.08;
+controls.target.set(CX, CY, 0);
+controls.update();
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+const key = new THREE.DirectionalLight(0xffffff, 0.55); key.position.set(1, 1, 2); scene.add(key);
+
+// ── NÓS ──────────────────────────────────────────────────────
+// Esfera no lugar do círculo: a adaptação mínima pra WebGL que o pedido permite.
+// Raio = n.size do vis, sem reescalar, então o tamanho relativo é o mesmo.
+const esferas = [], porId = new Map();
+const geoCache = new Map();
+function geoDe(r) {
+  const k = r.toFixed(1);
+  if (!geoCache.has(k)) geoCache.set(k, new THREE.SphereGeometry(r, 20, 14));
+  return geoCache.get(k);
 }
-addEventListener('resize', dim); dim();
-
-// Um nó está "ativo" quando passa pelos filtros; os inativos não somem — ficam
-// fantasmas, senão a estrutura ao redor perde o contexto.
-function ativo(i) {
-  const n = N[i];
-  if (comIsolada !== null && n.c !== comIsolada) return false;
-  if (busca && !(n.l.toLowerCase().includes(busca) || (n.f || '').toLowerCase().includes(busca))) return false;
-  return true;
+for (const n of RAW_NODES) {
+  const { x, y } = xyOf(n.id);
+  const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(n.color.background) });
+  const m = new THREE.Mesh(geoDe(n.size), mat);
+  m.position.set(x, y, zOf(n));
+  m.userData = { id: n.id, node: n, corBase: new THREE.Color(n.color.background) };
+  scene.add(m); esferas.push(m); porId.set(n.id, m);
 }
 
-function projetar() {
-  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
-  const cx = innerWidth / 2 + (innerWidth > 720 ? 134 : 0), cyy = innerHeight / 2;
-  const esc = Math.min(innerWidth, innerHeight) * 0.42 * zoom;
-  for (let i = 0; i < N.length; i++) {
-    const [x, y, z] = N[i].p;
-    const x1 = x * cy - z * sy, z1 = x * sy + z * cy;
-    const y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
-    const persp = 2.6 / (2.6 + z2);       // perspectiva suave: dá profundidade sem distorcer as pontas
-    const p = proj[i];
-    p.x = cx + x1 * esc * persp;
-    p.y = cyy + y2 * esc * persp;
-    p.z = z2;
-    p.r = (2.1 + Math.sqrt(N[i].d / grauMax) * 7.4) * persp * Math.min(zoom, 1.7);
-    p.vis = ativo(i);
+// ── RÓTULOS ──────────────────────────────────────────────────
+// Só onde font.size > 0 — mesmo critério que o graph.html já usa pra decidir
+// qual nó mostra label. Sprite, pra ficar sempre virado pra câmera.
+const sprites = [];
+for (const n of RAW_NODES) {
+  if (!n.font || !n.font.size) continue;
+  const cv = document.createElement('canvas');
+  const ctx0 = cv.getContext('2d');
+  const fs = 64;
+  ctx0.font = `600 ${fs}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+  cv.width = Math.ceil(ctx0.measureText(n.label).width) + 16;
+  cv.height = Math.round(fs * 1.5);
+  const c2 = cv.getContext('2d');
+  c2.font = `600 ${fs}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+  c2.textBaseline = 'middle';
+  c2.lineWidth = 6; c2.strokeStyle = '#0f0f1a';
+  c2.strokeText(n.label, 8, cv.height / 2);
+  c2.fillStyle = n.font.color || '#ffffff';
+  c2.fillText(n.label, 8, cv.height / 2);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.minFilter = THREE.LinearFilter;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  const alt = n.font.size * 2.6;
+  sp.scale.set(alt * (cv.width / cv.height), alt, 1);
+  const { x, y } = xyOf(n.id);
+  sp.position.set(x, y + n.size + alt * 0.55, zOf(n));
+  sp.userData = { id: n.id };
+  scene.add(sp); sprites.push(sp);
+}
+
+// ── ARESTAS ──────────────────────────────────────────────────
+// Uma linha por aresta (não mescladas), pra cada uma manter cor, opacidade,
+// tracejado e destaque próprios — e pra nenhuma sumir quando a comunidade some.
+const linhas = [], setas = [];
+const geoSeta = new THREE.ConeGeometry(1, 2.4, 8);
+for (const e of RAW_EDGES) {
+  const a = xyOf(e.from), b = xyOf(e.to);
+  const na = byId.get(e.from), nb = byId.get(e.to);
+  const pa = new THREE.Vector3(a.x, a.y, zOf(na)), pb = new THREE.Vector3(b.x, b.y, zOf(nb));
+  const op = (e.color && e.color.opacity != null) ? e.color.opacity : 0.7;
+  const cor = new THREE.Color((e.color && e.color.color) || 0x9aa4c8);
+
+  const Mat = e.dashes ? THREE.LineDashedMaterial : THREE.LineBasicMaterial;
+  const opts = { color: cor, transparent: true, opacity: op };
+  if (e.dashes) { opts.dashSize = 9; opts.gapSize = 6; }
+  const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([pa, pb]), new Mat(opts));
+  if (e.dashes) ln.computeLineDistances();
+  ln.userData = { e, opBase: op };
+  scene.add(ln); linhas.push(ln);
+
+  // seta na ponta, equivalente ao arrows.to do vis
+  const dir = new THREE.Vector3().subVectors(pb, pa).normalize();
+  const tam = 3.2 + (e.width || 1) * 1.5;
+  const cone = new THREE.Mesh(geoSeta, new THREE.MeshBasicMaterial({ color: cor, transparent: true, opacity: op }));
+  cone.scale.set(tam, tam, tam);
+  cone.position.copy(pb).addScaledVector(dir, -(nb.size + tam * 1.2));
+  cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+  cone.userData = { e, opBase: op };
+  scene.add(cone); setas.push(cone);
+}
+
+// ── HYPEREDGES ───────────────────────────────────────────────
+// As regiões sombreadas do graph.html: mesmo casco expandido 1.15x a partir do
+// centroide, mesma cor e mesmas opacidades (0.12 preenchimento / 0.4 contorno).
+const hyper = [];
+for (const h of HYPEREDGES) {
+  const ids = h.nodes.filter(id => POS.has(id));
+  if (ids.length < 3) continue;
+  const face = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({
+    color: 0x6366f1, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }));
+  const borda = new THREE.LineLoop(new THREE.BufferGeometry(),
+    new THREE.LineBasicMaterial({ color: 0x6366f1, transparent: true, opacity: 0.4 }));
+  scene.add(face); scene.add(borda);
+  hyper.push({ h, face, borda, ids });
+}
+
+// ── profundidade ao vivo (recalcula só z; x/y nunca são tocados) ──
+function aplicarProfundidade() {
+  for (const m of esferas) m.position.z = zOf(m.userData.node);
+  for (const sp of sprites) sp.position.z = zOf(byId.get(sp.userData.id));
+  linhas.forEach((ln, i) => {
+    const e = RAW_EDGES[i], a = xyOf(e.from), b = xyOf(e.to);
+    const na = byId.get(e.from), nb = byId.get(e.to);
+    const pa = new THREE.Vector3(a.x, a.y, zOf(na)), pb = new THREE.Vector3(b.x, b.y, zOf(nb));
+    ln.geometry.setFromPoints([pa, pb]);
+    if (e.dashes) ln.computeLineDistances();
+    const dir = new THREE.Vector3().subVectors(pb, pa).normalize();
+    const cone = setas[i], tam = cone.scale.x;
+    cone.position.copy(pb).addScaledVector(dir, -(nb.size + tam * 1.2));
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+  });
+  for (const hp of hyper) {
+    const pts = hp.ids.map(id => {
+      const p = xyOf(id), n = byId.get(id); return new THREE.Vector3(p.x, p.y, zOf(n));
+    });
+    const c = pts.reduce((s, p) => s.add(p.clone()), new THREE.Vector3()).divideScalar(pts.length);
+    const exp = pts.map(p => c.clone().addScaledVector(p.clone().sub(c), 1.15));
+    const v = [];
+    for (let i = 1; i < exp.length - 1; i++) v.push(exp[0], exp[i], exp[i + 1]);   // leque de triângulos
+    hp.face.geometry.setFromPoints(v);
+    hp.borda.geometry.setFromPoints(exp);
   }
 }
+aplicarProfundidade();
 
-// névoa por profundidade: o que está atrás recua, e o volume vira legível
-function nevoa(z) { return Math.max(0.16, Math.min(1, 0.62 - z * 0.42)); }
-
-function desenhar() {
-  projetar();
-  ctx.clearRect(0, 0, innerWidth, innerHeight);
-
-  const emFoco = foco >= 0 ? new Set(viz[foco].map(v => v[0]).concat([foco])) : null;
-
-  // arestas primeiro, atrás de tudo
-  ctx.lineWidth = 1;
-  for (const [a, b] of L) {
-    const pa = proj[a], pb = proj[b];
-    const vis = pa.vis && pb.vis;
-    let alfa = nevoa((pa.z + pb.z) / 2) * (vis ? 0.30 : 0.05);
-    if (emFoco) alfa = (emFoco.has(a) && emFoco.has(b)) ? 0.75 : alfa * 0.22;
-    if (alfa < 0.02) continue;
-    ctx.strokeStyle = `rgba(245,244,239,${alfa})`;
-    ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
-  }
-
-  // nós de trás pra frente, pra sobreposição respeitar a profundidade
-  const ordem = proj.map((_, i) => i).sort((i, j) => proj[j].z - proj[i].z);
-  for (const i of ordem) {
-    const p = proj[i], n = N[i];
-    let alfa = nevoa(p.z) * (p.vis ? 1 : 0.14);
-    if (emFoco && !emFoco.has(i)) alfa *= 0.3;
-    if (alfa < 0.02) continue;
-
-    const destaque = i === hover || i === foco;
-    ctx.globalAlpha = Math.min(1, alfa + (destaque ? 0.4 : 0));
-    ctx.fillStyle = TIPOS[n.t].cor;
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (destaque ? 1.5 : 1), 0, 6.2832); ctx.fill();
-
-    // anel na cor da superfície separa nós que se sobrepõem
-    if (p.r > 3) {
-      ctx.globalAlpha = Math.min(1, alfa);
-      ctx.strokeStyle = '#12120f'; ctx.lineWidth = 1.6;
-      ctx.stroke();
-    }
-    if (destaque) {
-      ctx.globalAlpha = 1;
-      ctx.strokeStyle = '#f5f4ef'; ctx.lineWidth = 1.6; ctx.stroke();
-    }
-  }
-  ctx.globalAlpha = 1;
-
-  // rótulo direto nos mais conectados: identidade não fica só na cor
-  ctx.font = '600 11px system-ui, -apple-system, "Segoe UI", sans-serif';
-  ctx.textAlign = 'center';
-  for (const i of ordem) {
-    const p = proj[i], n = N[i];
-    const vale = n.d >= 10 || i === hover || i === foco;
-    if (!vale || !p.vis) continue;
-    const a = i === hover || i === foco ? 1 : Math.min(0.85, nevoa(p.z) + 0.25);
-    ctx.globalAlpha = a;
-    ctx.fillStyle = '#12120f'; ctx.lineWidth = 3;
-    ctx.strokeStyle = '#12120f'; ctx.strokeText(n.l, p.x, p.y - p.r - 5);
-    ctx.fillStyle = '#f5f4ef';
-    ctx.fillText(n.l, p.x, p.y - p.r - 5);
-  }
-  ctx.globalAlpha = 1;
-}
-
-function laco() {
-  if (girar && !arrastando) { yaw += 0.0016; }
-  desenhar();
-  requestAnimationFrame(laco);
-}
-
-function noEm(mx, my) {
-  let melhor = -1, dist = 15 * 15;
-  for (let i = 0; i < N.length; i++) {
-    const p = proj[i];
-    if (!p.vis) continue;
-    const d = (p.x - mx) ** 2 + (p.y - my) ** 2;
-    const alcance = Math.max(9, p.r + 5) ** 2;
-    if (d < alcance && d < dist) { dist = d; melhor = i; }
-  }
-  return melhor;
-}
-
-cv.addEventListener('pointerdown', e => {
-  arrastando = true; moveu = false; ultX = e.clientX; ultY = e.clientY;
-  cv.classList.add('dragging'); cv.setPointerCapture(e.pointerId);
+const slider = document.getElementById('depth'), sval = document.getElementById('depth-val');
+slider.value = DEPTH_SCALE; sval.textContent = DEPTH_SCALE;
+slider.addEventListener('input', () => {
+  DEPTH_SCALE = +slider.value; sval.textContent = DEPTH_SCALE; aplicarProfundidade();
 });
-cv.addEventListener('pointermove', e => {
-  if (arrastando) {
-    const dx = e.clientX - ultX, dy = e.clientY - ultY;
-    if (Math.abs(dx) + Math.abs(dy) > 3) moveu = true;
-    yaw += dx * 0.006; pitch += dy * 0.006;
-    pitch = Math.max(-1.5, Math.min(1.5, pitch));
-    ultX = e.clientX; ultY = e.clientY;
-    tip.style.opacity = 0;
-    return;
-  }
-  const i = noEm(e.clientX, e.clientY);
-  if (i !== hover) { hover = i; cv.style.cursor = i >= 0 ? 'pointer' : 'grab'; }
-  if (i >= 0) {
-    const n = N[i];
-    tip.innerHTML = `<div class="n">${esc(n.l)}</div>
-      <div class="m">${TIPOS[n.t].nome} · ${n.d} conexões<br>${esc(nomeCom[n.c] || '—')}${n.f ? '<br>' + esc(n.f) : ''}</div>`;
-    tip.style.opacity = 1;
-    const w = 300, x = Math.min(e.clientX + 14, innerWidth - w - 10);
-    tip.style.left = x + 'px'; tip.style.top = (e.clientY + 16) + 'px';
-  } else tip.style.opacity = 0;
-});
-cv.addEventListener('pointerup', e => {
-  arrastando = false; cv.classList.remove('dragging');
-  if (!moveu) {
-    const i = noEm(e.clientX, e.clientY);
-    foco = i === foco ? -1 : i;
-    mostrarNo(foco);
-  }
-});
-cv.addEventListener('wheel', e => {
-  e.preventDefault();
-  zoom = Math.max(0.4, Math.min(4, zoom * (e.deltaY < 0 ? 1.12 : 0.89)));
-}, { passive: false });
 
-function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+// ── validação: o que foi renderizado bate com os dados de origem? ──
+function validar() {
+  const err = [];
+  if (esferas.length !== RAW_NODES.length) err.push(`nós ${esferas.length}!=${RAW_NODES.length}`);
+  if (linhas.length !== RAW_EDGES.length) err.push(`arestas ${linhas.length}!=${RAW_EDGES.length}`);
+  const idsCena = esferas.map(m => m.userData.id).slice().sort().join('|');
+  const idsFonte = RAW_NODES.map(n => n.id).slice().sort().join('|');
+  if (idsCena !== idsFonte) err.push('ids divergentes');
+  let xy = 0, endp = 0;
+  for (const m of esferas) {
+    const p = POS.get(m.userData.id);
+    if (Math.abs(m.position.x - p.x) > 1e-6 || Math.abs(m.position.y + p.y) > 1e-6) xy++;
+  }
+  linhas.forEach((ln, i) => {
+    if (ln.userData.e.from !== RAW_EDGES[i].from || ln.userData.e.to !== RAW_EDGES[i].to) endp++;
+  });
+  if (xy) err.push(`${xy} nós com x/y fora do original`);
+  if (endp) err.push(`${endp} arestas com endpoints trocados`);
 
-function mostrarNo(i) {
-  const box = document.getElementById('painelNo');
-  if (i < 0) { box.classList.remove('on'); return; }
-  const n = N[i];
-  document.getElementById('noNome').textContent = n.l;
-  document.getElementById('noMeta').innerHTML =
-    `${TIPOS[n.t].nome} · ${n.d} conexões<br>${esc(nomeCom[n.c] || '—')}${n.f ? '<br>' + esc(n.f) : ''}`;
-  const ul = document.getElementById('noVizinhos');
-  const vs = viz[i].slice().sort((a, b) => N[b[0]].d - N[a[0]].d).slice(0, 10);
-  ul.innerHTML = vs.map(([j, rel]) => `<li>${esc(N[j].l)} <span style="color:var(--muted)">· ${esc(rel)}</span></li>`).join('');
-  box.classList.add('on');
+  const el = document.getElementById('valid');
+  const ok = err.length === 0;
+  el.className = ok ? 'ok' : 'bad';
+  el.textContent = ok
+    ? `✓ ${esferas.length} nodes · ${linhas.length} edges · x/y idênticos ao 2D`
+    : '✗ ' + err.join(' · ');
+  (ok ? console.log : console.error)('[validacao 3D]', ok ? 'OK' : err);
+  window.__validacao = { ok, err, nos: esferas.length, arestas: linhas.length };
+  return ok;
 }
-document.getElementById('fecharNo').onclick = () => { foco = -1; mostrarNo(-1); };
+validar();
 
-// ── painel ──
-document.getElementById('resumo').textContent =
-  `${N.length} nós · ${L.length} conexões · ${DATA.communities.length} comunidades`;
+// ── câmera ───────────────────────────────────────────────────
+function frontView() {
+  camera.position.set(CX, CY, DIST);
+  camera.up.set(0, 1, 0);
+  controls.target.set(CX, CY, 0);
+  controls.update();
+}
+document.getElementById('btn-front').onclick = frontView;
+document.getElementById('btn-recenter').onclick = () => { controls.target.set(CX, CY, 0); controls.update(); };
 
-const cont = [0, 0, 0]; N.forEach(n => cont[n.t]++);
-document.getElementById('legenda').innerHTML = TIPOS.map((t, i) =>
-  `<div class="leg"><span class="dot" style="background:${t.cor}"></span>${t.nome}<span class="qtd">${cont[i]}</span></div>`
-).join('');
+const btnProj = document.getElementById('btn-proj');
+btnProj.onclick = () => {
+  const alvo = controls.target.clone(), pos = camera.position.clone();
+  camera = (camera === persp) ? ortho : persp;
+  btnProj.textContent = (camera === persp) ? 'Perspective' : 'Orthographic';
+  camera.position.copy(pos);
+  controls.object = camera;
+  controls.target.copy(alvo);
+  controls.update();
+};
 
-document.getElementById('coms').innerHTML = DATA.communities.map(c =>
-  `<button class="com" data-com="${c.id}" aria-pressed="false">${esc(c.n)}<span class="qtd">${c.q}</span></button>`
-).join('');
-document.querySelectorAll('.com').forEach(b => {
-  b.onclick = () => {
-    const id = +b.dataset.com;
-    comIsolada = comIsolada === id ? null : id;
-    document.querySelectorAll('.com').forEach(o =>
-      o.setAttribute('aria-pressed', String(+o.dataset.com === comIsolada)));
+let girando = false;
+const btnSpin = document.getElementById('btn-spin');
+btnSpin.onclick = () => { girando = !girando; btnSpin.classList.toggle('on', girando); };
+
+addEventListener('resize', () => {
+  W = host.clientWidth; H = host.clientHeight;
+  persp.aspect = W / H; persp.updateProjectionMatrix();
+  ortho.left = -orthoH * (W / H); ortho.right = orthoH * (W / H);
+  ortho.updateProjectionMatrix();
+  renderer.setSize(W, H);
+});
+
+// ── seleção, hover, filtros ──────────────────────────────────
+const ray = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const tooltip = document.getElementById('tooltip');
+let selId = null;
+const escondidas = new Set();
+
+const vizCache = new Map();
+function vizinhos(id) {
+  if (vizCache.has(id)) return vizCache.get(id);
+  const s = new Set();
+  for (const e of RAW_EDGES) {
+    if (e.from === id) s.add(e.to);
+    if (e.to === id) s.add(e.from);
+  }
+  const r = [...s]; vizCache.set(id, r); return r;
+}
+function visivel(id) { return !escondidas.has(byId.get(id).community); }
+
+function repintar() {
+  const viz = selId ? new Set(vizinhos(selId).concat([selId])) : null;
+  for (const m of esferas) {
+    const n = m.userData.node;
+    m.visible = visivel(n.id);
+    // highlight do vis: fundo branco no selecionado
+    m.material.color.set(n.id === selId ? 0xffffff : m.userData.corBase);
+    m.material.transparent = !!viz;
+    m.material.opacity = (viz && !viz.has(n.id)) ? 0.25 : 1;
+  }
+  for (const sp of sprites) sp.visible = visivel(sp.userData.id);
+  linhas.forEach((ln, i) => {
+    const e = ln.userData.e;
+    const vis = visivel(e.from) && visivel(e.to);
+    ln.visible = vis; setas[i].visible = vis;
+    const real = viz && viz.has(e.from) && viz.has(e.to);
+    ln.material.opacity = (viz && !real) ? 0.06 : (real ? 1 : ln.userData.opBase);
+    setas[i].material.opacity = ln.material.opacity;
+  });
+  for (const hp of hyper) {
+    const vis = hp.ids.some(id => visivel(id));
+    hp.face.visible = vis; hp.borda.visible = vis;
+  }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function showInfo(nodeId) {
+  const n = byId.get(nodeId);
+  if (!n) return;
+  const vz = vizinhos(nodeId);
+  const itens = vz.map(nid => {
+    const nb = byId.get(nid);
+    const cor = nb ? nb.color.background : '#555';
+    return `<span class="neighbor-link" style="border-left-color:${esc(cor)}" data-nid="${esc(nid)}">${esc(nb ? nb.label : nid)}</span>`;
+  }).join('');
+  document.getElementById('info-content').innerHTML = `
+    <div class="field"><b>${esc(n.label)}</b></div>
+    <div class="field">Type: ${esc(n.file_type || 'unknown')}</div>
+    <div class="field">Community: ${esc(n.community_name)}</div>
+    <div class="field">Source: ${esc(n.source_file || '-')}</div>
+    <div class="field">Degree: ${n.degree}</div>
+    ${vz.length ? `<div class="field" style="margin-top:8px;color:#aaa;font-size:11px">Neighbors (${vz.length})</div><div id="neighbors-list">${itens}</div>` : ''}
+  `;
+}
+
+function focusNode(nodeId) {
+  const m = porId.get(nodeId);
+  if (!m) return;
+  selId = nodeId; repintar(); showInfo(nodeId);
+  // aproxima mantendo a direção de onde a câmera já está
+  const dir = camera.position.clone().sub(controls.target).normalize();
+  controls.target.copy(m.position);
+  camera.position.copy(m.position).addScaledVector(dir, SPAN * 0.30);
+  controls.update();
+}
+
+function noSob(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
+  mouse.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+  ray.setFromCamera(mouse, camera);
+  const hits = ray.intersectObjects(esferas.filter(m => m.visible), false);
+  return hits.length ? hits[0].object.userData.id : null;
+}
+
+renderer.domElement.addEventListener('pointermove', ev => {
+  const id = noSob(ev);
+  renderer.domElement.style.cursor = id ? 'pointer' : 'default';
+  if (id) {
+    const n = byId.get(id);
+    tooltip.textContent = n.title || n.label;
+    tooltip.style.display = 'block';
+    const r = renderer.domElement.getBoundingClientRect();
+    tooltip.style.left = (ev.clientX - r.left + 14) + 'px';
+    tooltip.style.top = (ev.clientY - r.top + 14) + 'px';
+  } else tooltip.style.display = 'none';
+});
+renderer.domElement.addEventListener('click', ev => {
+  const id = noSob(ev);
+  if (id) { selId = id; repintar(); showInfo(id); }
+  else {
+    selId = null; repintar();
+    document.getElementById('info-content').innerHTML = '<span class="empty">Click a node to inspect it</span>';
+  }
+});
+document.addEventListener('click', e => {
+  const el = e.target.closest('.neighbor-link');
+  if (el && el.dataset.nid !== undefined) focusNode(el.dataset.nid);
+});
+
+// ── busca ────────────────────────────────────────────────────
+const searchInput = document.getElementById('search');
+const searchResults = document.getElementById('search-results');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.toLowerCase().trim();
+  searchResults.innerHTML = '';
+  if (!q) { searchResults.style.display = 'none'; return; }
+  const matches = RAW_NODES.filter(n => n.label.toLowerCase().includes(q)).slice(0, 20);
+  if (!matches.length) { searchResults.style.display = 'none'; return; }
+  searchResults.style.display = 'block';
+  matches.forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'search-item';
+    el.textContent = n.label;
+    el.style.borderLeft = `3px solid ${n.color.background}`;
+    el.style.paddingLeft = '8px';
+    el.onclick = () => {
+      focusNode(n.id);
+      searchResults.style.display = 'none';
+      searchInput.value = '';
+    };
+    searchResults.appendChild(el);
+  });
+});
+document.addEventListener('click', e => {
+  if (!searchResults.contains(e.target) && e.target !== searchInput)
+    searchResults.style.display = 'none';
+});
+
+// ── legenda / filtros de comunidade ──────────────────────────
+const selectAllCb = document.getElementById('select-all-cb');
+function updateSelectAllState() {
+  selectAllCb.checked = escondidas.size === 0;
+  selectAllCb.indeterminate = escondidas.size > 0 && escondidas.size < LEGEND.length;
+}
+function toggleAllCommunities(hide) {
+  document.querySelectorAll('.legend-item').forEach(i => i.classList.toggle('dimmed', hide));
+  document.querySelectorAll('.legend-cb').forEach(cb => cb.checked = !hide);
+  escondidas.clear();
+  if (hide) LEGEND.forEach(c => escondidas.add(c.cid));
+  repintar(); updateSelectAllState();
+}
+selectAllCb.addEventListener('change', () => toggleAllCommunities(!selectAllCb.checked));
+
+const legendEl = document.getElementById('legend');
+LEGEND.forEach(c => {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  const cb = document.createElement('input');
+  cb.type = 'checkbox'; cb.className = 'legend-cb'; cb.checked = true;
+  cb.addEventListener('change', e => {
+    e.stopPropagation();
+    if (cb.checked) { escondidas.delete(c.cid); item.classList.remove('dimmed'); }
+    else { escondidas.add(c.cid); item.classList.add('dimmed'); }
+    repintar(); updateSelectAllState();
+  });
+  item.innerHTML = `<div class="legend-dot" style="background:${c.color}"></div>
+    <span class="legend-label">${c.label}</span>
+    <span class="legend-count">${c.count}</span>`;
+  item.prepend(cb);
+  item.onclick = e => {
+    if (e.target === cb) return;
+    cb.checked = !cb.checked;
+    cb.dispatchEvent(new Event('change'));
   };
+  legendEl.appendChild(item);
 });
 
-document.getElementById('busca').addEventListener('input', e => {
-  busca = e.target.value.trim().toLowerCase();
-});
-
-const bg = document.getElementById('btnGirar');
-bg.onclick = () => { girar = !girar; bg.setAttribute('aria-pressed', String(girar)); };
-document.getElementById('btnReset').onclick = () => {
-  yaw = 0.6; pitch = -0.3; zoom = 1; foco = -1; comIsolada = null; busca = '';
-  document.getElementById('busca').value = '';
-  document.querySelectorAll('.com').forEach(o => o.setAttribute('aria-pressed', 'false'));
-  mostrarNo(-1);
-};
-
-const bt = document.getElementById('btnTabela'), tb = document.getElementById('tabela');
-bt.onclick = () => {
-  const on = !tb.classList.contains('on');
-  tb.classList.toggle('on', on); bt.setAttribute('aria-pressed', String(on));
-  if (on && !tb.dataset.pronta) {
-    document.getElementById('tbody').innerHTML = N.map((n, i) => ({ n, i }))
-      .sort((a, b) => b.n.d - a.n.d)
-      .map(({ n }) => `<tr>
-        <td>${esc(n.l)}</td>
-        <td><span class="pill"><span class="dot" style="background:${TIPOS[n.t].cor}"></span>${TIPOS[n.t].nome}</span></td>
-        <td>${esc(nomeCom[n.c] || '—')}</td>
-        <td class="num">${n.d}</td>
-        <td style="color:var(--muted)">${esc(n.f || '')}</td>
-      </tr>`).join('');
-    tb.dataset.pronta = '1';
+// ── loop ─────────────────────────────────────────────────────
+const semMovimento = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function laco() {
+  requestAnimationFrame(laco);
+  if (girando && !semMovimento) {
+    const v = camera.position.clone().sub(controls.target);
+    const a = 0.0022, cs = Math.cos(a), sn = Math.sin(a);
+    camera.position.set(
+      controls.target.x + v.x * cs - v.z * sn,
+      camera.position.y,
+      controls.target.z + v.x * sn + v.z * cs
+    );
+    camera.lookAt(controls.target);
   }
-};
-addEventListener('keydown', e => {
-  if (e.key === 'Escape') { tb.classList.remove('on'); bt.setAttribute('aria-pressed', 'false'); foco = -1; mostrarNo(-1); }
-});
-
+  controls.update();
+  renderer.render(scene, camera);
+}
+frontView();
+repintar();
 laco();
+
+// exposto pro teste automatizado
+window.__g3d = { esferas, linhas, setas, sprites, hyper, POS, byId, frontView, focusNode, validar,
+  get camera() { return camera; }, controls, escondidas, repintar,
+  get depth() { return DEPTH_SCALE; } };
 </script>
 </body>
 </html>
