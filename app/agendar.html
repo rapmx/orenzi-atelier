@@ -262,6 +262,50 @@ const SLOT_MINUTES = 30;
 // Dias em que o salão não abre (0 = domingo, 1 = segunda) — usado no calendário e nos horários.
 const CLOSED_WEEKDAYS = [0, 1];
 
+// ── RELÓGIO DO SALÃO ─────────────────────────────────────────
+// O expediente é no fuso do SALÃO, não no do aparelho de quem está agendando.
+// Sem isso, `new Date('2026-08-15T00:00:00')` vira meia-noite no fuso do celular
+// da cliente: quem marcasse "9h" com o telefone no horário do Brasil gravava 13h
+// em Dublin, e o erro é silencioso — a tela, o e-mail e o painel mostram valores
+// diferentes e ninguém percebe até o dia do atendimento.
+const SALON_TZ = 'Europe/Dublin';
+
+// Quantos minutos o fuso do salão está à frente do UTC naquele instante
+// (cobre o horário de verão irlandês automaticamente).
+function salonOffsetMinutes(date) {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: SALON_TZ, hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  });
+  const p = {};
+  for (const part of dtf.formatToParts(date)) p[part.type] = part.value;
+  const asUTC = Date.UTC(+p.year, p.month - 1, +p.day, (+p.hour) % 24, +p.minute, +p.second);
+  return (asUTC - Math.floor(date.getTime() / 1000) * 1000) / 60000;
+}
+
+// "2026-08-15" + 570min -> o instante absoluto das 09:30 em Dublin.
+function salonTimeToInstant(dateStr, minutesFromMidnight) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const naive = Date.UTC(y, m - 1, d, 0, 0, 0) + minutesFromMidnight * 60000;
+  const off1 = salonOffsetMinutes(new Date(naive));
+  let inst = new Date(naive - off1 * 60000);
+  const off2 = salonOffsetMinutes(inst);          // 2ª passada: virada do horário de verão
+  if (off2 !== off1) inst = new Date(naive - off2 * 60000);
+  return inst;
+}
+
+// Hora como o salão lê, independente do fuso do aparelho.
+function salonClock(date) {
+  return date.toLocaleTimeString('pt-BR', { timeZone: SALON_TZ, hour: '2-digit', minute: '2-digit' });
+}
+
+// Data de hoje NO SALÃO, em YYYY-MM-DD. `new Date().toISOString()` daria o dia em
+// UTC, que na madrugada de Dublin ainda é o dia anterior.
+function salonToday() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: SALON_TZ }).format(new Date());
+}
+
 const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const STEP_LABELS = { 1: 'Passo 1 de 4', 2: 'Passo 2 de 4', 3: 'Passo 3 de 4', 4: 'Passo 4 de 4' };
 
@@ -422,8 +466,10 @@ async function loadAvailableSlots() {
     return;
   }
 
-  const dayStart = `${selectedDate}T00:00:00`;
-  const dayEnd = `${selectedDate}T23:59:59`;
+  // A janela do dia também é a do salão: como strings soltas, o Postgres as lia
+  // no fuso da sessão dele e a busca por conflitos pegava algumas horas erradas.
+  const dayStart = salonTimeToInstant(selectedDate, 0).toISOString();
+  const dayEnd = salonTimeToInstant(selectedDate, 24 * 60 - 1).toISOString();
 
   const { data: existing, error } = await sb
     .from('appointments')
@@ -438,8 +484,8 @@ async function loadAvailableSlots() {
   const duration = selectedService.duration_minutes;
   const slots = [];
   for (let m = OPEN_HOUR * 60; m + duration <= CLOSE_HOUR * 60; m += SLOT_MINUTES) {
-    const slotStart = new Date(`${selectedDate}T00:00:00`);
-    slotStart.setMinutes(m);
+    // m é minutos desde a meia-noite EM DUBLIN, não no relógio do aparelho.
+    const slotStart = salonTimeToInstant(selectedDate, m);
     const slotEnd = new Date(slotStart.getTime() + duration * 60000);
 
     const overlaps = existing.some(a => {
@@ -449,7 +495,7 @@ async function loadAvailableSlots() {
     });
 
     slots.push({
-      label: slotStart.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      label: salonClock(slotStart),
       start: slotStart,
       end: slotEnd,
       available: !overlaps,
@@ -504,7 +550,7 @@ function buildCalendarGrid(year, month) {
   const startWeekday = first.getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevDaysInMonth = new Date(year, month, 0).getDate();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = salonToday();
   const cells = [];
 
   for (let i = 0; i < startWeekday; i++) {
@@ -628,7 +674,7 @@ function render() {
   if (state.done) {
     setBackArrow(false);
     setBottomBar(false);
-    const dateLabel = state.selectedSlot.start.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const dateLabel = state.selectedSlot.start.toLocaleDateString('pt-BR', { timeZone: SALON_TZ, weekday: 'long', day: 'numeric', month: 'long' });
     app.innerHTML = `
       <div class="confirm-check">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--color-neutral-100)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>

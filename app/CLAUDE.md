@@ -15,19 +15,17 @@ qualquer (`npx serve .`) — não existe passo de compilação.
 | `manifest.json` | — | PWA (nome, ícones, cor) |
 | `assets/` | — | Fotos e vídeos da landing |
 
-### `modules/` e `shared/` NÃO são carregados
+### Tudo é inline — não existem módulos
 
-Existem no disco, **nenhum HTML os inclui** — a única tag `<script src>` do
-projeto é o CDN do supabase-js. Uma refatoração de 30/07/2026 quebrou o painel
-em módulos e o arquivo foi sobrescrito depois por uma versão inline vinda de
-outra sessão; a sobrescrita venceu.
+Não há nenhum `<script src>` local: a única tag externa é o CDN do supabase-js.
+Todo o JS e CSS vive dentro de cada HTML.
 
-O conteúdo que valia a pena (sobreposição da agenda com pausa, aba Estoque)
-já foi trazido de volta para o `painel.html` inline em 02/08/2026. Os arquivos
-ficaram como registro histórico.
-
-**Editar `modules/*.js` ou `shared/salon.js` não muda nada na tela.** O código
-que roda é o bloco inline do `painel.html`.
+Existiu uma pasta `modules/` + `shared/` (refatoração de 30/07/2026), mas o
+`painel.html` foi sobrescrito depois por uma versão inline vinda de outra sessão
+e aqueles arquivos ficaram órfãos — presentes no disco, carregados por ninguém.
+Em 02/08/2026 o que valia foi resgatado para o código que roda (sobreposição da
+agenda com pausa, aba Estoque, e a conversão de fuso do `agendar.html`) e as
+pastas foram removidas. O histórico está no git.
 
 ## Âncoras em `painel.html`
 
@@ -86,7 +84,14 @@ calendário do iPhone). Dividir em colunas espremia os dois e escondia a pausa.
 **Conflito** só existe quando um *bloco de trabalho* encosta em outro. Pausa
 sobreposta a pausa, ou trabalho dentro de pausa alheia, é permitido.
 
-**Fuso.** O expediente é `Europe/Dublin`, não o do aparelho.
+**Fuso.** O expediente é `Europe/Dublin`, não o do aparelho de quem agenda.
+`agendar.html` tem `salonTimeToInstant(data, minutos)` — converte "data + minutos
+do dia" no instante absoluto em Dublin e cobre a virada do horário de verão com
+uma segunda passada. **Nunca** construir horário de slot com
+`new Date('YYYY-MM-DDT00:00:00')`: isso é meia-noite no fuso do celular da
+cliente, e quem marcasse "9h" com o telefone no horário do Brasil gravava 13h em
+Dublin. A falha é silenciosa — tela, e-mail e painel divergem sem erro nenhum.
+`salonToday()` e `salonClock()` existem pela mesma razão.
 
 **Expediente: 9h–18h, fecha domingo e segunda.** O atendimento tem que
 **terminar** até as 18h.
@@ -122,11 +127,15 @@ some da interface.
 ## Dívida conhecida
 
 `agendar.html` tem a própria cópia de `OPEN_HOUR`/`CLOSE_HOUR`/`CLOSED_WEEKDAYS`.
-Hoje bate com o painel, mas é duplicação com risco de overbooking se divergir —
-é o que `shared/salon.js` resolveria se voltasse a ser carregado.
+Hoje bate com o painel, mas é a duplicação de maior risco do projeto: se um lado
+mudar o expediente e o outro não, a cliente e o painel passam a oferecer horários
+diferentes para o mesmo dia, e isso aparece como overbooking. **Mudou expediente?
+Mudou nos dois.**
 
-`shared/salon.js` também tem a implementação boa de fuso (`salonTimeToInstant`
-cobre horário de verão) e de conflito (`slotStatus`), que hoje não roda.
+A regra de conflito com pausa (`slotStatus`, que permitia encaixar dentro da
+pausa de outro atendimento) existia no `shared/salon.js` e não foi resgatada —
+hoje `loadAvailableSlots` trata o atendimento como um bloco cheio. Consequência
+prática: um encaixe que caberia na pausa de uma coloração não é oferecido.
 
 Duplicados entre painel e demo por natureza do arquivo, e entre as duas páginas:
 `initials`, `render`, `refreshSlots` (mesmo nome, implementações legitimamente
