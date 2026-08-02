@@ -895,7 +895,7 @@ function minutesUntil(iso) {
 }
 
 function occupancyPct(staffId, dayAppts) {
-  const workingMinutes = (AGENDA_END_HOUR - AGENDA_START_HOUR) * 60;
+  const workingMinutes = WORK_MINUTES_PER_DAY;
   const bookedMinutes = dayAppts
     .filter(a => a.staff?.id === staffId)
     .reduce((sum, a) => sum + (new Date(a.ends_at) - new Date(a.starts_at)) / 60000, 0);
@@ -1014,7 +1014,7 @@ function dayAggregate(dateAppts) {
   const first = sorted.length ? fmtTime(sorted[0].starts_at) : '—';
   const last = sorted.length ? fmtTime(sorted[sorted.length - 1].starts_at) : '—';
   const staffCount = Math.max(1, state.staff.length);
-  const capacityMinutes = staffCount * (AGENDA_END_HOUR - AGENDA_START_HOUR) * 60;
+  const capacityMinutes = staffCount * WORK_MINUTES_PER_DAY;
   const bookedMinutes = dateAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
   const freeMinutes = Math.max(0, capacityMinutes - bookedMinutes);
   const freeSlots = Math.floor(freeMinutes / 60);
@@ -1119,8 +1119,10 @@ function nextAvailableSlot() {
   if (!isSalonOpenDay(now)) return null;
   const staffCount = Math.max(1, state.staff.length);
   const dayAppts = appointmentsOnDate(now);
-  const dayStart = new Date(now); dayStart.setHours(AGENDA_START_HOUR, 0, 0, 0);
-  const dayEnd = new Date(now); dayEnd.setHours(AGENDA_END_HOUR, 0, 0, 0);
+  // Expediente, não a grade: este horário é sugerido pra ser oferecido à
+  // cliente, e o agendar.html não aceita nada antes das 9h nem depois das 18h.
+  const dayStart = new Date(now); dayStart.setHours(OPEN_HOUR, 0, 0, 0);
+  const dayEnd = new Date(now); dayEnd.setHours(CLOSE_HOUR, 0, 0, 0);
   let cursor = now > dayStart ? new Date(now) : new Date(dayStart);
   cursor.setSeconds(0, 0);
   cursor.setMinutes(Math.ceil(cursor.getMinutes() / 15) * 15);
@@ -1356,9 +1358,15 @@ function monthOccupancyPct(monthAppts) {
   if (!state.staff.length) return null;
   const totalMinutes = monthAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
   const now = new Date();
-  const daysElapsed = Math.max(1, now.getDate());
-  const workMinutesPerDay = (AGENDA_END_HOUR - AGENDA_START_HOUR) * 60;
-  const capacity = state.staff.length * workMinutesPerDay * daysElapsed;
+  // Só os dias que o salão abriu entram na capacidade — contar domingo e segunda
+  // como dia de trabalho inflava o denominador e derrubava a ocupação do mês.
+  // Mesma conta que weekOccupancyPct já fazia.
+  let openDaysElapsed = 0;
+  for (let d = 1; d <= now.getDate(); d++) {
+    if (isSalonOpenDay(new Date(now.getFullYear(), now.getMonth(), d))) openDaysElapsed++;
+  }
+  openDaysElapsed = Math.max(1, openDaysElapsed);
+  const capacity = state.staff.length * WORK_MINUTES_PER_DAY * openDaysElapsed;
   if (!capacity) return null;
   return Math.min(100, Math.round((totalMinutes / capacity) * 100));
 }
@@ -1428,7 +1436,6 @@ function weekOccupancyPct(weekAppts, weekStart) {
   if (!state.staff.length) return null;
   const totalMinutes = weekAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
   const now = new Date();
-  const workMinutesPerDay = (AGENDA_END_HOUR - AGENDA_START_HOUR) * 60;
   let openDaysElapsed = 0;
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStart); d.setDate(d.getDate() + i);
@@ -1436,7 +1443,7 @@ function weekOccupancyPct(weekAppts, weekStart) {
     if (isSalonOpenDay(d)) openDaysElapsed++;
   }
   openDaysElapsed = Math.max(1, openDaysElapsed);
-  const capacity = state.staff.length * workMinutesPerDay * openDaysElapsed;
+  const capacity = state.staff.length * WORK_MINUTES_PER_DAY * openDaysElapsed;
   if (!capacity) return null;
   return Math.min(100, Math.round((totalMinutes / capacity) * 100));
 }
@@ -2040,10 +2047,23 @@ function weekChartSvg(values, days) {
   return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${bars}</svg>`;
 }
 
+// A grade da timeline vai das 8h às 19h de propósito: dá uma hora de respiro
+// antes e depois do expediente, pro encaixe e pro atendimento que atrasou
+// aparecerem na tela em vez de ficarem cortados fora dela.
 const AGENDA_START_HOUR = 8;
 const AGENDA_END_HOUR = 19;
 const HOUR_HEIGHT = 64;
 const WEEKDAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
+// Expediente de verdade — o que o agendar.html oferece à cliente. Ocupação e
+// capacidade se medem contra ISTO, não contra a grade acima: usar as 11h da
+// timeline dava um denominador que o formulário nunca consegue preencher (ele
+// só oferece 9h), e a ocupação saía estruturalmente baixa. Mesmos valores de
+// shared/salon.js — ao religar aquele arquivo, desestruturar de lá e apagar
+// estas duas linhas.
+const OPEN_HOUR = 9;
+const CLOSE_HOUR = 18;
+const WORK_MINUTES_PER_DAY = (CLOSE_HOUR - OPEN_HOUR) * 60;
 
 function sameDay(a, b) {
   return a.toDateString() === b.toDateString();

@@ -18,7 +18,7 @@ window.OrenziSalon = (function () {
   const OPEN_HOUR = 9;
   const CLOSE_HOUR = 18;              // o atendimento tem que TERMINAR até aqui
   const SLOT_MINUTES = 30;
-  const CLOSED_WEEKDAYS = [0];        // 0 = domingo. Sábado abre no mesmo horário.
+  const CLOSED_WEEKDAYS = [0, 1];     // domingo e segunda. Sábado abre normal.
   const CADEIRAS_PADRAO = 4;
 
   // ── Relógio do salão ───────────────────────────────────────
