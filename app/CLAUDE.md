@@ -143,10 +143,3 @@ diferentes por tela).
 
 Todo o CSS é inline em cada HTML. Mexer no visual do estoque é editar o
 `<style>` do `painel.html` **e** do `painel_demo.html`.
-
-## Grafo do projeto
-
-Grafo navegável em `../graphify-out/` (`graph.html` interativo, `graph.json` para
-consulta), construído sobre esta pasta `app/`. Para responder "o que chama o
-quê", rodar `graphify query "<pergunta>"` da raiz do projeto em vez de varrer os
-arquivos. Depois de mudança grande, `/graphify app --update`.
