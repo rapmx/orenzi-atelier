@@ -132,10 +132,12 @@ mudar o expediente e o outro não, a cliente e o painel passam a oferecer horár
 diferentes para o mesmo dia, e isso aparece como overbooking. **Mudou expediente?
 Mudou nos dois.**
 
-A regra de conflito com pausa (`slotStatus`, que permitia encaixar dentro da
-pausa de outro atendimento) existia no `shared/salon.js` e não foi resgatada —
-hoje `loadAvailableSlots` trata o atendimento como um bloco cheio. Consequência
-prática: um encaixe que caberia na pausa de uma coloração não é oferecido.
+A pausa voltou a valer no `agendar.html` em 02/08/2026: `loadAvailableSlots()`
+usa `get_busy_slots`, que devolve só os blocos de trabalho, então o encaixe
+dentro da pausa de uma coloração é oferecido de novo. Antes disso a função lia
+`appointments` direto com a chave anônima — a RLS devolvia lista vazia **sem
+erro** e todo horário aparecia livre. Se algum dia a leitura de horário ocupado
+voltar a ser `.from('appointments')`, o bug volta junto e é silencioso.
 
 Duplicados entre painel e demo por natureza do arquivo, e entre as duas páginas:
 `initials`, `render`, `refreshSlots` (mesmo nome, implementações legitimamente

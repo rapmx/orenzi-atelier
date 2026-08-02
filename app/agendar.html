@@ -471,13 +471,17 @@ async function loadAvailableSlots() {
   const dayStart = salonTimeToInstant(selectedDate, 0).toISOString();
   const dayEnd = salonTimeToInstant(selectedDate, 24 * 60 - 1).toISOString();
 
-  const { data: existing, error } = await sb
-    .from('appointments')
-    .select('starts_at, ends_at')
-    .eq('staff_id', selectedStaff.id)
-    .neq('status', 'cancelled')
-    .gte('starts_at', dayStart)
-    .lte('starts_at', dayEnd);
+  // Pela RPC, nunca por `.from('appointments')`: esta página usa a chave anônima
+  // e a RLS de appointments só libera SELECT autenticado. A leitura direta não
+  // dava erro — devolvia lista vazia — e com isso TODO horário aparecia livre,
+  // inclusive os já ocupados. get_busy_slots é SECURITY DEFINER e devolve só os
+  // blocos de trabalho: a pausa (tinta agindo) fica de fora de propósito,
+  // porque durante ela a profissional está livre pra atender outra cliente.
+  const { data: busy, error } = await sb.rpc('get_busy_slots', {
+    p_staff_id: selectedStaff.id,
+    p_from: dayStart,
+    p_to: dayEnd,
+  });
 
   if (error) { state.error = error.message; return; }
 
@@ -488,10 +492,10 @@ async function loadAvailableSlots() {
     const slotStart = salonTimeToInstant(selectedDate, m);
     const slotEnd = new Date(slotStart.getTime() + duration * 60000);
 
-    const overlaps = existing.some(a => {
-      const aStart = new Date(a.starts_at);
-      const aEnd = new Date(a.ends_at);
-      return slotStart < aEnd && slotEnd > aStart;
+    const overlaps = (busy || []).some(b => {
+      const bStart = new Date(b.busy_start);
+      const bEnd = new Date(b.busy_end);
+      return slotStart < bEnd && slotEnd > bStart;
     });
 
     slots.push({
