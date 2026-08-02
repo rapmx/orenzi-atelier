@@ -149,9 +149,29 @@ depois) é sempre o par `--color-accent-2-100`/`--color-accent-2-700` — é o
 mesmo vermelho que `.pc-status.is-busy` ("Agenda praticamente lotada") e a seta
 de queda dos indicadores já usam. Não introduzir uma cor de alerta nova.
 
-Piloto feito: Estoque (`.list-row.stock-row`, alerta de mínimo com fundo
-tingido + borda grossa + tag "Repor"). Agenda, Clientes e Questionário ainda
-não entraram.
+Feito: Estoque (`.list-row.stock-row`, alerta de mínimo com fundo tingido +
+borda grossa + tag "Repor") e Agenda (`.timeline` no padrão de cartão,
+animação de toque em dia da semana/booking/botão +). Clientes e Questionário
+ainda não entraram.
+
+**Cor do booking é por categoria do serviço, não por profissional**
+(`colorForService()`, perto de `colorForId`). Com só uma profissional ativa,
+colorir por `staff.id` sempre dá a mesma cor pra tudo — o id não muda — e a
+agenda vira monocromática sem que pareça um bug óbvio. `CATEGORY_COLORS` tem
+as 5 categorias reais fixas (Alisamento, Coloração, Corte, Outros,
+Tratamentos); categoria nova cai num hash estável em vez de quebrar. Nunca usar
+`--color-accent-2` nessa paleta — é a cor reservada de "isso precisa de
+atenção" (estoque baixo, agenda lotada).
+
+Animações de toque (`:active { transform: scale(...) }`) sempre com
+`transition` curta (~0.12s) e uma entrada em
+`@media (prefers-reduced-motion: reduce)` zerando `transition`/`transform` —
+ver o bloco perto do `.fab` em `painel.html`.
+
+**Achado, não investigado:** `painel_demo.html` solta 2 erros no console já
+ao carregar, antes de qualquer clique. Confirmado com `git stash` que é
+anterior a 02/08 — não é regressão de nenhuma mudança recente, e a tela
+funciona normal apesar disso.
 
 ## Convenções
 

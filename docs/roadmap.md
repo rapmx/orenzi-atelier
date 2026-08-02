@@ -19,20 +19,27 @@ vermelho que "Agenda praticamente lotada" já usa. Documentado em
 - [x] Destacar item em alerta de mínimo (fundo tingido, borda grossa, título e
       quantidade em vermelho, tag "Repor")
 
-## Fase 2 — Agenda — em espera de decisão
+## Fase 2 — Agenda — ✅ concluída (02/08/2026)
 
-- [ ] Fontes e UI no padrão de Início/Insights
-- [ ] Cor do booking por **serviço**, não por profissional (só a Juliane
-      atende, então a cor por profissional não informa nada hoje)
-- [ ] Animações de transição em botões específicos
+- [x] Fontes e UI no padrão de Início/Insights — `.timeline` ganhou fundo
+      `--color-surface` + borda + radius 22px (era cinza chapado sem borda);
+      `.week-day` e `.timeline-appt` já estavam próximos do padrão.
+- [x] Cor do booking por **categoria do serviço**, não por profissional (D1:
+      por categoria, confirmado). Achado no caminho: com só a Juliane
+      atendendo, a cor por profissional (`colorForStaff`) sempre devolvia a
+      mesma cor pra tudo — a agenda inteira já estava monocromática, não só
+      "com a cor errada". Nova `colorForService()`, paleta fixa pelas 5
+      categorias reais (Alisamento, Coloração, Corte, Outros, Tratamentos),
+      evita o vermelho de `--color-accent-2` (reservado pra alerta). Mesma
+      correção aplicada em Início → "Próximos horários", que tinha o mesmo
+      defeito.
+- [x] Animação de toque nos cards de dia da semana, nos bookings e no botão +
+      (`scale()` rápido no `:active`, com `prefers-reduced-motion` respeitado)
 
-**Travas:**
-- **D1 — por que cor os bookings?** 15 serviços em 5 categorias. Cor por
-  categoria (5 cores, mais fácil de diferenciar de relance) vs. cor fixa por
-  serviço (mais uma coluna + tela de configuração). Recomendação: por
-  categoria.
-- **Quais botões** entram na animação de transição — o Raphael vai apontar
-  2–3 exemplos.
+Achado pré-existente, não relacionado a esta fase: `painel_demo.html` solta 2
+erros no console já ao carregar (antes de qualquer interação), confirmado por
+`git stash` que já existia antes de hoje. Não afeta a tela — não investigado
+a fundo, fora do escopo desta lista.
 
 ## Fase 3 — Clientes — em espera de decisão
 

@@ -22,12 +22,15 @@ function mockData(table){
   // Coloração e Mechas têm pausa: a tinta age sozinha, a profissional fica
   // livre no meio. É o que abre espaço pro encaixe e o que a timeline mostra
   // como faixa listrada.
+  // category segue as 5 categorias reais do banco (Alisamento, Coloração,
+  // Corte, Outros, Tratamentos) — sem isso a agenda do demo ficaria
+  // monocromática de novo, o mesmo bug que colorForService() corrigiu.
   if (table === 'services') return [
-    {id:'s1', name:'Coloração', price:180, duration_minutes:120, work_before_minutes:45, gap_minutes:40, work_after_minutes:35},
-    {id:'s2', name:'Corte', price:80, duration_minutes:45},
-    {id:'s3', name:'Escova', price:60, duration_minutes:40},
-    {id:'s4', name:'Mechas', price:220, duration_minutes:150, work_before_minutes:60, gap_minutes:50, work_after_minutes:40},
-    {id:'s5', name:'Hidratação', price:70, duration_minutes:50},
+    {id:'s1', name:'Coloração', category:'Coloração', price:180, duration_minutes:120, work_before_minutes:45, gap_minutes:40, work_after_minutes:35},
+    {id:'s2', name:'Corte', category:'Corte', price:80, duration_minutes:45},
+    {id:'s3', name:'Escova', category:'Tratamentos', price:60, duration_minutes:40},
+    {id:'s4', name:'Mechas', category:'Outros', price:220, duration_minutes:150, work_before_minutes:60, gap_minutes:50, work_after_minutes:40},
+    {id:'s5', name:'Hidratação', category:'Tratamentos', price:70, duration_minutes:50},
   ];
 
   if (table === 'staff') return [
@@ -546,9 +549,11 @@ window.supabase = {
     padding: 10px 4px; border-radius: 12px; cursor: pointer;
     border: 1.5px solid var(--color-divider);
     background: var(--color-surface); font-family: var(--font-body);
-    transition: border-color .15s ease, background .15s ease;
+    transition: border-color .15s ease, background .15s ease, transform .12s ease;
+    -webkit-tap-highlight-color: transparent;
   }
   .week-day:hover { border-color: var(--color-neutral-300); }
+  .week-day:active { transform: scale(0.94); }
   .week-day .wd-label {
     font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--color-neutral-600);
     letter-spacing: 0.03em;
@@ -626,8 +631,13 @@ window.supabase = {
   }
   .month-cal-day.has-appts .wd-dot { visibility: visible; }
   .month-cal-day.selected .wd-dot { background: var(--color-accent-2); }
+  /* Fundo/borda no padrão de cartão do resto do app (Início/Insights) —
+     antes era o cinza chapado sem borda que só a Agenda ainda usava. O
+     padding-left de 52px é geometria, não estilo: hour-label é ancorado
+     em -52px pra encostar no início do conteúdo, então não mexe aqui. */
   .timeline {
-    position: relative; background: var(--color-neutral-100); border-radius: 16px;
+    position: relative; background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: 22px;
     padding: 0 0 0 52px; margin-top: 4px;
     max-height: 60vh; overflow-y: auto; overflow-x: hidden;
   }
@@ -643,8 +653,10 @@ window.supabase = {
   .timeline-appt {
     position: absolute; left: 6px; right: 6px; border-radius: 10px;
     padding: 6px 10px; overflow: hidden; box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.08));
-    cursor: pointer;
+    cursor: pointer; transition: transform .12s ease, box-shadow .12s ease;
+    -webkit-tap-highlight-color: transparent;
   }
+  .timeline-appt:active { transform: scale(0.97); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
   .timeline-appt .title { font-weight: 700; font-size: 12.5px; }
   .timeline-appt .sub { font-size: 11px; opacity: 0.85; }
   /* Pausa: a profissional está livre aqui, então o bloco fica "vazado" —
@@ -729,6 +741,12 @@ window.supabase = {
     background: var(--color-accent); color: var(--color-bg); border: none; cursor: pointer;
     font-size: 26px; box-shadow: var(--shadow-md, 0 3px 10px rgba(0,0,0,0.18));
     display: flex; align-items: center; justify-content: center; z-index: 50; line-height: 1;
+    transition: transform .12s ease; -webkit-tap-highlight-color: transparent;
+  }
+  .fab:active { transform: scale(0.9); }
+  @media (prefers-reduced-motion: reduce) {
+    .week-day, .timeline-appt, .fab { transition: none; }
+    .week-day:active, .timeline-appt:active, .fab:active { transform: none; }
   }
   .modal-overlay {
     position: fixed; inset: 0; background: color-mix(in srgb, #201e1d 45%, transparent);
@@ -954,7 +972,31 @@ function colorForId(id) {
   for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
   return STAFF_COLORS[hash % STAFF_COLORS.length];
 }
-function colorForStaff(staffId) { return colorForId(staffId); }
+// Cor do booking por categoria do serviço — não mais por profissional. Com
+// só a Juliane atendendo, colorar por `staff.id` sempre devolvia a mesma cor
+// pra tudo (o id da profissional nunca muda), e a agenda inteira saía
+// monocromática. Paleta fixa por categoria (não hash), pra ela aprender a
+// reconhecer de relance — evita o vermelho de --color-accent-2, que já é a
+// cor de "isso precisa de atenção" no resto do painel (estoque baixo, agenda
+// lotada).
+const CATEGORY_COLORS = {
+  'Coloração':   { bg: '#f5e6d3', border: '#c4863a', text: '#8f5f26' },
+  'Corte':       { bg: '#e4e8e1', border: '#5f7a6b', text: '#39493f' },
+  'Alisamento':  { bg: '#efe9db', border: '#a89572', text: '#5f5238' },
+  'Tratamentos': { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
+  'Outros':      { bg: '#ede4ea', border: '#8a6b8f', text: '#5a4560' },
+};
+const CATEGORY_COLOR_FALLBACK = Object.values(CATEGORY_COLORS);
+function colorForService(serviceId) {
+  const category = state.services.find(s => s.id === serviceId)?.category;
+  if (category && CATEGORY_COLORS[category]) return CATEGORY_COLORS[category];
+  if (!category) return CATEGORY_COLOR_FALLBACK[0];
+  // Categoria nova que ainda não ganhou cor fixa na tabela acima: cai num
+  // hash estável, pra não quebrar nem repetir a cor de outra à toa.
+  let hash = 0;
+  for (const ch of category) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return CATEGORY_COLOR_FALLBACK[hash % CATEGORY_COLOR_FALLBACK.length];
+}
 const app = document.getElementById('app');
 
 // Lista de técnicas disponível pro seletor no detalhe do agendamento — expanda aqui conforme necessário.
@@ -1523,7 +1565,7 @@ function renderHome() {
     <div class="home-block home-section" style="animation-delay:80ms">
       <div class="home-section-head"><h2>Próximos horários</h2></div>
       ${sortedToday.length ? sortedToday.map(a => {
-        const c = colorForStaff(a.staff?.id);
+        const c = colorForService(a.service?.id);
         return `
           <div class="appt-modern-card">
             <div class="am-time-col"><div class="am-time">${fmtTime(a.starts_at)}</div></div>
@@ -2392,7 +2434,7 @@ function renderAgenda() {
     const durMins = Math.max(20, (end - start) / 60000);
     const top = (startMins / 60) * HOUR_HEIGHT;
     const height = (durMins / 60) * HOUR_HEIGHT - 4;
-    const c = colorForStaff(a.staff?.id);
+    const c = colorForService(a.service?.id);
 
     // Cada camada de sobreposição entra um pouco mais pra dentro; a borda
     // direita continua alinhada, então o bloco de baixo aparece à esquerda.
