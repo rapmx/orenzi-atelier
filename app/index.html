@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orenzi Atelier — Origem. Renovação.</title>
+<meta name="description" content="Orenzi Atelier — um espaço para voltar a si mesma. Agende seu horário.">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="favicon-32.png">
+<meta name="theme-color" content="#f3ede4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,500;1,600&family=Jost:wght@300;400;500;600&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --ink: #2b2420;
+    --ink-soft: #5c4f42;
+    --paper: #f3ede4;
+    --paper-soft: #e8ddce;
+    --paper-deep: #ddcfba;
+    --card-bg: #f7f1e8;
+    --cream-text: #faf6ef;
+    --muted: #6b6053;
+    --muted-dark: #8c8172;
+    --accent: #b6784a;
+    --accent-deep: #8a5a34;
+    --accent-2: #b23a3a;
+    --rose: #c99884;
+    --line-dark: rgba(43,36,32,0.14);
+    --line-light: rgba(43,36,32,0.12);
+    --font-display: "Poppins", "Jost", system-ui, sans-serif;
+    --font-body: "Jost", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--font-body); font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+  }
+  img, video { max-width: 100%; display: block; }
+  a { color: inherit; text-decoration: none; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--font-body); font-size: 11px; letter-spacing: 0.32em;
+    text-transform: uppercase; color: var(--accent-deep); font-weight: 500;
+  }
+  .eyebrow::before {
+    content: ''; display: inline-block; width: 24px; height: 1px; background: currentColor; opacity: 0.6;
+  }
+  .eyebrow--center::after {
+    content: ''; display: inline-block; width: 24px; height: 1px; background: currentColor; opacity: 0.6;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+
+  /* ---------- NAV ---------- */
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 22px 0; transition: background 0.3s ease, padding 0.3s ease;
+    background: linear-gradient(180deg, rgba(243,237,228,0.7) 0%, transparent 100%);
+  }
+  header.scrolled { background: rgba(243,237,228,0.92); backdrop-filter: blur(10px); padding: 14px 0; box-shadow: 0 1px 0 var(--line-dark); }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1180px; margin: 0 auto; padding: 0 32px; width: 100%; box-sizing: border-box;
+  }
+  @media (min-width: 881px) {
+    .nav-inner {
+      width: 50%; max-width: none; margin: 0; padding: 0 32px 0 48px;
+    }
+  }
+  .logo-word { font-family: var(--font-body); font-weight: 600; font-size: 17px; letter-spacing: 0.18em; color: var(--ink); }
+  .logo-word span { display: block; font-size: 9px; letter-spacing: 0.32em; color: var(--muted); font-weight: 400; margin-top: 1px; }
+  .nav-links { display: flex; align-items: center; gap: 40px; }
+  .nav-links a:not(.btn) {
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+    transition: color 0.2s;
+  }
+  .nav-links a:not(.btn):hover { color: var(--ink); }
+  .nav-mobile-toggle { display: none; }
+
+  .lang-switch {
+    position: absolute; top: 50%; right: 32px; transform: translateY(-50%);
+    display: flex; gap: 6px; z-index: 120;
+  }
+  .lang-switch button {
+    width: 28px; height: 20px; border-radius: 4px; padding: 0; cursor: pointer;
+    border: 1px solid transparent; background: none; line-height: 1;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+    opacity: 0.55; transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .lang-switch button svg, .lang-switch button img { width: 100%; height: 100%; display: block; border-radius: 3px; object-fit: cover; }
+  .lang-switch button:hover { opacity: 0.85; }
+  .lang-switch button.active { opacity: 1; border-color: var(--line-dark); transform: scale(1.06); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 28px; border-radius: 0; font-size: 12px; letter-spacing: 0.1em;
+    text-transform: uppercase; font-weight: 500; transition: transform 0.2s, background 0.2s, color 0.2s;
+    border: 1px solid transparent;
+  }
+  .btn-gold { background: var(--accent); color: var(--cream-text); }
+  .btn-gold:hover { transform: translateY(-2px); background: #d4b46a; }
+  .btn-outline { border-color: var(--line-dark); color: var(--ink); }
+  .btn-outline:hover { border-color: var(--accent-deep); color: var(--accent-deep); }
+  .btn-outline-dark { border-color: var(--line-light); color: var(--ink); }
+  .btn-outline-dark:hover { border-color: var(--accent-deep); color: var(--accent-deep); }
+
+  /* ---------- HERO ---------- */
+  .hero {
+    min-height: 100vh; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .hero-video {
+    position: absolute; top: -13%; left: 0; width: 100%; height: 126%; object-fit: cover; z-index: 0;
+    opacity: 0; transition: opacity 1s ease; will-change: transform;
+  }
+  .hero-video.is-active { opacity: 1; }
+  .hero::before {
+    content: ''; position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(180deg, rgba(20,15,10,0.4) 0%, rgba(20,15,10,0.5) 55%, rgba(20,15,10,0.66) 100%);
+  }
+  .hero-content { position: relative; z-index: 2; padding: 120px 24px 60px; max-width: 900px; }
+  .hero-content > * {
+    opacity: 0; transform: translateY(20px);
+    animation: heroLineIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .hero-content .eyebrow { animation-delay: 0.2s; }
+  .hero-content .hero-logo { animation-delay: 0.4s; }
+  .hero-content p.lede { animation-delay: 0.65s; }
+  .hero-content .hero-ctas { animation-delay: 0.85s; }
+  @keyframes heroLineIn { to { opacity: 1; transform: translateY(0); } }
+
+  .hero .eyebrow { color: var(--cream-text); opacity: 0.9; }
+
+  /* the site's own logotype, blown up to fill the frame instead of a generic headline */
+  .hero-logo {
+    font-family: var(--font-body); font-weight: 700; color: var(--cream-text);
+    font-size: clamp(58px, 14vw, 200px); line-height: 0.86; letter-spacing: -0.01em;
+    margin: 22px 0; text-shadow: 0 6px 16px rgba(0,0,0,0.7), 0 24px 70px rgba(0,0,0,0.6);
+  }
+  .hero-logo span {
+    display: block; font-family: var(--font-display); font-weight: 500;
+    font-size: clamp(12px, 1.6vw, 20px); letter-spacing: 0.5em; margin-top: 10px;
+    color: rgba(250,246,239,0.75);
+  }
+
+  .hero p.lede {
+    font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 500;
+    font-size: clamp(17px, 2.2vw, 27px); color: var(--cream-text); margin: 0 auto; opacity: 0.94;
+    max-width: 560px; line-height: 1.5;
+  }
+  .hero p.lede em { font-style: italic; color: #e8c98a; }
+  .hero-ctas { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; margin-top: 40px; }
+  .hero-ctas .btn-outline { border-color: rgba(250,246,239,0.5); color: var(--cream-text); }
+  .hero-ctas .btn-outline:hover { border-color: var(--cream-text); color: var(--cream-text); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-video.is-active { opacity: 1; }
+    .hero-video { transition: none; }
+    .hero-content > * { opacity: 1; transform: none; animation: none; }
+  }
+
+  @media (max-width: 880px) {
+    .hero-content { padding: 130px 20px 50px; }
+  }
+
+  /* ---------- PHILOSOPHY STRIP ---------- */
+  .brands-marquee {
+    background: var(--ink);
+    border-top: 1px solid rgba(250,246,239,0.1);
+    border-bottom: 1px solid rgba(250,246,239,0.1);
+    padding: 26px 0;
+    overflow: hidden;
+  }
+  .brands-marquee-track {
+    display: flex; width: max-content;
+    animation: brandsScroll 64s linear infinite;
+  }
+  .brands-marquee:hover .brands-marquee-track { animation-play-state: paused; }
+  .brands-marquee-group {
+    display: flex; align-items: center; flex-shrink: 0;
+  }
+  .brands-marquee-group span {
+    font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 500; font-size: 23px;
+    color: rgba(250,246,239,0.6); letter-spacing: 0.01em; white-space: nowrap;
+    padding: 0 36px; position: relative;
+  }
+  .brands-marquee-group span::after {
+    content: '·'; position: absolute; right: -3px; top: 0; color: #e8c98a; opacity: 0.7;
+  }
+  @keyframes brandsScroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @media (max-width: 720px) {
+    .brands-marquee-group span { font-size: 18px; padding: 0 22px; }
+  }
+
+  .strip {
+    border-top: 1px solid var(--line-dark); border-bottom: 1px solid var(--line-dark);
+    padding: 56px 0;
+  }
+  .strip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+  .strip-item { display: flex; gap: 22px; }
+  .strip-item .mark { font-family: var(--font-display); font-weight: 600; font-size: 32px; color: var(--accent-deep); line-height: 1; }
+  .strip-item h3 { font-family: var(--font-display); font-weight: 600; font-size: 20px; margin-bottom: 8px; color: var(--ink); letter-spacing: 0.01em; }
+  .strip-item p { font-size: 14px; line-height: 1.7; color: var(--muted); font-weight: 300; max-width: 360px; }
+
+  /* ---------- ABOUT (paper) ---------- */
+  .about {
+    background: var(--paper); color: var(--ink); padding: 120px 0;
+  }
+  .about-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 108px; align-items: center; }
+  .about-photo { position: relative; }
+  .about-photo img { border-radius: 0; width: 100%; display: block; }
+  .about-photo .frame-tag {
+    position: absolute; top: -24px; left: -24px; z-index: -1;
+    width: 130px; height: 130px; background: var(--paper-deep);
+  }
+  .about-photo .years-badge {
+    position: absolute; bottom: -22px; right: -22px; z-index: 2;
+    background: var(--ink); color: var(--cream-text); text-align: center;
+    padding: 22px 26px; box-shadow: 0 10px 24px rgba(0,0,0,0.2);
+  }
+  .about-photo .years-badge .years-num {
+    display: block; font-family: var(--font-display); font-weight: 700;
+    font-size: 26px; line-height: 1;
+  }
+  .about-photo .years-badge .years-label {
+    display: block; font-family: var(--font-body); font-weight: 500;
+    font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    margin-top: 6px; opacity: 0.85;
+  }
+  .about-text .eyebrow { color: var(--accent-deep); }
+  .about-text h2 {
+    font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(28px, 3.2vw, 40px); margin: 16px 0 22px; line-height: 1.18; letter-spacing: -0.01em;
+  }
+  .about-text p { font-size: 15.5px; line-height: 1.85; color: #4a4438; margin-bottom: 16px; font-weight: 300; max-width: 560px; }
+  .about-text p strong { color: var(--ink); font-weight: 500; }
+  .signature { margin-top: 30px; }
+  .signature-img { width: 200px; height: auto; display: block; }
+  /* ---------- RESULTS (dark) ---------- */
+  .results { padding: 120px 0; background: var(--paper-deep); }
+  .results-head { text-align: center; max-width: 560px; margin: 0 auto 56px; }
+  .results-head h2 {
+    font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(26px, 3.6vw, 38px); margin: 16px 0; color: var(--ink); letter-spacing: -0.01em;
+  }
+  .results-head p { color: var(--muted); font-size: 15px; line-height: 1.7; font-weight: 300; }
+  .results-head-left { max-width: 480px; margin-bottom: 56px; }
+  .results-head-left h2 {
+    font-family: "Cormorant Garamond", serif; font-weight: 500;
+    font-size: clamp(32px, 4.2vw, 50px); margin: 16px 0 0; color: var(--ink); letter-spacing: -0.01em;
+  }
+  .services-showcase { display: grid; grid-template-columns: 1fr 0.95fr; gap: 72px; align-items: start; }
+  .services-list { display: flex; flex-direction: column; }
+  .service-item { border-bottom: 1px solid var(--line-dark); }
+  .service-item-head {
+    display: flex; align-items: center; gap: 18px; width: 100%;
+    background: none; border: none; cursor: pointer; text-align: left;
+    font-family: inherit; padding: 26px 0;
+  }
+  .service-num {
+    font-family: var(--font-display); font-size: 11px; letter-spacing: 0.05em;
+    color: var(--muted-dark); flex-shrink: 0; width: 20px; opacity: 0.7;
+  }
+  .service-name {
+    flex: 1; font-family: "Cormorant Garamond", serif; font-weight: 500;
+    font-size: clamp(19px, 2vw, 25px); color: var(--muted); transition: color 0.25s ease;
+  }
+  .service-item.active .service-name { color: var(--ink); }
+  .service-item.active .service-num { color: var(--accent-deep); opacity: 1; }
+  .service-line { width: 26px; height: 1px; background: var(--line-dark); flex-shrink: 0; }
+  .service-desc {
+    max-height: 0; overflow: hidden; opacity: 0;
+    transition: max-height 0.4s ease, opacity 0.3s ease, margin-bottom 0.3s ease;
+  }
+  .service-item.active .service-desc { max-height: 180px; opacity: 1; margin-bottom: 26px; }
+  .service-desc p {
+    color: var(--muted); font-size: 14.5px; line-height: 1.75; font-weight: 300;
+    max-width: 420px; padding-left: 38px; margin-bottom: 12px;
+  }
+  .service-desc-link {
+    display: inline-block; margin-left: 38px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep);
+  }
+  .service-desc-link:hover { color: var(--accent); }
+  .service-mobile-image { display: none; }
+  .services-visual {
+    position: sticky; top: 110px; aspect-ratio: 4 / 5; overflow: hidden; background: var(--card-bg);
+  }
+  .services-visual img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.3s ease; }
+  .services-visual::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, transparent 55%, rgba(20,15,10,0.55) 100%);
+  }
+  .services-visual-label { position: absolute; left: 28px; bottom: 28px; z-index: 1; }
+  .services-visual-label span {
+    font-family: "Cormorant Garamond", serif; font-weight: 500; color: var(--cream-text);
+    font-size: clamp(24px, 3vw, 34px); display: inline-block; padding-bottom: 8px; border-bottom: 1px solid #e8c98a;
+  }
+  @media (max-width: 880px) {
+    .services-showcase { grid-template-columns: 1fr; }
+    .services-visual { display: none; }
+    .service-item.active .service-desc { max-height: 560px; }
+    .service-mobile-image {
+      display: block; width: calc(100% - 38px); margin: 4px 0 16px 38px;
+      aspect-ratio: 4 / 3; object-fit: cover; border-radius: 2px;
+    }
+  }
+
+  /* ---------- REVIEWS ---------- */
+  .reviews { background: var(--ink); padding: 110px 0; }
+  .reviews-head { text-align: center; max-width: 560px; margin: 0 auto 48px; }
+  .reviews-head .eyebrow { color: #e8c98a; }
+  .reviews-head h2 {
+    font-family: "Cormorant Garamond", serif; font-weight: 500;
+    font-size: clamp(28px, 3.6vw, 42px); margin: 16px 0; color: var(--cream-text); letter-spacing: -0.01em;
+  }
+  .review-card {
+    position: relative; max-width: 820px; margin: 0 auto;
+    background: rgba(250,246,239,0.05); border: 1px solid rgba(250,246,239,0.14);
+    padding: 56px 60px; overflow: hidden;
+  }
+  .review-quote-mark {
+    position: absolute; top: 4px; left: 32px; font-family: "Cormorant Garamond", serif;
+    font-size: 110px; font-weight: 600; color: rgba(250,246,239,0.12); line-height: 1;
+  }
+  .review-quote {
+    position: relative; z-index: 1;
+    font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 500;
+    font-size: clamp(18px, 2.2vw, 24px); color: var(--cream-text); line-height: 1.65; margin-bottom: 34px;
+  }
+  .review-footer { display: flex; align-items: center; gap: 16px; position: relative; z-index: 1; }
+  .review-avatar {
+    width: 46px; height: 46px; border-radius: 50%; background: var(--accent); color: var(--ink);
+    display: flex; align-items: center; justify-content: center; font-family: var(--font-display);
+    font-weight: 600; font-size: 15px; flex-shrink: 0;
+  }
+  .review-name { font-size: 15px; font-weight: 600; color: var(--cream-text); margin-bottom: 4px; }
+  .review-meta {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(250,246,239,0.55);
+  }
+  .review-stars { color: #e8c98a; letter-spacing: 2px; font-size: 13px; }
+
+  .reviews-slider { position: relative; max-width: 820px; margin: 0 auto; }
+  .reviews-viewport { position: relative; overflow: hidden; }
+  .reviews-track { display: flex; align-items: stretch; will-change: transform; }
+  .reviews-slider .review-card { flex: 0 0 100%; min-width: 0; }
+  .reviews-nav {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
+    width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+    background: rgba(250,246,239,0.08); border: 1px solid rgba(250,246,239,0.22);
+    color: var(--cream-text); font-size: 18px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .reviews-nav:hover { background: rgba(250,246,239,0.16); border-color: #e8c98a; }
+  .reviews-nav-prev { left: -62px; }
+  .reviews-nav-next { right: -62px; }
+  .reviews-dots { display: flex; justify-content: center; gap: 9px; margin-top: 28px; }
+  .reviews-dots button {
+    width: 7px; height: 7px; border-radius: 50%; padding: 0; cursor: pointer;
+    background: rgba(250,246,239,0.28); border: none; transition: background 0.25s ease, transform 0.25s ease;
+  }
+  .reviews-dots button.is-active { background: #e8c98a; transform: scale(1.35); }
+  @media (max-width: 1040px) {
+    .reviews-nav-prev { left: 4px; }
+    .reviews-nav-next { right: 4px; }
+  }
+  @media (max-width: 640px) {
+    .review-card { padding: 44px 26px 34px; }
+    .reviews-nav { width: 36px; height: 36px; font-size: 15px; }
+    .reviews-nav-prev { left: -6px; }
+    .reviews-nav-next { right: -6px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reviews-track { transition: none !important; }
+  }
+
+  /* ---------- EDITORIAL GALLERY ---------- */
+  .editorial-gallery { background: #F7F4EE; padding: 110px 0; overflow: hidden; position: relative; }
+  .editorial-card {
+    position: relative; max-width: 1440px; margin: 0 auto; padding: 48px 32px;
+  }
+  .editorial-gallery .reviews-head { position: relative; z-index: 2; margin-bottom: 56px; }
+  .editorial-gallery .reviews-head .eyebrow { color: var(--accent-deep); }
+  .editorial-gallery .reviews-head h2 { color: #1B1B1B; }
+  .editorial-gallery .reviews-head p { color: rgba(27,27,27,0.55); font-size: 15px; line-height: 1.7; margin-top: 16px; }
+
+  .ed-strip {
+    position: relative; z-index: 2;
+    display: flex; justify-content: center; gap: 16px; overflow-x: auto; padding-bottom: 4px;
+    scroll-snap-type: x proximity; scrollbar-width: none;
+  }
+  .ed-strip::-webkit-scrollbar { display: none; }
+  .ed-video-wrap {
+    flex: 0 0 auto; width: clamp(170px, 17.5vw, 250px); aspect-ratio: 4 / 5;
+    border-radius: 8px; overflow: hidden; scroll-snap-align: start; cursor: pointer;
+    opacity: 0; transform: translateY(16px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .ed-video-wrap.in { opacity: 1; transform: translateY(0); }
+  .ed-video {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform 0.5s ease, filter 0.5s ease; filter: brightness(1);
+  }
+  .ed-video-wrap:hover .ed-video { transform: scale(1.03); filter: brightness(1.06); }
+
+  .ed-letter {
+    position: absolute; font-family: "Cormorant Garamond", serif; font-weight: 300;
+    color: rgba(27,27,27,0.07); line-height: 1; pointer-events: none; z-index: 0;
+    user-select: none; --px: 0px; --py: 0px;
+    transform: translate(var(--px), var(--py));
+  }
+  .ed-letter-o { top: -60px; left: -40px; font-size: clamp(140px, 16vw, 260px); }
+  .ed-letter-r { top: 30%; left: -30px; font-size: clamp(120px, 14vw, 220px); }
+  .ed-letter-a { bottom: -70px; right: -30px; font-size: clamp(150px, 17vw, 270px); }
+  .ed-letter-e {
+    bottom: -50px; left: 50%; font-size: clamp(130px, 15vw, 240px);
+    transform: translate(calc(-50% + var(--px)), var(--py));
+  }
+
+  .ed-corner { position: absolute; width: 22px; height: 22px; z-index: 2; pointer-events: none; }
+  .ed-corner-tl { top: 18px; left: 18px; border-top: 1px solid rgba(0,0,0,0.18); border-left: 1px solid rgba(0,0,0,0.18); }
+  .ed-corner-tr { top: 18px; right: 18px; border-top: 1px solid rgba(0,0,0,0.18); border-right: 1px solid rgba(0,0,0,0.18); }
+  .ed-corner-bl { bottom: 18px; left: 18px; border-bottom: 1px solid rgba(0,0,0,0.18); border-left: 1px solid rgba(0,0,0,0.18); }
+  .ed-corner-br { bottom: 18px; right: 18px; border-bottom: 1px solid rgba(0,0,0,0.18); border-right: 1px solid rgba(0,0,0,0.18); }
+
+  @media (max-width: 1024px) {
+    .ed-video-wrap { width: clamp(130px, 21vw, 180px); }
+  }
+  @media (max-width: 640px) {
+    .editorial-card { padding: 32px 18px; }
+    .ed-video-wrap { width: clamp(140px, 42vw, 170px); }
+    .ed-letter { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ed-video-wrap { transition: none; opacity: 1; transform: none; }
+    .ed-video { transition: none; }
+    .ed-letter { transition: none; }
+  }
+
+  .video-lightbox-overlay {
+    position: fixed; inset: 0; z-index: 500; background: rgba(6,5,8,0.94);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .video-lightbox-overlay video { max-width: 92vw; max-height: 88vh; border-radius: 14px; }
+  .video-lightbox-close {
+    position: absolute; top: 22px; right: 26px; width: 38px; height: 38px; border-radius: 50%;
+    background: rgba(255,255,255,0.12); border: none; color: var(--cream-text); font-size: 18px; cursor: pointer;
+  }
+
+  @media (max-width: 880px) {
+    .coverflow-section { padding: 80px 0 70px; }
+  }
+
+  /* ---------- BEFORE & AFTER ---------- */
+  .before-after { padding: 110px 0; background: var(--paper-deep); }
+  .before-after .reviews-head .eyebrow { color: var(--accent-deep); }
+  .before-after .reviews-head h2 { color: var(--ink); }
+  .before-after .reviews-head p { color: var(--muted); font-size: 15px; line-height: 1.7; margin-top: 16px; }
+  .ba-slider {
+    position: relative; max-width: 460px; margin: 48px auto 0;
+    aspect-ratio: 4 / 5; overflow: hidden; cursor: ew-resize;
+    -webkit-user-select: none; user-select: none; touch-action: none;
+  }
+  .ba-img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; display: block; pointer-events: none; -webkit-user-drag: none;
+  }
+  .ba-img-before { object-position: 50% 68%; }
+  .ba-img-after { object-position: 50% 0%; }
+  .ba-after-wrap { position: absolute; inset: 0; clip-path: inset(0 0 0 50%); }
+  .ba-label {
+    position: absolute; top: 20px; z-index: 2;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--cream-text); background: rgba(30,26,20,0.4);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    padding: 8px 14px; pointer-events: none;
+  }
+  .ba-label-before { left: 20px; }
+  .ba-label-after { right: 20px; }
+  .ba-divider {
+    position: absolute; top: 0; bottom: 0; left: 50%; width: 2px;
+    background: rgba(255,255,255,0.85); transform: translateX(-50%); z-index: 1; pointer-events: none;
+  }
+  .ba-handle {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 48px; height: 48px; border-radius: 50%; background: var(--cream-text);
+    border: none; display: flex; align-items: center; justify-content: center;
+    z-index: 3; box-shadow: 0 4px 16px rgba(0,0,0,0.25); pointer-events: none;
+  }
+  .ba-handle svg { width: 18px; height: 18px; color: var(--ink); }
+
+  /* ---------- CTA BAND ---------- */
+  .cta-band {
+    background: var(--ink); padding: 130px 0; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .cta-band::before {
+    content: 'Orenzi'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-family: var(--font-body); font-weight: 700; font-size: clamp(140px, 24vw, 340px);
+    color: rgba(250,246,239,0.035); white-space: nowrap; letter-spacing: -0.02em; pointer-events: none;
+  }
+  .cta-band .wrap { position: relative; z-index: 1; }
+  .cta-band .eyebrow { color: #e8c98a; }
+  .cta-band h2 {
+    font-family: "Cormorant Garamond", serif; font-weight: 500;
+    font-size: clamp(30px, 4.6vw, 54px); color: var(--cream-text); margin: 20px 0 22px;
+    letter-spacing: -0.01em; line-height: 1.15;
+  }
+  .cta-band h2 em { font-style: italic; color: #e8c98a; }
+  .cta-band p { color: rgba(244,241,234,0.65); font-size: 15px; line-height: 1.7; max-width: 460px; margin: 0 auto 36px; }
+  .cta-actions { display: flex; align-items: center; justify-content: center; gap: 22px; flex-wrap: wrap; }
+  .cta-band .btn-gold { background: var(--cream-text); color: var(--accent-deep); }
+  .cta-band .btn-gold:hover { background: #fff; }
+  .cta-phone { font-size: 13px; letter-spacing: 0.03em; color: rgba(244,241,234,0.75); transition: color 0.2s; }
+  .cta-phone:hover { color: var(--cream-text); }
+
+  /* ---------- FOOTER ---------- */
+  footer { background: var(--paper-deep); color: var(--ink); padding: 70px 0 30px; }
+  .footer-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 48px; padding-bottom: 50px; border-bottom: 1px solid var(--line-light); }
+  .footer-logo { font-family: var(--font-body); font-weight: 600; font-size: 19px; letter-spacing: 0.16em; margin-bottom: 10px; }
+  .footer-logo span { display: block; font-size: 9px; letter-spacing: 0.3em; color: var(--muted-dark); font-weight: 400; margin-top: 2px; }
+  .footer-grid p { font-size: 14px; color: #6b6355; line-height: 1.7; max-width: 280px; margin-top: 14px; }
+  .footer-col h4 { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted-dark); margin-bottom: 16px; }
+  .footer-col a, .footer-col .line { display: block; font-size: 14.5px; color: #3a352c; margin-bottom: 10px; }
+  .footer-col a:hover { color: var(--accent-deep); }
+  .footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 24px; font-size: 12px; color: #948c7c; flex-wrap: wrap; gap: 10px; }
+
+  /* ---------- REVEAL ANIMATION ---------- */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.8s ease, transform 0.8s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 880px) {
+    .nav-links { position: fixed; inset: 0 0 0 auto; width: 78%; max-width: 320px; background: var(--paper);
+      flex-direction: column; align-items: flex-start; padding: 100px 32px 40px; gap: 26px;
+      transform: translateX(100%); transition: transform 0.35s ease; border-left: 1px solid var(--line-dark);
+      box-shadow: -8px 0 30px rgba(43,36,32,0.12); }
+    .nav-links.open { transform: translateX(0); }
+    .nav-mobile-toggle {
+      display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; z-index: 110;
+    }
+    .nav-mobile-toggle span { width: 22px; height: 1.5px; background: var(--ink); }
+    .lang-switch { right: 68px; gap: 4px; }
+    .lang-switch button { width: 24px; height: 18px; font-size: 13px; }
+    .nav-inner { padding: 0 22px; }
+    .about-grid, .strip-grid, .footer-grid { grid-template-columns: 1fr; }
+    .about-grid { gap: 56px; }
+    .hero { min-height: 560px; }
+    .hero h1 { font-size: 34px; }
+    .about, .results { padding: 80px 0; }
+    .about-photo { max-width: 320px; margin: 0 auto; }
+    .wrap { padding: 0 22px; }
+  }
+</style>
+</head>
+<body>
+
+<header id="siteHeader">
+  <nav class="nav-inner">
+    <a href="#top" class="logo-word">ORENZI<span>ATELIER</span></a>
+    <div class="nav-links" id="navLinks">
+      <a href="#sobre" data-i18n="navSobre">Sobre</a>
+      <a href="#resultados" data-i18n="navResultados">Resultados</a>
+      <a href="#galeria" data-i18n="navGaleria">Galeria</a>
+      <a href="#contato" data-i18n="navContato">Contato</a>
+      <a href="agendar.html" class="btn btn-outline" data-i18n="navAgendar">Agendar horário</a>
+    </div>
+    <button class="nav-mobile-toggle" id="navToggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+  <div class="lang-switch">
+    <button data-lang="pt" aria-label="Português" class="active">
+      <img src="https://flagcdn.com/w40/br.png" srcset="https://flagcdn.com/w80/br.png 2x" alt="Português">
+    </button>
+    <button data-lang="en" aria-label="English">
+      <img src="https://flagcdn.com/w40/ie.png" srcset="https://flagcdn.com/w80/ie.png 2x" alt="English">
+    </button>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <video autoplay muted playsinline poster="assets/hero-1-poster.jpg" id="heroVideo1" class="hero-video">
+    <source src="assets/hero-1.mp4" type="video/mp4">
+  </video>
+  <video muted playsinline poster="assets/hero-2-poster.jpg" id="heroVideo2" class="hero-video">
+    <source src="assets/hero-2.mp4" type="video/mp4">
+  </video>
+  <div class="hero-content">
+    <span class="eyebrow eyebrow--center" data-i18n="heroEyebrow">Atelier de beleza · Origem &amp; Renovação</span>
+    <div class="hero-logo">ORENZI<span>ATELIER</span></div>
+    <p class="lede" data-i18n="heroTitle">Volte a se sentir <em>você mesma</em>.</p>
+    <div class="hero-ctas">
+      <a href="agendar.html" class="btn btn-gold" data-i18n="navAgendar">Agendar horário</a>
+      <a href="#sobre" class="btn btn-outline" data-i18n="heroCta2">Conhecer o atelier</a>
+    </div>
+  </div>
+</section>
+
+<section class="brands-marquee">
+  <div class="brands-marquee-track">
+    <div class="brands-marquee-group">
+      <span>Wella</span>
+      <span>Kérastase</span>
+      <span>L'Oréal Professionnel</span>
+      <span>Redken</span>
+      <span>Schwarzkopf</span>
+      <span>Joico</span>
+      <span>Paul Mitchell</span>
+      <span>Goldwell</span>
+    </div>
+    <div class="brands-marquee-group" aria-hidden="true">
+      <span>Wella</span>
+      <span>Kérastase</span>
+      <span>L'Oréal Professionnel</span>
+      <span>Redken</span>
+      <span>Schwarzkopf</span>
+      <span>Joico</span>
+      <span>Paul Mitchell</span>
+      <span>Goldwell</span>
+    </div>
+  </div>
+</section>
+
+<section class="strip">
+  <div class="wrap strip-grid">
+    <div class="strip-item reveal">
+      <span class="mark">01</span>
+      <div>
+        <h3 data-i18n="stripOrigemTitle">Origem</h3>
+        <p data-i18n="stripOrigemDesc">Tudo começa em saber quem você é. Ficar conectada às suas raízes, sua história, sua verdade — mesmo enquanto tudo muda ao redor.</p>
+      </div>
+    </div>
+    <div class="strip-item reveal">
+      <span class="mark">02</span>
+      <div>
+        <h3 data-i18n="stripRenovTitle">Renovação</h3>
+        <p data-i18n="stripRenovDesc">Às vezes precisamos de um recomeço. Um momento pra se sentir nova de novo, mudar algo por dentro e por fora.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="about" id="sobre">
+  <div class="wrap about-grid">
+    <div class="about-photo reveal">
+      <div class="frame-tag" aria-hidden="true"></div>
+      <img src="assets/profile.jpg" alt="Juliane Florêncio, fundadora do Orenzi Atelier">
+      <div class="years-badge">
+        <span class="years-num">8</span>
+        <span class="years-label" data-i18n="yearsLabel">Anos de profissão</span>
+      </div>
+    </div>
+    <div class="about-text reveal">
+      <span class="eyebrow" data-i18n="aboutEyebrow">A pessoa por trás do Orenzi</span>
+      <h2 data-i18n="aboutTitle">Um espaço pra voltar pra você mesma.</h2>
+      <p data-i18n="aboutP1">Orenzi Atelier é mais do que um horário de cabelo — é uma experiência real de autoestima. Um lugar pra se sentir mais bonita por fora, mas também um espaço pra se reconectar com sua confiança, sua essência, seu brilho interior.</p>
+      <p data-i18n="aboutP2"><strong>Tudo isso existe porque você merece o melhor.</strong> Cada detalhe do atelier foi pensado pra ser calmo, intencional e real.</p>
+      <div class="signature">
+        <img src="assets/signature.png" alt="Assinatura de Juliane Florêncio" class="signature-img">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="results" id="resultados">
+  <div class="wrap">
+    <div class="results-head-left reveal">
+      <span class="eyebrow" data-i18n="resultsEyebrow">Resultados</span>
+      <h2 data-i18n="resultsTitle">O trabalho fala por si.</h2>
+    </div>
+    <div class="services-showcase reveal">
+      <div class="services-list">
+        <div class="service-item active" data-image="assets/result.jpg">
+          <button class="service-item-head" type="button">
+            <span class="service-num">01</span>
+            <span class="service-name" data-i18n="resultBalayageEyebrow">Balayage &amp; Coloração</span>
+            <span class="service-line" aria-hidden="true"></span>
+          </button>
+          <div class="service-desc">
+            <p data-i18n="resultBalayageP">Técnicas de coloração personalizadas pra cada tom de pele e textura de cabelo, sempre com foco num resultado que envelhece bem e cresce bonito.</p>
+            <img class="service-mobile-image" src="assets/result.jpg" alt="Resultado de Balayage &amp; Coloração no Orenzi Atelier">
+            <a href="agendar.html" class="service-desc-link" data-i18n="resultCtaBtn">Agendar meu horário</a>
+          </div>
+        </div>
+        <div class="service-item" data-image="assets/result-2.jpg">
+          <button class="service-item-head" type="button">
+            <span class="service-num">02</span>
+            <span class="service-name" data-i18n="resultColoracaoEyebrow">Coloração completa</span>
+            <span class="service-line" aria-hidden="true"></span>
+          </button>
+          <div class="service-desc">
+            <p data-i18n="resultColoracaoP">Mudança total de cor com processo seguro e acompanhamento próximo, pra você sair com o resultado que sempre imaginou — e o cabelo saudável.</p>
+            <img class="service-mobile-image" src="assets/result-2.jpg" alt="Resultado de coloração completa no Orenzi Atelier">
+            <a href="agendar.html" class="service-desc-link" data-i18n="resultCtaBtn">Agendar meu horário</a>
+          </div>
+        </div>
+        <div class="service-item" data-image="assets/result-3.jpg">
+          <button class="service-item-head" type="button">
+            <span class="service-num">03</span>
+            <span class="service-name" data-i18n="resultCorteEyebrow">Corte &amp; Escova</span>
+            <span class="service-line" aria-hidden="true"></span>
+          </button>
+          <div class="service-desc">
+            <p data-i18n="resultCorteP">Corte pensado pro seu rosto e tipo de fio, finalizado com escova que realça o brilho e a leveza natural do cabelo.</p>
+            <img class="service-mobile-image" src="assets/result-3.jpg" alt="Resultado de corte &amp; escova no Orenzi Atelier">
+            <a href="agendar.html" class="service-desc-link" data-i18n="resultCtaBtn">Agendar meu horário</a>
+          </div>
+        </div>
+        <div class="service-item" data-image="assets/result-4.jpg">
+          <button class="service-item-head" type="button">
+            <span class="service-num">04</span>
+            <span class="service-name" data-i18n="resultHidratacaoEyebrow">Hidratação</span>
+            <span class="service-line" aria-hidden="true"></span>
+          </button>
+          <div class="service-desc">
+            <p data-i18n="resultHidratacaoP">Tratamento profundo que repõe o que o dia a dia tira — nutrição, maciez e aquele brilho de cabelo saudável.</p>
+            <img class="service-mobile-image" src="assets/result-4.jpg" alt="Resultado de hidratação no Orenzi Atelier">
+            <a href="agendar.html" class="service-desc-link" data-i18n="resultCtaBtn">Agendar meu horário</a>
+          </div>
+        </div>
+        <div class="service-item" data-image="assets/result-2.jpg">
+          <button class="service-item-head" type="button">
+            <span class="service-num">05</span>
+            <span class="service-name" data-i18n="resultRetoqueEyebrow">Retoque de raiz</span>
+            <span class="service-line" aria-hidden="true"></span>
+          </button>
+          <div class="service-desc">
+            <p data-i18n="resultRetoqueP">Ajuste preciso na raiz pra manter a cor uniforme e natural entre uma coloração completa e outra.</p>
+            <img class="service-mobile-image" src="assets/result-2.jpg" alt="Resultado de retoque de raiz no Orenzi Atelier">
+            <a href="agendar.html" class="service-desc-link" data-i18n="resultCtaBtn">Agendar meu horário</a>
+          </div>
+        </div>
+      </div>
+      <div class="services-visual">
+        <img src="assets/result.jpg" id="servicesImg" alt="Resultado de coloração e balayage no Orenzi Atelier">
+        <div class="services-visual-label" id="servicesLabel"><span>Balayage &amp; Coloração</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="reviews">
+  <div class="wrap">
+    <div class="reviews-head reveal">
+      <span class="eyebrow eyebrow--center" data-i18n="reviewsEyebrow">Depoimentos</span>
+      <h2 data-i18n="reviewsTitle">O que nossas clientes dizem.</h2>
+    </div>
+    <div class="reviews-slider reveal" id="reviewsSlider">
+      <button class="reviews-nav reviews-nav-prev" id="reviewsPrev" type="button" aria-label="Depoimento anterior">‹</button>
+      <button class="reviews-nav reviews-nav-next" id="reviewsNext" type="button" aria-label="Próximo depoimento">›</button>
+      <div class="reviews-viewport">
+        <div class="reviews-track" id="reviewsTrack">
+        <div class="review-card">
+          <span class="review-quote-mark" aria-hidden="true">&ldquo;</span>
+          <p class="review-quote" data-i18n="review1Quote">"Sou cliente da Ju desde 2020 e posso dizer honestamente que ela é uma das cabeleireiras mais confiáveis e talentosas que já conheci. A qualidade do trabalho dela é sempre excelente e ela sempre se certifica de que estou satisfeita com o resultado."</p>
+          <div class="review-footer">
+            <div class="review-avatar">CA</div>
+            <div>
+              <div class="review-name">Cristiane Alencar</div>
+              <div class="review-meta">
+                <span class="review-stars" aria-hidden="true">★★★★★</span>
+                <span data-i18n="googleReviewLabel">Avaliações no Google</span>
+                <span>· <span data-i18n="review1Time">há um mês</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="review-card">
+          <span class="review-quote-mark" aria-hidden="true">&ldquo;</span>
+          <p class="review-quote" data-i18n="review2Quote">"A Juliane e a Rebecca foram incríveis, super gentis e atenciosas no atendimento. A Ju me ouviu e me ajudou a decidir o que fazer no cabelo, e fez exatamente o que eu queria — na verdade, até melhor. Muito profissional e cuidadosa, com certeza voltarei."</p>
+          <div class="review-footer">
+            <div class="review-avatar">FV</div>
+            <div>
+              <div class="review-name">Fernanda Antonia Munoz Villarroel</div>
+              <div class="review-meta">
+                <span class="review-stars" aria-hidden="true">★★★★★</span>
+                <span data-i18n="googleReviewLabel">Avaliações no Google</span>
+                <span>· <span data-i18n="review2Time">há um mês</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="review-card">
+          <span class="review-quote-mark" aria-hidden="true">&ldquo;</span>
+          <p class="review-quote" data-i18n="review3Quote">"Amei demais! Ela é muito talentosa e me deixou confortável do início ao fim. Ela realmente escuta e entrega exatamente o que você pede — e até melhor! Estou mais que feliz com meu cabelo, recomendo muito!"</p>
+          <div class="review-footer">
+            <div class="review-avatar">NG</div>
+            <div>
+              <div class="review-name">Nathany Gomes</div>
+              <div class="review-meta">
+                <span class="review-stars" aria-hidden="true">★★★★★</span>
+                <span data-i18n="googleReviewLabel">Avaliações no Google</span>
+                <span>· <span data-i18n="review3Time">há 2 meses</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="review-card">
+          <span class="review-quote-mark" aria-hidden="true">&ldquo;</span>
+          <p class="review-quote" data-i18n="review4Quote">"O atendimento foi fantástico e excelente. Cuidaram muito bem de mim e foram gentis o tempo todo. Amei o trabalho, a qualidade foi excelente e a mudança que tive foi incrível. Estou muito feliz com o resultado final e com certeza recomendo muito."</p>
+          <div class="review-footer">
+            <div class="review-avatar">CL</div>
+            <div>
+              <div class="review-name">Carla Lopez Andrade</div>
+              <div class="review-meta">
+                <span class="review-stars" aria-hidden="true">★★★★★</span>
+                <span data-i18n="googleReviewLabel">Avaliações no Google</span>
+                <span>· <span data-i18n="review4Time">há 3 semanas</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div class="reviews-dots" id="reviewsDots"></div>
+    </div>
+  </div>
+</section>
+
+<section class="editorial-gallery" id="galeria">
+  <div class="editorial-card reveal">
+    <span class="ed-letter ed-letter-o" aria-hidden="true">O</span>
+    <span class="ed-letter ed-letter-r" aria-hidden="true">R</span>
+    <span class="ed-letter ed-letter-a" aria-hidden="true">A</span>
+    <span class="ed-letter ed-letter-e" aria-hidden="true">E</span>
+
+    <span class="ed-corner ed-corner-tl" aria-hidden="true"></span>
+    <span class="ed-corner ed-corner-tr" aria-hidden="true"></span>
+    <span class="ed-corner ed-corner-bl" aria-hidden="true"></span>
+    <span class="ed-corner ed-corner-br" aria-hidden="true"></span>
+
+    <div class="reviews-head reveal">
+      <span class="eyebrow eyebrow--center" data-i18n="galleryEyebrow">Galeria</span>
+      <h2 data-i18n="galleryTitle">Um pouco do que acontece por aqui.</h2>
+      <p data-i18n="galleryP">Cada transformação começa com uma conversa. Espia alguns bastidores do atelier.</p>
+    </div>
+
+    <div class="ed-strip" id="edStrip" aria-label="Galeria de vídeos do atelier">
+      <div class="ed-video-wrap">
+        <video class="ed-video" muted loop playsinline preload="metadata" poster="assets/gallery_2-poster.jpg" src="assets/gallery_2.mp4" aria-label="Vídeo do Orenzi Atelier"></video>
+      </div>
+      <div class="ed-video-wrap">
+        <video class="ed-video" muted loop playsinline preload="metadata" poster="assets/gallery_3-poster.jpg" src="assets/gallery_3.mp4" aria-label="Vídeo do Orenzi Atelier"></video>
+      </div>
+      <div class="ed-video-wrap">
+        <video class="ed-video" muted loop playsinline preload="metadata" poster="assets/gallery_4-poster.jpg" src="assets/gallery_4.mp4" aria-label="Vídeo do Orenzi Atelier"></video>
+      </div>
+      <div class="ed-video-wrap">
+        <video class="ed-video" muted loop playsinline preload="metadata" poster="assets/gallery_5-poster.jpg" src="assets/gallery_5.mp4" aria-label="Vídeo do Orenzi Atelier"></video>
+      </div>
+      <div class="ed-video-wrap">
+        <video class="ed-video" muted loop playsinline preload="metadata" poster="assets/gallery_6-poster.jpg" src="assets/gallery_6.mp4" aria-label="Vídeo do Orenzi Atelier"></video>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="before-after">
+  <div class="wrap">
+    <div class="reviews-head reveal">
+      <span class="eyebrow eyebrow--center" data-i18n="baEyebrow">Transformação</span>
+      <h2 data-i18n="baTitle">Antes &amp; Depois</h2>
+      <p data-i18n="baP">Arraste a alça pra revelar a transformação.</p>
+    </div>
+    <div class="ba-slider reveal" id="baSlider">
+      <img class="ba-img ba-img-before" src="assets/transformation-before.jpg" alt="Antes da transformação no Orenzi Atelier">
+      <div class="ba-after-wrap" id="baAfterWrap">
+        <img class="ba-img ba-img-after" src="assets/transformation-after.jpg" alt="Depois da transformação no Orenzi Atelier">
+      </div>
+      <div class="ba-label ba-label-before" data-i18n="baLabelBefore">Antes</div>
+      <div class="ba-label ba-label-after" data-i18n="baLabelAfter">Depois</div>
+      <div class="ba-divider" id="baDivider"></div>
+      <div class="ba-handle" id="baHandle" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="wrap reveal">
+    <span class="eyebrow eyebrow--center" data-i18n="ctaEyebrow">Comece a jornada</span>
+    <h2 data-i18n="ctaTitle">Seu próximo capítulo começa com um <em>horário</em>.</h2>
+    <p data-i18n="ctaP">Vagas limitadas por semana pra garantir atenção total em cada atendimento. Fale com a gente e comece sua transformação.</p>
+    <div class="cta-actions">
+      <a href="agendar.html" class="btn btn-gold" data-i18n="navAgendar">Agendar horário</a>
+      <a href="https://wa.me/353833287560" target="_blank" rel="noopener" class="cta-phone">+353 83 328 7560</a>
+    </div>
+  </div>
+</section>
+
+<footer id="contato">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">ORENZI<span>ATELIER</span></div>
+        <p data-i18n="footerTagline">Um espaço calmo, intencional e real — pra você se sentir você mesma de novo.</p>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footerContatoHeader">Contato</h4>
+        <a href="https://instagram.com/orenziatelier" target="_blank" rel="noopener">@orenziatelier</a>
+        <a href="https://www.google.com/maps/search/?api=1&query=54+Middle+Abbey+St%2C+North+City%2C+Dublin+1%2C+D01+E2X4" target="_blank" rel="noopener">54 Middle Abbey St, North City, Dublin 1, D01 E2X4</a>
+        <a href="https://wa.me/353833287560" target="_blank" rel="noopener">+353 83 328 7560</a>
+      </div>
+      <div class="footer-col">
+        <h4 data-i18n="footerAtelierHeader">Atelier</h4>
+        <a href="#sobre" data-i18n="navSobre">Sobre</a>
+        <a href="#resultados" data-i18n="navResultados">Resultados</a>
+        <a href="#galeria" data-i18n="navGaleria">Galeria</a>
+        <a href="agendar.html" data-i18n="navAgendar">Agendar horário</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footerCopyright">© 2026 Orenzi Atelier. Todos os direitos reservados.</span>
+      <span data-i18n="footerSignature">Com amor, Juliane Florêncio</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const header = document.getElementById('siteHeader');
+  window.addEventListener('scroll', () => {
+    header.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  const navToggle = document.getElementById('navToggle');
+  const navLinks = document.getElementById('navLinks');
+  navToggle.addEventListener('click', () => navLinks.classList.toggle('open'));
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navLinks.classList.remove('open')));
+
+  // ── TRADUÇÃO PT / EN ──────────────────────────────────────
+  const translations = {
+    navSobre: { pt: 'Sobre', en: 'About' },
+    navResultados: { pt: 'Resultados', en: 'Results' },
+    navGaleria: { pt: 'Galeria', en: 'Gallery' },
+    navContato: { pt: 'Contato', en: 'Contact' },
+    navAgendar: { pt: 'Agendar horário', en: 'Book now' },
+    heroEyebrow: { pt: 'Atelier de beleza · Origem &amp; Renovação', en: 'Beauty atelier · Origin &amp; Renewal' },
+    heroTitle: { pt: 'Volte a se sentir <em>você mesma</em>.', en: 'Feel like <em>yourself</em> again.' },
+    heroLede: {
+      pt: 'Orenzi nasce de duas ideias: origem, a conexão com quem você é — e renovação, o espaço pra recomeçar. Não é só sobre mudar o visual, é sobre se reencontrar.',
+      en: 'Orenzi is built on two ideas: origin, the connection to who you are — and renewal, the space to begin again. It\u2019s not just about changing how you look, it\u2019s about finding yourself again.'
+    },
+    heroCta2: { pt: 'Conhecer o atelier', en: 'Discover the atelier' },
+    stripOrigemTitle: { pt: 'Origem', en: 'Origin' },
+    stripOrigemDesc: {
+      pt: 'Tudo começa em saber quem você é. Ficar conectada às suas raízes, sua história, sua verdade — mesmo enquanto tudo muda ao redor.',
+      en: 'It all starts with knowing who you are. Staying connected to your roots, your story, your truth — even as everything around you changes.'
+    },
+    stripRenovTitle: { pt: 'Renovação', en: 'Renewal' },
+    stripRenovDesc: {
+      pt: 'Às vezes precisamos de um recomeço. Um momento pra se sentir nova de novo, mudar algo por dentro e por fora.',
+      en: 'Sometimes we need a fresh start. A moment to feel new again, to shift something inside and out.'
+    },
+    aboutEyebrow: { pt: 'A pessoa por trás do Orenzi', en: 'The person behind Orenzi' },
+    yearsLabel: { pt: 'Anos de profissão', en: 'Years of experience' },
+    aboutTitle: { pt: 'Um espaço pra voltar pra você mesma.', en: 'A space to return to yourself.' },
+    aboutP1: {
+      pt: 'Orenzi Atelier é mais do que um horário de cabelo — é uma experiência real de autoestima. Um lugar pra se sentir mais bonita por fora, mas também um espaço pra se reconectar com sua confiança, sua essência, seu brilho interior.',
+      en: 'Orenzi Atelier is more than a hair appointment — it\u2019s a real confidence experience. A place to feel more beautiful on the outside, and a space to reconnect with your confidence, your essence, your inner glow.'
+    },
+    aboutP2: {
+      pt: '<strong>Tudo isso existe porque você merece o melhor.</strong> Cada detalhe do atelier foi pensado pra ser calmo, intencional e real.',
+      en: '<strong>All of this exists because you deserve the best.</strong> Every detail of the atelier was designed to feel calm, intentional, and real.'
+    },
+    resultsEyebrow: { pt: 'Resultados', en: 'Results' },
+    resultsTitle: { pt: 'O trabalho fala por si.', en: 'The work speaks for itself.' },
+    resultsPUnused: {
+      pt: 'Cada atendimento no Orenzi é pensado pra realçar o que já é seu — cor, movimento, luz.',
+      en: 'Every appointment at Orenzi is designed to enhance what\u2019s already yours — color, movement, light.'
+    },
+    resultBalayageEyebrow: { pt: 'Balayage &amp; Coloração', en: 'Balayage &amp; Color' },
+    resultBalayageP: {
+      pt: 'Técnicas de coloração personalizadas pra cada tom de pele e textura de cabelo, sempre com foco num resultado que envelhece bem e cresce bonito.',
+      en: 'Custom color techniques tailored to every skin tone and hair texture, always focused on a result that ages well and grows out beautifully.'
+    },
+    resultColoracaoEyebrow: { pt: 'Coloração completa', en: 'Full color' },
+    resultColoracaoP: {
+      pt: 'Mudança total de cor com processo seguro e acompanhamento próximo, pra você sair com o resultado que sempre imaginou — e o cabelo saudável.',
+      en: 'A complete color change with a safe process and close guidance, so you leave with the result you always imagined — and healthy hair.'
+    },
+    resultCorteEyebrow: { pt: 'Corte &amp; Escova', en: 'Cut &amp; Blowout' },
+    resultCorteP: {
+      pt: 'Corte pensado pro seu rosto e tipo de fio, finalizado com escova que realça o brilho e a leveza natural do cabelo.',
+      en: 'A cut designed for your face and hair type, finished with a blowout that brings out natural shine and lightness.'
+    },
+    resultHidratacaoEyebrow: { pt: 'Hidratação', en: 'Hydration' },
+    resultHidratacaoP: {
+      pt: 'Tratamento profundo que repõe o que o dia a dia tira — nutrição, maciez e aquele brilho de cabelo saudável.',
+      en: 'A deep treatment that restores what everyday life takes away — nourishment, softness, and that healthy hair shine.'
+    },
+    resultRetoqueEyebrow: { pt: 'Retoque de raiz', en: 'Root touch-up' },
+    resultRetoqueP: {
+      pt: 'Ajuste preciso na raiz pra manter a cor uniforme e natural entre uma coloração completa e outra.',
+      en: 'Precise root adjustment to keep color even and natural between full color sessions.'
+    },
+    resultCtaBtn: { pt: 'Agendar meu horário', en: 'Book my appointment' },
+    googleReviewLabel: { pt: 'Avaliações no Google', en: 'Google Reviews' },
+    review1Quote: {
+      pt: '"Sou cliente da Ju desde 2020 e posso dizer honestamente que ela é uma das cabeleireiras mais confiáveis e talentosas que já conheci. A qualidade do trabalho dela é sempre excelente e ela sempre se certifica de que estou satisfeita com o resultado."',
+      en: '"I’ve been a client of Ju’s since 2020 and I can honestly say she is one of the most reliable and talented hairdressers I’ve ever met. The quality of her work is always excellent and she always makes sure I’m happy with the result."'
+    },
+    review1Time: { pt: 'há um mês', en: '1 month ago' },
+    review2Quote: {
+      pt: '"A Juliane e a Rebecca foram incríveis, super gentis e atenciosas no atendimento. A Ju me ouviu e me ajudou a decidir o que fazer no cabelo, e fez exatamente o que eu queria — na verdade, até melhor. Muito profissional e cuidadosa, com certeza voltarei."',
+      en: '"Juliane and Rebecca were amazing, they are so kind and attentive with service. Juli listened and helped me get on what to do with my hair and did exactly what I wanted and better. Very professional and caring, definitely would come back."'
+    },
+    review2Time: { pt: 'há um mês', en: '1 month ago' },
+    review3Quote: {
+      pt: '"Amei demais! Ela é muito talentosa e me deixou confortável do início ao fim. Ela realmente escuta e entrega exatamente o que você pede — e até melhor! Estou mais que feliz com meu cabelo, recomendo muito!"',
+      en: '"Absolutely loved it! She is so talented and made me feel comfortable from start to finish. She really listens and delivers exactly what you ask for (and even better!). I’m beyond happy with my hair — highly recommend!"'
+    },
+    review3Time: { pt: 'há 2 meses', en: '2 months ago' },
+    review4Quote: {
+      pt: '"O atendimento foi fantástico e excelente. Cuidaram muito bem de mim e foram gentis o tempo todo. Amei o trabalho, a qualidade foi excelente e a mudança que tive foi incrível. Estou muito feliz com o resultado final e com certeza recomendo muito."',
+      en: '"The service was fantastic and excellent. They looked after me really well and were very kind at all times. I absolutely loved the work, the quality was excellent and the change I had was amazing. I’m really happy with the final result and I would definitely highly recommend them."'
+    },
+    review4Time: { pt: 'há 3 semanas', en: '3 weeks ago' },
+    galleryEyebrow: { pt: 'Galeria', en: 'Gallery' },
+    galleryTitle: { pt: 'Um pouco do que acontece por aqui.', en: 'A glimpse of what happens here.' },
+    galleryP: {
+      pt: 'Cada transformação começa com uma conversa. Espia alguns bastidores do atelier.',
+      en: 'Every transformation starts with a conversation. Take a peek behind the scenes.'
+    },
+    ctaEyebrow: { pt: 'Comece a jornada', en: 'Begin the journey' },
+    ctaTitle: { pt: 'Seu próximo capítulo começa com um <em>horário</em>.', en: 'Your next chapter starts with an <em>appointment</em>.' },
+    ctaP: {
+      pt: 'Vagas limitadas por semana pra garantir atenção total em cada atendimento. Fale com a gente e comece sua transformação.',
+      en: 'A limited number of slots each week to make sure every appointment gets full attention. Talk to us and start your transformation.'
+    },
+    reviewsEyebrow: { pt: 'Depoimentos', en: 'Client voices' },
+    reviewsTitle: { pt: 'O que nossas clientes dizem.', en: 'What our clients say.' },
+    baEyebrow: { pt: 'Transformação', en: 'Transformation' },
+    baTitle: { pt: 'Antes &amp; Depois', en: 'Before &amp; After' },
+    baP: { pt: 'Arraste a alça pra revelar a transformação.', en: 'Drag the handle to reveal the transformation.' },
+    baLabelBefore: { pt: 'Antes', en: 'Before' },
+    baLabelAfter: { pt: 'Depois', en: 'After' },
+    footerTagline: {
+      pt: 'Um espaço calmo, intencional e real — pra você se sentir você mesma de novo.',
+      en: 'A calm, intentional, and real space — for you to feel like yourself again.'
+    },
+    footerContatoHeader: { pt: 'Contato', en: 'Contact' },
+    footerAtelierHeader: { pt: 'Atelier', en: 'Atelier' },
+    footerCopyright: { pt: '© 2026 Orenzi Atelier. Todos os direitos reservados.', en: '© 2026 Orenzi Atelier. All rights reserved.' },
+    footerSignature: { pt: 'Com amor, Juliane Florêncio', en: 'With love, Juliane Florêncio' },
+  };
+
+  function setLang(lang) {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const entry = translations[el.dataset.i18n];
+      if (entry && entry[lang]) el.innerHTML = entry[lang];
+    });
+    document.documentElement.lang = lang === 'en' ? 'en' : 'pt-BR';
+    document.querySelectorAll('.lang-switch button').forEach(b => {
+      b.classList.toggle('active', b.dataset.lang === lang);
+    });
+    // mantém o nome do serviço sobre a foto em sincronia com o idioma atual
+    const activeName = document.querySelector('.service-item.active .service-name');
+    const labelSpan = document.querySelector('#servicesLabel span');
+    if (activeName && labelSpan) labelSpan.textContent = activeName.textContent;
+    try { localStorage.setItem('orenzi-lang', lang); } catch (e) {}
+  }
+
+  document.querySelectorAll('.lang-switch button').forEach(btn => {
+    btn.addEventListener('click', () => setLang(btn.dataset.lang));
+  });
+
+  let savedLang = 'pt';
+  try { savedLang = localStorage.getItem('orenzi-lang') || 'pt'; } catch (e) {}
+  setLang(savedLang);
+
+  // alterna entre os dois vídeos do hero, com crossfade, quando um termina
+  (function () {
+    const videos = [document.getElementById('heroVideo1'), document.getElementById('heroVideo2')];
+    if (!videos[0] || !videos[1]) return;
+    let active = 0;
+    setTimeout(() => videos[0].classList.add('is-active'), 150);
+    function playNext() {
+      const next = 1 - active;
+      videos[next].currentTime = 0;
+      videos[next].play().catch(() => {});
+      videos[active].classList.remove('is-active');
+      videos[next].classList.add('is-active');
+      active = next;
+    }
+    videos.forEach((v) => v.addEventListener('ended', playNext));
+  })();
+
+  // Parallax no vídeo da hero ao rolar a página
+  (function () {
+    const heroVideos = document.querySelectorAll('.hero-video');
+    if (!heroVideos.length) return;
+
+    function updateParallax() {
+      const shift = window.scrollY * 0.38;
+      heroVideos.forEach(v => { v.style.transform = `translateY(${shift}px)`; });
+    }
+    window.addEventListener('scroll', updateParallax, { passive: true });
+    updateParallax();
+  })();
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  function openVideoLightbox(src) {
+    const overlay = document.createElement('div');
+    overlay.className = 'video-lightbox-overlay';
+    overlay.innerHTML = `
+      <button class="video-lightbox-close" aria-label="Fechar">✕</button>
+      <video src="${src}" controls autoplay playsinline></video>
+    `;
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector('.video-lightbox-close').onclick = close;
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  }
+  // ── GALERIA EDITORIAL ─────────────────────────────────────────
+  (function () {
+    const card = document.querySelector('.editorial-card');
+    const strip = document.getElementById('edStrip');
+    if (!card || !strip) return;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Reproduz só o vídeo em hover; ao sair, pausa e volta pro primeiro frame.
+    strip.querySelectorAll('.ed-video-wrap').forEach(wrap => {
+      const video = wrap.querySelector('video');
+      wrap.addEventListener('mouseenter', () => { video.play().catch(() => {}); });
+      wrap.addEventListener('mouseleave', () => { video.pause(); video.currentTime = 0; });
+      wrap.addEventListener('click', () => openVideoLightbox(video.src));
+    });
+
+    // Revela os vídeos em sequência quando a seção entra na tela.
+    const items = Array.from(strip.querySelectorAll('.ed-video-wrap'));
+    const stripObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        items.forEach((item, i) => {
+          setTimeout(() => item.classList.add('in'), reduceMotion ? 0 : i * 90);
+        });
+        stripObserver.disconnect();
+      });
+    }, { threshold: 0.2 });
+    stripObserver.observe(strip);
+
+    // Parallax bem sutil das letras decorativas ao mover o mouse.
+    if (!reduceMotion) {
+      const letters = card.querySelectorAll('.ed-letter');
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const relX = (e.clientX - rect.left) / rect.width - 0.5;
+        const relY = (e.clientY - rect.top) / rect.height - 0.5;
+        letters.forEach((el, i) => {
+          const strength = 2 + i * 0.5;
+          el.style.setProperty('--px', `${(relX * strength).toFixed(1)}px`);
+          el.style.setProperty('--py', `${(relY * strength).toFixed(1)}px`);
+        });
+      });
+      card.addEventListener('mouseleave', () => {
+        card.querySelectorAll('.ed-letter').forEach(el => {
+          el.style.setProperty('--px', '0px');
+          el.style.setProperty('--py', '0px');
+        });
+      });
+    }
+  })();
+
+  (function () {
+    const items = document.querySelectorAll('.service-item');
+    const img = document.getElementById('servicesImg');
+    const labelSpan = document.querySelector('#servicesLabel span');
+    if (!items.length || !img || !labelSpan) return;
+
+    const mobileQuery = window.matchMedia('(max-width: 880px)');
+
+    items.forEach(item => {
+      const head = item.querySelector('.service-item-head');
+      head.addEventListener('click', () => {
+        if (item.classList.contains('active')) {
+          // No mobile a lista age como dropdown: reclicar fecha o item aberto.
+          if (mobileQuery.matches) item.classList.remove('active');
+          return;
+        }
+        items.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        if (mobileQuery.matches) return;
+        img.style.opacity = '0';
+        setTimeout(() => {
+          img.src = item.dataset.image;
+          labelSpan.textContent = item.querySelector('.service-name').textContent;
+          img.style.opacity = '1';
+        }, 180);
+      });
+    });
+  })();
+
+  (function () {
+    const track = document.querySelector('.brands-marquee-track');
+    if (!track) return;
+
+    // A animação desloca a faixa em -50%, então ela só emenda sem buraco se
+    // metade do track já for mais larga que a tela. Em telas muito largas
+    // clonamos os grupos (sempre em pares) até isso valer.
+    function fill() {
+      const groups = track.querySelectorAll('.brands-marquee-group');
+      const unit = groups[0].offsetWidth;
+      if (!unit) return;
+      const needPerHalf = Math.ceil(window.innerWidth / unit) + 1;
+      while (track.querySelectorAll('.brands-marquee-group').length < needPerHalf * 2) {
+        const clone = groups[0].cloneNode(true);
+        clone.setAttribute('aria-hidden', 'true');
+        track.appendChild(clone);
+      }
+    }
+
+    fill();
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(fill, 200);
+    });
+  })();
+
+  (function () {
+    const slider = document.getElementById('reviewsSlider');
+    const track = document.getElementById('reviewsTrack');
+    if (!slider || !track) return;
+    const cards = Array.from(track.querySelectorAll('.review-card'));
+    const dotsWrap = document.getElementById('reviewsDots');
+    const prevBtn = document.getElementById('reviewsPrev');
+    const nextBtn = document.getElementById('reviewsNext');
+    const n = cards.length;
+    if (n < 2) return;
+
+    const EASE = 'transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1)';
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Clona o último no início e o primeiro no fim: assim a volta do fim pro
+    // começo continua deslizando pro mesmo lado, sem "voltar" a fita inteira.
+    const headClone = cards[n - 1].cloneNode(true);
+    const tailClone = cards[0].cloneNode(true);
+    [headClone, tailClone].forEach(c => c.setAttribute('aria-hidden', 'true'));
+    track.insertBefore(headClone, cards[0]);
+    track.appendChild(tailClone);
+
+    let pos = 1;          // posição na fita (1..n são os cards reais)
+    let timer = null;
+    let animating = false;
+
+    const dots = cards.map((_, i) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.setAttribute('aria-label', `Depoimento ${i + 1}`);
+      dot.addEventListener('click', () => { if (!animating) { slide(i + 1); restart(); } });
+      dotsWrap.appendChild(dot);
+      return dot;
+    });
+
+    function realIndex() {
+      if (pos === 0) return n - 1;
+      if (pos === n + 1) return 0;
+      return pos - 1;
+    }
+    function paint(animate) {
+      track.style.transition = (animate && !reduceMotion) ? EASE : 'none';
+      track.style.transform = `translateX(${-pos * 100}%)`;
+      dots.forEach((d, i) => d.classList.toggle('is-active', i === realIndex()));
+    }
+    let settleTimer = null;
+    function slide(next) {
+      pos = next;
+      animating = true;
+      paint(true);
+      // transitionend não chega se a aba estiver em segundo plano (o navegador
+      // congela a animação), então garantimos a liberação por tempo também.
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(settle, reduceMotion ? 0 : 700);
+      if (reduceMotion) settle();
+    }
+    function settle() {
+      if (!animating) return;
+      clearTimeout(settleTimer);
+      animating = false;
+      if (pos === n + 1) { pos = 1; paint(false); }
+      else if (pos === 0) { pos = n; paint(false); }
+    }
+    function restart() {
+      clearInterval(timer);
+      timer = setInterval(() => { if (!animating) slide(pos + 1); }, 5000);
+    }
+
+    track.addEventListener('transitionend', (e) => {
+      if (e.target === track && e.propertyName === 'transform') settle();
+    });
+
+    prevBtn.addEventListener('click', () => { if (!animating) { slide(pos - 1); restart(); } });
+    nextBtn.addEventListener('click', () => { if (!animating) { slide(pos + 1); restart(); } });
+    slider.addEventListener('mouseenter', () => clearInterval(timer));
+    slider.addEventListener('mouseleave', restart);
+
+    paint(false);
+    restart();
+  })();
+
+  (function () {
+    const slider = document.getElementById('baSlider');
+    const afterWrap = document.getElementById('baAfterWrap');
+    const handle = document.getElementById('baHandle');
+    const divider = document.getElementById('baDivider');
+    if (!slider || !afterWrap || !handle || !divider) return;
+
+    function setPosition(percent) {
+      const clamped = Math.max(0, Math.min(100, percent));
+      afterWrap.style.clipPath = `inset(0 0 0 ${clamped}%)`;
+      handle.style.left = clamped + '%';
+      divider.style.left = clamped + '%';
+    }
+
+    function percentFromEvent(e) {
+      const rect = slider.getBoundingClientRect();
+      return ((e.clientX - rect.left) / rect.width) * 100;
+    }
+
+    let dragging = false;
+    slider.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      slider.setPointerCapture(e.pointerId);
+      setPosition(percentFromEvent(e));
+    });
+    slider.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      setPosition(percentFromEvent(e));
+    });
+    const stopDrag = (e) => {
+      dragging = false;
+      try { slider.releasePointerCapture(e.pointerId); } catch (err) {}
+    };
+    slider.addEventListener('pointerup', stopDrag);
+    slider.addEventListener('pointercancel', stopDrag);
+
+    setPosition(50);
+  })();
+</script>
+</body>
+</html>

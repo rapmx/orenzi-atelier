@@ -1,0 +1,3005 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orenzi</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="favicon-32.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Orenzi">
+<meta name="theme-color" content="#f7f3ea">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --color-bg: #f3ede4;
+    --color-surface: #f7f1e8;
+    --color-text: #2b2420;
+    --color-accent: #b6784a;
+    --color-accent-2: #b23a3a;
+    --color-divider: rgba(43,36,32,0.14);
+    --color-neutral-100: #f7f1e8;
+    --color-neutral-200: #e8ddce;
+    --color-neutral-300: #ddcfba;
+    --color-neutral-600: #6b6053;
+    --color-neutral-700: #5c4f42;
+    --color-accent-100: #ecdcc9;
+    --color-accent-600: #a1683f;
+    --color-accent-700: #8a5a34;
+    --color-accent-2-100: #f7e7e7;
+    --color-accent-2-700: #8a2a2a;
+    --font-heading: "Poppins", "Jost", system-ui, sans-serif;
+    --font-body: "Jost", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--color-bg); color: var(--color-text);
+    font-family: var(--font-body); padding-bottom: 84px;
+  }
+  header {
+    padding: 24px 20px 8px; display: flex; align-items: center; justify-content: space-between;
+  }
+  header .greeting { font-family: var(--font-heading); font-weight: 600; font-size: 24px; }
+  header .greeting-sub { font-size: 13px; color: var(--color-neutral-600); margin-top: 2px; }
+  header .mark {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--color-accent);
+    color: var(--color-bg); display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-heading); font-style: normal; font-weight: 600; font-size: 16px;
+  }
+  main { max-width: 480px; margin: 0 auto; padding: 8px 20px 0; }
+  h2 { font-family: var(--font-heading); font-weight: 600; font-size: 20px; margin: 20px 0 10px; }
+  .section-label {
+    font-size: 11px; letter-spacing: 0.08em; color: var(--color-neutral-600);
+    font-weight: 700; margin: 4px 0 10px;
+  }
+  /* ── HOME · DASHBOARD EXECUTIVO ─────────────────────────────── */
+  @keyframes homeFadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .home-block { opacity: 0; }
+  .home-block.in {
+    animation: homeFadeUp 0.5s cubic-bezier(.22,.61,.36,1) forwards;
+  }
+  .home-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+  .home-hero.is-triple { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .home-hero-card {
+    background: var(--color-surface); border-radius: 22px; padding: 20px 18px;
+    border: 1px solid var(--color-divider);
+    display: flex; flex-direction: column; gap: 14px; min-height: 128px;
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .home-hero.is-triple .home-hero-card { padding: 16px 14px; min-height: 96px; gap: 10px; }
+  .home-hero.is-triple .home-hero-card .hh-num { font-size: 20px; }
+  .home-hero-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(43,36,32,0.08); }
+  .home-hero-card .hh-icon {
+    width: 34px; height: 34px; border-radius: 11px; background: var(--color-accent-100);
+    color: var(--color-accent-700); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .home-hero-card .hh-icon svg { width: 17px; height: 17px; }
+  .home-hero-card.is-revenue .hh-icon { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
+  .home-hero-card .hh-num {
+    font-family: var(--font-heading); font-weight: 600; font-size: 28px; letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+  .home-hero-card .hh-label { font-size: 12.5px; color: var(--color-neutral-600); }
+
+  .home-section { margin-top: 30px; }
+  .home-section-head {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 10px;
+  }
+  .home-section-head h2 { margin: 0; }
+  .home-section-head .home-section-hint { font-size: 12px; color: var(--color-neutral-600); }
+  .home-section-caption { font-size: 12px; color: var(--color-neutral-600); margin: -8px 0 14px; }
+
+  .seg-toggle { display: flex; background: var(--color-accent-100); border-radius: 999px; padding: 3px; gap: 2px; flex-shrink: 0; }
+  .seg-toggle button {
+    border: none; background: transparent; font-family: var(--font-body); font-size: 11px; font-weight: 700;
+    color: var(--color-accent-700); padding: 5px 12px; border-radius: 999px; cursor: pointer;
+    transition: background .2s ease, color .2s ease;
+  }
+  .seg-toggle button.active { background: var(--color-accent-700); color: var(--color-bg); }
+
+  /* ── PANORAMA DA AGENDA (Home operacional) ─────────────────── */
+  .panorama-card {
+    background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: 22px; padding: 18px 18px 16px; margin-bottom: 12px;
+  }
+  .pc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
+  .pc-title { font-family: var(--font-heading); font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .pc-title .pc-icon { color: var(--color-accent-600); display: flex; flex-shrink: 0; }
+  .pc-title .pc-icon svg { width: 16px; height: 16px; }
+  .pc-status {
+    font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; flex-shrink: 0;
+    background: var(--color-accent-100); color: var(--color-accent-700); white-space: nowrap;
+  }
+  .pc-status.is-busy { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
+  .pc-status.is-quiet { background: var(--color-neutral-200); color: var(--color-neutral-600); }
+  .adc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
+  .adc-stats .as-item { text-align: center; }
+  .adc-stats .as-val { font-family: var(--font-heading); font-weight: 600; font-size: 16px; }
+  .adc-stats .as-lbl { font-size: 9.5px; color: var(--color-neutral-600); margin-top: 2px; letter-spacing: 0.02em; }
+  .adc-bar-track { height: 6px; border-radius: 999px; background: var(--color-accent-100); overflow: hidden; }
+  .adc-bar-fill { height: 100%; border-radius: 999px; background: var(--color-accent-600); width: 0%; transition: width .7s cubic-bezier(.22,.61,.36,1); }
+  .pc-note { font-size: 12px; color: var(--color-neutral-600); margin-top: 10px; }
+  .pc-empty { font-size: 13px; color: var(--color-neutral-600); }
+
+  .week-summary-split { display: flex; gap: 10px; }
+  .wss-item { flex: 1; background: var(--color-accent-100); border-radius: 16px; padding: 14px; text-align: center; }
+  .wss-item.is-weak { background: var(--color-neutral-200); }
+  .wss-emoji { font-size: 20px; margin-bottom: 6px; }
+  .wss-day { font-family: var(--font-heading); font-weight: 600; font-size: 13.5px; text-transform: capitalize; }
+  .wss-count { font-size: 12px; color: var(--color-neutral-700); margin-top: 2px; }
+
+  .dist-row { display: flex; align-items: center; gap: 12px; padding: 7px 0; }
+  .dist-row .dr-label {
+    flex: 0 0 76px; width: 76px; font-size: 12px; color: var(--color-neutral-600);
+    text-transform: capitalize; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dist-row .dr-track { flex: 1; height: 7px; border-radius: 999px; background: var(--color-accent-100); overflow: hidden; }
+  .dist-row .dr-fill {
+    height: 100%; border-radius: 999px; background: var(--color-accent-600);
+    width: 0%; transition: width .7s cubic-bezier(.22,.61,.36,1);
+  }
+  .dist-row.is-current .dr-fill { background: var(--color-accent-700); }
+  .dist-row.is-current .dr-label { color: var(--color-text); font-weight: 700; }
+  .dist-row .dr-val { width: 60px; text-align: right; font-size: 12.5px; font-weight: 700; flex-shrink: 0; }
+
+  .opportunity-grid { display: flex; align-items: stretch; gap: 12px; }
+  .opp-item { flex: 1; min-width: 0; }
+  .opp-item .opp-lbl { font-size: 10.5px; color: var(--color-neutral-600); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .opp-item .opp-val { font-family: var(--font-heading); font-weight: 600; font-size: 16px; }
+  .opp-item .opp-sub { font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
+  .opp-divider { width: 1px; background: var(--color-divider); flex-shrink: 0; }
+
+  .trend-block { display: flex; align-items: center; gap: 14px; }
+  .trend-emoji { font-size: 26px; flex-shrink: 0; line-height: 1; }
+  .trend-headline { font-family: var(--font-heading); font-weight: 600; font-size: 14.5px; }
+  .trend-phrase { font-size: 12px; color: var(--color-neutral-600); margin-top: 3px; }
+
+  .comparison-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--color-divider); }
+  .comparison-row:last-child { border-bottom: none; }
+  .comparison-row .cr-label { flex: 1; font-size: 13px; font-weight: 700; }
+  .comparison-row .cr-values { font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
+  .comparison-row .cr-delta { font-size: 12.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
+  .comparison-row .cr-delta.is-up { background: #e7f0e9; color: #3f6b4c; }
+  .comparison-row .cr-delta.is-down { background: #f7e7e7; color: #a13a3a; }
+  .comparison-row .cr-delta.is-flat { background: var(--color-neutral-200); color: var(--color-neutral-600); }
+
+  .perf-card {
+    background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: 22px; padding: 20px 18px 16px;
+  }
+  .perf-top { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 18px; }
+  .perf-top-label { font-size: 11px; letter-spacing: 0.06em; color: var(--color-neutral-600); font-weight: 700; text-transform: uppercase; }
+  .perf-top-num { font-family: var(--font-heading); font-weight: 600; font-size: 26px; margin-top: 4px; }
+  .perf-top-badge {
+    font-size: 11px; font-weight: 700; color: var(--color-accent-700); background: var(--color-accent-100);
+    padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .week-chart-wrap { width: 100%; }
+  .week-chart-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .week-bar { transition: opacity .2s ease; }
+  .week-bar:hover { opacity: 0.72; }
+  .perf-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--color-divider);
+  }
+  .perf-foot .pf-item .pf-val { font-family: var(--font-heading); font-weight: 600; font-size: 16px; }
+  .perf-foot .pf-item .pf-lbl { font-size: 11px; color: var(--color-neutral-600); margin-top: 1px; }
+  .perf-foot .pf-item:last-child { text-align: right; }
+
+  .trend-chart-wrap { width: 100%; }
+  .trend-chart-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .trend-dot {
+    transition: opacity .32s cubic-bezier(.34,1.56,.64,1), transform .32s cubic-bezier(.34,1.56,.64,1);
+    transform-box: fill-box; transform-origin: center;
+  }
+  .trend-dot.is-hidden { opacity: 0; transform: scale(0.25); }
+  .trend-label {
+    transition: opacity .28s ease, transform .28s ease;
+    transform-box: fill-box; transform-origin: center;
+  }
+  .trend-label.is-hidden { opacity: 0; transform: translateY(4px); }
+
+  .history-card {
+    background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: 22px; padding: 18px 18px 14px;
+  }
+  .btn-see-more {
+    width: 100%; margin-top: 10px; padding: 11px; border-radius: 999px; border: 1px solid var(--color-divider);
+    background: transparent; color: var(--color-accent-700); font-family: var(--font-body);
+    font-size: 13px; font-weight: 700; cursor: pointer; transition: background .2s ease;
+  }
+  .btn-see-more:hover { background: var(--color-accent-100); }
+
+  .insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .insight-card {
+    background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: 18px;
+    padding: 16px 14px; transition: transform .2s ease, box-shadow .2s ease; position: relative;
+  }
+  .insight-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(43,36,32,0.07); }
+  .insight-card .ic-icon { color: var(--color-accent-600); margin-bottom: 10px; }
+  .insight-card .ic-icon svg { width: 16px; height: 16px; }
+  .insight-card .ic-val { font-family: var(--font-heading); font-weight: 600; font-size: 20px; line-height: 1.1; }
+  .insight-card .ic-lbl { font-size: 11.5px; color: var(--color-neutral-600); margin-top: 3px; }
+  .ic-help-btn {
+    position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; border-radius: 50%;
+    border: none; background: var(--color-accent-100); color: var(--color-accent-700);
+    font-size: 10.5px; font-weight: 700; cursor: pointer; padding: 0; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s ease, color .2s ease;
+  }
+  .ic-help-btn:hover { background: var(--color-accent-700); color: var(--color-bg); }
+
+  .help-popup-overlay {
+    position: fixed; inset: 0; background: rgba(43,36,32,0.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 250; padding: 24px; backdrop-filter: blur(2px);
+    animation: helpFadeIn .2s ease;
+  }
+  @keyframes helpFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .help-popup-card {
+    background: var(--color-bg); border-radius: 20px; padding: 22px 20px;
+    width: 100%; max-width: 320px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    position: relative; animation: helpPopIn .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes helpPopIn { from { opacity: 0; transform: scale(.92) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .help-popup-card .hp-title { font-family: var(--font-heading); font-weight: 600; font-size: 16px; margin: 0 24px 8px 0; }
+  .help-popup-card .hp-text { font-size: 13.5px; line-height: 1.55; color: var(--color-neutral-700); }
+  .help-popup-close {
+    position: absolute; top: 18px; right: 18px; background: none; border: none; font-size: 17px;
+    color: var(--color-neutral-600); cursor: pointer; line-height: 1; padding: 0;
+  }
+
+  .appt-modern-card {
+    display: flex; align-items: center; gap: 12px; background: var(--color-surface);
+    border: 1px solid var(--color-divider); border-radius: 16px; padding: 12px 14px; margin-bottom: 8px;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .appt-modern-card:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(43,36,32,0.06); }
+  .appt-modern-card .am-time-col { width: 46px; flex-shrink: 0; text-align: center; }
+  .appt-modern-card .am-time { font-family: var(--font-heading); font-weight: 600; font-size: 13.5px; }
+  .appt-modern-card .am-bar { width: 3px; align-self: stretch; border-radius: 3px; flex-shrink: 0; min-height: 34px; }
+  .appt-modern-card .am-body { flex: 1; min-width: 0; }
+  .appt-modern-card .am-client { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .appt-modern-card .am-meta { font-size: 12px; color: var(--color-neutral-600); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .appt-modern-card .am-status {
+    font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 999px; flex-shrink: 0;
+    background: var(--color-accent-2-100); color: var(--color-accent-2-700); white-space: nowrap;
+  }
+  .appt-modern-card .am-status.st-confirmed { background: var(--color-accent-100); color: var(--color-accent-700); }
+  .appt-modern-card .am-status.st-done { background: var(--color-neutral-200); color: var(--color-neutral-600); }
+
+  @media (max-width: 360px) {
+    .home-hero { grid-template-columns: 1fr; }
+    .home-hero.is-triple { grid-template-columns: 1fr; }
+    .insights-grid { grid-template-columns: 1fr 1fr; }
+    .adc-stats { grid-template-columns: repeat(2, 1fr); row-gap: 10px; }
+  }
+
+  .card {
+    background: var(--color-neutral-100); border-radius: 16px; padding: 14px 16px;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
+  }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: #fff; background: var(--color-accent);
+  }
+  .card .title { font-weight: 700; font-size: 15px; }
+  .card .sub { font-size: 13px; color: var(--color-neutral-600); margin-top: 2px; }
+  .card .time { font-size: 13px; font-weight: 700; color: var(--color-accent-700); white-space: nowrap; }
+  .empty { font-size: 13px; color: var(--color-neutral-600); padding: 12px 0; }
+  .badge {
+    font-size: 11px; font-weight: 700; background: var(--color-accent-2-100);
+    color: var(--color-accent-2-700); padding: 3px 8px; border-radius: 999px;
+  }
+  nav {
+    position: fixed; bottom: 0; left: 0; right: 0; background: var(--color-neutral-100);
+    display: none; justify-content: space-around; padding: 10px 0 20px;
+    box-shadow: 0 -1px 0 var(--color-divider);
+  }
+  nav button {
+    background: none; border: none; font-family: var(--font-body); font-size: 10.5px;
+    color: var(--color-neutral-600); cursor: pointer; padding: 6px 4px; white-space: nowrap;
+  }
+  nav button.active { color: var(--color-accent-700); font-weight: 700; }
+  #toast {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%) translateY(-60px);
+    background: var(--color-accent); color: #fff; padding: 12px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 700; transition: transform .25s ease; z-index: 100;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  .day-nav {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    margin: 20px 0 18px;
+  }
+  .day-nav .day-label { font-family: var(--font-heading); font-weight: 600; font-size: 19px; text-transform: capitalize; }
+  .day-nav .day-label-btn {
+    display: flex; align-items: center; gap: 6px; background: none; border: none;
+    cursor: pointer; padding: 4px; color: inherit;
+  }
+  .day-nav .day-label-btn svg { width: 11px; height: 11px; color: var(--color-neutral-600); flex-shrink: 0; }
+  .day-nav .day-label-btn:hover .day-label { color: var(--color-accent-700); }
+  .today-btn {
+    font-size: 11px; font-weight: 700; color: var(--color-accent-700);
+    background: var(--color-accent-100); border: none; border-radius: 999px;
+    padding: 4px 10px; margin-left: 8px; cursor: pointer;
+  }
+  .day-nav button.arrow {
+    width: 30px; height: 30px; border-radius: 50%; border: none;
+    background: var(--color-neutral-100); color: var(--color-text);
+    font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .day-nav button.arrow:hover { background: var(--color-neutral-200); }
+
+  .week-strip {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;
+    margin-bottom: 10px;
+  }
+  .week-day {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 4px; border-radius: 12px; cursor: pointer;
+    border: 1.5px solid var(--color-divider);
+    background: var(--color-surface); font-family: var(--font-body);
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .week-day:hover { border-color: var(--color-neutral-300); }
+  .week-day .wd-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--color-neutral-600);
+    letter-spacing: 0.03em;
+  }
+  .week-day .wd-num {
+    width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700; color: var(--color-text);
+  }
+  .week-day.selected { background: var(--color-text); border-color: var(--color-text); }
+  .week-day.selected .wd-num { background: transparent; color: var(--color-bg); }
+  .week-day.selected .wd-label { color: var(--color-neutral-300); }
+  .week-day.is-today:not(.selected) { border-color: var(--color-accent-700); }
+  .week-day.is-today:not(.selected) .wd-num { color: var(--color-accent-700); }
+  .week-day.is-today:not(.selected) .wd-label { color: var(--color-accent-700); }
+  .week-day .wd-dot {
+    width: 4px; height: 4px; border-radius: 50%; background: var(--color-accent-2);
+    visibility: hidden;
+  }
+  .week-day.has-appts .wd-dot { visibility: visible; }
+  .week-day.selected .wd-dot { background: var(--color-accent-2); }
+  .view-toggle {
+    display: flex; justify-content: center; margin-bottom: 18px;
+  }
+  .view-toggle button {
+    font-family: var(--font-body); font-size: 12px; font-weight: 700;
+    color: var(--color-neutral-600); background: none; border: none;
+    cursor: pointer; display: flex; align-items: center; gap: 4px;
+    padding: 4px 8px; letter-spacing: 0.01em;
+  }
+  .view-toggle button:hover { color: var(--color-text); }
+  .view-toggle svg { width: 11px; height: 11px; }
+  .view-toggle-today {
+    color: var(--color-accent-700) !important; font-weight: 700;
+  }
+
+  .month-cal-overlay {
+    position: fixed; inset: 0; background: rgba(43,36,32,0.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; padding: 20px; backdrop-filter: blur(2px);
+  }
+  .month-cal-card {
+    background: var(--color-bg); border-radius: 20px; padding: 22px;
+    width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+  .month-cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .month-cal-header .day-label {
+    font-family: var(--font-heading); font-weight: 600; font-size: 17px; text-transform: capitalize;
+  }
+  .month-cal-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 6px;
+  }
+  .month-cal-weekdays div {
+    text-align: center; font-size: 11px; font-weight: 700; color: var(--color-neutral-600);
+    text-transform: uppercase;
+  }
+  .month-cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  }
+  .month-cal-day {
+    aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; border: none; border-radius: 10px; background: transparent; cursor: pointer;
+    font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--color-text);
+  }
+  .month-cal-day:hover { background: var(--color-neutral-200); }
+  .month-cal-day.is-outside { color: var(--color-neutral-300); }
+  .month-cal-day.is-today { color: var(--color-accent-700); }
+  .month-cal-day.selected { background: var(--color-text); color: var(--color-bg); }
+  .month-cal-day .wd-dot {
+    width: 4px; height: 4px; border-radius: 50%; background: var(--color-accent-2);
+    visibility: hidden;
+  }
+  .month-cal-day.has-appts .wd-dot { visibility: visible; }
+  .month-cal-day.selected .wd-dot { background: var(--color-accent-2); }
+  .timeline {
+    position: relative; background: var(--color-neutral-100); border-radius: 16px;
+    padding: 0 0 0 52px; margin-top: 4px;
+    max-height: 60vh; overflow-y: auto; overflow-x: hidden;
+  }
+  .hour-row {
+    position: relative; height: 64px; border-top: 1px solid var(--color-divider);
+  }
+  .hour-row:first-child { border-top: none; }
+  .hour-label {
+    position: absolute; left: -52px; top: -8px; width: 46px; text-align: right;
+    font-size: 11px; color: var(--color-neutral-600);
+  }
+  .timeline-body { position: relative; }
+  .timeline-appt {
+    position: absolute; left: 6px; right: 6px; border-radius: 10px;
+    padding: 6px 10px; overflow: hidden; box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.08));
+    cursor: pointer;
+  }
+  .timeline-appt .title { font-weight: 700; font-size: 12.5px; }
+  .timeline-appt .sub { font-size: 11px; opacity: 0.85; }
+
+  .login-wrap {
+    max-width: 340px; margin: 80px auto 0; padding: 0 20px; text-align: center;
+  }
+  .login-wrap .mark {
+    width: 56px; height: 56px; border-radius: 50%; background: var(--color-accent);
+    color: var(--color-bg); display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-heading); font-style: normal; font-weight: 600; font-size: 24px; margin: 0 auto 12px;
+  }
+  .wordmark {
+    font-family: var(--font-body); font-weight: 600; font-size: 22px; letter-spacing: 0.14em;
+    color: var(--color-accent-700); margin-bottom: 2px;
+  }
+  .wordmark-sub {
+    font-family: var(--font-body); font-size: 11px; letter-spacing: 0.28em; color: var(--color-neutral-600);
+    margin-bottom: 28px;
+  }
+
+  #splash {
+    position: fixed; inset: 0; background: #16151a; z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.5s ease;
+  }
+  #splash.fade-out { opacity: 0; pointer-events: none; }
+  .logo-ring {
+    width: 220px; height: 220px; border-radius: 50%;
+    background: #26242a; border: 6px solid #3a383e;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset;
+  }
+  .logo-purple-mark {
+    position: absolute; right: 4px; top: 42%; width: 5px; height: 34px; border-radius: 3px;
+    background: linear-gradient(180deg, #a97fc7, #7a4f9e);
+  }
+  .logo-text {
+    font-family: "Jost", system-ui, sans-serif; font-weight: 700; font-size: 30px;
+    letter-spacing: 0.04em; color: #f4f2ee; text-transform: uppercase;
+  }
+  .logo-sub {
+    font-family: "Jost", system-ui, sans-serif; font-size: 10px; letter-spacing: 0.32em;
+    color: rgba(244,242,238,0.75); margin-top: 4px; text-transform: uppercase;
+  }
+  .logo-gold-line {
+    width: 42px; height: 2px; background: #b8933c; margin-top: 12px; border-radius: 2px;
+  }
+  .login-wrap h1 { font-family: var(--font-heading); font-weight: 600; font-size: 24px; margin: 0 0 20px; }
+  .login-wrap input {
+    width: 100%; padding: 12px 14px; border-radius: 999px; border: 1px solid var(--color-divider);
+    background: var(--color-neutral-100); font-family: var(--font-body); font-size: 14px;
+    margin-bottom: 10px; color: var(--color-text);
+  }
+  .login-wrap button {
+    width: 100%; padding: 13px; border-radius: 999px; border: none; cursor: pointer;
+    font-family: var(--font-body); font-weight: 700; font-size: 15px;
+    background: var(--color-accent); color: var(--color-bg); margin-top: 6px;
+  }
+  .login-error { font-size: 13px; color: var(--color-accent-700); margin-top: 10px; }
+  .logout-link {
+    font-size: 12px; color: var(--color-neutral-600); cursor: pointer; text-decoration: underline;
+  }
+
+  .fab {
+    position: fixed; bottom: 84px; right: 20px; width: 54px; height: 54px; border-radius: 50%;
+    background: var(--color-accent); color: var(--color-bg); border: none; cursor: pointer;
+    font-size: 26px; box-shadow: var(--shadow-md, 0 3px 10px rgba(0,0,0,0.18));
+    display: flex; align-items: center; justify-content: center; z-index: 50; line-height: 1;
+  }
+  .modal-overlay {
+    position: fixed; inset: 0; background: color-mix(in srgb, #201e1d 45%, transparent);
+    display: flex; align-items: flex-end; justify-content: center; z-index: 200;
+  }
+  .modal-sheet {
+    background: var(--color-bg); border-radius: 24px 24px 0 0; width: 100%; max-width: 480px;
+    max-height: 88vh; overflow-y: auto; padding: 20px 20px 28px;
+  }
+  .modal-sheet h2 { margin-top: 0; }
+  .modal-close {
+    background: none; border: none; font-size: 20px; color: var(--color-neutral-600);
+    cursor: pointer; float: right; line-height: 1;
+  }
+  select {
+    width: 100%; padding: 12px 14px; border-radius: 999px; border: 1px solid var(--color-divider);
+    background: var(--color-neutral-100); font-family: var(--font-body); font-size: 14px;
+    margin-bottom: 10px; color: var(--color-text); appearance: none;
+  }
+  textarea {
+    width: 100%; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--color-divider);
+    background: var(--color-neutral-100); font-family: var(--font-body); font-size: 14px;
+    margin-bottom: 10px; color: var(--color-text); resize: vertical; min-height: 70px;
+  }
+  input[type=date], input[type=text], input[type=tel], input[type=email] {
+    width: 100%; padding: 12px 14px; border-radius: 999px; border: 1px solid var(--color-divider);
+    background: var(--color-neutral-100); font-family: var(--font-body); font-size: 14px;
+    margin-bottom: 10px; color: var(--color-text);
+  }
+  .btn {
+    width: 100%; padding: 14px; border-radius: 999px; border: none; cursor: pointer;
+    font-family: var(--font-body); font-weight: 700; font-size: 15px; margin-top: 8px;
+  }
+  .btn-primary { background: var(--color-accent); color: var(--color-bg); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-ghost { background: transparent; color: var(--color-neutral-700); }
+
+  .quiz-fullscreen {
+    position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px; height: 100%;
+    background: var(--color-bg); z-index: 20;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 60px 24px 40px; box-sizing: border-box;
+  }
+  .quiz-message {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    text-align: center; font-family: var(--font-heading); font-weight: 600;
+    font-size: 22px; line-height: 1.4;
+    animation: quizMessageIn 0.6s ease;
+  }
+  @keyframes quizMessageIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .quiz-center { margin: auto 0; width: 100%; }
+  .quiz-goal-content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .quiz-subtitle { font-size: 14px; color: var(--color-neutral-600); margin-bottom: 14px; }
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .toggle-row button {
+    flex: 1; padding: 9px; border-radius: 999px; border: none; cursor: pointer;
+    font-family: var(--font-body); font-size: 13px; font-weight: 700;
+    background: var(--color-neutral-100); color: var(--color-neutral-700);
+  }
+  .toggle-row button.active { background: var(--color-accent); color: var(--color-bg); }
+
+  .tag {
+    display: inline-flex; align-items: center; font-size: 11px; font-weight: 700;
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .tag-accent { background: var(--color-accent-100); color: var(--color-accent-700); }
+  .tag-accent-2 { background: var(--color-accent-2-100, #f0fae1); color: var(--color-accent-2-700, #56633f); }
+
+  .client-list-card {
+    display: flex; align-items: center; gap: 12px; background: var(--color-neutral-100);
+    border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer;
+  }
+  .avatar-round {
+    border-radius: 50%; color: var(--color-bg); font-family: var(--font-heading); font-style: normal; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .profile-back {
+    background: none; border: none; color: var(--color-neutral-600); font-family: var(--font-body);
+    font-size: 13px; cursor: pointer; padding: 0 0 14px; display: flex; align-items: center; gap: 6px;
+  }
+  .profile-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .profile-header .name { font-family: var(--font-heading); font-weight: 600; font-size: 21px; }
+  .profile-actions { display: flex; gap: 10px; margin-bottom: 18px; }
+  .profile-actions a {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px; border-radius: 999px; background: var(--color-neutral-100);
+    color: var(--color-accent-700); font-size: 13px; font-weight: 700; text-decoration: none;
+  }
+  .stat-row {
+    display: flex; background: var(--color-neutral-100); border-radius: 16px;
+    padding: 16px 0; margin-bottom: 20px;
+  }
+  .stat-row .stat { flex: 1; text-align: center; }
+  .stat-row .stat .val { font-size: 17px; font-weight: 700; }
+  .stat-row .stat .lbl { font-size: 11px; color: var(--color-neutral-600); margin-top: 2px; }
+  .stat-row .divider { width: 1px; background: var(--color-divider); }
+  .fav-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .history-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid var(--color-divider);
+  }
+  .history-row .service { font-size: 13px; font-weight: 700; }
+  .history-row .meta { font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
+  .history-row .price { font-size: 13px; font-weight: 700; }
+
+  .photo-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px;
+  }
+  .photo-tile, .photo-add-tile {
+    aspect-ratio: 1; border-radius: 14px; overflow: hidden; cursor: pointer; position: relative;
+  }
+  .photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-add-tile {
+    background: var(--color-neutral-100); border: 2px dashed var(--color-neutral-300);
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+    color: var(--color-neutral-600); font-weight: 300;
+  }
+  .photo-delete-btn {
+    position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%;
+    background: color-mix(in srgb, #201e1d 55%, transparent); border: none; color: #fff;
+    font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .lightbox-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .lightbox-overlay img { max-width: 92vw; max-height: 88vh; border-radius: 10px; }
+  .lightbox-close {
+    position: absolute; top: 20px; right: 20px; width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 18px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div id="splash">
+  <div class="logo-ring">
+    <div class="logo-purple-mark"></div>
+    <div class="logo-text">ORENZI</div>
+    <div class="logo-sub">ATELIER</div>
+    <div class="logo-gold-line"></div>
+  </div>
+</div>
+<div id="toast"></div>
+<header>
+  <div>
+    <div class="greeting" id="greeting">Orenzi</div>
+    <div class="greeting-sub" id="greetingSub"></div>
+  </div>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <span class="logout-link" id="logoutBtn" style="display:none;">Sair</span>
+    <div class="mark">O</div>
+  </div>
+</header>
+<main id="app"></main>
+<button class="fab" id="fabNewAppt" style="display:none;">+</button>
+<div id="modalContainer"></div>
+<nav>
+  <button data-tab="inicio" class="active">Início</button>
+  <button data-tab="insights">Insights</button>
+  <button data-tab="agenda">Agenda</button>
+  <button data-tab="clients">Clientes</button>
+  <button data-tab="team">Equipe</button>
+  <button data-tab="questionario">Questionário</button>
+</nav>
+
+<script>
+// ── CONFIGURAÇÃO ─────────────────────────────────────────────
+const SUPABASE_URL = 'https://gsagtsxkhqlpxuvrijgw.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month' };
+
+const STAFF_COLORS = [
+  { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
+  { bg: '#f7e7e7', border: '#b23a3a', text: '#8a2a2a' },
+  { bg: '#efe9db', border: '#a89572', text: '#5f5238' },
+  { bg: '#e4e8e1', border: '#5f7a6b', text: '#39493f' },
+];
+function colorForId(id) {
+  if (!id) return STAFF_COLORS[0];
+  let hash = 0;
+  for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return STAFF_COLORS[hash % STAFF_COLORS.length];
+}
+function colorForStaff(staffId) { return colorForId(staffId); }
+const app = document.getElementById('app');
+
+// Lista de técnicas disponível pro seletor no detalhe do agendamento — expanda aqui conforme necessário.
+const TECHNIQUE_OPTIONS = ['Morena iluminada', 'Babylights'];
+
+// Opções do diagnóstico do cabelo, no perfil do cliente.
+const HAIR_THICKNESS_OPTIONS = ['Fino', 'Médio', 'Grosso'];
+const HAIR_DENSITY_OPTIONS = ['Pouco', 'Médio', 'Muito'];
+const HAIR_POROSITY_OPTIONS = ['Baixa', 'Média', 'Alta'];
+const HAIR_ELASTICITY_OPTIONS = ['Normal', 'Sensível'];
+
+function hairSelectHtml(field, options, current) {
+  return `
+    <select data-field="${field}">
+      <option value="">Selecione…</option>
+      ${options.map(opt => `<option value="${opt}" ${current === opt ? 'selected' : ''}>${opt}</option>`).join('')}
+    </select>
+  `;
+}
+
+function initials(name) {
+  return name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
+function fmtTime(iso) {
+  return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('pt-BR');
+}
+function showToast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── CARREGAMENTO DE DADOS ────────────────────────────────────
+async function loadAppointments() {
+  const { data, error } = await sb
+    .from('appointments')
+    .select(`
+      id, starts_at, ends_at, status, notes, technique, product_used, oxidant_used, pause_time, color_formula, created_at, source,
+      client:client_id ( id, name, phone ),
+      staff:staff_id ( id, name ),
+      service:service_id ( id, name, price )
+    `)
+    .neq('status', 'cancelled')
+    .order('starts_at');
+  if (error) { console.error(error); return; }
+  state.appointments = data;
+}
+
+async function loadBookingVisits() {
+  const { data, error } = await sb.from('booking_visits').select('id, created_at').order('created_at');
+  if (error) { console.error(error); return; }
+  state.bookingVisits = data;
+}
+
+async function loadClients() {
+  const { data, error } = await sb.from('clients').select('*').order('name');
+  if (error) { console.error(error); return; }
+  state.clients = data;
+}
+
+async function loadStaff() {
+  const { data, error } = await sb.from('staff').select('*').order('name');
+  if (error) { console.error(error); return; }
+  state.staff = data;
+}
+
+async function loadServices() {
+  const { data, error } = await sb.from('services').select('*').order('name');
+  if (error) { console.error(error); return; }
+  state.services = data;
+}
+
+async function loadClientPhotos(clientId) {
+  const { data, error } = await sb
+    .from('client_photos').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
+  if (error) { console.error(error); return; }
+  state.clientPhotos[clientId] = data;
+}
+
+// Redimensiona pra no máximo 1600px no lado maior e converte pra JPEG (qualidade 82%) —
+// reduz bastante o tamanho do arquivo sem perda visível de qualidade.
+async function compressImage(file, maxDim = 1600, quality = 0.82) {
+  const bitmap = await createImageBitmap(file);
+  let { width, height } = bitmap;
+  if (width > maxDim || height > maxDim) {
+    const scale = maxDim / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+}
+
+async function uploadClientPhoto(clientId, file) {
+  showToast('Enviando foto…');
+  const compressed = await compressImage(file);
+  const path = `${clientId}/${Date.now()}.jpg`;
+  const { error: upErr } = await sb.storage.from('client-photos').upload(path, compressed, { contentType: 'image/jpeg' });
+  if (upErr) { showToast('Erro ao enviar foto: ' + upErr.message); return; }
+  const { data: pub } = sb.storage.from('client-photos').getPublicUrl(path);
+  const { error: insErr } = await sb.from('client_photos').insert({ client_id: clientId, url: pub.publicUrl });
+  if (insErr) { showToast('Erro ao salvar foto: ' + insErr.message); return; }
+  await loadClientPhotos(clientId);
+  showToast('Foto adicionada');
+  render();
+}
+
+async function deleteClientPhoto(clientId, photoId) {
+  if (!confirm('Remover essa foto?')) return;
+  await sb.from('client_photos').delete().eq('id', photoId);
+  await loadClientPhotos(clientId);
+  render();
+}
+
+async function loadApptPhotos(appointmentId) {
+  const { data, error } = await sb
+    .from('client_photos').select('*').eq('appointment_id', appointmentId).order('created_at', { ascending: false });
+  if (error) { console.error(error); return; }
+  state.apptPhotos[appointmentId] = data;
+}
+
+async function uploadApptPhoto(clientId, appointmentId, kind, file) {
+  showToast('Enviando foto…');
+  const compressed = await compressImage(file);
+  const path = `${clientId}/${Date.now()}.jpg`;
+  const { error: upErr } = await sb.storage.from('client-photos').upload(path, compressed, { contentType: 'image/jpeg' });
+  if (upErr) { showToast('Erro ao enviar foto: ' + upErr.message); return; }
+  const { data: pub } = sb.storage.from('client-photos').getPublicUrl(path);
+  const { error: insErr } = await sb.from('client_photos').insert({ client_id: clientId, appointment_id: appointmentId, kind, url: pub.publicUrl });
+  if (insErr) { showToast('Erro ao salvar foto: ' + insErr.message); return; }
+  await loadApptPhotos(appointmentId);
+  showToast('Foto adicionada');
+  render();
+}
+
+async function deleteApptPhoto(appointmentId, photoId) {
+  if (!confirm('Remover essa foto?')) return;
+  await sb.from('client_photos').delete().eq('id', photoId);
+  await loadApptPhotos(appointmentId);
+  render();
+}
+
+async function loadAll() {
+  await Promise.all([loadAppointments(), loadClients(), loadStaff(), loadServices(), loadBookingVisits()]);
+  render();
+}
+
+// ── REALTIME: escuta novos agendamentos ─────────────────────
+sb.channel('novos-agendamentos')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'appointments' }, async (payload) => {
+    showToast('Novo agendamento recebido');
+    await loadAppointments();
+    render();
+  })
+  .subscribe();
+
+// ── TELAS ─────────────────────────────────────────────────
+function todayAppointments() {
+  const todayStr = new Date().toDateString();
+  return state.appointments.filter(a => new Date(a.starts_at).toDateString() === todayStr);
+}
+
+function apptCard(a) {
+  const clientName = a.client?.name || 'Cliente';
+  return `
+    <div class="card">
+      <div class="avatar">${initials(clientName)}</div>
+      <div style="flex:1">
+        <div class="title">${clientName}</div>
+        <div class="sub">${a.service?.name || ''} · ${a.staff?.name || ''}</div>
+      </div>
+      <div class="time">${fmtTime(a.starts_at)}</div>
+    </div>
+  `;
+}
+
+function minutesUntil(iso) {
+  const diff = (new Date(iso) - new Date()) / 60000;
+  return Math.max(0, Math.round(diff));
+}
+
+function occupancyPct(staffId, dayAppts) {
+  const workingMinutes = (AGENDA_END_HOUR - AGENDA_START_HOUR) * 60;
+  const bookedMinutes = dayAppts
+    .filter(a => a.staff?.id === staffId)
+    .reduce((sum, a) => sum + (new Date(a.ends_at) - new Date(a.starts_at)) / 60000, 0);
+  return Math.min(100, Math.round((bookedMinutes / workingMinutes) * 100));
+}
+
+// ── HOME/INSIGHTS · helpers de dados compartilhados ──────────
+function formatCurrency(n) {
+  const v = Number(n) || 0;
+  return '€' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function appointmentRevenue(a) {
+  return Number(a.service?.price || 0);
+}
+
+function serviceDurationMinutes(serviceId) {
+  const svc = state.services.find(s => s.id === serviceId);
+  return svc ? Number(svc.duration_minutes || 0) : 0;
+}
+
+function startOfWeekMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 dom .. 6 sáb
+  const diff = (day === 0 ? -6 : 1) - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function appointmentsOnDate(date) {
+  const ds = date.toDateString();
+  return state.appointments.filter(a => new Date(a.starts_at).toDateString() === ds);
+}
+
+function tomorrowAppointments() {
+  const t = new Date();
+  t.setDate(t.getDate() + 1);
+  return appointmentsOnDate(t);
+}
+
+const STATUS_LABELS = {
+  confirmed: 'Confirmado',
+  pending: 'Pendente',
+  completed: 'Concluído',
+  done: 'Concluído',
+  no_show: 'Não compareceu',
+  cancelled: 'Cancelado',
+};
+function statusLabel(status) {
+  if (!status) return 'Confirmado';
+  return STATUS_LABELS[status] || (status.charAt(0).toUpperCase() + status.slice(1));
+}
+function statusClass(status) {
+  if (status === 'completed' || status === 'done') return 'st-done';
+  return 'st-confirmed';
+}
+
+// ── ícones (traço fino, cor herdada) ──────────────────────────
+const ICONS = {
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>',
+  money: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M9.5 15c0 1.1 1.1 2 2.5 2s2.5-.75 2.5-1.85c0-1.15-1-1.55-2.5-2s-2.5-.85-2.5-2C9.5 9.75 10.6 9 12 9s2.5.6 2.5 1.5"/></svg>',
+  userPlus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3.5"/><path d="M3.5 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><path d="M18.5 8v6M15.5 11h6"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>',
+  target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="0.8" fill="currentColor" stroke="none"/></svg>',
+  tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 3.5h-5a2 2 0 0 0-1.4.6L3.6 5.6a2 2 0 0 0-.6 1.4v5a2 2 0 0 0 .6 1.4l9 9a2 2 0 0 0 2.8 0l6.5-6.5a2 2 0 0 0 0-2.8l-9-9a2 2 0 0 0-1.4-.6Z"/><circle cx="8" cy="8" r="1.1" fill="currentColor" stroke="none"/></svg>',
+  chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+  bars: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V10M12 19V5M19 19v-7"/></svg>',
+  bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 13h6l-1 8 8-11h-6l1-7Z"/></svg>',
+};
+
+// ── componente genérico: lista de barras horizontais ─────────
+function distributionBarsHtml(rows, opts = {}) {
+  const { formatValue = v => String(v) } = opts;
+  const max = Math.max(1, ...rows.map(r => r.value));
+  return rows.map(r => `
+    <div class="dist-row ${r.highlight ? 'is-current' : ''}">
+      <div class="dr-label">${r.label}</div>
+      <div class="dr-track"><div class="dr-fill" data-target-width="${Math.round((r.value / max) * 100)}"></div></div>
+      <div class="dr-val">${formatValue(r.value)}</div>
+    </div>
+  `).join('');
+}
+
+function animateCounters(root) {
+  root.querySelectorAll('[data-count-to]').forEach(el => {
+    const to = Number(el.dataset.countTo);
+    const prefix = el.dataset.countPrefix || '';
+    const suffix = el.dataset.countSuffix || '';
+    if (!isFinite(to) || to === 0) { el.textContent = prefix + '0' + suffix; return; }
+    const duration = 600;
+    const start = performance.now();
+    function tick(now) {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const val = Math.round(to * eased);
+      el.textContent = prefix + val.toLocaleString('pt-BR') + suffix;
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+function animateFills(root) {
+  root.querySelectorAll('.dr-fill, .adc-bar-fill').forEach(el => {
+    requestAnimationFrame(() => { el.style.width = el.dataset.targetWidth + '%'; });
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// HOME · painel operacional — "Como está minha agenda hoje e
+// como será minha semana?"
+// ══════════════════════════════════════════════════════════════
+function dayAggregate(dateAppts) {
+  const sorted = dateAppts.slice().sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  const count = dateAppts.length;
+  const first = sorted.length ? fmtTime(sorted[0].starts_at) : '—';
+  const last = sorted.length ? fmtTime(sorted[sorted.length - 1].starts_at) : '—';
+  const staffCount = Math.max(1, state.staff.length);
+  const capacityMinutes = staffCount * (AGENDA_END_HOUR - AGENDA_START_HOUR) * 60;
+  const bookedMinutes = dateAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
+  const freeMinutes = Math.max(0, capacityMinutes - bookedMinutes);
+  const freeSlots = Math.floor(freeMinutes / 60);
+  const occPct = capacityMinutes ? Math.min(100, Math.round((bookedMinutes / capacityMinutes) * 100)) : 0;
+  let statusText = 'Agenda saudável', statusClassName = '';
+  if (occPct >= 80) { statusText = 'Agenda praticamente lotada'; statusClassName = 'is-busy'; }
+  else if (occPct <= 30) { statusText = 'Muitos horários disponíveis'; statusClassName = 'is-quiet'; }
+  return { count, first, last, freeSlots, occPct, statusText, statusClassName };
+}
+
+function dayPanoramaCardHtml({ title, icon, date, dateAppts, emptyNote, quietNote }) {
+  if (date && !isSalonOpenDay(date)) {
+    return `
+      <div class="panorama-card">
+        <div class="pc-head"><div class="pc-title"><span class="pc-icon">${icon}</span>${title}</div></div>
+        <div class="pc-empty">Salão fechado neste dia.</div>
+      </div>
+    `;
+  }
+  const agg = dayAggregate(dateAppts);
+  if (!agg.count) {
+    return `
+      <div class="panorama-card">
+        <div class="pc-head"><div class="pc-title"><span class="pc-icon">${icon}</span>${title}</div></div>
+        <div class="pc-empty">${emptyNote}</div>
+      </div>
+    `;
+  }
+  return `
+    <div class="panorama-card">
+      <div class="pc-head">
+        <div class="pc-title"><span class="pc-icon">${icon}</span>${title}</div>
+        <div class="pc-status ${agg.statusClassName}">${agg.statusText}</div>
+      </div>
+      <div class="adc-stats">
+        <div class="as-item"><div class="as-val">${agg.count}</div><div class="as-lbl">Total</div></div>
+        <div class="as-item"><div class="as-val">${agg.first}</div><div class="as-lbl">1º horário</div></div>
+        <div class="as-item"><div class="as-val">${agg.last}</div><div class="as-lbl">Último</div></div>
+        <div class="as-item"><div class="as-val">${agg.freeSlots}</div><div class="as-lbl">Livres</div></div>
+      </div>
+      <div class="adc-bar-track"><div class="adc-bar-fill" data-target-width="${agg.occPct}"></div></div>
+      ${quietNote && agg.occPct <= 30 ? `<div class="pc-note">${quietNote}</div>` : ''}
+    </div>
+  `;
+}
+
+const WEEKDAY_FULL_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+const WEEKDAY_LONG_LABELS = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'];
+// Dias em que o salão não abre (0 = domingo, 1 = segunda) — mesma regra usada no agendamento online.
+const CLOSED_WEEKDAYS = [0, 1];
+function isSalonOpenDay(date) {
+  return !CLOSED_WEEKDAYS.includes(date.getDay());
+}
+
+function weekAppointmentCounts(weekStart) {
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+  const counts = days.map(d => appointmentsOnDate(d).length);
+  return { days, counts };
+}
+
+function strongestWeakestDay(days, counts) {
+  const openIdx = days.map((d, i) => i).filter(i => isSalonOpenDay(days[i]));
+  if (!openIdx.some(i => counts[i] > 0)) return null;
+  let strongIdx = openIdx[0], weakIdx = openIdx[0];
+  openIdx.forEach(i => {
+    if (counts[i] > counts[strongIdx]) strongIdx = i;
+    if (counts[i] < counts[weakIdx]) weakIdx = i;
+  });
+  return {
+    strong: { label: WEEKDAY_LONG_LABELS[strongIdx], count: counts[strongIdx] },
+    weak: { label: WEEKDAY_LONG_LABELS[weakIdx], count: counts[weakIdx] },
+  };
+}
+
+function bestDayForEncaixe(days) {
+  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
+  let best = null;
+  days.forEach((d, i) => {
+    if (d < startOfToday || !isSalonOpenDay(d)) return;
+    const agg = dayAggregate(appointmentsOnDate(d));
+    if (!best || agg.freeSlots > best.freeSlots) {
+      best = { label: WEEKDAY_LONG_LABELS[i], freeSlots: agg.freeSlots, occPct: agg.occPct };
+    }
+  });
+  return best;
+}
+
+function formatDurationShort(min) {
+  if (min <= 0) return '0min';
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h && m) return `${h}h${m}min`;
+  if (h) return `${h}h`;
+  return `${m}min`;
+}
+
+function nextAvailableSlot() {
+  const now = new Date();
+  if (!isSalonOpenDay(now)) return null;
+  const staffCount = Math.max(1, state.staff.length);
+  const dayAppts = appointmentsOnDate(now);
+  const dayStart = new Date(now); dayStart.setHours(AGENDA_START_HOUR, 0, 0, 0);
+  const dayEnd = new Date(now); dayEnd.setHours(AGENDA_END_HOUR, 0, 0, 0);
+  let cursor = now > dayStart ? new Date(now) : new Date(dayStart);
+  cursor.setSeconds(0, 0);
+  cursor.setMinutes(Math.ceil(cursor.getMinutes() / 15) * 15);
+  if (cursor >= dayEnd) return null;
+  const stepMs = 15 * 60000;
+  let slotStart = null;
+  for (let t = new Date(cursor); t < dayEnd; t = new Date(t.getTime() + stepMs)) {
+    const busy = dayAppts.filter(a => new Date(a.starts_at) <= t && new Date(a.ends_at) > t).length;
+    if (busy < staffCount) { slotStart = new Date(t); break; }
+  }
+  if (!slotStart) return null;
+  let slotEnd = new Date(slotStart);
+  for (; slotEnd < dayEnd; slotEnd = new Date(slotEnd.getTime() + stepMs)) {
+    const busy = dayAppts.filter(a => new Date(a.starts_at) <= slotEnd && new Date(a.ends_at) > slotEnd).length;
+    if (busy >= staffCount) break;
+  }
+  return { start: slotStart, durationMin: Math.round((slotEnd - slotStart) / 60000) };
+}
+
+function weekTrend() {
+  const curStart = startOfWeekMonday(new Date());
+  const prevStart = new Date(curStart); prevStart.setDate(prevStart.getDate() - 7);
+  const cur = weekAppointmentCounts(curStart).counts.reduce((a, b) => a + b, 0);
+  const prev = weekAppointmentCounts(prevStart).counts.reduce((a, b) => a + b, 0);
+  const diff = cur - prev;
+  if (diff === 0) {
+    return { icon: '➖', headline: 'Mesmo volume da semana anterior', phrase: 'O ritmo de agendamentos se manteve estável.' };
+  }
+  if (prev === 0) {
+    return {
+      icon: '📈', headline: `+${diff} agendamento${diff === 1 ? '' : 's'} em relação à semana passada`,
+      phrase: 'Você está atendendo mais clientes do que na semana passada.',
+    };
+  }
+  const pct = Math.round((diff / prev) * 100);
+  if (pct > 0) {
+    return {
+      icon: '📈', headline: `+${pct}% em agendamentos em relação à semana passada`,
+      phrase: 'Você está atendendo mais clientes do que na semana passada.',
+    };
+  }
+  return {
+    icon: '📉', headline: `${pct}% em agendamentos em relação à semana passada`,
+    phrase: 'Esta semana apresenta menor ocupação. Considere divulgar horários disponíveis.',
+  };
+}
+
+function renderHome() {
+  const now = new Date();
+  document.getElementById('greeting').textContent = now.getHours() < 12 ? 'Bom dia' : (now.getHours() < 18 ? 'Boa tarde' : 'Boa noite');
+  document.getElementById('greetingSub').textContent = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const today = todayAppointments();
+  const tomorrow = tomorrowAppointments();
+  const sortedToday = today.slice().sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+
+  const curWeekStart = startOfWeekMonday(now);
+  const { days: weekDays, counts: weekCounts } = weekAppointmentCounts(curWeekStart);
+  const summary = strongestWeakestDay(weekDays, weekCounts);
+  const opportunityDay = bestDayForEncaixe(weekDays);
+  const nextSlot = nextAvailableSlot();
+  const trend = weekTrend();
+
+  const hojeCardHtml = dayPanoramaCardHtml({
+    title: 'Hoje', icon: ICONS.calendar, date: now, dateAppts: today,
+    emptyNote: 'Nenhum atendimento hoje.',
+  });
+  const amanhaCardHtml = dayPanoramaCardHtml({
+    title: 'Amanhã', icon: ICONS.clock, date: (() => { const t = new Date(now); t.setDate(t.getDate() + 1); return t; })(), dateAppts: tomorrow,
+    emptyNote: 'Nenhum atendimento agendado.',
+    quietNote: 'Boa oportunidade para novos encaixes.',
+  });
+
+  app.innerHTML = `
+    <div class="home-block home-section" style="animation-delay:0ms;margin-top:4px;">
+      <div class="home-section-head"><h2>Panorama da agenda</h2></div>
+
+      ${hojeCardHtml}
+      ${amanhaCardHtml}
+
+      <div class="panorama-card">
+        <div class="pc-head"><div class="pc-title"><span class="pc-icon">${ICONS.bars}</span>Resumo da semana</div></div>
+        ${summary ? `
+          <div class="week-summary-split">
+            <div class="wss-item">
+              <div class="wss-emoji">🔥</div>
+              <div class="wss-day">${summary.strong.label}</div>
+              <div class="wss-count">${summary.strong.count} agendamento${summary.strong.count === 1 ? '' : 's'}</div>
+            </div>
+            <div class="wss-item is-weak">
+              <div class="wss-emoji">❄️</div>
+              <div class="wss-day">${summary.weak.label}</div>
+              <div class="wss-count">${summary.weak.count} agendamento${summary.weak.count === 1 ? '' : 's'}</div>
+            </div>
+          </div>
+        ` : '<div class="pc-empty">Sem agendamentos essa semana.</div>'}
+      </div>
+
+      <div class="panorama-card">
+        <div class="pc-head"><div class="pc-title"><span class="pc-icon">${ICONS.bars}</span>Ritmo da semana</div></div>
+        ${distributionBarsHtml(
+          weekDays
+            .map((d, i) => ({ label: WEEKDAY_FULL_LABELS[i], value: weekCounts[i], highlight: sameDay(d, now), day: d }))
+            .filter(row => isSalonOpenDay(row.day))
+        )}
+      </div>
+
+      <div class="panorama-card">
+        <div class="pc-head"><div class="pc-title"><span class="pc-icon">${ICONS.bolt}</span>Próxima oportunidade</div></div>
+        <div class="opportunity-grid">
+          <div class="opp-item">
+            <div class="opp-lbl">Próximo horário livre</div>
+            ${nextSlot ? `
+              <div class="opp-val">${fmtTime(nextSlot.start)}</div>
+              <div class="opp-sub">Disponível por ${formatDurationShort(nextSlot.durationMin)}</div>
+            ` : '<div class="opp-sub">Sem horários livres hoje.</div>'}
+          </div>
+          <div class="opp-divider"></div>
+          <div class="opp-item">
+            <div class="opp-lbl">Melhor dia p/ encaixes</div>
+            ${opportunityDay && opportunityDay.freeSlots > 0 ? `
+              <div class="opp-val">${opportunityDay.label}</div>
+              <div class="opp-sub">${opportunityDay.freeSlots} horário${opportunityDay.freeSlots === 1 ? '' : 's'} disponíve${opportunityDay.freeSlots === 1 ? 'l' : 'is'}</div>
+            ` : '<div class="opp-sub">Agenda excelente. Nenhum dia com baixa ocupação.</div>'}
+          </div>
+        </div>
+      </div>
+
+      <div class="panorama-card">
+        <div class="pc-head"><div class="pc-title">Tendência da semana</div></div>
+        <div class="trend-block">
+          <div class="trend-emoji">${trend.icon}</div>
+          <div>
+            <div class="trend-headline">${trend.headline}</div>
+            <div class="trend-phrase">${trend.phrase}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="home-block home-section" style="animation-delay:80ms">
+      <div class="home-section-head"><h2>Próximos horários</h2></div>
+      ${sortedToday.length ? sortedToday.map(a => {
+        const c = colorForStaff(a.staff?.id);
+        return `
+          <div class="appt-modern-card">
+            <div class="am-time-col"><div class="am-time">${fmtTime(a.starts_at)}</div></div>
+            <div class="am-bar" style="background:${c.border}"></div>
+            <div class="am-body">
+              <div class="am-client">${a.client?.name || 'Cliente'}</div>
+              <div class="am-meta">${a.service?.name || ''} · ${a.staff?.name || 'Sem profissional'}</div>
+            </div>
+            <div class="am-status ${statusClass(a.status)}">${statusLabel(a.status)}</div>
+          </div>
+        `;
+      }).join('') : '<div class="empty">Nenhum atendimento para hoje.</div>'}
+    </div>
+  `;
+
+  requestAnimationFrame(() => {
+    app.querySelectorAll('.home-block').forEach(el => el.classList.add('in'));
+    animateFills(app);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// INSIGHTS · painel analítico — "Como está o desempenho do
+// meu negócio?"
+// ══════════════════════════════════════════════════════════════
+function currentWeekRevenue() {
+  const start = startOfWeekMonday(new Date());
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+  const values = days.map(d => appointmentsOnDate(d).reduce((sum, a) => sum + appointmentRevenue(a), 0));
+  return { days, values };
+}
+
+function weekRevenueForStart(start) {
+  const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return d; });
+  return days.reduce((sum, d) => sum + appointmentsOnDate(d).reduce((s, a) => s + appointmentRevenue(a), 0), 0);
+}
+
+function monthlyRevenueHistory(months = 6) {
+  const now = new Date();
+  const result = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const total = state.appointments
+      .filter(a => {
+        const s = new Date(a.starts_at);
+        return s.getFullYear() === d.getFullYear() && s.getMonth() === d.getMonth();
+      })
+      .reduce((sum, a) => sum + appointmentRevenue(a), 0);
+    result.push({
+      label: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
+      total,
+      isCurrent: d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(),
+    });
+  }
+  return result;
+}
+
+function monthlyRevenueForOffset(monthsAgo) {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
+  return state.appointments
+    .filter(a => { const s = new Date(a.starts_at); return s.getFullYear() === d.getFullYear() && s.getMonth() === d.getMonth(); })
+    .reduce((sum, a) => sum + appointmentRevenue(a), 0);
+}
+
+function currentMonthAppointments() {
+  const now = new Date();
+  return state.appointments.filter(a => {
+    const s = new Date(a.starts_at);
+    return s.getFullYear() === now.getFullYear() && s.getMonth() === now.getMonth();
+  });
+}
+
+function newClientsThisMonth() {
+  const now = new Date();
+  const withDates = state.clients.filter(c => c.created_at);
+  if (!withDates.length) return null;
+  return withDates.filter(c => {
+    const d = new Date(c.created_at);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+}
+
+function monthOccupancyPct(monthAppts) {
+  if (!state.staff.length) return null;
+  const totalMinutes = monthAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
+  const now = new Date();
+  const daysElapsed = Math.max(1, now.getDate());
+  const workMinutesPerDay = (AGENDA_END_HOUR - AGENDA_START_HOUR) * 60;
+  const capacity = state.staff.length * workMinutesPerDay * daysElapsed;
+  if (!capacity) return null;
+  return Math.min(100, Math.round((totalMinutes / capacity) * 100));
+}
+
+function topServicesThisMonth(monthAppts, limit = 5) {
+  const map = new Map();
+  monthAppts.forEach(a => {
+    const name = a.service?.name || 'Outro';
+    map.set(name, (map.get(name) || 0) + 1);
+  });
+  return Array.from(map.entries())
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+}
+
+function demandProfileThisMonth(monthAppts) {
+  const buckets = {};
+  for (let h = AGENDA_START_HOUR; h < AGENDA_END_HOUR; h++) buckets[h] = 0;
+  monthAppts.forEach(a => {
+    const h = new Date(a.starts_at).getHours();
+    if (buckets[h] !== undefined) buckets[h]++;
+  });
+  return Object.keys(buckets).map(h => ({ label: `${h}h`, value: buckets[h] }));
+}
+
+function recentBookingHistory(limit = 6) {
+  const now = new Date();
+  return state.appointments
+    .filter(a => new Date(a.starts_at) < now)
+    .sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at))
+    .slice(0, limit);
+}
+
+function deltaInfo(cur, prev) {
+  const diff = cur - prev;
+  if (diff === 0) return { text: '— 0%', cls: 'is-flat' };
+  if (prev === 0) return { text: `+${formatCurrency(diff)}`, cls: 'is-up' };
+  const pct = Math.round((diff / prev) * 100);
+  return { text: `${pct > 0 ? '+' : ''}${pct}%`, cls: pct > 0 ? 'is-up' : 'is-down' };
+}
+
+function periodComparisons() {
+  const curWeekStart = startOfWeekMonday(new Date());
+  const prevWeekStart = new Date(curWeekStart); prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+  return [
+    { label: 'Receita — semana atual vs. anterior', cur: weekRevenueForStart(curWeekStart), prev: weekRevenueForStart(prevWeekStart) },
+    { label: 'Receita — mês atual vs. anterior', cur: monthlyRevenueForOffset(0), prev: monthlyRevenueForOffset(1) },
+  ];
+}
+
+function currentWeekAppointments() {
+  const start = startOfWeekMonday(new Date());
+  const end = new Date(start); end.setDate(end.getDate() + 7);
+  return state.appointments.filter(a => { const s = new Date(a.starts_at); return s >= start && s < end; });
+}
+
+function newClientsThisWeek() {
+  const start = startOfWeekMonday(new Date());
+  const end = new Date(start); end.setDate(end.getDate() + 7);
+  const withDates = state.clients.filter(c => c.created_at);
+  if (!withDates.length) return null;
+  return withDates.filter(c => { const d = new Date(c.created_at); return d >= start && d < end; }).length;
+}
+
+function weekOccupancyPct(weekAppts, weekStart) {
+  if (!state.staff.length) return null;
+  const totalMinutes = weekAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
+  const now = new Date();
+  const workMinutesPerDay = (AGENDA_END_HOUR - AGENDA_START_HOUR) * 60;
+  let openDaysElapsed = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart); d.setDate(d.getDate() + i);
+    if (d > now) break;
+    if (isSalonOpenDay(d)) openDaysElapsed++;
+  }
+  openDaysElapsed = Math.max(1, openDaysElapsed);
+  const capacity = state.staff.length * workMinutesPerDay * openDaysElapsed;
+  if (!capacity) return null;
+  return Math.min(100, Math.round((totalMinutes / capacity) * 100));
+}
+
+function weekRangeLabel() {
+  const start = startOfWeekMonday(new Date());
+  const end = new Date(start); end.setDate(end.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', '');
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
+function currentMonthLabel() {
+  const s = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ── Evolução da receita: componente de gráfico único e persistente ───
+// Sempre trabalhamos com os 12 meses "por baixo do capó"; o modo 6 meses é só
+// um estado visual (6 pontos escondidos) — trocar de modo nunca troca o SVG,
+// só anima os mesmos elementos entre dois estados.
+const TREND_FULL_MONTHS = 12;
+const TREND_SHORT_MONTHS = 6;
+const TREND_W = 320, TREND_H = 106, TREND_TOP_PAD = 26, TREND_BOTTOM_PAD = 10;
+let trendFullHistoryCache = null;
+
+function trendXAt(count, idx) {
+  return count > 1 ? (idx / (count - 1)) * TREND_W : TREND_W / 2;
+}
+function trendYAt(value, maxValue) {
+  const chartH = TREND_H - TREND_TOP_PAD - TREND_BOTTOM_PAD;
+  return TREND_TOP_PAD + (1 - value / Math.max(1, maxValue)) * chartH;
+}
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+// Posição de cada mês (índice 0..11 do histórico completo) dentro de um
+// determinado "modo" (6 ou 12 meses visíveis). Os 6 mais recentes (índices
+// 6..11) existem nos dois modos e só mudam de x; os 6 mais antigos (0..5)
+// só existem fisicamente no modo de 12 meses.
+function trendPosFor(fullHistory, idx, visibleMonths, maxValue) {
+  const fullCount = fullHistory.length;
+  const addedCount = fullCount - TREND_SHORT_MONTHS;
+  const x = idx < addedCount
+    ? trendXAt(fullCount, idx)
+    : trendXAt(visibleMonths, idx - (fullCount - visibleMonths));
+  const y = trendYAt(fullHistory[idx].total, maxValue);
+  const visible = idx >= addedCount || visibleMonths === fullCount;
+  return { x, y, visible };
+}
+
+// Constrói a marcação (repouso, sem animação) para um determinado modo.
+function buildTrendChartMarkup(fullHistory, visibleMonths) {
+  const fullCount = fullHistory.length;
+  const addedCount = fullCount - TREND_SHORT_MONTHS;
+  const visibleValues = fullHistory.slice(fullCount - visibleMonths).map(m => m.total);
+  const maxValue = Math.max(1, ...visibleValues);
+  const labelSize = visibleMonths > 8 ? 8 : 9.5;
+
+  const positions = fullHistory.map((m, idx) => trendPosFor(fullHistory, idx, visibleMonths, maxValue));
+
+  // Linha: sempre os 12 pontos, em ordem invertida (mais recente → mais antigo),
+  // pra que o "desenho" (dashoffset) fique ancorado no lado direito (presente).
+  let lineD = '';
+  for (let idx = fullCount - 1; idx >= 0; idx--) {
+    const p = positions[idx];
+    lineD += `${idx === fullCount - 1 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)} `;
+  }
+
+  // Preenchimento: só os pontos visíveis no modo atual.
+  const areaIdxs = [];
+  for (let idx = 0; idx < fullCount; idx++) if (positions[idx].visible) areaIdxs.push(idx);
+  const areaLineD = areaIdxs.map((idx, i) => {
+    const p = positions[idx];
+    return `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+  }).join(' ');
+  const firstAP = positions[areaIdxs[0]], lastAP = positions[areaIdxs[areaIdxs.length - 1]];
+  const areaD = `${areaLineD} L${lastAP.x.toFixed(1)},${TREND_H - TREND_BOTTOM_PAD} L${firstAP.x.toFixed(1)},${TREND_H - TREND_BOTTOM_PAD} Z`;
+
+  const dotsHtml = fullHistory.map((m, idx) => {
+    const p = positions[idx];
+    const color = m.isCurrent ? 'var(--color-accent-700)' : 'var(--color-accent-600)';
+    return `<circle id="trendDot-${idx}" class="trend-dot${p.visible ? '' : ' is-hidden'}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${color}"><title>${m.label} · ${formatCurrency(m.total)}</title></circle>`;
+  }).join('');
+
+  const labelsHtml = fullHistory.map((m, idx) => {
+    const p = positions[idx];
+    return `<text id="trendLabel-${idx}" class="trend-label${p.visible ? '' : ' is-hidden'}" x="${p.x.toFixed(1)}" y="${Math.max(9, p.y - 9).toFixed(1)}" text-anchor="middle" font-size="${labelSize}" font-weight="700" fill="${m.isCurrent ? 'var(--color-accent-700)' : 'var(--color-neutral-600)'}" font-family="Jost, system-ui, sans-serif">${m.label}</text>`;
+  }).join('');
+
+  return `
+    <svg viewBox="0 0 ${TREND_W} ${TREND_H}" preserveAspectRatio="none">
+      <path id="trendAreaPath" d="${areaD}" fill="var(--color-accent-100)" opacity="0.6" stroke="none"/>
+      <path id="trendLinePath" d="${lineD.trim()}" fill="none" stroke="var(--color-accent-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${labelsHtml}
+      ${dotsHtml}
+    </svg>
+  `;
+}
+
+// Aplica o "recorte" (stroke-dasharray/dashoffset) que ancora a linha no
+// modo de repouso atual, sem trocar nada visualmente.
+function settleTrendPath(pathEl, visibleMonths) {
+  if (!pathEl) return;
+  const totalLen = pathEl.getTotalLength();
+  const revealFraction = (visibleMonths - 1) / (TREND_FULL_MONTHS - 1);
+  pathEl.style.transition = 'none';
+  pathEl.style.strokeDasharray = `${totalLen}`;
+  pathEl.style.strokeDashoffset = `${totalLen * (1 - revealFraction)}`;
+}
+
+// ── Indicadores: formatação/animação por tipo, e recálculo Mês/Semana ──
+function formatIndicatorValue(type, raw) {
+  if (raw === null || raw === undefined || !isFinite(raw)) return '--';
+  switch (type) {
+    case 'currency': return formatCurrency(raw);
+    case 'percent': return `${Math.round(raw)}%`;
+    case 'hours': return `${raw.toFixed(1)}h`;
+    default: return String(Math.round(raw));
+  }
+}
+
+// Anima um indicador "descendo" até zero e depois "subindo" até o novo valor —
+// dá a sensação de recálculo, sem precisar recarregar a seção inteira.
+function animateIndicatorValue(el, type, fromRaw, toRaw) {
+  if (toRaw === null || toRaw === undefined || !isFinite(toRaw)) { el.textContent = '--'; return; }
+  const from = (fromRaw === null || fromRaw === undefined || !isFinite(fromRaw)) ? 0 : fromRaw;
+  if (from === toRaw) { el.textContent = formatIndicatorValue(type, toRaw); return; }
+  const downMs = 240, upMs = 420;
+  const downStart = performance.now();
+  function tickDown(now) {
+    const p = Math.min(1, (now - downStart) / downMs);
+    const eased = 1 - Math.pow(1 - p, 2);
+    el.textContent = formatIndicatorValue(type, from * (1 - eased));
+    if (p < 1) requestAnimationFrame(tickDown);
+    else requestAnimationFrame(tickUpStart);
+  }
+  function tickUpStart(now0) {
+    const upStart = now0;
+    function tickUp(now) {
+      const p = Math.min(1, (now - upStart) / upMs);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = formatIndicatorValue(type, toRaw * eased);
+      if (p < 1) requestAnimationFrame(tickUp);
+      else el.textContent = formatIndicatorValue(type, toRaw);
+    }
+    requestAnimationFrame(tickUp);
+  }
+  requestAnimationFrame(tickDown);
+}
+
+// Explicações curtas pra alguns indicadores — acessíveis pelo ícone "?" no card.
+const INDICATOR_HELP = {
+  'Horas agendadas': 'Soma a duração de todos os serviços marcados no período (mês ou semana), convertida em horas. Mostra o volume de trabalho agendado pra equipe.',
+  'Taxa de ocupação': 'Compara quanto tempo já está ocupado com atendimentos contra o tempo total disponível da equipe no período. Quanto mais perto de 100%, mais cheia está a agenda.',
+  'Ticket médio': 'Receita total do período dividida pela quantidade de agendamentos. Mostra quanto, em média, cada atendimento rende.',
+};
+
+function showIndicatorHelp(label) {
+  const text = INDICATOR_HELP[label];
+  if (!text) return;
+  modalContainer.innerHTML = `
+    <div class="help-popup-overlay" id="helpPopupOverlay">
+      <div class="help-popup-card">
+        <button class="help-popup-close" id="helpPopupClose">✕</button>
+        <div class="hp-title">${label}</div>
+        <div class="hp-text">${text}</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('helpPopupClose').onclick = closeModal;
+  document.getElementById('helpPopupOverlay').onclick = (e) => { if (e.target.id === 'helpPopupOverlay') closeModal(); };
+}
+
+function computeIndicatorsData() {
+  const monthAppts = currentMonthAppointments();
+  const monthRevenue = monthAppts.reduce((sum, a) => sum + appointmentRevenue(a), 0);
+  const monthMinutes = monthAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
+  const monthHours = monthMinutes / 60;
+  const newClients = newClientsThisMonth();
+  const occPct = monthOccupancyPct(monthAppts);
+  const avgTicket = monthAppts.length ? monthRevenue / monthAppts.length : null;
+
+  const weekAppts = currentWeekAppointments();
+  const weekRevenue = weekAppts.reduce((sum, a) => sum + appointmentRevenue(a), 0);
+  const weekMinutes = weekAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
+  const weekHours = weekMinutes / 60;
+  const weekNewClients = newClientsThisWeek();
+  const weekOccPctVal = weekOccupancyPct(weekAppts, startOfWeekMonday(new Date()));
+  const weekAvgTicket = weekAppts.length ? weekRevenue / weekAppts.length : null;
+
+  return {
+    month: {
+      label: currentMonthLabel(),
+      items: [
+        { icon: ICONS.calendar, type: 'count', raw: monthAppts.length, label: 'Agendamentos' },
+        { icon: ICONS.money, type: 'currency', raw: monthRevenue, label: 'Receita' },
+        { icon: ICONS.userPlus, type: 'count', raw: newClients, label: 'Novos clientes' },
+        { icon: ICONS.clock, type: 'hours', raw: monthHours, label: 'Horas agendadas' },
+        { icon: ICONS.target, type: 'percent', raw: occPct, label: 'Taxa de ocupação' },
+        { icon: ICONS.tag, type: 'currency', raw: avgTicket, label: 'Ticket médio' },
+      ],
+    },
+    week: {
+      label: weekRangeLabel(),
+      items: [
+        { icon: ICONS.calendar, type: 'count', raw: weekAppts.length, label: 'Agendamentos' },
+        { icon: ICONS.money, type: 'currency', raw: weekRevenue, label: 'Receita' },
+        { icon: ICONS.userPlus, type: 'count', raw: weekNewClients, label: 'Novos clientes' },
+        { icon: ICONS.clock, type: 'hours', raw: weekHours, label: 'Horas agendadas' },
+        { icon: ICONS.target, type: 'percent', raw: weekOccPctVal, label: 'Taxa de ocupação' },
+        { icon: ICONS.tag, type: 'currency', raw: weekAvgTicket, label: 'Ticket médio' },
+      ],
+    },
+  };
+}
+
+// Recalcula SÓ a seção "Indicadores" (legenda + grid), sem tocar no resto da tela.
+function renderIndicatorsSection() {
+  const captionEl = document.getElementById('indicatorsCaption');
+  const gridEl = document.getElementById('indicatorsGrid');
+  if (!gridEl) return;
+  const active = computeIndicatorsData()[state.insightsIndicatorPeriod];
+  if (captionEl) captionEl.textContent = active.label;
+  const cards = gridEl.querySelectorAll('.insight-card');
+  active.items.forEach((item, i) => {
+    const card = cards[i];
+    if (!card) return;
+    const valEl = card.querySelector('.ic-val');
+    const fromRaw = valEl.dataset.raw === '' ? null : Number(valEl.dataset.raw);
+    animateIndicatorValue(valEl, item.type, fromRaw, item.raw);
+    valEl.dataset.raw = (item.raw === null || item.raw === undefined) ? '' : item.raw;
+  });
+}
+
+// Constrói (sem animação) o estado inicial do gráfico de evolução, no modo
+// atual (state.insightsTrendMonths). Usado no primeiro carregamento da aba.
+function renderTrendChartSection() {
+  const wrap = document.getElementById('trendChartWrap');
+  if (!wrap) return;
+  const fullHistory = monthlyRevenueHistory(TREND_FULL_MONTHS);
+  trendFullHistoryCache = fullHistory;
+  const visibleMonths = state.insightsTrendMonths;
+  wrap.innerHTML = buildTrendChartMarkup(fullHistory, visibleMonths);
+  wrap.dataset.months = visibleMonths;
+  settleTrendPath(wrap.querySelector('#trendLinePath'), visibleMonths);
+}
+
+// Anima a transição 6 ⇄ 12 meses no MESMO gráfico: os 6 meses recentes
+// deslizam de posição, a linha se desenha/retrai a partir da âncora (o mês
+// atual, à direita) e os meses extras entram/saem em cascata.
+function animateTrendTransition(targetMonths) {
+  const wrap = document.getElementById('trendChartWrap');
+  if (!wrap) return;
+  const prevMonths = Number(wrap.dataset.months) || targetMonths;
+  if (prevMonths === targetMonths) return;
+
+  const fullHistory = trendFullHistoryCache || monthlyRevenueHistory(TREND_FULL_MONTHS);
+  const fullCount = fullHistory.length;
+  const addedCount = fullCount - TREND_SHORT_MONTHS;
+  const expanding = targetMonths > prevMonths;
+
+  const pathEl = wrap.querySelector('#trendLinePath');
+  const areaEl = wrap.querySelector('#trendAreaPath');
+  if (!pathEl) { renderTrendChartSection(); return; }
+
+  const dotEls = Array.from({ length: fullCount }, (_, idx) => wrap.querySelector(`#trendDot-${idx}`));
+  const labelEls = Array.from({ length: fullCount }, (_, idx) => wrap.querySelector(`#trendLabel-${idx}`));
+
+  const fromMax = Math.max(1, ...fullHistory.slice(fullCount - prevMonths).map(m => m.total));
+  const toMax = Math.max(1, ...fullHistory.slice(fullCount - targetMonths).map(m => m.total));
+  const revealFrom = (prevMonths - 1) / (fullCount - 1);
+  const revealTo = (targetMonths - 1) / (fullCount - 1);
+
+  // Esconde o preenchimento durante a transição (a área só volta, com fade,
+  // quando o traçado final estiver correto — evita uma geometria "errada" no meio do caminho).
+  if (areaEl) { areaEl.style.transition = 'none'; areaEl.style.opacity = 0; }
+
+  // Dispara o pop/fade dos meses "extras", em cascata e na ordem certa:
+  // ao expandir, entram do mês mais próximo do presente pro mais antigo;
+  // ao encolher, saem do mais antigo pro mais próximo do presente.
+  for (let idx = 0; idx < addedCount; idx++) {
+    const order = expanding ? (addedCount - 1 - idx) : idx;
+    const delay = 60 + order * 55;
+    if (dotEls[idx]) dotEls[idx].style.transitionDelay = `${delay}ms`;
+    if (labelEls[idx]) labelEls[idx].style.transitionDelay = `${delay}ms`;
+  }
+  requestAnimationFrame(() => {
+    for (let idx = 0; idx < addedCount; idx++) {
+      if (dotEls[idx]) dotEls[idx].classList.toggle('is-hidden', !expanding);
+      if (labelEls[idx]) labelEls[idx].classList.toggle('is-hidden', !expanding);
+    }
+  });
+
+  const duration = 620;
+  const start = performance.now();
+
+  function frame(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const te = easeInOutCubic(t);
+    const currentMax = fromMax + (toMax - fromMax) * te;
+
+    const positions = new Array(fullCount);
+    for (let idx = 0; idx < fullCount; idx++) {
+      let x;
+      if (idx < addedCount) {
+        x = trendXAt(fullCount, idx); // meses extras: x fixo, só entram/saem de opacidade
+      } else {
+        const xFrom = trendXAt(prevMonths, idx - (fullCount - prevMonths));
+        const xTo = trendXAt(targetMonths, idx - (fullCount - targetMonths));
+        x = xFrom + (xTo - xFrom) * te;
+      }
+      const y = trendYAt(fullHistory[idx].total, currentMax);
+      positions[idx] = { x, y };
+      if (dotEls[idx]) { dotEls[idx].setAttribute('cx', x.toFixed(1)); dotEls[idx].setAttribute('cy', y.toFixed(1)); }
+      if (labelEls[idx]) { labelEls[idx].setAttribute('x', x.toFixed(1)); labelEls[idx].setAttribute('y', Math.max(9, y - 9).toFixed(1)); }
+    }
+
+    let d = '';
+    for (let idx = fullCount - 1; idx >= 0; idx--) {
+      const p = positions[idx];
+      d += `${idx === fullCount - 1 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)} `;
+    }
+    pathEl.setAttribute('d', d.trim());
+    const totalLen = pathEl.getTotalLength();
+    const revealFraction = revealFrom + (revealTo - revealFrom) * te;
+    pathEl.style.strokeDasharray = `${totalLen}`;
+    pathEl.style.strokeDashoffset = `${totalLen * (1 - revealFraction)}`;
+
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      // Reconstrói a marcação "limpa" pro estado final — mesma geometria da
+      // última frame, então não há salto visual, só garante precisão/hover.
+      wrap.innerHTML = buildTrendChartMarkup(fullHistory, targetMonths);
+      wrap.dataset.months = targetMonths;
+      settleTrendPath(wrap.querySelector('#trendLinePath'), targetMonths);
+      const finalArea = wrap.querySelector('#trendAreaPath');
+      if (finalArea) {
+        finalArea.style.opacity = 0;
+        requestAnimationFrame(() => {
+          finalArea.style.transition = 'opacity .35s ease';
+          requestAnimationFrame(() => { finalArea.style.opacity = 0.6; });
+        });
+      }
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function bookingConversionThisMonth() {
+  const now = new Date();
+  const isThisMonth = (iso) => {
+    const d = new Date(iso);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  };
+  const visits = (state.bookingVisits || []).filter(v => isThisMonth(v.created_at)).length;
+  const conversions = state.appointments.filter(a => a.source === 'online' && a.created_at && isThisMonth(a.created_at)).length;
+  const pct = visits > 0 ? Math.round((conversions / visits) * 100) : null;
+  return { visits, conversions, pct };
+}
+
+function renderInsights() {
+  document.getElementById('greeting').textContent = 'Insights';
+  document.getElementById('greetingSub').textContent = 'Desempenho do negócio';
+
+  const today = todayAppointments();
+  const revenueToday = today.reduce((sum, a) => sum + appointmentRevenue(a), 0);
+
+  const { days: weekDays, values: weekValues } = currentWeekRevenue();
+  const weekTotal = weekValues.reduce((a, b) => a + b, 0);
+  const weekAverage = weekTotal / 7;
+
+  const monthHistory = monthlyRevenueHistory(6);
+  const monthAppts = currentMonthAppointments();
+  const monthRevenue = monthAppts.reduce((sum, a) => sum + appointmentRevenue(a), 0);
+  const monthMinutes = monthAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
+  const monthHours = monthMinutes / 60;
+  const newClients = newClientsThisMonth();
+  const occPct = monthOccupancyPct(monthAppts);
+  const avgTicket = monthAppts.length ? monthRevenue / monthAppts.length : null;
+
+  const activeIndicators = computeIndicatorsData()[state.insightsIndicatorPeriod];
+
+  const topServices = topServicesThisMonth(monthAppts);
+  const demand = demandProfileThisMonth(monthAppts);
+  const history = recentBookingHistory(6);
+  const comparisons = periodComparisons();
+  const conversion = bookingConversionThisMonth();
+
+  app.innerHTML = `
+    <div class="home-block" style="animation-delay:0ms;margin-top:4px;">
+      <div class="home-hero is-triple">
+        <div class="home-hero-card is-appts">
+          <div class="hh-icon">${ICONS.money}</div>
+          <div><div class="hh-num">${formatCurrency(revenueToday)}</div><div class="hh-label">Receita hoje</div></div>
+        </div>
+        <div class="home-hero-card is-revenue">
+          <div class="hh-icon">${ICONS.money}</div>
+          <div><div class="hh-num">${formatCurrency(weekTotal)}</div><div class="hh-label">Receita semana</div></div>
+        </div>
+        <div class="home-hero-card is-revenue">
+          <div class="hh-icon">${ICONS.money}</div>
+          <div><div class="hh-num">${formatCurrency(monthRevenue)}</div><div class="hh-label">Receita mês</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="home-block home-section" style="animation-delay:40ms">
+      <div class="home-section-head"><h2>Receita da semana</h2></div>
+      <div class="perf-card">
+        <div class="perf-top">
+          <div>
+            <div class="perf-top-label">Total da semana</div>
+            <div class="perf-top-num">${formatCurrency(weekTotal)}</div>
+          </div>
+          <div class="perf-top-badge">Média ${formatCurrency(weekAverage)}/dia</div>
+        </div>
+        <div class="week-chart-wrap">${weekChartSvg(weekValues, weekDays)}</div>
+      </div>
+    </div>
+
+    <div class="home-block home-section" style="animation-delay:80ms">
+      <div class="home-section-head">
+        <h2>Evolução da receita</h2>
+        <div class="seg-toggle" id="trendRangeToggle">
+          <button data-months="6" class="${state.insightsTrendMonths === 6 ? 'active' : ''}">6M</button>
+          <button data-months="12" class="${state.insightsTrendMonths === 12 ? 'active' : ''}">12M</button>
+        </div>
+      </div>
+      <div class="perf-card"><div class="trend-chart-wrap" id="trendChartWrap"></div></div>
+    </div>
+
+    <div class="home-block home-section" style="animation-delay:120ms">
+      <div class="home-section-head"><h2>Faturamento mensal</h2></div>
+      <div class="history-card">
+        ${distributionBarsHtml(monthHistory.map(m => ({ label: m.label, value: m.total, highlight: m.isCurrent })), { formatValue: formatCurrency })}
+        <button class="btn-see-more" id="historySeeMore">Ver mais</button>
+      </div>
+    </div>
+
+    <div class="home-block home-section" style="animation-delay:160ms">
+      <div class="home-section-head">
+        <h2>Indicadores</h2>
+        <div class="seg-toggle" id="indicatorsToggle">
+          <button data-period="month" class="${state.insightsIndicatorPeriod === 'month' ? 'active' : ''}">Mês</button>
+          <button data-period="week" class="${state.insightsIndicatorPeriod === 'week' ? 'active' : ''}">Semana</button>
+        </div>
+      </div>
+      <div class="home-section-caption" id="indicatorsCaption">${activeIndicators.label}</div>
+      <div class="insights-grid" id="indicatorsGrid">
+        ${activeIndicators.items.map(i => `
+          <div class="insight-card">
+            ${INDICATOR_HELP[i.label] ? `<button class="ic-help-btn" data-help-label="${i.label}" aria-label="O que é ${i.label}">?</button>` : ''}
+            <div class="ic-icon">${i.icon}</div>
+            <div class="ic-val" data-raw="${i.raw === null || i.raw === undefined ? '' : i.raw}" data-type="${i.type}">${formatIndicatorValue(i.type, i.raw)}</div>
+            <div class="ic-lbl">${i.label}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="home-block home-section" style="animation-delay:180ms">
+      <div class="panorama-card">
+        <div class="pc-head"><div class="pc-title">Conversão de visitantes</div></div>
+        ${conversion.visits > 0 ? `
+          <div class="opportunity-grid">
+            <div class="opp-item">
+              <div class="opp-lbl">Taxa de conversão</div>
+              <div class="opp-val">${conversion.pct}%</div>
+              <div class="opp-sub">${conversion.conversions} agendamento${conversion.conversions === 1 ? '' : 's'} · ${currentMonthLabel()}</div>
+            </div>
+            <div class="opp-divider"></div>
+            <div class="opp-item">
+              <div class="opp-lbl">Visitas ao agendar</div>
+              <div class="opp-val">${conversion.visits}</div>
+              <div class="opp-sub">${currentMonthLabel()}</div>
+            </div>
+          </div>
+        ` : `
+          <div class="opportunity-grid">
+            <div class="opp-item">
+              <div class="opp-val">--</div>
+              <div class="opp-sub">Ainda sem visitas registradas este mês na tela de agendar.</div>
+            </div>
+          </div>
+        `}
+      </div>
+    </div>
+
+    <div class="home-block home-section" style="animation-delay:200ms">
+      <div class="home-section-head"><h2>Perfil de demanda</h2></div>
+      <div class="home-section-caption">Horários mais procurados · ${currentMonthLabel()}</div>
+      <div class="history-card">
+        ${demand.some(d => d.value > 0) ? distributionBarsHtml(demand) : '<div class="empty">Sem dados suficientes este mês.</div>'}
+      </div>
+    </div>
+
+    <div class="home-block home-section" style="animation-delay:220ms">
+      <div class="home-section-head"><h2>Serviços mais procurados</h2></div>
+      <div class="home-section-caption">${currentMonthLabel()}</div>
+      <div class="history-card">
+        ${topServices.length ? distributionBarsHtml(topServices) : '<div class="empty">Sem agendamentos este mês.</div>'}
+      </div>
+    </div>
+
+    <div class="home-block home-section" style="animation-delay:240ms">
+      <div class="home-section-head"><h2>Histórico de reservas</h2></div>
+      <div class="history-card">
+        ${history.length ? history.map(a => `
+          <div class="history-row">
+            <div>
+              <div class="service">${a.service?.name || 'Serviço'}</div>
+              <div class="meta">${a.client?.name || 'Cliente'} · ${fmtDate(a.starts_at)}</div>
+            </div>
+            <div class="price">${formatCurrency(appointmentRevenue(a))}</div>
+          </div>
+        `).join('') : '<div class="empty">Nenhuma reserva anterior.</div>'}
+        <button class="btn-see-more" id="bookingHistorySeeMore">Ver mais</button>
+      </div>
+    </div>
+
+    <div class="home-block home-section" style="animation-delay:280ms">
+      <div class="home-section-head"><h2>Comparativos por período</h2></div>
+      <div class="history-card">
+        ${comparisons.map(p => {
+          const d = deltaInfo(p.cur, p.prev);
+          return `
+            <div class="comparison-row">
+              <div style="flex:1">
+                <div class="cr-label">${p.label}</div>
+                <div class="cr-values">${formatCurrency(p.cur)} vs ${formatCurrency(p.prev)}</div>
+              </div>
+              <div class="cr-delta ${d.cls}">${d.text}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  requestAnimationFrame(() => {
+    app.querySelectorAll('.home-block').forEach(el => el.classList.add('in'));
+    animateFills(app);
+  });
+  renderTrendChartSection();
+
+  const seeMoreBtn = document.getElementById('historySeeMore');
+  if (seeMoreBtn) seeMoreBtn.onclick = () => showToast('Em breve: histórico completo de faturamento');
+  const bookingSeeMoreBtn = document.getElementById('bookingHistorySeeMore');
+  if (bookingSeeMoreBtn) bookingSeeMoreBtn.onclick = () => showToast('Em breve: histórico completo de reservas');
+
+  const trendToggle = document.getElementById('trendRangeToggle');
+  if (trendToggle) trendToggle.querySelectorAll('button').forEach(btn => {
+    btn.onclick = () => {
+      const months = Number(btn.dataset.months);
+      if (months === state.insightsTrendMonths) return;
+      state.insightsTrendMonths = months;
+      trendToggle.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      animateTrendTransition(months);
+    };
+  });
+  const indicatorsToggle = document.getElementById('indicatorsToggle');
+  if (indicatorsToggle) indicatorsToggle.querySelectorAll('button').forEach(btn => {
+    btn.onclick = () => {
+      const period = btn.dataset.period;
+      if (period === state.insightsIndicatorPeriod) return;
+      state.insightsIndicatorPeriod = period;
+      indicatorsToggle.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      renderIndicatorsSection();
+    };
+  });
+  const indicatorsGridEl = document.getElementById('indicatorsGrid');
+  if (indicatorsGridEl) indicatorsGridEl.querySelectorAll('.ic-help-btn').forEach(btn => {
+    btn.onclick = (e) => { e.stopPropagation(); showIndicatorHelp(btn.dataset.helpLabel); };
+  });
+}
+
+// ── gráfico semanal (SVG minimalista, usado em Insights) ──────
+function weekChartSvg(values, days) {
+  const w = 320, chartH = 84, labelH = 22, h = chartH + labelH;
+  const max = Math.max(1, ...values);
+  const gap = 10;
+  const barW = (w - gap * (values.length - 1)) / values.length;
+  const today = new Date();
+  const bars = values.map((v, i) => {
+    const barH = Math.max(3, Math.round((v / max) * (chartH - 6)));
+    const x = i * (barW + gap);
+    const y = chartH - barH;
+    const isToday = sameDay(days[i], today);
+    const fill = isToday ? 'var(--color-accent-700)' : 'var(--color-accent-100)';
+    return `
+      <rect class="week-bar" x="${x}" y="${y}" width="${barW}" height="${barH}" rx="${Math.min(6, barW / 2.4)}" fill="${fill}">
+        <title>${WEEKDAY_FULL_LABELS[i]} · ${formatCurrency(v)}</title>
+      </rect>
+      <text x="${x + barW / 2}" y="${chartH + 16}" text-anchor="middle" font-size="10" font-weight="700"
+        fill="${isToday ? 'var(--color-accent-700)' : 'var(--color-neutral-600)'}"
+        font-family="Jost, system-ui, sans-serif">${WEEKDAY_FULL_LABELS[i]}</text>
+    `;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${bars}</svg>`;
+}
+
+const AGENDA_START_HOUR = 8;
+const AGENDA_END_HOUR = 19;
+const HOUR_HEIGHT = 64;
+const WEEKDAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
+function sameDay(a, b) {
+  return a.toDateString() === b.toDateString();
+}
+
+function startOfWeek(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay()); // volta até domingo
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function renderAgenda() {
+  document.getElementById('greeting').textContent = 'Agenda';
+  document.getElementById('greetingSub').textContent = '';
+  const day = state.agendaDate;
+  const isToday = sameDay(day, new Date());
+  const monthLabel = day.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+  const weekStart = startOfWeek(day);
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  const dayAppts = state.appointments.filter(a => sameDay(new Date(a.starts_at), day));
+
+  const hours = [];
+  for (let h = AGENDA_START_HOUR; h < AGENDA_END_HOUR; h++) hours.push(h);
+
+  const blocksHtml = dayAppts.map(a => {
+    const start = new Date(a.starts_at);
+    const end = new Date(a.ends_at);
+    const startMins = (start.getHours() - AGENDA_START_HOUR) * 60 + start.getMinutes();
+    const durMins = Math.max(20, (end - start) / 60000);
+    const top = (startMins / 60) * HOUR_HEIGHT;
+    const height = (durMins / 60) * HOUR_HEIGHT - 4;
+    const c = colorForStaff(a.staff?.id);
+    return `
+      <div class="timeline-appt" data-appt-id="${a.id}" style="top:${top}px; height:${height}px; background:${c.bg}; border-left:3px solid ${c.border};">
+        <div class="title" style="color:${c.text}">${a.client?.name || 'Cliente'}</div>
+        <div class="sub" style="color:${c.text}">${a.service?.name || ''} · ${a.staff?.name || ''}</div>
+      </div>
+    `;
+  }).join('');
+
+  app.innerHTML = `
+    <div class="day-nav">
+      <button class="arrow" id="prevWeek">‹</button>
+      <button class="day-label-btn" id="openMonthView">
+        <div class="day-label">${monthLabel}</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <button class="arrow" id="nextWeek">›</button>
+    </div>
+    <div class="week-strip">
+      ${weekDays.map(d => {
+        const selected = sameDay(d, day);
+        const today = sameDay(d, new Date());
+        const hasAppts = state.appointments.some(a => sameDay(new Date(a.starts_at), d));
+        return `
+          <button class="week-day ${selected ? 'selected' : ''} ${today ? 'is-today' : ''} ${hasAppts ? 'has-appts' : ''}" data-date="${d.toISOString()}">
+            <div class="wd-label">${WEEKDAY_LABELS[d.getDay()]}</div>
+            <div class="wd-num">${d.getDate()}</div>
+            <div class="wd-dot"></div>
+          </button>
+        `;
+      }).join('')}
+    </div>
+    ${!isToday ? '<div class="view-toggle"><button id="gotoToday" class="view-toggle-today">Ir para hoje</button></div>' : ''}
+    <div class="timeline">
+      <div class="timeline-body" style="height:${(AGENDA_END_HOUR - AGENDA_START_HOUR) * HOUR_HEIGHT}px;">
+        ${hours.map((h, i) => `
+          <div class="hour-row" style="position:absolute; top:${i * HOUR_HEIGHT}px; left:0; right:0; height:${HOUR_HEIGHT}px;">
+            <div class="hour-label">${h}h</div>
+          </div>
+        `).join('')}
+        ${blocksHtml}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('prevWeek').onclick = () => {
+    state.agendaDate = new Date(day.getTime() - 7 * 86400000);
+    render();
+  };
+  document.getElementById('nextWeek').onclick = () => {
+    state.agendaDate = new Date(day.getTime() + 7 * 86400000);
+    render();
+  };
+  const todayBtn = document.getElementById('gotoToday');
+  if (todayBtn) todayBtn.onclick = () => { state.agendaDate = new Date(); render(); };
+  document.getElementById('openMonthView').onclick = () => openMonthCalendar(day);
+
+  app.querySelectorAll('.week-day').forEach(btn => {
+    btn.onclick = () => {
+      state.agendaDate = new Date(btn.dataset.date);
+      render();
+    };
+  });
+
+  app.querySelectorAll('.timeline-appt[data-appt-id]').forEach(block => {
+    block.onclick = async () => {
+      const apptId = block.dataset.apptId;
+      if (!state.apptPhotos[apptId]) await loadApptPhotos(apptId);
+      state.selectedApptId = apptId;
+      render();
+    };
+  });
+}
+
+function openMonthCalendar(initialDate) {
+  let viewDate = new Date(initialDate);
+  viewDate.setDate(1);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'month-cal-overlay';
+  document.body.appendChild(overlay);
+
+  function closeCal() {
+    overlay.remove();
+  }
+
+  function renderCal() {
+    const monthLabel = viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const firstOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+    const gridStart = startOfWeek(firstOfMonth);
+    const cells = Array.from({ length: 42 }, (_, i) => {
+      const d = new Date(gridStart);
+      d.setDate(d.getDate() + i);
+      return d;
+    });
+
+    overlay.innerHTML = `
+      <div class="month-cal-card">
+        <div class="month-cal-header">
+          <button class="arrow" id="calPrevMonth">‹</button>
+          <div class="day-label">${monthLabel}</div>
+          <button class="arrow" id="calNextMonth">›</button>
+        </div>
+        <div class="month-cal-weekdays">
+          ${WEEKDAY_LABELS.map(l => `<div>${l}</div>`).join('')}
+        </div>
+        <div class="month-cal-grid">
+          ${cells.map(d => {
+            const inMonth = d.getMonth() === viewDate.getMonth();
+            const today = sameDay(d, new Date());
+            const selected = sameDay(d, initialDate);
+            const hasAppts = state.appointments.some(a => sameDay(new Date(a.starts_at), d));
+            return `
+              <button class="month-cal-day ${selected ? 'selected' : ''} ${today ? 'is-today' : ''} ${hasAppts ? 'has-appts' : ''} ${!inMonth ? 'is-outside' : ''}" data-date="${d.toISOString()}">
+                <span>${d.getDate()}</span>
+                <div class="wd-dot"></div>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+
+    overlay.querySelector('#calPrevMonth').onclick = (e) => {
+      e.stopPropagation();
+      viewDate.setMonth(viewDate.getMonth() - 1);
+      renderCal();
+    };
+    overlay.querySelector('#calNextMonth').onclick = (e) => {
+      e.stopPropagation();
+      viewDate.setMonth(viewDate.getMonth() + 1);
+      renderCal();
+    };
+    overlay.querySelectorAll('.month-cal-day').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        state.agendaDate = new Date(btn.dataset.date);
+        closeCal();
+        render();
+      };
+    });
+  }
+
+  overlay.onclick = closeCal;
+  renderCal();
+}
+
+function clientStats(clientId) {
+  const history = state.appointments
+    .filter(a => a.client?.id === clientId)
+    .sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
+  const visits = history.length;
+  const spent = history.reduce((sum, a) => sum + Number(a.service?.price || 0), 0);
+  const lastVisit = history[0] ? fmtDate(history[0].starts_at) : '—';
+  const isVip = visits >= 5;
+
+  const freq = {};
+  history.forEach(a => {
+    const name = a.service?.name;
+    if (name) freq[name] = (freq[name] || 0) + 1;
+  });
+  const favoriteServices = Object.entries(freq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([name]) => name);
+
+  return { history, visits, spent, lastVisit, isVip, favoriteServices };
+}
+
+function renderClients() {
+  if (state.selectedApptId) {
+    renderApptDetail();
+    return;
+  }
+  if (state.viewQuestionnaire) {
+    renderQuestionnaireReport();
+    return;
+  }
+  if (state.selectedClientId) {
+    renderClientDetail();
+    return;
+  }
+  document.getElementById('greeting').textContent = 'Clientes';
+  document.getElementById('greetingSub').textContent = '';
+  app.innerHTML = `
+    <h2>Todos os clientes</h2>
+    ${state.clients.length ? state.clients.map(c => {
+      const { lastVisit, isVip } = clientStats(c.id);
+      const color = colorForId(c.id);
+      return `
+        <div class="client-list-card" data-id="${c.id}">
+          <div class="avatar-round" style="width:42px;height:42px;font-size:14px;background:${color.border}">${initials(c.name)}</div>
+          <div style="flex:1">
+            <div class="title">${c.name}</div>
+            <div class="sub">Última visita: ${lastVisit}</div>
+          </div>
+          ${isVip ? '<span class="tag tag-accent">VIP</span>' : ''}
+        </div>
+      `;
+    }).join('') : '<div class="empty">Nenhum cliente ainda.</div>'}
+  `;
+  app.querySelectorAll('.client-list-card[data-id]').forEach(card => {
+    card.onclick = async () => {
+      state.selectedClientId = card.dataset.id;
+      if (!state.clientPhotos[card.dataset.id]) await loadClientPhotos(card.dataset.id);
+      render();
+    };
+  });
+}
+
+function renderClientDetail() {
+  const c = state.clients.find(cl => cl.id === state.selectedClientId);
+  if (!c) { state.selectedClientId = null; renderClients(); return; }
+
+  document.getElementById('greeting').textContent = c.name;
+  document.getElementById('greetingSub').textContent = '';
+
+  const { history, visits, spent, lastVisit, isVip, favoriteServices } = clientStats(c.id);
+  const color = colorForId(c.id);
+  const waPhone = (c.phone || '').replace(/[^\d]/g, '');
+  const photos = state.clientPhotos[c.id] || [];
+
+  app.innerHTML = `
+    <button class="profile-back" id="backToClients">‹ Voltar</button>
+    <div class="profile-header">
+      <div class="avatar-round" style="width:64px;height:64px;font-size:20px;background:${color.border}">${initials(c.name)}</div>
+      <div>
+        <div class="name">${c.name}</div>
+        ${isVip ? '<span class="tag tag-accent" style="margin-top:6px;">CLIENTE VIP</span>' : ''}
+      </div>
+    </div>
+    <div class="profile-actions">
+      ${c.phone ? `<a href="tel:+${waPhone}">📞 Ligar</a>` : ''}
+      ${c.phone ? `<a href="https://wa.me/${waPhone}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}
+    </div>
+    <button class="btn" id="viewQuestionnaireBtn" style="background:var(--color-neutral-100); color:var(--color-accent-700); margin-top:0; margin-bottom:18px;">📋 Infos questionário</button>
+    <div class="stat-row">
+      <div class="stat"><div class="val">${visits}</div><div class="lbl">Visitas</div></div>
+      <div class="divider"></div>
+      <div class="stat"><div class="val">€${spent.toFixed(0)}</div><div class="lbl">Total gasto</div></div>
+      <div class="divider"></div>
+      <div class="stat"><div class="val">${lastVisit}</div><div class="lbl">Última visita</div></div>
+    </div>
+    <div class="section-label">🔬 DIAGNÓSTICO DO CABELO</div>
+    <label>Espessura do fio</label>
+    ${hairSelectHtml('hair_thickness', HAIR_THICKNESS_OPTIONS, c.hair_thickness)}
+    <label>Quantidade de cabelo</label>
+    ${hairSelectHtml('hair_density', HAIR_DENSITY_OPTIONS, c.hair_density)}
+    <label>Porosidade</label>
+    ${hairSelectHtml('hair_porosity', HAIR_POROSITY_OPTIONS, c.hair_porosity)}
+    <label>Elasticidade</label>
+    ${hairSelectHtml('hair_elasticity', HAIR_ELASTICITY_OPTIONS, c.hair_elasticity)}
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <span class="section-label" style="margin:0;">FOTOS DO CABELO</span>
+      <span style="font-size:11px; color:var(--color-accent-700); font-weight:700;">${photos.length} foto${photos.length === 1 ? '' : 's'}</span>
+    </div>
+    <div class="photo-grid">
+      <label class="photo-add-tile">
+        +
+        <input type="file" accept="image/*" id="photoInput" style="display:none;">
+      </label>
+      ${photos.map(p => `
+        <div class="photo-tile" data-photo-id="${p.id}" data-url="${p.url}">
+          <img src="${p.url}" loading="lazy">
+          <button class="photo-delete-btn" data-photo-id="${p.id}">🗑</button>
+        </div>
+      `).join('')}
+    </div>
+    ${favoriteServices.length ? `
+      <div class="section-label">SERVIÇOS FAVORITOS</div>
+      <div class="fav-tags">
+        ${favoriteServices.map(s => `<span class="tag tag-accent-2">${s}</span>`).join('')}
+      </div>
+    ` : ''}
+    <h2>Histórico de visitas</h2>
+    ${history.length ? history.map(a => `
+      <div class="history-row" style="cursor:pointer;" data-appt-id="${a.id}">
+        <div>
+          <div class="service">${a.service?.name || ''}</div>
+          <div class="meta">${fmtDate(a.starts_at)} · ${a.staff?.name || ''}</div>
+        </div>
+        <div class="price">€${Number(a.service?.price || 0).toFixed(0)}</div>
+      </div>
+    `).join('') : '<div class="empty">Nenhum atendimento registrado ainda.</div>'}
+  `;
+
+  document.getElementById('backToClients').onclick = () => {
+    state.selectedClientId = null;
+    render();
+  };
+
+  document.getElementById('viewQuestionnaireBtn').onclick = async () => {
+    const { data, error } = await sb
+      .from('client_questionnaires').select('*').eq('client_id', c.id)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (error) { showToast('Erro ao carregar: ' + error.message); return; }
+    if (!data) { showToast('Nenhum questionário preenchido ainda.'); return; }
+    state.viewQuestionnaire = data;
+    render();
+  };
+
+  app.querySelectorAll('.history-row[data-appt-id]').forEach(row => {
+    row.onclick = async () => {
+      const apptId = row.dataset.apptId;
+      if (!state.apptPhotos[apptId]) await loadApptPhotos(apptId);
+      state.selectedApptId = apptId;
+      render();
+    };
+  });
+
+  const photoInput = document.getElementById('photoInput');
+  if (photoInput) {
+    photoInput.onchange = () => {
+      const file = photoInput.files[0];
+      if (file) uploadClientPhoto(c.id, file);
+    };
+  }
+  app.querySelectorAll('select[data-field]').forEach(sel => {
+    sel.onchange = async () => {
+      const field = sel.dataset.field;
+      const value = sel.value || null;
+      const { data: updated, error } = await sb.from('clients').update({ [field]: value }).eq('id', c.id).select();
+      if (error) { showToast('Erro ao salvar: ' + error.message); return; }
+      if (!updated || !updated.length) { showToast('Não foi possível salvar — faça login novamente.'); return; }
+      c[field] = value;
+      showToast('Diagnóstico atualizado');
+      render();
+    };
+  });
+
+  app.querySelectorAll('.photo-tile[data-photo-id]').forEach(tile => {
+    tile.onclick = () => openLightbox(tile.dataset.url);
+  });
+  app.querySelectorAll('.photo-delete-btn[data-photo-id]').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      deleteClientPhoto(c.id, btn.dataset.photoId);
+    };
+  });
+}
+
+function openLightbox(url) {
+  modalContainer.innerHTML = `
+    <div class="lightbox-overlay" id="lightboxOverlay">
+      <button class="lightbox-close" id="lightboxClose">✕</button>
+      <img src="${url}">
+    </div>
+  `;
+  document.getElementById('lightboxClose').onclick = closeModal;
+  document.getElementById('lightboxOverlay').onclick = (e) => {
+    if (e.target.id === 'lightboxOverlay') closeModal();
+  };
+}
+
+function apptPhotoSectionHtml(label, kind, photos) {
+  const kindPhotos = photos.filter(p => p.kind === kind);
+  return `
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <span class="section-label" style="margin:0;">${label}</span>
+    </div>
+    <div class="photo-grid">
+      <label class="photo-add-tile">
+        +
+        <input type="file" accept="image/*" class="apptPhotoInput" data-kind="${kind}" style="display:none;">
+      </label>
+      ${kindPhotos.map(p => `
+        <div class="photo-tile" data-photo-id="${p.id}" data-url="${p.url}">
+          <img src="${p.url}" loading="lazy">
+          <button class="photo-delete-btn" data-photo-id="${p.id}">🗑</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderApptDetail() {
+  const a = state.appointments.find(ap => ap.id === state.selectedApptId);
+  if (!a) { state.selectedApptId = null; renderClientDetail(); return; }
+
+  document.getElementById('greeting').textContent = 'Atendimento';
+  document.getElementById('greetingSub').textContent = '';
+
+  const photos = state.apptPhotos[a.id] || [];
+
+  app.innerHTML = `
+    <button class="profile-back" id="backToClientDetail">‹ Voltar</button>
+
+    <div style="margin-bottom:16px;">
+      <div class="section-label" style="margin-bottom:4px;">DATA</div>
+      <div style="font-size:14px;font-weight:700;">${fmtDate(a.starts_at)} às ${fmtTime(a.starts_at)}</div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div class="section-label" style="margin-bottom:4px;">SERVIÇO REALIZADO</div>
+      <div style="font-size:14px;font-weight:700;">${a.service?.name || '—'}</div>
+    </div>
+
+    ${apptPhotoSectionHtml('FOTO ANTES', 'before', photos)}
+    ${apptPhotoSectionHtml('FOTO DEPOIS', 'after', photos)}
+
+    <label>Técnica usada</label>
+    <select id="apptTechnique">
+      <option value="">Selecione…</option>
+      ${TECHNIQUE_OPTIONS.map(t => `<option value="${t}" ${a.technique === t ? 'selected' : ''}>${t}</option>`).join('')}
+    </select>
+
+    <label>Produto usado</label>
+    <input type="text" id="apptProduct" placeholder="Produto usado" value="${a.product_used || ''}">
+
+    <label>Oxidante usado</label>
+    <input type="text" id="apptOxidant" placeholder="Oxidante usado" value="${a.oxidant_used || ''}">
+
+    <label>Fórmula da cliente</label>
+    <textarea id="apptColorFormula" placeholder="Ex: 30g 7.1 + 30g 8.34 + 60ml OX 20vol">${a.color_formula || ''}</textarea>
+
+    <label>Tempo de pausa</label>
+    <input type="text" id="apptPause" placeholder="Ex: 35 min" value="${a.pause_time || ''}">
+
+    <label>Observações</label>
+    <textarea id="apptNotes" placeholder="Observações">${a.notes || ''}</textarea>
+
+    <button class="btn btn-primary" id="apptSave">Salvar</button>
+  `;
+
+  document.getElementById('backToClientDetail').onclick = () => {
+    state.selectedApptId = null;
+    render();
+  };
+
+  document.querySelectorAll('.apptPhotoInput').forEach(input => {
+    input.onchange = () => {
+      const file = input.files[0];
+      if (file) uploadApptPhoto(a.client?.id, a.id, input.dataset.kind, file);
+    };
+  });
+  app.querySelectorAll('.photo-tile[data-photo-id]').forEach(tile => {
+    tile.onclick = () => openLightbox(tile.dataset.url);
+  });
+  app.querySelectorAll('.photo-delete-btn[data-photo-id]').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      deleteApptPhoto(a.id, btn.dataset.photoId);
+    };
+  });
+
+  document.getElementById('apptSave').onclick = async () => {
+    const payload = {
+      technique: document.getElementById('apptTechnique').value || null,
+      product_used: document.getElementById('apptProduct').value.trim() || null,
+      oxidant_used: document.getElementById('apptOxidant').value.trim() || null,
+      color_formula: document.getElementById('apptColorFormula').value.trim() || null,
+      pause_time: document.getElementById('apptPause').value.trim() || null,
+      notes: document.getElementById('apptNotes').value.trim() || null,
+    };
+    const { data: updated, error } = await sb.from('appointments').update(payload).eq('id', a.id).select();
+    if (error) { showToast('Erro ao salvar: ' + error.message); return; }
+    if (!updated || !updated.length) { showToast('Não foi possível salvar — faça login novamente.'); return; }
+    showToast('Detalhes salvos');
+    await loadAppointments();
+    state.selectedApptId = null;
+    render();
+  };
+}
+
+function qaBlock(question, answer) {
+  return `
+    <div style="margin-bottom:16px;">
+      <div class="section-label" style="margin-bottom:4px;">${question.toUpperCase()}</div>
+      <div style="font-size:14px;font-weight:700;">${answer || '—'}</div>
+    </div>
+  `;
+}
+
+function renderQuestionnaireReport() {
+  const q = state.viewQuestionnaire;
+  document.getElementById('greeting').textContent = 'Questionário';
+  document.getElementById('greetingSub').textContent = '';
+
+  app.innerHTML = `
+    <button class="profile-back" id="backToClientFromQuiz">‹ Voltar</button>
+    <h2>Respostas do questionário</h2>
+    ${qaBlock('Respondido em', `${fmtDate(q.created_at)} às ${fmtTime(q.created_at)}`)}
+    ${qaBlock('Já fez descoloração?', q.had_bleaching)}
+    ${qaBlock('Já fez progressiva, botox ou alisamento?', q.chemical_treatment)}
+    ${qaBlock('Quando foi a última química?', q.last_chemical)}
+    ${qaBlock('Já teve corte químico ou quebra?', q.chemical_cut_or_breakage)}
+    ${qaBlock('Usa hena ou tintura preta?', q.henna_or_black_dye)}
+    ${qaBlock('Objetivo da cliente', q.goal)}
+  `;
+
+  document.getElementById('backToClientFromQuiz').onclick = () => {
+    state.viewQuestionnaire = null;
+    render();
+  };
+}
+
+function setKioskMode(active) {
+  document.querySelector('header').style.display = active ? 'none' : 'flex';
+  document.querySelector('nav').style.display = active ? 'none' : 'flex';
+  document.body.style.paddingBottom = active ? '0' : '';
+}
+
+// Troca de tela do questionário com fade-out do conteúdo atual, seguido de fade-in do novo.
+function quizTransitionTo(mutateFn) {
+  app.style.transition = 'opacity 0.22s ease';
+  app.style.opacity = '0';
+  setTimeout(() => {
+    mutateFn();
+    render();
+    setTimeout(() => { app.style.opacity = '1'; }, 20);
+  }, 220);
+}
+
+function renderQuizMessage(text, buttonLabel, onNext) {
+  app.innerHTML = `
+    <div class="quiz-fullscreen">
+      <div class="quiz-message">${text}</div>
+      <button class="btn btn-primary" id="quizNextBtn">${buttonLabel}</button>
+    </div>
+  `;
+  document.getElementById('quizNextBtn').onclick = () => quizTransitionTo(onNext);
+}
+
+function renderQuizQuestion(question, options, field, nextStep) {
+  app.innerHTML = `
+    <div class="quiz-fullscreen">
+      <div class="quiz-center">
+        <h2 style="text-align:center;">${question}</h2>
+        <select id="quizAnswerSelect">
+          <option value="">Selecione…</option>
+          ${options.map(o => `<option value="${o}" ${state.quiz.answers[field] === o ? 'selected' : ''}>${o}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+  `;
+  document.getElementById('quizAnswerSelect').onchange = (e) => {
+    if (!e.target.value) return;
+    const value = e.target.value;
+    quizTransitionTo(() => {
+      state.quiz.answers[field] = value;
+      state.quiz.step = nextStep;
+    });
+  };
+}
+
+function renderQuestionario() {
+  document.getElementById('greeting').textContent = 'Questionário';
+  document.getElementById('greetingSub').textContent = '';
+
+  const step = state.quiz.step;
+  setKioskMode(step >= 1);
+
+  if (step === 0) {
+    app.innerHTML = `
+      <h2>Questionário</h2>
+      <label>Cliente</label>
+      <select id="quizClientSelect">
+        <option value="">Selecione…</option>
+        ${state.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+      </select>
+    `;
+    document.getElementById('quizClientSelect').onchange = (e) => {
+      if (!e.target.value) return;
+      const clientId = e.target.value;
+      quizTransitionTo(() => {
+        state.quiz.clientId = clientId;
+        state.quiz.step = 1;
+      });
+    };
+    return;
+  }
+
+  if (step === 1) {
+    renderQuizMessage('Queremos conhecer você melhor', 'Começar', () => { state.quiz.step = 2; });
+    return;
+  }
+
+  if (step === 2) {
+    renderQuizQuestion('Você já fez descoloração?', ['Sim', 'Não'], 'had_bleaching', 3);
+    return;
+  }
+
+  if (step === 3) {
+    renderQuizQuestion('Já fez progressiva, botox ou alisamento?', ['Progressiva', 'Botox', 'Alisamento', 'Nenhum desses'], 'chemical_treatment', 4);
+    return;
+  }
+
+  if (step === 4) {
+    renderQuizMessage('Certo, para poder fazer o melhor atendimento possível, precisamos saber mais algumas informações...', 'Vamos lá', () => { state.quiz.step = 5; });
+    return;
+  }
+
+  if (step === 5) {
+    renderQuizQuestion('Quando foi a última química?', ['Últimos 3 meses', 'De 3 a 6 meses', 'Mais de um ano', 'Nunca fiz química'], 'last_chemical', 6);
+    return;
+  }
+
+  if (step === 6) {
+    renderQuizQuestion('Já teve corte químico ou quebra?', ['Corte químico', 'Quebra', 'Nenhum desses'], 'chemical_cut_or_breakage', 7);
+    return;
+  }
+
+  if (step === 7) {
+    renderQuizMessage('Agora só mais um detalhe....', 'Continuar', () => { state.quiz.step = 8; });
+    return;
+  }
+
+  if (step === 8) {
+    renderQuizQuestion('Usa hena ou tintura preta?', ['Hena', 'Tintura', 'Nenhum desses'], 'henna_or_black_dye', 9);
+    return;
+  }
+
+  if (step === 9) {
+    renderQuizMessage('Essas perguntas ajudam a evitar problemas na descoloração...', 'Continuar', () => { state.quiz.step = 10; });
+    return;
+  }
+
+  if (step === 10) {
+    app.innerHTML = `
+      <div class="quiz-fullscreen">
+        <div class="quiz-goal-content">
+          <h2>Objetivo da cliente</h2>
+          <div class="quiz-subtitle">Conte-nos como você quer o seu cabelo</div>
+          <textarea id="quizGoal" placeholder="Ex. Ficar mais loira, Manter morena iluminada, recuperar saúde do cabelo" style="min-height:120px;">${state.quiz.answers.goal || ''}</textarea>
+        </div>
+        <button class="btn btn-primary" id="quizFinishBtn">Concluir</button>
+      </div>
+    `;
+    document.getElementById('quizFinishBtn').onclick = () => {
+      const goal = document.getElementById('quizGoal').value.trim();
+      quizTransitionTo(() => {
+        state.quiz.answers.goal = goal;
+        state.quiz.step = 11;
+      });
+    };
+    return;
+  }
+
+  if (step === 11) {
+    app.innerHTML = `
+      <div class="quiz-fullscreen">
+        <div style="display:flex; justify-content:flex-end;">
+          <button id="quizCloseBtn" style="background:none; border:none; font-size:22px; color:var(--color-neutral-600); cursor:pointer;">✕</button>
+        </div>
+        <div class="quiz-message">Obrigado pelas informações, vamos preparar o melhor atendimento para você</div>
+      </div>
+    `;
+    document.getElementById('quizCloseBtn').onclick = async () => {
+      const payload = {
+        client_id: state.quiz.clientId,
+        had_bleaching: state.quiz.answers.had_bleaching || null,
+        chemical_treatment: state.quiz.answers.chemical_treatment || null,
+        last_chemical: state.quiz.answers.last_chemical || null,
+        chemical_cut_or_breakage: state.quiz.answers.chemical_cut_or_breakage || null,
+        henna_or_black_dye: state.quiz.answers.henna_or_black_dye || null,
+        goal: state.quiz.answers.goal || null,
+      };
+      const { data: inserted, error } = await sb.from('client_questionnaires').insert(payload).select();
+      if (error) { showToast('Erro ao salvar: ' + error.message); return; }
+      if (!inserted || !inserted.length) { showToast('Não foi possível salvar — faça login novamente.'); return; }
+      showToast('Questionário salvo');
+      quizTransitionTo(() => {
+        state.quiz = { step: 0, clientId: null, answers: {} };
+      });
+    };
+    return;
+  }
+}
+
+function staffStatus(staffId) {
+  const now = new Date();
+  const isBusy = state.appointments.some(a =>
+    a.staff?.id === staffId && new Date(a.starts_at) <= now && new Date(a.ends_at) > now
+  );
+  return isBusy ? 'Ocupada' : 'Disponível';
+}
+
+function renderTeam() {
+  document.getElementById('greeting').textContent = 'Equipe';
+  document.getElementById('greetingSub').textContent = '';
+  const today = todayAppointments();
+  app.innerHTML = `
+    <h2>Profissionais</h2>
+    ${state.staff.length ? state.staff.map(s => {
+      const apptsToday = today.filter(a => a.staff?.id === s.id).length;
+      const color = colorForId(s.id);
+      const status = staffStatus(s.id);
+      return `
+        <div class="client-list-card" style="cursor:default;">
+          <div class="avatar-round" style="width:44px;height:44px;font-size:14px;background:${color.border}">${initials(s.name)}</div>
+          <div style="flex:1">
+            <div class="title">${s.name}</div>
+            <div class="sub">${s.role || ''} · ${apptsToday} hoje</div>
+          </div>
+          <span class="tag ${status === 'Disponível' ? 'tag-accent-2' : 'tag-accent'}">${status}</span>
+        </div>
+      `;
+    }).join('') : '<div class="empty">Nenhum profissional cadastrado.</div>'}
+  `;
+}
+
+function render() {
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === state.tab));
+  document.getElementById('fabNewAppt').style.display = (state.tab === 'agenda' && !state.selectedApptId) ? 'flex' : 'none';
+  if (state.selectedApptId) { renderApptDetail(); return; }
+  if (state.tab === 'inicio') renderHome();
+  else if (state.tab === 'insights') renderInsights();
+  else if (state.tab === 'agenda') renderAgenda();
+  else if (state.tab === 'clients') renderClients();
+  else if (state.tab === 'team') renderTeam();
+  else if (state.tab === 'questionario') renderQuestionario();
+}
+
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.onclick = () => {
+    state.tab = btn.dataset.tab;
+    state.selectedClientId = null;
+    state.selectedApptId = null;
+    state.viewQuestionnaire = null;
+    state.quiz = { step: 0, clientId: null, answers: {} };
+    render();
+  };
+});
+
+// ── AUTENTICAÇÃO ─────────────────────────────────────────────
+function renderLogin(errorMsg) {
+  document.querySelector('nav').style.display = 'none';
+  document.getElementById('logoutBtn').style.display = 'none';
+  document.getElementById('fabNewAppt').style.display = 'none';
+  app.innerHTML = `
+    <div class="login-wrap">
+      <div class="wordmark">ORENZI</div>
+      <div class="wordmark-sub">ATELIER</div>
+      <h1>Entrar</h1>
+      <input type="email" id="loginEmail" placeholder="E-mail">
+      <input type="password" id="loginPassword" placeholder="Senha">
+      <button id="loginBtn">Entrar</button>
+      ${errorMsg ? `<div class="login-error">${errorMsg}</div>` : ''}
+    </div>
+  `;
+  document.getElementById('loginBtn').onclick = async () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) renderLogin(error.message);
+  };
+}
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    document.querySelector('nav').style.display = 'flex';
+    document.getElementById('logoutBtn').style.display = 'inline';
+    loadAll();
+  } else {
+    renderLogin();
+  }
+}
+
+document.getElementById('logoutBtn').onclick = async () => {
+  await sb.auth.signOut();
+};
+
+sb.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_IN') checkSession();
+  if (event === 'SIGNED_OUT') renderLogin();
+});
+
+// ── NOVO AGENDAMENTO MANUAL (botão +) ────────────────────────
+const modalContainer = document.getElementById('modalContainer');
+let newApptClientMode = 'existing'; // 'existing' | 'new'
+
+function closeModal() {
+  modalContainer.innerHTML = '';
+}
+
+function openNewApptModal() {
+  newApptClientMode = 'existing';
+  renderNewApptModal();
+}
+
+function renderNewApptModal(errorMsg) {
+  const now = new Date();
+  const todayStr = now.toISOString().split('T')[0];
+  const nowTime = now.toTimeString().slice(0, 5);
+
+  modalContainer.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet">
+        <button class="modal-close" id="modalClose">✕</button>
+        <h2>Novo agendamento</h2>
+
+        <div class="toggle-row">
+          <button id="modeExisting" class="${newApptClientMode === 'existing' ? 'active' : ''}">Cliente existente</button>
+          <button id="modeNew" class="${newApptClientMode === 'new' ? 'active' : ''}">Novo cliente</button>
+        </div>
+
+        <div id="clientFields"></div>
+
+        <label>Serviço</label>
+        <select id="serviceSelect">
+          <option value="">Selecione…</option>
+          ${state.services.map(s => `<option value="${s.id}">${s.name} (${s.duration_minutes} min)</option>`).join('')}
+        </select>
+
+        <label>Profissional</label>
+        <select id="staffSelect">
+          <option value="">Selecione…</option>
+          ${state.staff.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+        </select>
+
+        <label>Data</label>
+        <input type="date" id="apptDate" value="${todayStr}">
+        <label>Horário</label>
+        <input type="text" id="apptTime" placeholder="14:30" value="${nowTime}">
+
+        <button class="btn btn-primary" id="saveAppt">Salvar agendamento</button>
+        ${errorMsg ? `<div class="login-error">${errorMsg}</div>` : ''}
+      </div>
+    </div>
+  `;
+
+  function renderClientFields() {
+    const wrap = document.getElementById('clientFields');
+    if (newApptClientMode === 'existing') {
+      wrap.innerHTML = `
+        <label>Cliente</label>
+        <select id="clientSelect">
+          <option value="">Selecione…</option>
+          ${state.clients.map(c => `<option value="${c.id}">${c.name}${c.phone ? ' · ' + c.phone : ''}</option>`).join('')}
+        </select>
+      `;
+    } else {
+      wrap.innerHTML = `
+        <label>Nome do cliente</label>
+        <input type="text" id="newClientName" placeholder="Nome completo">
+        <label>Telefone</label>
+        <input type="tel" id="newClientPhone" placeholder="+353 ...">
+        <label>E-mail</label>
+        <input type="email" id="newClientEmail" placeholder="cliente@email.com">
+      `;
+    }
+  }
+  renderClientFields();
+
+  document.getElementById('modalClose').onclick = closeModal;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+  document.getElementById('modeExisting').onclick = () => { newApptClientMode = 'existing'; renderClientFields(); document.getElementById('modeExisting').classList.add('active'); document.getElementById('modeNew').classList.remove('active'); };
+  document.getElementById('modeNew').onclick = () => { newApptClientMode = 'new'; renderClientFields(); document.getElementById('modeNew').classList.add('active'); document.getElementById('modeExisting').classList.remove('active'); };
+
+  document.getElementById('saveAppt').onclick = async () => {
+    try {
+      const serviceId = document.getElementById('serviceSelect').value;
+      const staffId = document.getElementById('staffSelect').value;
+      const date = document.getElementById('apptDate').value;
+      const time = document.getElementById('apptTime').value.trim();
+
+      if (!serviceId || !staffId || !date || !/^\d{1,2}:\d{2}$/.test(time)) {
+        renderNewApptModal('Preencha serviço, profissional, data e horário (ex: 14:30).');
+        return;
+      }
+
+      let clientId;
+      if (newApptClientMode === 'existing') {
+        clientId = document.getElementById('clientSelect').value;
+        if (!clientId) { renderNewApptModal('Selecione um cliente.'); return; }
+      } else {
+        const name = document.getElementById('newClientName').value.trim();
+        const phone = document.getElementById('newClientPhone').value.trim();
+        const email = document.getElementById('newClientEmail').value.trim();
+        if (!name || !phone) { renderNewApptModal('Preencha nome e telefone do novo cliente.'); return; }
+        const normalizedPhone = phone.replace(/[^\d]/g, '');
+        const { data: existing } = await sb.from('clients').select('id').eq('phone', normalizedPhone).maybeSingle();
+        if (existing) {
+          clientId = existing.id;
+        } else {
+          const { data: created, error: createErr } = await sb
+            .from('clients').insert({ name, phone: normalizedPhone, email: email || null }).select('id').single();
+          if (createErr) throw createErr;
+          clientId = created.id;
+        }
+      }
+
+      const service = state.services.find(s => s.id === serviceId);
+      const [hh, mm] = time.split(':').map(Number);
+      const startsAt = new Date(`${date}T00:00:00`);
+      startsAt.setHours(hh, mm, 0, 0);
+      const endsAt = new Date(startsAt.getTime() + service.duration_minutes * 60000);
+
+      const { error: apptErr } = await sb.from('appointments').insert({
+        client_id: clientId,
+        staff_id: staffId,
+        service_id: serviceId,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        status: 'confirmed',
+        source: 'manual',
+      });
+      if (apptErr) throw apptErr;
+
+      closeModal();
+      showToast('Agendamento criado');
+      await loadAll();
+    } catch (e) {
+      renderNewApptModal(e.message);
+    }
+  };
+}
+
+document.getElementById('fabNewAppt').onclick = openNewApptModal;
+
+checkSession();
+
+setTimeout(() => {
+  const splash = document.getElementById('splash');
+  splash.classList.add('fade-out');
+  setTimeout(() => splash.remove(), 500);
+}, 1300);
+</script>
+</body>
+</html>

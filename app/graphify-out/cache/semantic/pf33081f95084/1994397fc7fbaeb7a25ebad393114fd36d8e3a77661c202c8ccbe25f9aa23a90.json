@@ -1,0 +1,1 @@
+{"nodes": [{"id": "agendar_html", "label": "Agendar Hor\u00e1rio", "file_type": "code", "source_file": "agendar.html"}, {"id": "salon_tz", "label": "Europe/Dublin Timezone", "file_type": "concept", "source_file": "agendar.html"}, {"id": "supabase_db", "label": "Supabase Backend", "file_type": "concept", "source_file": "agendar.html"}], "edges": [], "hyperedges": []}

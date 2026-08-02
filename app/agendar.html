@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orenzi — Agendar horário</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --color-bg: #f3ede4;
+    --color-surface: #f7f1e8;
+    --color-text: #2b2420;
+    --color-accent: #b6784a;
+    --color-accent-2: #b23a3a;
+    --color-divider: rgba(43,36,32,0.14);
+    --color-neutral-100: #f7f1e8;
+    --color-neutral-200: #e8ddce;
+    --color-neutral-300: #ddcfba;
+    --color-neutral-600: #6b6053;
+    --color-neutral-700: #5c4f42;
+    --color-accent-100: #ecdcc9;
+    --color-accent-600: #a1683f;
+    --color-accent-700: #8a5a34;
+    --font-heading: "Poppins", "Jost", system-ui, sans-serif;
+    --font-body: "Jost", system-ui, sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 28px;
+    --shadow-sm: 0 1px 2px rgba(43,36,32,0.12);
+    --shadow-md: 0 3px 10px rgba(43,36,32,0.16);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 48px;
+  }
+  body.has-advance-bar { padding-bottom: 112px; }
+  .wrap { width: 100%; max-width: 480px; }
+  .app-viewport { position: relative; overflow: hidden; }
+  .app-pane { position: absolute; top: 0; left: 0; width: 100%; will-change: transform; }
+  .back-arrow {
+    display: none; align-items: center; justify-content: center;
+    position: fixed; top: 20px; left: 16px; width: 38px; height: 38px; z-index: 60;
+    background: var(--color-neutral-100); border: none; border-radius: 50%;
+    color: var(--color-accent-700); font-size: 18px; line-height: 1; cursor: pointer;
+    box-shadow: var(--shadow-sm); transition: background-color .15s ease;
+  }
+  .back-arrow.visible { display: flex; }
+  .back-arrow:hover { background: var(--color-accent-100); }
+  .bottom-bar {
+    display: none; justify-content: center;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 55;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--color-bg) 60%, rgba(243,237,228,0));
+  }
+  .bottom-bar.visible { display: flex; }
+  .bottom-bar .btn { width: 100%; max-width: 480px; margin-top: 0; }
+  .brand {
+    text-align: center; font-family: var(--font-body); font-weight: 600; font-size: 12px;
+    letter-spacing: 0.32em; text-transform: uppercase; color: var(--color-accent-700);
+    margin-bottom: 24px;
+  }
+  .steps { display: flex; gap: 5px; margin-bottom: 10px; }
+  .steps .dot { flex: 1; height: 2px; background: var(--color-neutral-300); }
+  .steps .dot.active { background: var(--color-accent-700); }
+  .step-caption {
+    font-family: var(--font-body); font-weight: 600; font-size: 10.5px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--color-neutral-600); margin-bottom: 18px; min-height: 13px;
+  }
+  h2 {
+    font-family: var(--font-heading); font-weight: 600; font-size: 28px;
+    line-height: 1.15; margin: 0 0 22px; color: var(--color-text);
+  }
+  h2 em { font-style: normal; color: var(--color-accent-700); }
+
+  .row-list { display: flex; flex-direction: column; gap: 10px; }
+  .row-item {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    padding: 16px; border-radius: 16px; background: var(--color-neutral-100);
+    border: 1.5px solid transparent; cursor: pointer;
+    position: relative; transition: background-color .15s ease, border-color .15s ease;
+  }
+  .row-item:hover { background: var(--color-accent-100); }
+  .row-item.selected { border-color: var(--color-accent-700); }
+  .row-item .name { font-family: var(--font-heading); font-weight: 600; font-size: 17px; color: var(--color-text); }
+  .row-item .meta {
+    font-family: var(--font-body); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--color-neutral-600); margin-top: 8px; font-weight: 600;
+  }
+  .row-item .price {
+    font-family: var(--font-heading); font-weight: 600; font-size: 14px; color: var(--color-accent-2);
+    text-align: right; max-width: 130px; padding-top: 2px;
+  }
+  .row-item.selected .name { color: var(--color-accent-700); }
+  .category-label {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-body); font-weight: 700; font-size: 11px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--color-accent-700); margin: 26px 0 10px;
+  }
+  .category-label::before {
+    content: ''; display: inline-block; width: 20px; height: 1px; background: currentColor; opacity: 0.6; flex-shrink: 0;
+  }
+  h2 + .category-label { margin-top: 0; }
+  .price-disclaimer {
+    font-family: var(--font-body); font-size: 11px; color: var(--color-neutral-600);
+    margin-top: 18px; line-height: 1.5;
+  }
+
+  .staff-row {
+    display: flex; align-items: center; gap: 14px; padding: 14px 10px; margin: 0 -10px;
+    border-radius: 10px; border-bottom: 1px solid var(--color-divider); cursor: pointer;
+    transition: background-color .15s ease;
+  }
+  .staff-row:last-of-type { border-bottom: none; }
+  .staff-row:hover { background: var(--color-accent-100); }
+  .staff-avatar {
+    width: 44px; height: 44px; border-radius: 50%; background: var(--color-accent-100);
+    color: var(--color-accent-700); display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-heading); font-weight: 600; font-size: 15px; flex-shrink: 0;
+  }
+  .staff-row .name { font-family: var(--font-heading); font-weight: 600; font-size: 16px; color: var(--color-text); }
+  .staff-row .sub { font-family: var(--font-body); font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
+  .staff-row.selected .name { color: var(--color-accent-700); }
+
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .cal-month { font-family: var(--font-heading); font-weight: 600; font-size: 16px; color: var(--color-text); }
+  .cal-nav {
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+    color: var(--color-neutral-700); font-size: 17px; cursor: pointer; border-radius: 50%;
+    user-select: none;
+  }
+  .cal-nav:hover { background: var(--color-neutral-200); }
+  .cal-nav.disabled { opacity: .25; cursor: default; pointer-events: none; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 22px; }
+  .cal-dow {
+    text-align: center; font-size: 10px; color: var(--color-neutral-600); font-weight: 600;
+    letter-spacing: 0.03em; padding-bottom: 6px;
+  }
+  .cal-day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 50%;
+    font-family: var(--font-body); font-size: 13px; color: var(--color-text); font-weight: 500; cursor: pointer;
+  }
+  .cal-day.muted, .cal-day.past, .cal-day.closed { color: var(--color-neutral-300); cursor: default; pointer-events: none; }
+  .cal-day.today { border: 1px solid var(--color-accent-700); color: var(--color-accent-700); font-weight: 700; }
+  .cal-day.selected { background: var(--color-accent-700); color: var(--color-bg); font-weight: 700; border-color: transparent; }
+  .cal-day:not(.muted):not(.past):not(.selected):hover { background: var(--color-neutral-200); }
+
+  .avail-label {
+    font-family: var(--font-body); font-weight: 700; font-size: 10.5px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--color-neutral-600); margin-bottom: 12px;
+  }
+  .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 8px; }
+  .time-item {
+    text-align: center; font-family: var(--font-body); font-size: 13px; font-weight: 500;
+    color: var(--color-text); padding-bottom: 5px; border-bottom: 1px solid transparent; cursor: pointer;
+  }
+  .time-item:hover { color: var(--color-accent-700); }
+  .time-item.selected { color: var(--color-accent-700); font-weight: 700; border-bottom-color: var(--color-accent-700); }
+  .time-item.disabled { color: var(--color-neutral-300); text-decoration: line-through; cursor: not-allowed; pointer-events: none; }
+
+  input[type=date], input[type=text], input[type=tel], input[type=email] {
+    width: 100%; padding: 8px 2px 10px; border: none; border-bottom: 1px solid var(--color-divider);
+    border-radius: 0; background: transparent; font-family: var(--font-body); font-size: 15px;
+    margin-bottom: 18px; color: var(--color-text);
+  }
+  input[type=date]:focus, input[type=text]:focus, input[type=tel]:focus, input[type=email]:focus {
+    outline: none; border-bottom-color: var(--color-accent-700);
+  }
+  label {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--color-neutral-600); display: block; margin: 0 0 6px 2px;
+  }
+  .btn {
+    width: 100%; padding: 15px; border-radius: 999px; border: none; cursor: pointer;
+    font-family: var(--font-body); font-weight: 700; font-size: 13px; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-top: 8px;
+  }
+  .btn-primary { background: var(--color-accent-700); color: var(--color-neutral-100); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-ghost-link {
+    display: block; width: 100%; background: none; border: none; text-align: center;
+    font-family: var(--font-body); font-size: 12px; color: var(--color-neutral-600); margin-top: 16px;
+    text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 6px 0;
+  }
+  .empty { font-size: 13px; color: var(--color-neutral-600); padding: 12px 0; }
+
+  .confirm-check {
+    width: 56px; height: 56px; border-radius: 50%; background: var(--color-accent-700);
+    display: flex; align-items: center; justify-content: center; margin: 4px auto 20px;
+  }
+  .confirm-heading {
+    text-align: center; font-family: var(--font-heading); font-weight: 600;
+    font-size: 26px; color: var(--color-text); margin-bottom: 8px; line-height: 1.2;
+  }
+  .confirm-sub {
+    text-align: center; font-family: var(--font-body); font-size: 13px; color: var(--color-neutral-600);
+    margin-bottom: 24px; line-height: 1.5;
+  }
+  .confirm-card {
+    display: flex; align-items: center; gap: 14px; padding: 16px 0;
+    border-top: 1px solid var(--color-divider); border-bottom: 1px solid var(--color-divider);
+    margin-bottom: 14px;
+  }
+  .confirm-card .name { font-family: var(--font-heading); font-weight: 600; font-size: 16px; color: var(--color-text); }
+  .confirm-card .sub { font-family: var(--font-body); font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
+  .confirm-row {
+    display: flex; justify-content: space-between; align-items: center; padding: 6px 0;
+    font-family: var(--font-body); font-size: 13.5px; color: var(--color-neutral-700);
+  }
+  .confirm-total {
+    display: flex; justify-content: space-between; align-items: baseline; padding-top: 14px;
+    margin-top: 8px; border-top: 1px solid var(--color-divider);
+  }
+  .confirm-total .label {
+    font-family: var(--font-body); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--color-neutral-600);
+  }
+  .confirm-total .amount { font-family: var(--font-heading); font-weight: 600; font-size: 22px; color: var(--color-accent-2); }
+  .confirm-total .amount.price-note { font-size: 15px; }
+  .confirm-footer {
+    text-align: center; font-family: var(--font-body); font-size: 13px;
+    color: var(--color-neutral-600); margin-top: 22px;
+  }
+</style>
+</head>
+<body>
+<button class="back-arrow" id="backArrow" aria-label="Voltar">←</button>
+<div class="wrap">
+  <div class="brand">Orenzi</div>
+  <div class="steps">
+    <div class="dot" data-step="1"></div>
+    <div class="dot" data-step="2"></div>
+    <div class="dot" data-step="3"></div>
+    <div class="dot" data-step="4"></div>
+  </div>
+  <div class="step-caption" id="stepCaption"></div>
+  <div id="errorBanner"></div>
+  <div class="app-viewport" id="appViewport">
+    <div id="app"></div>
+  </div>
+</div>
+<div class="bottom-bar" id="bottomBar">
+  <button class="btn btn-primary" id="advanceBtn" disabled>Avançar</button>
+</div>
+
+<script>
+// ── CONFIGURAÇÃO ─────────────────────────────────────────────
+// Troque pelos valores do seu projeto: Settings → API no Supabase
+const SUPABASE_URL = 'https://gsagtsxkhqlpxuvrijgw.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
+
+// Expediente do salão (ajuste conforme necessário)
+const OPEN_HOUR = 9;
+const CLOSE_HOUR = 18;
+const SLOT_MINUTES = 30;
+// Dias em que o salão não abre (0 = domingo, 1 = segunda) — usado no calendário e nos horários.
+const CLOSED_WEEKDAYS = [0, 1];
+
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const STEP_LABELS = { 1: 'Passo 1 de 4', 2: 'Passo 2 de 4', 3: 'Passo 3 de 4', 4: 'Passo 4 de 4' };
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const state = {
+  step: 1,
+  services: [],
+  staff: [],
+  selectedService: null,
+  selectedStaff: null,
+  selectedDate: '',
+  calViewYear: null,
+  calViewMonth: null,
+  slots: [],
+  selectedSlot: null,
+  clientName: '',
+  clientPhone: '',
+  clientEmail: '',
+  loading: true,
+  error: null,
+  done: false,
+};
+
+const app = document.getElementById('app');
+const appViewport = document.getElementById('appViewport');
+const backArrow = document.getElementById('backArrow');
+const bottomBar = document.getElementById('bottomBar');
+const advanceBtn = document.getElementById('advanceBtn');
+let hasRenderedOnce = false;
+
+function renderTransition(direction) {
+  const oldHeight = app.offsetHeight;
+  const clone = app.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.classList.add('app-pane');
+  appViewport.appendChild(clone);
+
+  render();
+  const newHeight = app.offsetHeight;
+  appViewport.style.minHeight = Math.max(oldHeight, newHeight) + 'px';
+
+  const enterFrom = direction === 'back' ? '-100%' : '100%';
+  const exitTo = direction === 'back' ? '100%' : '-100%';
+
+  app.classList.add('app-pane');
+  app.style.transition = 'none';
+  app.style.transform = `translateX(${enterFrom})`;
+  clone.style.transform = 'translateX(0)';
+
+  void app.offsetWidth;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      app.style.transition = 'transform .32s cubic-bezier(.22,.61,.36,1)';
+      clone.style.transition = 'transform .32s cubic-bezier(.22,.61,.36,1)';
+      app.style.transform = 'translateX(0)';
+      clone.style.transform = `translateX(${exitTo})`;
+    });
+  });
+
+  let cleaned = false;
+  function cleanup() {
+    if (cleaned) return;
+    cleaned = true;
+    app.removeEventListener('transitionend', onTransitionEnd);
+    app.classList.remove('app-pane');
+    app.style.transition = '';
+    app.style.transform = '';
+    appViewport.style.minHeight = '';
+    clone.remove();
+  }
+  function onTransitionEnd(e) {
+    if (e.target === app && e.propertyName === 'transform') cleanup();
+  }
+  app.addEventListener('transitionend', onTransitionEnd);
+  setTimeout(cleanup, 500);
+}
+
+function setBackArrow(visible, handler) {
+  backArrow.classList.toggle('visible', visible);
+  backArrow.onclick = visible ? handler : null;
+}
+
+function setBottomBar(visible, opts) {
+  bottomBar.classList.toggle('visible', visible);
+  document.body.classList.toggle('has-advance-bar', visible);
+  if (visible && opts) {
+    advanceBtn.disabled = !opts.enabled;
+    advanceBtn.textContent = opts.label || 'Avançar';
+    advanceBtn.onclick = opts.onClick;
+  }
+}
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function initials(name) {
+  return (name || '').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+}
+
+function formatMoney(n) {
+  const num = Number(n);
+  return num % 1 === 0 ? `€${num}` : `€${num.toFixed(2)}`;
+}
+
+function formatPrice(service) {
+  const base = service.price_label || formatMoney(service.price);
+  return service.price_varies ? `${base}*` : base;
+}
+
+function groupByCategory(services) {
+  const groups = [];
+  let current = null;
+  services.forEach(s => {
+    if (!current || current.category !== s.category) {
+      current = { category: s.category, items: [] };
+      groups.push(current);
+    }
+    current.items.push(s);
+  });
+  return groups;
+}
+
+function setStep(n) {
+  const direction = n >= state.step ? 'forward' : 'back';
+  state.step = n;
+  document.querySelectorAll('.dot').forEach(d => {
+    d.classList.toggle('active', Number(d.dataset.step) <= n);
+  });
+  document.getElementById('stepCaption').textContent = state.done ? '' : (STEP_LABELS[n] || '');
+  if (!hasRenderedOnce) { hasRenderedOnce = true; render(); }
+  else { renderTransition(direction); }
+}
+
+async function loadServices() {
+  const { data, error } = await sb.from('services').select('*').order('sort_order');
+  if (error) { state.error = error.message; return; }
+  state.services = data;
+}
+
+async function loadStaffForService(serviceId) {
+  const { data, error } = await sb
+    .from('staff_services')
+    .select('staff:staff_id(id, name, role)')
+    .eq('service_id', serviceId);
+  if (error) { state.error = error.message; return; }
+  state.staff = data.map(row => row.staff);
+}
+
+// Calcula horários livres pro profissional escolhido, na data escolhida,
+// considerando a duração do serviço.
+async function loadAvailableSlots() {
+  const { selectedStaff, selectedDate, selectedService } = state;
+
+  const weekday = new Date(`${selectedDate}T00:00:00`).getDay();
+  if (CLOSED_WEEKDAYS.includes(weekday)) {
+    state.slots = [];
+    return;
+  }
+
+  const dayStart = `${selectedDate}T00:00:00`;
+  const dayEnd = `${selectedDate}T23:59:59`;
+
+  const { data: existing, error } = await sb
+    .from('appointments')
+    .select('starts_at, ends_at')
+    .eq('staff_id', selectedStaff.id)
+    .neq('status', 'cancelled')
+    .gte('starts_at', dayStart)
+    .lte('starts_at', dayEnd);
+
+  if (error) { state.error = error.message; return; }
+
+  const duration = selectedService.duration_minutes;
+  const slots = [];
+  for (let m = OPEN_HOUR * 60; m + duration <= CLOSE_HOUR * 60; m += SLOT_MINUTES) {
+    const slotStart = new Date(`${selectedDate}T00:00:00`);
+    slotStart.setMinutes(m);
+    const slotEnd = new Date(slotStart.getTime() + duration * 60000);
+
+    const overlaps = existing.some(a => {
+      const aStart = new Date(a.starts_at);
+      const aEnd = new Date(a.ends_at);
+      return slotStart < aEnd && slotEnd > aStart;
+    });
+
+    slots.push({
+      label: slotStart.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      start: slotStart,
+      end: slotEnd,
+      available: !overlaps,
+    });
+  }
+  state.slots = slots;
+}
+
+// Remove tudo que não for dígito, pra "01234567", "+353 1234567" e "(0123) 456-7"
+// serem tratados como o mesmo número na hora de identificar o cliente.
+function normalizePhone(phone) {
+  return (phone || '').replace(/[^\d]/g, '');
+}
+
+async function confirmBooking() {
+  state.error = null;
+  try {
+    // Acha cliente existente pelo telefone (normalizado) ou cria um novo — via função
+    // do banco com permissão controlada (a tabela clients não é legível publicamente).
+    const normalizedPhone = normalizePhone(state.clientPhone);
+    const { data: clientId, error: clientErr } = await sb.rpc('find_or_create_client', {
+      p_name: state.clientName,
+      p_phone: normalizedPhone,
+      p_email: state.clientEmail || null,
+      p_birthdate: state.clientBirthdate || null,
+      p_instagram: state.clientInstagram || null,
+    });
+    if (clientErr) throw clientErr;
+
+    const { error: apptErr } = await sb.from('appointments').insert({
+      client_id: clientId,
+      staff_id: state.selectedStaff.id,
+      service_id: state.selectedService.id,
+      starts_at: state.selectedSlot.start.toISOString(),
+      ends_at: state.selectedSlot.end.toISOString(),
+      status: 'confirmed',
+      source: 'online',
+    });
+    if (apptErr) throw apptErr;
+
+    state.done = true;
+    document.getElementById('stepCaption').textContent = '';
+    renderTransition('forward');
+  } catch (e) {
+    state.error = e.message;
+    render();
+  }
+}
+
+function buildCalendarGrid(year, month) {
+  const first = new Date(year, month, 1);
+  const startWeekday = first.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevDaysInMonth = new Date(year, month, 0).getDate();
+  const todayStr = new Date().toISOString().split('T')[0];
+  const cells = [];
+
+  for (let i = 0; i < startWeekday; i++) {
+    cells.push(`<div class="cal-day muted">${prevDaysInMonth - startWeekday + 1 + i}</div>`);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${pad2(month + 1)}-${pad2(d)}`;
+    const weekday = new Date(year, month, d).getDay();
+    if (CLOSED_WEEKDAYS.includes(weekday)) {
+      cells.push(`<div class="cal-day closed">${d}</div>`);
+      continue;
+    }
+    let cls = 'cal-day';
+    if (dateStr < todayStr) cls += ' past';
+    else if (dateStr === todayStr) cls += ' today';
+    if (dateStr === state.selectedDate) cls += ' selected';
+    cells.push(`<div class="${cls}" data-date="${dateStr}">${d}</div>`);
+  }
+  const trailing = (7 - (cells.length % 7)) % 7;
+  for (let i = 1; i <= trailing; i++) {
+    cells.push(`<div class="cal-day muted">${i}</div>`);
+  }
+  return cells.join('');
+}
+
+function renderStep3() {
+  if (state.calViewYear == null) {
+    const t = new Date();
+    state.calViewYear = t.getFullYear();
+    state.calViewMonth = t.getMonth();
+  }
+  const t = new Date();
+  const monthsFromToday = (state.calViewYear - t.getFullYear()) * 12 + (state.calViewMonth - t.getMonth());
+  const prevDisabled = monthsFromToday <= 0;
+  const nextDisabled = monthsFromToday >= 5;
+
+  app.innerHTML = `
+    <h2>Data &amp; <em>horário</em></h2>
+    <div class="cal-head">
+      <div class="cal-nav ${prevDisabled ? 'disabled' : ''}" id="calPrev">‹</div>
+      <div class="cal-month">${MONTHS_PT[state.calViewMonth]} ${state.calViewYear}</div>
+      <div class="cal-nav ${nextDisabled ? 'disabled' : ''}" id="calNext">›</div>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-dow">D</div><div class="cal-dow">S</div><div class="cal-dow">T</div>
+      <div class="cal-dow">Q</div><div class="cal-dow">Q</div><div class="cal-dow">S</div><div class="cal-dow">S</div>
+      ${buildCalendarGrid(state.calViewYear, state.calViewMonth)}
+    </div>
+    <div id="slotsWrap"></div>
+  `;
+
+  setBackArrow(true, () => setStep(2));
+
+  document.getElementById('calPrev').onclick = () => {
+    state.calViewMonth--;
+    if (state.calViewMonth < 0) { state.calViewMonth = 11; state.calViewYear--; }
+    renderStep3();
+  };
+  document.getElementById('calNext').onclick = () => {
+    state.calViewMonth++;
+    if (state.calViewMonth > 11) { state.calViewMonth = 0; state.calViewYear++; }
+    renderStep3();
+  };
+  app.querySelectorAll('.cal-day[data-date]').forEach(el => {
+    el.onclick = () => {
+      state.selectedDate = el.dataset.date;
+      state.selectedSlot = null;
+      renderStep3();
+      refreshSlots();
+    };
+  });
+
+  updateStep3Bar();
+  if (state.selectedDate) refreshSlots();
+}
+
+function updateStep3Bar() {
+  setBottomBar(true, {
+    enabled: !!(state.selectedDate && state.selectedSlot),
+    onClick: () => setStep(4),
+  });
+}
+
+async function refreshSlots() {
+  const slotsWrap = document.getElementById('slotsWrap');
+  if (!slotsWrap || !state.selectedDate) return;
+  slotsWrap.innerHTML = `<div class="avail-label">Horários disponíveis</div><div class="empty">Carregando horários…</div>`;
+  await loadAvailableSlots();
+  const isClosedDay = CLOSED_WEEKDAYS.includes(new Date(`${state.selectedDate}T00:00:00`).getDay());
+  const anyOpen = state.slots.some(s => s.available);
+  slotsWrap.innerHTML = `<div class="avail-label">Horários disponíveis</div>` + (anyOpen ? `
+    <div class="time-grid">${state.slots.map(s => `
+      <div class="time-item ${s.available ? '' : 'disabled'}${state.selectedSlot && state.selectedSlot.label === s.label ? ' selected' : ''}" data-label="${s.label}">${s.label}</div>
+    `).join('')}</div>
+  ` : `<div class="empty">${isClosedDay ? 'O salão não abre nesse dia.' : 'Sem horários livres nesse dia.'}</div>`);
+
+  slotsWrap.querySelectorAll('.time-item:not(.disabled)').forEach(el => {
+    el.onclick = () => {
+      state.selectedSlot = state.slots.find(s => s.label === el.dataset.label);
+      slotsWrap.querySelectorAll('.time-item.selected').forEach(x => x.classList.remove('selected'));
+      el.classList.add('selected');
+      updateStep3Bar();
+    };
+  });
+  updateStep3Bar();
+}
+
+async function advanceFromStep1() {
+  if (!state.selectedService) return;
+  advanceBtn.disabled = true;
+  advanceBtn.textContent = 'Carregando…';
+  await loadStaffForService(state.selectedService.id);
+  setStep(2);
+}
+
+function render() {
+  document.getElementById('errorBanner').innerHTML = state.error
+    ? `<div class="empty" style="color:var(--color-accent-2)">Erro: ${state.error}</div>`
+    : '';
+
+  if (state.done) {
+    setBackArrow(false);
+    setBottomBar(false);
+    const dateLabel = state.selectedSlot.start.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    app.innerHTML = `
+      <div class="confirm-check">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--color-neutral-100)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="confirm-heading">Você está<br>agendada.</div>
+      <div class="confirm-sub">Reservamos seu horário. A confirmação já está a caminho do seu e-mail.</div>
+      <div class="confirm-card">
+        <div class="staff-avatar">${initials(state.selectedStaff.name)}</div>
+        <div>
+          <div class="name">${state.selectedStaff.name}</div>
+          <div class="sub">${state.selectedService.name}</div>
+        </div>
+      </div>
+      <div class="confirm-row"><span>${dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)}</span><span>${state.selectedSlot.label}</span></div>
+      <div class="confirm-total">
+        <span class="label">Total</span>
+        <span class="amount${state.selectedService.price_label ? ' price-note' : ''}">${formatPrice(state.selectedService)}</span>
+      </div>
+      ${state.selectedService.price_varies ? '<div class="price-disclaimer" style="text-align:center">*valor varia de acordo com o cabelo e é confirmado após avaliação presencial</div>' : ''}
+      <div class="confirm-footer">Te esperamos no Orenzi.</div>
+    `;
+    return;
+  }
+
+  if (state.step === 1) {
+    const groups = groupByCategory(state.services);
+    const hasVarying = state.services.some(s => s.price_varies);
+    app.innerHTML = `
+      <h2>Escolha o <em>serviço</em></h2>
+      ${groups.map(g => `
+        <div class="category-label">${g.category}</div>
+        <div class="row-list">
+          ${g.items.map(s => `
+            <div class="row-item${state.selectedService && state.selectedService.id === s.id ? ' selected' : ''}" data-id="${s.id}">
+              <div class="info">
+                <div class="name">${s.name}</div>
+                <div class="meta">${s.duration_minutes} min</div>
+              </div>
+              <div class="price">${formatPrice(s)}</div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+      ${hasVarying ? '<div class="price-disclaimer">*valor varia de acordo com o cabelo e é confirmado após avaliação presencial</div>' : ''}
+    `;
+    app.querySelectorAll('.row-item').forEach(el => {
+      el.onclick = () => {
+        const chosen = state.services.find(s => s.id === el.dataset.id);
+        if (!state.selectedService || state.selectedService.id !== chosen.id) {
+          state.selectedStaff = null;
+          state.selectedDate = '';
+          state.selectedSlot = null;
+        }
+        state.selectedService = chosen;
+        app.querySelectorAll('.row-item.selected').forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected');
+        setBottomBar(true, { enabled: true, onClick: advanceFromStep1 });
+      };
+    });
+    setBackArrow(false);
+    setBottomBar(true, { enabled: !!state.selectedService, onClick: advanceFromStep1 });
+    return;
+  }
+
+  if (state.step === 2) {
+    app.innerHTML = `
+      <h2>Escolha a <em>profissional</em></h2>
+      ${state.staff.length ? `<div class="row-list">${state.staff.map(s => `
+        <div class="staff-row${state.selectedStaff && state.selectedStaff.id === s.id ? ' selected' : ''}" data-id="${s.id}">
+          <div class="staff-avatar">${initials(s.name)}</div>
+          <div>
+            <div class="name">${s.name}</div>
+            <div class="sub">${s.role || ''}</div>
+          </div>
+        </div>
+      `).join('')}</div>` : '<div class="empty">Nenhum profissional disponível para esse serviço.</div>'}
+    `;
+    app.querySelectorAll('.staff-row').forEach(el => {
+      el.onclick = () => {
+        const chosen = state.staff.find(s => s.id === el.dataset.id);
+        if (!state.selectedStaff || state.selectedStaff.id !== chosen.id) {
+          state.selectedSlot = null;
+        }
+        state.selectedStaff = chosen;
+        app.querySelectorAll('.staff-row.selected').forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected');
+        setBottomBar(true, { enabled: true, onClick: () => setStep(3) });
+      };
+    });
+    setBackArrow(true, () => setStep(1));
+    setBottomBar(true, { enabled: !!state.selectedStaff, onClick: () => setStep(3) });
+    return;
+  }
+
+  if (state.step === 3) {
+    renderStep3();
+    return;
+  }
+
+  if (state.step === 4) {
+    app.innerHTML = `
+      <h2>Seus <em>dados</em></h2>
+      <div style="display:flex; gap:14px;">
+        <div style="flex:1">
+          <label>Primeiro nome</label>
+          <input type="text" id="firstName" placeholder="Primeiro nome" value="${state.clientFirstName || ''}">
+        </div>
+        <div style="flex:1">
+          <label>Último nome</label>
+          <input type="text" id="lastName" placeholder="Último nome" value="${state.clientLastName || ''}">
+        </div>
+      </div>
+      <label>Data de nascimento</label>
+      <input type="date" id="birthdate" value="${state.clientBirthdate || ''}">
+      <label>Telefone</label>
+      <input type="tel" id="phone" placeholder="+353 ..." value="${state.clientPhone}">
+      <label>E-mail</label>
+      <input type="email" id="email" placeholder="voce@email.com" value="${state.clientEmail}">
+      <label>Instagram</label>
+      <input type="text" id="instagram" placeholder="opcional" value="${state.clientInstagram || ''}">
+      <button class="btn btn-primary" id="confirm">Confirmar agendamento</button>
+    `;
+    setBackArrow(true, () => setStep(3));
+    setBottomBar(false);
+    document.getElementById('confirm').onclick = () => {
+      state.clientFirstName = document.getElementById('firstName').value.trim();
+      state.clientLastName = document.getElementById('lastName').value.trim();
+      state.clientName = `${state.clientFirstName} ${state.clientLastName}`.trim();
+      state.clientBirthdate = document.getElementById('birthdate').value;
+      state.clientPhone = document.getElementById('phone').value.trim();
+      state.clientEmail = document.getElementById('email').value.trim();
+      state.clientInstagram = document.getElementById('instagram').value.trim();
+      if (!state.clientFirstName || !state.clientLastName || !state.clientPhone) {
+        state.error = 'Preencha nome, sobrenome e telefone.';
+        render();
+        return;
+      }
+      if (!state.clientEmail || !state.clientEmail.includes('@')) {
+        state.error = 'Digite um e-mail válido — é por ele que enviamos a confirmação.';
+        render();
+        return;
+      }
+      confirmBooking();
+    };
+    return;
+  }
+}
+
+// Registra uma visita à tela de agendar — só um contador simples (sem dados
+// pessoais), usado no painel pra medir a taxa de conversão. Nunca deve travar
+// nem quebrar a experiência do cliente, então falha em silêncio.
+function logBookingVisit() {
+  sb.from('booking_visits').insert({}).then(({ error }) => {
+    if (error) console.warn('Não foi possível registrar a visita:', error.message);
+  });
+}
+
+(async function init() {
+  logBookingVisit();
+  await loadServices();
+  setStep(1);
+})();
+</script>
+</body>
+</html>
