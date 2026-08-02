@@ -821,6 +821,14 @@ async function loadStaff() {
   state.staff = data;
 }
 
+// Quem realmente atende. `state.staff` traz as cinco porque as inativas são
+// mantidas por causa do histórico de agendamentos — usar a lista crua pra medir
+// capacidade dava um denominador cinco vezes maior que o salão, e no modal
+// oferecia agendar com quem não trabalha mais aqui.
+function profissionaisAtivos() {
+  return state.staff.filter(s => s.active !== false);
+}
+
 async function loadServices() {
   const { data, error } = await sb.from('services').select('*').order('name');
   if (error) { console.error(error); return; }
@@ -1058,7 +1066,7 @@ function dayAggregate(dateAppts) {
   const count = dateAppts.length;
   const first = sorted.length ? fmtTime(sorted[0].starts_at) : '—';
   const last = sorted.length ? fmtTime(sorted[sorted.length - 1].starts_at) : '—';
-  const staffCount = Math.max(1, state.staff.length);
+  const staffCount = Math.max(1, profissionaisAtivos().length);
   const capacityMinutes = staffCount * WORK_MINUTES_PER_DAY;
   const bookedMinutes = dateAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
   const freeMinutes = Math.max(0, capacityMinutes - bookedMinutes);
@@ -1162,7 +1170,7 @@ function formatDurationShort(min) {
 function nextAvailableSlot() {
   const now = new Date();
   if (!isSalonOpenDay(now)) return null;
-  const staffCount = Math.max(1, state.staff.length);
+  const staffCount = Math.max(1, profissionaisAtivos().length);
   const dayAppts = appointmentsOnDate(now);
   // Expediente, não a grade: este horário é sugerido pra ser oferecido à
   // cliente, e o agendar.html não aceita nada antes das 9h nem depois das 18h.
@@ -1400,7 +1408,7 @@ function newClientsThisMonth() {
 }
 
 function monthOccupancyPct(monthAppts) {
-  if (!state.staff.length) return null;
+  if (!profissionaisAtivos().length) return null;
   const totalMinutes = monthAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
   const now = new Date();
   // Só os dias que o salão abriu entram na capacidade — contar domingo e segunda
@@ -1411,7 +1419,7 @@ function monthOccupancyPct(monthAppts) {
     if (isSalonOpenDay(new Date(now.getFullYear(), now.getMonth(), d))) openDaysElapsed++;
   }
   openDaysElapsed = Math.max(1, openDaysElapsed);
-  const capacity = state.staff.length * WORK_MINUTES_PER_DAY * openDaysElapsed;
+  const capacity = profissionaisAtivos().length * WORK_MINUTES_PER_DAY * openDaysElapsed;
   if (!capacity) return null;
   return Math.min(100, Math.round((totalMinutes / capacity) * 100));
 }
@@ -1478,7 +1486,7 @@ function newClientsThisWeek() {
 }
 
 function weekOccupancyPct(weekAppts, weekStart) {
-  if (!state.staff.length) return null;
+  if (!profissionaisAtivos().length) return null;
   const totalMinutes = weekAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
   const now = new Date();
   let openDaysElapsed = 0;
@@ -1488,7 +1496,7 @@ function weekOccupancyPct(weekAppts, weekStart) {
     if (isSalonOpenDay(d)) openDaysElapsed++;
   }
   openDaysElapsed = Math.max(1, openDaysElapsed);
-  const capacity = state.staff.length * WORK_MINUTES_PER_DAY * openDaysElapsed;
+  const capacity = profissionaisAtivos().length * WORK_MINUTES_PER_DAY * openDaysElapsed;
   if (!capacity) return null;
   return Math.min(100, Math.round((totalMinutes / capacity) * 100));
 }
@@ -3153,11 +3161,13 @@ function renderNewApptModal(errorMsg) {
           ${state.services.map(s => `<option value="${s.id}">${s.name} (${s.duration_minutes} min)</option>`).join('')}
         </select>
 
-        <label>Profissional</label>
-        <select id="staffSelect">
-          <option value="">Selecione…</option>
-          ${state.staff.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
-        </select>
+        ${profissionaisAtivos().length > 1 ? `
+          <label>Profissional</label>
+          <select id="staffSelect">
+            <option value="">Selecione…</option>
+            ${profissionaisAtivos().map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+          </select>
+        ` : ''}
 
         <label>Data</label>
         <input type="date" id="apptDate" value="${todayStr}">
@@ -3201,12 +3211,18 @@ function renderNewApptModal(errorMsg) {
   document.getElementById('saveAppt').onclick = async () => {
     try {
       const serviceId = document.getElementById('serviceSelect').value;
-      const staffId = document.getElementById('staffSelect').value;
+      const ativos = profissionaisAtivos();
+      // Com uma profissional só o campo nem é desenhado: o agendamento sai no
+      // nome dela.
+      const staffEl = document.getElementById('staffSelect');
+      const staffId = staffEl ? staffEl.value : (ativos.length === 1 ? ativos[0].id : '');
       const date = document.getElementById('apptDate').value;
       const time = document.getElementById('apptTime').value.trim();
 
       if (!serviceId || !staffId || !date || !/^\d{1,2}:\d{2}$/.test(time)) {
-        renderNewApptModal('Preencha serviço, profissional, data e horário (ex: 14:30).');
+        renderNewApptModal(staffEl
+          ? 'Preencha serviço, profissional, data e horário (ex: 14:30).'
+          : 'Preencha serviço, data e horário (ex: 14:30).');
         return;
       }
 

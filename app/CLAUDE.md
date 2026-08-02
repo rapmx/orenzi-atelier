@@ -123,8 +123,13 @@ estão ligadas a todos os 15 serviços em `staff_services`, então sem esse filt
 a cliente escolhia entre cinco pessoas — quatro fora do salão, incluindo a
 recepcionista — e podia agendar com quem não atende.
 
-O painel não tem esse tratamento: o modal de novo agendamento ainda mostra o
-`<select>` de profissional sempre (`painel.html`, `staffSelect`).
+No painel a regra é `profissionaisAtivos()`, e **toda conta de capacidade passa
+por ela** — `dayAggregate()`, `nextAvailableSlot()`, `monthOccupancyPct()`,
+`weekOccupancyPct()` e o `<select>` do modal de novo agendamento. Nunca medir
+capacidade com `state.staff.length`: essa lista traz as cinco, e o denominador
+saía cinco vezes maior que o salão. Num dia com 525 dos 540 minutos reservados,
+o painel mostrava **19% de ocupação e "36h livres"** — num expediente de 9
+horas. Com o filtro, 97% e "Agenda praticamente lotada".
 
 ## Convenções
 
