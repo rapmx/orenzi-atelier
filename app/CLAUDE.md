@@ -152,8 +152,8 @@ de queda dos indicadores já usam. Não introduzir uma cor de alerta nova.
 Feito: Estoque (`.list-row.stock-row`, alerta de mínimo com fundo tingido +
 borda grossa + tag "Repor"), Agenda (`.timeline` no padrão de cartão,
 animação de toque em dia da semana/booking/botão +) e Clientes
-(`.list-row.client-list-card` na lista, `.list-row.history-row` no
-histórico de visitas do perfil). Questionário ainda não entrou.
+(`.list-row.client-list-card` na lista; perfil da cliente com redesign
+próprio, ver abaixo). Questionário ainda não entrou.
 
 **Fase 3 — Clientes (03/08/2026).** Histórico de visitas mostra só as 3 mais
 recentes (`HISTORY_PREVIEW_COUNT`), com botão "ver mais" —
@@ -166,6 +166,52 @@ padrão de escrita autenticada do resto do app. Valor do atendimento editável
 por booking (coluna `appointments.price`) ficou de fora desta fase — decisão
 do Raphael foi não mexer agora, por afetar toda conta de receita
 (Insights, gasto da cliente).
+
+**Redesign do perfil da cliente (03/08/2026, a partir de prompt detalhado do
+Raphael — referência Apple Health/Linear/Stripe, sem copiar nenhum, paleta e
+tipografia intocadas).** `renderClientDetail()` deixou de ser um formulário
+de campos soltos e virou um perfil com hierarquia por espaçamento
+(`.profile-section`, 32px entre blocos) em vez de caixa dentro de caixa —
+"menos caixas, mais hierarquia" foi o pedido explícito.
+
+- **Header**: avatar 72px, nome como maior elemento tipográfico da tela,
+  `.vip-pill` clicável abaixo do nome (ícone de estrela outline/preenchida,
+  `ICONS.star`/`ICONS.starFilled` — o único lugar do app onde os dois
+  variantes convivem, e é intencional: outline = não marcada, preenchida =
+  marcada), "Cliente desde {mês/ano}" a partir de `c.created_at` (dado real,
+  não inventado). **Não** entrou um menu de ações no canto superior direito
+  que o prompt pedia — não existe nenhuma ação além das que já têm lugar
+  próprio na tela, e um menu vazio seria UI decorativa.
+- **Diagnóstico do cabelo**: os 4 campos (`hair_thickness`, `hair_density`,
+  `hair_porosity`, `hair_elasticity`) trocaram de `<select>` por segmented
+  control — reaproveita `.seg-toggle` (o mesmo toggle Mês/Semana de Insights)
+  com o modificador `.seg-full` (largura cheia, botões equal-width), em vez
+  de introduzir um componente novo. `hairSegmentedHtml()` substituiu
+  `hairSelectHtml()`. Clicar no valor já ativo desmarca (mantém a opção de
+  limpar o campo que o `<select>` tinha com "Selecione…"). Grava com
+  `.select()` no fim, mesmo padrão de escrita autenticada de sempre.
+- **Fotos do cabelo**: com 0 fotos vira um estado vazio convidativo
+  (`.photo-empty-state`, ícone de câmera + "Adicionar foto" + "Toque para
+  adicionar"); com 1+ fotos vira uma galeria horizontal com scroll
+  (`.photo-scroll`) e o botão de adicionar no fim (`.photo-add-chip`). Essas
+  classes são exclusivas do perfil da cliente — `renderApptDetail()` (fotos
+  do atendimento) continua no grid antigo (`.photo-grid`/`.photo-add-tile`),
+  não foi tocado por escopo (o pedido era só a tela de perfil).
+- **Histórico de visitas**: virou timeline vertical (`.visit-timeline`,
+  `.timeline-item`) com linha conectora entre os pontos (`.ti-line`, some no
+  último item) em vez da lista com `.list-row.history-row` da leva anterior
+  desta mesma fase — evolução do que já tinha sido feito, não convive com a
+  versão antiga.
+- **Ícones**: `ICONS` ganhou `star`/`starFilled`, `phone`, `chat`,
+  `clipboard`, `camera`, `heart`, `history`, `trash`, `plus` — todos no
+  mesmo traço 1.6px dos ícones existentes. Substituíram os emojis que a tela
+  usava (📞💬📋🗑☆★), única exceção sendo o restante do app, que ainda tem
+  emoji em outras telas fora do escopo deste pedido.
+- **Microinterações**: `scale(0.96–0.98)` no `:active` de tudo que é tocável
+  (pill VIP, botões de contato, action-row, chips do segmented control, chip
+  de adicionar foto), 160–200ms, sem exagero — nada de animação de entrada
+  coreografada (fade sequencial dos blocos), que o prompt sugeria mas não é
+  crítico e o app não tem esse padrão em nenhuma outra tela hoje.
 
 **Cor do booking é por categoria do serviço, não por profissional**
 (`colorForService()`, perto de `colorForId`). Com só uma profissional ativa,

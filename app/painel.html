@@ -750,7 +750,6 @@
   }
   .tag-accent { background: var(--color-accent-100); color: var(--color-accent-700); }
   .tag-accent-2 { background: var(--color-accent-2-100, #f0fae1); color: var(--color-accent-2-700, #56633f); }
-  .tag-vip-off { background: var(--color-neutral-200); color: var(--color-neutral-600); font-family: var(--font-body); }
 
   .client-list-card { cursor: pointer; }
   /* ── Estoque ── */
@@ -794,35 +793,137 @@
   }
   .profile-back {
     background: none; border: none; color: var(--color-neutral-600); font-family: var(--font-body);
-    font-size: 13px; cursor: pointer; padding: 0 0 14px; display: flex; align-items: center; gap: 6px;
+    font-size: 13px; cursor: pointer; padding: 0 0 14px; display: flex; align-items: center; gap: 4px;
   }
-  .profile-header { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
-  .profile-header .name { font-family: var(--font-heading); font-weight: 600; font-size: 21px; }
+  .profile-back svg { width: 15px; height: 15px; transform: rotate(180deg); }
+
+  /* ── Perfil da cliente: header premium (03/08/2026) ────────────
+     Avatar maior, nome como elemento tipográfico principal, tag VIP
+     clicável abaixo do nome, "cliente desde" como meta discreta. */
+  .profile-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .profile-header .name {
+    font-family: var(--font-heading); font-weight: 600; font-size: 22px; letter-spacing: -0.01em; line-height: 1.15;
+  }
+  .vip-pill {
+    display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; border: none; cursor: pointer;
+    padding: 4px 10px 4px 8px; border-radius: 999px; font-family: var(--font-body);
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
+    background: var(--color-neutral-200); color: var(--color-neutral-600);
+    transition: transform .18s ease, background .18s ease, color .18s ease;
+  }
+  .vip-pill svg { width: 11px; height: 11px; }
+  .vip-pill.is-active { background: var(--color-accent-100); color: var(--color-accent-700); }
+  .vip-pill:active { transform: scale(0.96); }
+  .ph-meta { font-size: 12px; color: var(--color-neutral-600); margin-top: 7px; }
+
   .profile-actions { display: flex; gap: 10px; margin-bottom: 18px; }
   .profile-actions a {
-    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 10px; border-radius: 999px; background: var(--color-surface);
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 12px; border-radius: 14px; background: var(--color-surface);
     border: 1px solid var(--color-divider);
     color: var(--color-accent-700); font-size: 13px; font-weight: 700; text-decoration: none;
+    transition: transform .18s ease, background .15s ease;
   }
+  .profile-actions a svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .profile-actions a:active { transform: scale(0.98); background: var(--color-neutral-100); }
+
+  .action-row {
+    display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 26px;
+    background: var(--color-neutral-100); border: 1px solid var(--color-divider);
+    border-radius: 14px; padding: 13px 14px; font-family: var(--font-body); font-size: 13.5px;
+    font-weight: 600; color: var(--color-text); cursor: pointer;
+    transition: transform .18s ease, background .15s ease;
+  }
+  .action-row:active { transform: scale(0.98); background: var(--color-neutral-200); }
+  .action-row .ar-icon { color: var(--color-accent-700); display: flex; flex-shrink: 0; }
+  .action-row .ar-icon svg { width: 17px; height: 17px; }
+  .action-row .ar-text { flex: 1; text-align: left; }
+  .action-row .ar-chevron { color: var(--color-neutral-600); display: flex; flex-shrink: 0; }
+  .action-row .ar-chevron svg { width: 14px; height: 14px; }
+
   .stat-row {
     display: flex; background: var(--color-surface); border: 1px solid var(--color-divider);
-    border-radius: 16px; padding: 16px 0; margin-bottom: 20px;
+    border-radius: 16px; padding: 18px 4px; margin-bottom: 8px;
   }
   .stat-row .stat { flex: 1; text-align: center; }
-  .stat-row .stat .val { font-size: 17px; font-weight: 700; }
-  .stat-row .stat .lbl { font-size: 11px; color: var(--color-neutral-600); margin-top: 2px; }
+  .stat-row .stat .val { font-family: var(--font-heading); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat-row .stat .lbl { font-size: 10.5px; font-weight: 500; color: var(--color-neutral-600); margin-top: 3px; letter-spacing: 0.01em; }
   .stat-row .divider { width: 1px; background: var(--color-divider); }
-  .fav-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-  .history-row { display: flex; align-items: center; justify-content: space-between; }
-  .history-row .service { font-size: 13px; font-weight: 700; }
-  .history-row .meta { font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
-  .history-row .price { font-size: 13px; font-weight: 700; }
-  .see-more-btn {
-    display: block; width: 100%; text-align: center; background: none; border: none;
-    color: var(--color-accent-700); font-family: var(--font-body); font-size: 13px; font-weight: 700;
-    padding: 12px 0 20px; cursor: pointer;
+
+  /* ── Perfil: seções (Diagnóstico/Fotos/Favoritos/Histórico) ────
+     Título uniforme (ícone + texto) pras quatro áreas, hierarquia por
+     espaçamento vertical em vez de caixa por caixa ("menos caixas, mais
+     hierarquia" — pedido do Raphael no redesign). */
+  .profile-section { margin-top: 32px; }
+  .profile-section:first-of-type { margin-top: 0; }
+  .profile-section-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+  .profile-section-title .pst-left { display: flex; align-items: center; gap: 8px; }
+  .profile-section-title .pst-icon { color: var(--color-accent-600); display: flex; flex-shrink: 0; }
+  .profile-section-title .pst-icon svg { width: 17px; height: 17px; }
+  .profile-section-title .pst-text { font-family: var(--font-heading); font-weight: 600; font-size: 15px; }
+  .profile-section-title .pst-meta { font-size: 11.5px; color: var(--color-accent-700); font-weight: 700; flex-shrink: 0; }
+
+  .hair-field { margin-bottom: 16px; }
+  .hair-field:last-child { margin-bottom: 0; }
+  .hair-field-label { font-size: 12.5px; color: var(--color-neutral-600); font-weight: 500; margin-bottom: 8px; }
+  .seg-toggle.seg-full { width: 100%; }
+  .seg-toggle.seg-full button {
+    flex: 1; text-align: center; padding: 10px 8px; font-size: 12.5px;
+    transition: background .18s ease, color .18s ease, transform .12s ease;
   }
+  .seg-toggle.seg-full button:active { transform: scale(0.97); }
+
+  .fav-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── Histórico: timeline vertical ──────────────────────────── */
+  .visit-timeline { display: flex; flex-direction: column; }
+  .timeline-item {
+    display: flex; align-items: flex-start; gap: 12px; position: relative; cursor: pointer;
+    padding: 11px 8px; margin: 0 -8px; border-radius: 12px; transition: background-color .15s ease;
+  }
+  .timeline-item:active { background: var(--color-neutral-100); }
+  .ti-date {
+    width: 60px; flex-shrink: 0; padding-top: 2px; font-size: 11px; font-weight: 600;
+    color: var(--color-neutral-600); font-variant-numeric: tabular-nums;
+  }
+  .ti-marker { position: relative; width: 8px; align-self: stretch; display: flex; justify-content: center; flex-shrink: 0; }
+  .ti-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent-600); margin-top: 6px; position: relative; z-index: 1; }
+  .ti-line { position: absolute; top: 15px; bottom: -15px; width: 1px; background: var(--color-divider); left: 50%; transform: translateX(-50%); }
+  .timeline-item:last-child .ti-line { display: none; }
+  .ti-body { flex: 1; min-width: 0; }
+  .ti-service { font-size: 13.5px; font-weight: 700; }
+  .ti-staff { font-size: 11.5px; color: var(--color-neutral-600); margin-top: 1px; }
+  .ti-price { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; padding-top: 2px; white-space: nowrap; flex-shrink: 0; }
+  .see-more-btn {
+    display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%;
+    background: none; border: none; color: var(--color-accent-700); font-family: var(--font-body);
+    font-size: 13px; font-weight: 700; padding: 14px 0 4px; cursor: pointer;
+  }
+  .see-more-btn svg { width: 13px; height: 13px; transform: rotate(90deg); }
+
+  /* ── Fotos do cabelo: galeria horizontal + estado vazio convidativo ── */
+  .photo-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+  .photo-scroll::-webkit-scrollbar { display: none; }
+  .photo-scroll .photo-tile { width: 92px; height: 92px; flex-shrink: 0; }
+  .photo-add-chip {
+    width: 92px; height: 92px; flex-shrink: 0; border-radius: 14px; cursor: pointer;
+    border: 1.5px dashed var(--color-neutral-300); color: var(--color-neutral-600);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .18s ease, border-color .18s ease;
+  }
+  .photo-add-chip svg { width: 22px; height: 22px; }
+  .photo-add-chip:active { transform: scale(0.96); }
+  .photo-empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    padding: 32px 16px; border-radius: 16px; border: 1.5px dashed var(--color-neutral-300);
+    background: var(--color-neutral-100); cursor: pointer; text-align: center;
+    transition: transform .18s ease, border-color .18s ease;
+  }
+  .photo-empty-state:active { transform: scale(0.99); }
+  .photo-empty-state .pes-icon { color: var(--color-neutral-600); margin-bottom: 4px; }
+  .photo-empty-state .pes-icon svg { width: 26px; height: 26px; }
+  .photo-empty-state .pes-title { font-size: 13.5px; font-weight: 700; color: var(--color-text); }
+  .photo-empty-state .pes-sub { font-size: 11.5px; color: var(--color-neutral-600); }
 
   .photo-grid {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px;
@@ -841,6 +942,7 @@
     background: color-mix(in srgb, #201e1d 55%, transparent); border: none; color: #fff;
     font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
   }
+  .photo-delete-btn svg { width: 13px; height: 13px; }
   .lightbox-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300;
     display: flex; align-items: center; justify-content: center;
@@ -965,12 +1067,11 @@ const HAIR_DENSITY_OPTIONS = ['Pouco', 'Médio', 'Muito'];
 const HAIR_POROSITY_OPTIONS = ['Baixa', 'Média', 'Alta'];
 const HAIR_ELASTICITY_OPTIONS = ['Normal', 'Sensível'];
 
-function hairSelectHtml(field, options, current) {
+function hairSegmentedHtml(field, options, current) {
   return `
-    <select data-field="${field}">
-      <option value="">Selecione…</option>
-      ${options.map(opt => `<option value="${opt}" ${current === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-    </select>
+    <div class="seg-toggle seg-full" data-hair-field="${field}">
+      ${options.map(opt => `<button type="button" class="${current === opt ? 'active' : ''}" data-value="${opt}">${opt}</button>`).join('')}
+    </div>
   `;
 }
 
@@ -1221,6 +1322,16 @@ const ICONS = {
   chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
   bars: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V10M12 19V5M19 19v-7"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 13h6l-1 8 8-11h-6l1-7Z"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6Z"/></svg>',
+  starFilled: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"><path d="M12 3.5l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6Z"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 4h3l1.5 4.5-2 1.5a12 12 0 0 0 6 6l1.5-2 4.5 1.5v3a2 2 0 0 1-2.2 2A17 17 0 0 1 3.5 6.2 2 2 0 0 1 5.5 4Z"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 3.3 6.5L4 20l1.2-3.5A7.96 7.96 0 0 1 4 12Z"/></svg>',
+  clipboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4.5" width="12" height="16" rx="2.2"/><path d="M9.5 4V3.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V4M9 10h6M9 13.5h6M9 17h4"/></svg>',
+  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A2 2 0 0 1 6 6.5h1.3l1-1.7a1.6 1.6 0 0 1 1.4-.8h4.6a1.6 1.6 0 0 1 1.4.8l1 1.7H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.6"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.2s-7.5-4.6-9.7-9.3C.8 7.2 3 4 6.4 4c2 0 3.6 1.1 5.6 3.4C14 5.1 15.6 4 17.6 4 21 4 23.2 7.2 21.7 10.9 19.5 15.6 12 20.2 12 20.2Z"/></svg>',
+  history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4.5V9h4.5M12 8v4.5l3 1.8"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 7h13M9.5 7V5a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 5v2M7 7l1 12.5A1.5 1.5 0 0 0 9.5 21h5a1.5 1.5 0 0 0 1.5-1.5L17 7"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
 };
 
 // ── componente genérico: lista de barras horizontais ─────────
@@ -2881,21 +2992,30 @@ function renderClientDetail() {
   const color = colorForId(c.id);
   const waPhone = (c.phone || '').replace(/[^\d]/g, '');
   const photos = state.clientPhotos[c.id] || [];
+  const memberSinceRaw = c.created_at
+    ? new Date(c.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    : null;
+  const memberSince = memberSinceRaw ? memberSinceRaw.charAt(0).toUpperCase() + memberSinceRaw.slice(1) : null;
 
   app.innerHTML = `
-    <button class="profile-back" id="backToClients">‹ Voltar</button>
+    <button class="profile-back" id="backToClients">${ICONS.chevron} Voltar</button>
     <div class="profile-header">
-      <div class="avatar-round" style="width:64px;height:64px;font-size:20px;background:${color.border}">${initials(c.name)}</div>
+      <div class="avatar-round" style="width:72px;height:72px;font-size:24px;background:${color.border}">${initials(c.name)}</div>
       <div>
         <div class="name">${c.name}</div>
-        <button class="tag ${isVip ? 'tag-accent' : 'tag-vip-off'}" id="vipToggleBtn" style="margin-top:6px; border:none; cursor:pointer;">${isVip ? '★ CLIENTE VIP' : '☆ Marcar como VIP'}</button>
+        <button class="vip-pill ${isVip ? 'is-active' : ''}" id="vipToggleBtn">${isVip ? ICONS.starFilled : ICONS.star} ${isVip ? 'Cliente VIP' : 'Marcar como VIP'}</button>
+        ${memberSince ? `<div class="ph-meta">Cliente desde ${memberSince}</div>` : ''}
       </div>
     </div>
     <div class="profile-actions">
-      ${c.phone ? `<a href="tel:+${waPhone}">📞 Ligar</a>` : ''}
-      ${c.phone ? `<a href="https://wa.me/${waPhone}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}
+      ${c.phone ? `<a href="tel:+${waPhone}">${ICONS.phone}<span>Ligar</span></a>` : ''}
+      ${c.phone ? `<a href="https://wa.me/${waPhone}" target="_blank" rel="noopener">${ICONS.chat}<span>WhatsApp</span></a>` : ''}
     </div>
-    <button class="btn" id="viewQuestionnaireBtn" style="background:var(--color-neutral-100); color:var(--color-accent-700); margin-top:0; margin-bottom:18px;">📋 Infos questionário</button>
+    <button class="action-row" id="viewQuestionnaireBtn">
+      <span class="ar-icon">${ICONS.clipboard}</span>
+      <span class="ar-text">Infos do questionário</span>
+      <span class="ar-chevron">${ICONS.chevron}</span>
+    </button>
     <div class="stat-row">
       <div class="stat"><div class="val">${visits}</div><div class="lbl">Visitas</div></div>
       <div class="divider"></div>
@@ -2903,51 +3023,83 @@ function renderClientDetail() {
       <div class="divider"></div>
       <div class="stat"><div class="val">${lastVisit}</div><div class="lbl">Última visita</div></div>
     </div>
-    <div class="section-label">🔬 DIAGNÓSTICO DO CABELO</div>
-    <label>Espessura do fio</label>
-    ${hairSelectHtml('hair_thickness', HAIR_THICKNESS_OPTIONS, c.hair_thickness)}
-    <label>Quantidade de cabelo</label>
-    ${hairSelectHtml('hair_density', HAIR_DENSITY_OPTIONS, c.hair_density)}
-    <label>Porosidade</label>
-    ${hairSelectHtml('hair_porosity', HAIR_POROSITY_OPTIONS, c.hair_porosity)}
-    <label>Elasticidade</label>
-    ${hairSelectHtml('hair_elasticity', HAIR_ELASTICITY_OPTIONS, c.hair_elasticity)}
 
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-      <span class="section-label" style="margin:0;">FOTOS DO CABELO</span>
-      <span style="font-size:11px; color:var(--color-accent-700); font-weight:700;">${photos.length} foto${photos.length === 1 ? '' : 's'}</span>
-    </div>
-    <div class="photo-grid">
-      <label class="photo-add-tile">
-        +
-        <input type="file" accept="image/*" id="photoInput" style="display:none;">
-      </label>
-      ${photos.map(p => `
-        <div class="photo-tile" data-photo-id="${p.id}" data-url="${p.url}">
-          <img src="${p.url}" loading="lazy">
-          <button class="photo-delete-btn" data-photo-id="${p.id}">🗑</button>
-        </div>
-      `).join('')}
-    </div>
-    ${favoriteServices.length ? `
-      <div class="section-label">SERVIÇOS FAVORITOS</div>
-      <div class="fav-tags">
-        ${favoriteServices.map(s => `<span class="tag tag-accent-2">${s}</span>`).join('')}
+    <div class="profile-section">
+      <div class="profile-section-title"><span class="pst-icon">${ICONS.target}</span><span class="pst-text">Diagnóstico do cabelo</span></div>
+      <div class="hair-field">
+        <div class="hair-field-label">Espessura do fio</div>
+        ${hairSegmentedHtml('hair_thickness', HAIR_THICKNESS_OPTIONS, c.hair_thickness)}
       </div>
-    ` : ''}
-    <h2>Histórico de visitas</h2>
-    ${history.length ? visibleHistory.map(a => `
-      <div class="list-row history-row" style="cursor:pointer;" data-appt-id="${a.id}">
-        <div>
-          <div class="service">${a.service?.name || ''}</div>
-          <div class="meta">${fmtDate(a.starts_at)} · ${a.staff?.name || ''}</div>
-        </div>
-        <div class="price">€${Number(a.service?.price || 0).toFixed(0)}</div>
+      <div class="hair-field">
+        <div class="hair-field-label">Quantidade de cabelo</div>
+        ${hairSegmentedHtml('hair_density', HAIR_DENSITY_OPTIONS, c.hair_density)}
       </div>
-    `).join('') : '<div class="empty">Nenhum atendimento registrado ainda.</div>'}
-    ${!state.clientHistoryExpanded && history.length > HISTORY_PREVIEW_COUNT
-      ? `<button class="see-more-btn" id="seeMoreHistoryBtn">Ver mais (${history.length - HISTORY_PREVIEW_COUNT})</button>`
-      : ''}
+      <div class="hair-field">
+        <div class="hair-field-label">Porosidade</div>
+        ${hairSegmentedHtml('hair_porosity', HAIR_POROSITY_OPTIONS, c.hair_porosity)}
+      </div>
+      <div class="hair-field">
+        <div class="hair-field-label">Elasticidade</div>
+        ${hairSegmentedHtml('hair_elasticity', HAIR_ELASTICITY_OPTIONS, c.hair_elasticity)}
+      </div>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">
+        <span class="pst-left"><span class="pst-icon">${ICONS.camera}</span><span class="pst-text">Fotos do cabelo</span></span>
+        <span class="pst-meta">${photos.length} foto${photos.length === 1 ? '' : 's'}</span>
+      </div>
+      ${photos.length ? `
+        <div class="photo-scroll">
+          ${photos.map(p => `
+            <div class="photo-tile" data-photo-id="${p.id}" data-url="${p.url}">
+              <img src="${p.url}" loading="lazy">
+              <button class="photo-delete-btn" data-photo-id="${p.id}">${ICONS.trash}</button>
+            </div>
+          `).join('')}
+          <label class="photo-add-chip">
+            ${ICONS.plus}
+            <input type="file" accept="image/*" id="photoInput" style="display:none;">
+          </label>
+        </div>
+      ` : `
+        <label class="photo-empty-state">
+          <span class="pes-icon">${ICONS.camera}</span>
+          <div class="pes-title">Adicionar foto</div>
+          <div class="pes-sub">Toque para adicionar</div>
+          <input type="file" accept="image/*" id="photoInput" style="display:none;">
+        </label>
+      `}
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title"><span class="pst-icon">${ICONS.heart}</span><span class="pst-text">Serviços favoritos</span></div>
+      ${favoriteServices.length
+        ? `<div class="fav-tags">${favoriteServices.map(s => `<span class="tag tag-accent-2">${s}</span>`).join('')}</div>`
+        : '<div class="empty">Nenhum serviço registrado ainda.</div>'}
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title"><span class="pst-icon">${ICONS.history}</span><span class="pst-text">Histórico de visitas</span></div>
+      ${history.length ? `
+        <div class="visit-timeline">
+          ${visibleHistory.map(a => `
+            <div class="timeline-item" data-appt-id="${a.id}">
+              <div class="ti-date">${fmtDate(a.starts_at)}</div>
+              <div class="ti-marker"><span class="ti-dot"></span><span class="ti-line"></span></div>
+              <div class="ti-body">
+                <div class="ti-service">${a.service?.name || ''}</div>
+                <div class="ti-staff">${a.staff?.name || ''}</div>
+              </div>
+              <div class="ti-price">€${Number(a.service?.price || 0).toFixed(0)}</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '<div class="empty">Nenhum atendimento registrado ainda.</div>'}
+      ${!state.clientHistoryExpanded && history.length > HISTORY_PREVIEW_COUNT
+        ? `<button class="see-more-btn" id="seeMoreHistoryBtn">Ver mais (${history.length - HISTORY_PREVIEW_COUNT}) ${ICONS.chevron}</button>`
+        : ''}
+    </div>
   `;
 
   document.getElementById('backToClients').onclick = () => {
@@ -2975,7 +3127,7 @@ function renderClientDetail() {
     render();
   };
 
-  app.querySelectorAll('.history-row[data-appt-id]').forEach(row => {
+  app.querySelectorAll('.timeline-item[data-appt-id]').forEach(row => {
     row.onclick = async () => {
       const apptId = row.dataset.apptId;
       if (!state.apptPhotos[apptId]) await loadApptPhotos(apptId);
@@ -2999,10 +3151,10 @@ function renderClientDetail() {
       if (file) uploadClientPhoto(c.id, file);
     };
   }
-  app.querySelectorAll('select[data-field]').forEach(sel => {
-    sel.onchange = async () => {
-      const field = sel.dataset.field;
-      const value = sel.value || null;
+  app.querySelectorAll('.seg-toggle[data-hair-field] button').forEach(btn => {
+    btn.onclick = async () => {
+      const field = btn.closest('.seg-toggle').dataset.hairField;
+      const value = btn.classList.contains('active') ? null : btn.dataset.value;
       const { data: updated, error } = await sb.from('clients').update({ [field]: value }).eq('id', c.id).select();
       if (error) { showToast('Erro ao salvar: ' + error.message); return; }
       if (!updated || !updated.length) { showToast('Não foi possível salvar — faça login novamente.'); return; }
