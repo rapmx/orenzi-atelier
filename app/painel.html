@@ -654,6 +654,7 @@
     .current-time-line { animation: none; transition: none; }
     .current-time-line.is-highlighted .current-time-badge,
     .current-time-line.is-highlighted .current-time-dot { animation: none; }
+    .diag-card-body-wrap, .diag-card-head .dc-chevron { transition: none; }
   }
   .modal-overlay {
     position: fixed; inset: 0; background: color-mix(in srgb, #201e1d 45%, transparent);
@@ -874,14 +875,19 @@
   .profile-section-title .pst-meta { font-size: 11.5px; color: var(--color-accent-700); font-weight: 700; flex-shrink: 0; }
 
   /* ── Diagnóstico: card tingido, colapsável, chips soltos ────── */
-  .diag-card { background: var(--color-neutral-100); border-radius: 18px; padding: 16px 16px 4px; }
-  .diag-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; margin-bottom: 14px; }
-  .diag-card-head:not(.is-open) { margin-bottom: 0; }
-  .diag-card-head .pst-icon svg { width: 17px; height: 17px; }
-  .diag-card-head .dc-chevron { color: var(--color-neutral-600); display: flex; flex-shrink: 0; transform: rotate(90deg); transition: transform .2s ease; }
+  /* ── Diagnóstico: cabeçalho no padrão de "Infos do questionário"
+     (.action-row), dropdown que desliza aberto/fechado por JS — precisa
+     ser JS porque o toggle não pode passar por render() (reescreve o
+     innerHTML inteiro e mata qualquer transição CSS em andamento). */
+  .diag-card-head.action-row { margin-bottom: 10px; }
+  .diag-card-head .dc-chevron {
+    color: var(--color-neutral-600); display: flex; flex-shrink: 0;
+    transform: rotate(90deg); transition: transform .2s ease;
+  }
   .diag-card-head .dc-chevron svg { width: 14px; height: 14px; }
   .diag-card-head.is-open .dc-chevron { transform: rotate(-90deg); }
-  .diag-card-body.is-collapsed { display: none; }
+  .diag-card-body-wrap { overflow: hidden; transition: max-height .3s cubic-bezier(.4,0,.2,1); }
+  .diag-card-body { background: var(--color-neutral-100); border-radius: 16px; padding: 16px; }
 
   .hair-field { margin-bottom: 16px; }
   .hair-field:last-child { margin-bottom: 0; }
@@ -3075,12 +3081,13 @@ function renderClientDetail() {
     </div>
 
     <div class="profile-section">
-      <div class="diag-card">
-        <div class="diag-card-head ${diagOpen ? 'is-open' : ''}" id="diagCardHead">
-          <span class="pst-left"><span class="pst-icon">${ICONS.drop}</span><span class="pst-text">Diagnóstico do cabelo</span></span>
-          <span class="dc-chevron">${ICONS.chevron}</span>
-        </div>
-        <div class="diag-card-body ${diagOpen ? '' : 'is-collapsed'}">
+      <div class="diag-card-head action-row ${diagOpen ? 'is-open' : ''}" id="diagCardHead">
+        <span class="ar-icon">${ICONS.drop}</span>
+        <span class="ar-text">Diagnóstico do cabelo</span>
+        <span class="dc-chevron">${ICONS.chevron}</span>
+      </div>
+      <div class="diag-card-body-wrap" id="diagCardBodyWrap" style="max-height:${diagOpen ? 'none' : '0px'}">
+        <div class="diag-card-body">
           <div class="hair-field">
             <div class="hair-field-label">Espessura do fio</div>
             ${hairSegmentedHtml('hair_thickness', HAIR_THICKNESS_OPTIONS, c.hair_thickness)}
@@ -3213,10 +3220,32 @@ function renderClientDetail() {
     };
   }
   const diagCardHead = document.getElementById('diagCardHead');
-  if (diagCardHead) {
+  const diagCardBodyWrap = document.getElementById('diagCardBodyWrap');
+  if (diagCardHead && diagCardBodyWrap) {
     diagCardHead.onclick = () => {
-      state.clientDiagCollapsed = !state.clientDiagCollapsed;
-      render();
+      const opening = !diagCardHead.classList.contains('is-open');
+      state.clientDiagCollapsed = !opening;
+      diagCardHead.classList.toggle('is-open', opening);
+      if (opening) {
+        if (prefersReducedMotion()) { diagCardBodyWrap.style.maxHeight = 'none'; return; }
+        diagCardBodyWrap.style.maxHeight = diagCardBodyWrap.scrollHeight + 'px';
+        // Solta o limite quando a animação acaba: preso em px, o conteúdo
+        // ficaria cortado se os chips passassem a quebrar em mais linhas
+        // (rotação de tela, fonte maior do sistema).
+        diagCardBodyWrap.addEventListener('transitionend', function done(e) {
+          if (e.propertyName !== 'max-height') return;
+          diagCardBodyWrap.removeEventListener('transitionend', done);
+          if (!state.clientDiagCollapsed) diagCardBodyWrap.style.maxHeight = 'none';
+        });
+      } else {
+        // Sai de 'none' pra um valor concreto e força reflow antes de ir a
+        // zero — sem isso o navegador não tem de onde animar. Reflow síncrono
+        // em vez de requestAnimationFrame: rAF não dispara em aba oculta e o
+        // menu ficaria travado aberto.
+        diagCardBodyWrap.style.maxHeight = diagCardBodyWrap.scrollHeight + 'px';
+        void diagCardBodyWrap.offsetHeight;
+        diagCardBodyWrap.style.maxHeight = '0px';
+      }
     };
   }
 

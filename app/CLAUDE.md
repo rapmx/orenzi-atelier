@@ -197,24 +197,40 @@ de campos soltos e virou um perfil com hierarquia por espaçamento
   cada opção é seu próprio botão-pílula com espaço entre elas, pra bater com
   a referência visual que o Raphael trouxe). `hairSegmentedHtml()` substituiu
   `hairSelectHtml()`. Clicar no valor já ativo desmarca (mantém a opção de
-  limpar o campo que o `<select>` tinha com "Selecione…"). Tudo dentro de um
-  card dropdown (`.diag-card`), **colapsado por padrão** —
-  `state.clientDiagCollapsed = true` ao trocar de cliente (junto com
-  `clientHistoryExpanded`), só o cabeçalho aparece até o toque. Chevron
-  aponta pra baixo fechado, pra cima aberto (`.diag-card-head.is-open`,
-  `rotate(-90deg)` num ícone que nasce apontando pra direita). Grava com
-  `.select()` no fim, mesmo padrão de escrita autenticada de sempre.
+  limpar o campo que o `<select>` tinha com "Selecione…").
 
-  **Armadilha já mordida uma vez:** `.diag-card-head` reaproveita as classes
-  internas de `.profile-section-title` (`.pst-left`/`.pst-icon`/`.pst-text`)
-  mas **não** a própria classe `.profile-section-title` — sem uma regra
-  `.diag-card-head .pst-icon svg { width/height }` própria, o SVG do ícone
-  ficava sem nenhum tamanho definido e renderizava enorme (ícone de gota
-  gigante, achado pelo Raphael no primeiro teste visual). Pelo mesmo motivo,
-  título de seção **sem** um segundo item pra equilibrar o
-  `justify-content: space-between` do `.profile-section-title` empurra o
-  texto sozinho pro canto direito — por isso ícone+texto de toda seção
-  (mesmo as sem contador, como Favoritos e Histórico) precisam estar
+  **O cabeçalho é literalmente um `.action-row`** — a mesma classe do "Infos
+  do questionário" logo acima, a pedido do Raphael ("pega o card de infos e
+  projeta no diagnóstico"). Só acrescenta `.diag-card-head` pro chevron e o
+  espaçamento. **Colapsado por padrão**: `state.clientDiagCollapsed = true`
+  ao trocar de cliente (junto com `clientHistoryExpanded`), só a linha do
+  cabeçalho aparece até o toque. Chevron aponta pra baixo fechado, pra cima
+  aberto (`rotate(-90deg)` num ícone que nasce apontando pra direita).
+  Grava com `.select()` no fim, mesmo padrão de escrita autenticada.
+
+  **A animação de dropdown não pode passar por `render()`.** O toggle
+  manipula o DOM direto (classe + `max-height` inline no
+  `.diag-card-body-wrap`), porque `render()` reescreve o `innerHTML` inteiro
+  e um elemento recém-nascido nunca anima o próprio nascimento — mesma
+  armadilha já documentada na faixa de dias da Agenda. Sequência de
+  fechamento: põe `max-height` no `scrollHeight` atual, força reflow
+  (`void el.offsetHeight`), aí vai pra `0px` — o reflow é **síncrono de
+  propósito**, `requestAnimationFrame` não dispara em aba oculta/sem
+  composição e o menu ficaria travado aberto. Ao terminar de abrir, um
+  `transitionend` solta o `max-height` pra `none`: preso em px, o conteúdo
+  cortaria se os chips passassem a quebrar em mais linhas (rotação de tela,
+  fonte grande do sistema). `prefers-reduced-motion` mata a transição pelo
+  CSS e o JS pula direto pro valor final.
+
+  **Armadilha já mordida uma vez:** um SVG dentro de contêiner que não tem
+  regra própria de `width`/`height` renderiza no tamanho nativo — enorme.
+  Aconteceu aqui quando `.diag-card-head` reaproveitou só as classes
+  internas de `.profile-section-title` (`.pst-icon`) sem a regra de tamanho
+  correspondente (o "ícone de gota gigante" que o Raphael achou no teste
+  visual). Pelo mesmo motivo, título de seção **sem** um segundo item pra
+  equilibrar o `justify-content: space-between` do `.profile-section-title`
+  empurra o texto sozinho pro canto direito — por isso ícone+texto de toda
+  seção (mesmo as sem contador, como Favoritos e Histórico) precisam estar
   agrupados dentro de um `<span class="pst-left">`, nunca soltos como
   irmãos diretos do título.
 - **Fotos do cabelo**: com 0 fotos vira um estado vazio convidativo
