@@ -1275,6 +1275,8 @@
     font-size: 13px; font-weight: 700; padding: 14px 0 4px; cursor: pointer;
   }
   .see-more-btn svg { width: 13px; height: 13px; transform: rotate(90deg); }
+  /* Recolher aponta pra cima — o chevron nasce apontando pra direita. */
+  .see-more-btn.is-less svg { transform: rotate(-90deg); }
 
   /* ── Fotos do cabelo: galeria horizontal + estado vazio convidativo ── */
   .photo-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
@@ -1388,7 +1390,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month', clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '' };
+const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month', clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '' };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -4302,8 +4304,9 @@ const SUGESTAO_COBERTURA_DIAS = 30;
 const ESTOQUE_BAIXO_FATOR = 1.5;
 // A partir daqui a validade vira aviso na tela.
 const VALIDADE_ALERTA_DIAS = 30;
-// Quantas movimentações a timeline do fim da tela mostra.
-const MOVIMENTOS_VISIVEIS = 12;
+// Quantas movimentações ficam à vista antes do "ver mais". Mesmo número e
+// mesmo padrão do histórico de visitas no perfil da cliente.
+const MOV_PREVIEW_COUNT = 3;
 
 // Quantidade sem casas decimais à toa: 3 em vez de 3.00, mas 2.5 continua 2,5.
 function fmtQtd(n) {
@@ -4687,8 +4690,20 @@ function bindStockCards(wrap) {
 function renderStockInsights() {
   const wrap = document.getElementById('stockInsightsWrap');
   if (!wrap || !state.products.length) return;
-  wrap.innerHTML = suggestionsHtml() + movementsHtml() + statsHtml();
+  wrap.innerHTML = statsHtml() + suggestionsHtml() + movementsHtml();
   wrap.querySelectorAll('[data-edit]').forEach(el => { el.onclick = () => openProductModal(el.dataset.edit); });
+  const verMais = document.getElementById('stockMovToggle');
+  if (verMais) verMais.onclick = () => {
+    state.stockMovExpanded = !state.stockMovExpanded;
+    renderStockInsights();
+    // Ao recolher, o botão "ver menos" some junto com a lista e a tela salta
+    // pro fim do documento — sem isso o dedo fica apontando pro nada. Volta
+    // pro título da seção.
+    if (!state.stockMovExpanded) {
+      const titulo = document.getElementById('stockMovTitle');
+      if (titulo) titulo.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    }
+  };
 }
 
 function suggestionsHtml() {
@@ -4777,7 +4792,8 @@ function movementsHtml() {
       </div>`;
   }
 
-  const recentes = state.movements.slice(0, MOVIMENTOS_VISIVEIS);
+  const escondidas = Math.max(0, state.movements.length - MOV_PREVIEW_COUNT);
+  const recentes = state.stockMovExpanded ? state.movements : state.movements.slice(0, MOV_PREVIEW_COUNT);
   let ultimoDia = null;
   const itens = recentes.map(m => {
     const p = state.products.find(x => x.id === m.product_id);
@@ -4803,11 +4819,13 @@ function movementsHtml() {
 
   return `
     <div class="stock-section">
-      <div class="stock-section-title">
+      <div class="stock-section-title" id="stockMovTitle">
         <span class="sst-icon">${ICONS.history}</span>Movimentações recentes
         <span class="sst-count">${state.movements.length} no total</span>
       </div>
       ${itens}
+      ${escondidas ? `<button class="see-more-btn ${state.stockMovExpanded ? 'is-less' : ''}" id="stockMovToggle">${
+        state.stockMovExpanded ? 'Ver menos' : `Ver mais (${escondidas})`} ${ICONS.chevron}</button>` : ''}
     </div>`;
 }
 

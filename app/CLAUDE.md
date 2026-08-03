@@ -319,7 +319,9 @@ de campos soltos e virou um perfil com hierarquia por espaçamento
 **Redesign do Estoque (03/08/2026, prompt de "design review" do Raphael —
 referência Apple Health/Linear/Stripe, sem copiar nenhum).** A aba deixou de
 ser uma lista de linhas e virou painel: resumo em 4 cartões → valor total →
-busca → chips → lista agrupada → sugestões → movimentações → estatísticas.
+busca → chips → lista agrupada → estatísticas → sugestões → movimentações.
+(A ordem das três últimas é do Raphael: número frio primeiro, o que fazer com
+ele depois, o registro do que já foi feito por último.)
 
 - **Quatro estados, nenhuma cor nova** (`stockStatus()`): `sem` (qtd 0),
   `critico` (qtd ≤ mínimo), `baixo` (qtd ≤ mínimo × `ESTOQUE_BAIXO_FATOR`),
@@ -366,6 +368,13 @@ busca → chips → lista agrupada → sugestões → movimentações → estat�
   categoria nova cai no ícone genérico.
 - **Rótulos de grupo só na ordenação por prioridade.** Em "Nome (A–Z)" a
   lista não está agrupada e o título mentiria.
+- **Movimentações abrem com 3 itens** (`MOV_PREVIEW_COUNT`,
+  `state.stockMovExpanded`) e um "Ver mais (N)" no fim; expandida mostra tudo
+  o que `loadMovements()` carregou e o botão vira "Ver menos". Mesmo
+  `.see-more-btn` do histórico de visitas da cliente, com `.is-less` girando
+  o chevron pra cima. Ao **recolher**, a tela volta pro título da seção
+  (`#stockMovTitle`): o botão some junto com a lista e sem isso o dedo fica
+  apontando pro fim do documento.
 - **Ficou de fora, de propósito:** "Escanear código de barras"
   (`BarcodeDetector` não existe no Safari do iPhone) e "Importar produtos"
   (não há fluxo de importação) — mesma decisão de "Importar contatos" em
