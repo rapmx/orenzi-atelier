@@ -4,23 +4,15 @@ Lista que o Raphael trouxe pra levar Agenda, Clientes, Estoque e Questionário
 ao mesmo padrão de Início/Insights, mais alguns comportamentos novos. Ordenado
 por dependência, não pela ordem em que ele escreveu.
 
-## 👉 Estado atual (fim da sessão de 02/08/2026) — comece por aqui
+## 👉 Estado atual (fim da sessão de 03/08/2026) — comece por aqui
 
-**Fases 0, 1 e 2 concluídas** (padrão visual, Estoque, Agenda — incluindo duas
-rodadas de refino visual a partir de prints de referência do Apple Calendar).
-Tudo já commitado e no ar.
+**Fases 0, 1, 2 e 3 concluídas.** Fase 3 (Clientes) fechou com D2 (valor
+editável) adiado — **não agora** — e D3 (VIP manual) resolvido como
+"começar do zero": ninguém migrado, `clients.vip` nasceu `false` pra todo
+mundo. Tudo já commitado e no ar.
 
-**Próximo passo: Fase 3 — Clientes.** Antes de tocar em código, preciso de
-duas respostas do Raphael (ver "Travas" na seção da Fase 3 abaixo):
-- **D2** — valor do atendimento editável: confirma a coluna nova
-  `appointments.price` (vazia = usa o preço do serviço)?
-- **D3** — tag VIP manual: migra quem já é VIP hoje (5+ visitas) como VIP já
-  marcada, ou todo mundo começa sem tag?
-
-O que **não** depende dessas respostas — dá pra começar direto: padrão visual
-da lista/perfil de clientes e o "ver mais" no histórico (só as 3 últimas
-visitas). Sugestão: adiantar isso primeiro e perguntar D2/D3 quando chegar
-nos itens que dependem delas.
+**Próximo passo: Fase 4 — Questionário: tela de idioma.** Trava D4 em aberto
+(ver seção abaixo) — perguntar ao Raphael antes de começar.
 
 ## Fase 0 — Padrão visual — ✅ concluída (02/08/2026)
 
@@ -102,24 +94,26 @@ erros no console já ao carregar (antes de qualquer interação), confirmado por
 `git stash` que já existia antes de hoje. Não afeta a tela — não investigado
 a fundo, fora do escopo desta lista.
 
-## Fase 3 — Clientes — em espera de decisão
+## Fase 3 — Clientes — ✅ concluída (03/08/2026)
 
-- [ ] Padrão visual na lista e no perfil da cliente
-- [ ] Histórico de visitas: só as 3 últimas + botão "ver mais"
-- [ ] Tag VIP manual (hoje é automática: `visits >= 5`,
-      `painel.html` função `clientStats()`)
-- [ ] Valor do atendimento editável por booking (hoje vem só de
-      `services.price`)
-
-**Travas:**
-- **D2 — valor editável.** Requer coluna nova (`appointments.price`, vazia =
-  usa o preço do serviço). Maior alcance da lista: toda conta de receita
-  (gasto da cliente, gráfico de evolução, indicadores de Insights) passa a
-  ler `a.price ?? s.price`. Fazer por último dentro da fase e conferir os
-  números de Insights antes/depois.
-- **D3 — VIP manual.** Requer coluna nova (`clients.vip boolean`). Falta
-  decidir: migrar as clientes que hoje são VIP automática (5+ visitas) como
-  VIP já marcada, ou todo mundo começa sem tag e a Juliane marca do zero?
+- [x] Padrão visual na lista e no perfil da cliente — `.client-list-card`
+      (lista) e `.history-row` (histórico de visitas, dentro do perfil)
+      migraram pro padrão `.list-row` (surface + borda + radius 16px), mesmo
+      modelo de Estoque/Agenda. `.stat-row` e `.profile-actions a`, que
+      também eram cinza chapado sem borda, entraram na mesma leva.
+- [x] Histórico de visitas: só as 3 últimas + botão "ver mais" —
+      `HISTORY_PREVIEW_COUNT`, estado `state.clientHistoryExpanded` (reseta
+      ao trocar de cliente).
+- [x] Tag VIP manual — coluna nova `clients.vip boolean default false`
+      (D3: começar do zero, ninguém migrado). `clientStats()` não deriva
+      mais de `visits >= 5`; lê `client.vip` direto. Botão clicável no
+      perfil (`#vipToggleBtn`) alterna e grava com `.select()` no fim
+      (mesmo padrão de escrita autenticada do resto do app).
+- [ ] Valor do atendimento editável por booking — **adiado (D2: não agora)**.
+      Fica registrado pra quando entrar na pauta: requer coluna nova
+      `appointments.price` (vazia = usa o preço do serviço), e o maior
+      alcance da lista — toda conta de receita (gasto da cliente, gráfico de
+      evolução, indicadores de Insights) passaria a ler `a.price ?? s.price`.
 
 ## Fase 4 — Questionário: tela de idioma — em espera de decisão
 

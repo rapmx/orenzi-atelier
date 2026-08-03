@@ -750,11 +750,9 @@
   }
   .tag-accent { background: var(--color-accent-100); color: var(--color-accent-700); }
   .tag-accent-2 { background: var(--color-accent-2-100, #f0fae1); color: var(--color-accent-2-700, #56633f); }
+  .tag-vip-off { background: var(--color-neutral-200); color: var(--color-neutral-600); font-family: var(--font-body); }
 
-  .client-list-card {
-    display: flex; align-items: center; gap: 12px; background: var(--color-neutral-100);
-    border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer;
-  }
+  .client-list-card { cursor: pointer; }
   /* ── Estoque ── */
   /* No mínimo ou abaixo: usa o mesmo par accent-2 que já é a cor de "atenção"
      no resto do painel (agenda lotada, indicador em queda) — não uma cor nova.
@@ -803,25 +801,28 @@
   .profile-actions { display: flex; gap: 10px; margin-bottom: 18px; }
   .profile-actions a {
     flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
-    padding: 10px; border-radius: 999px; background: var(--color-neutral-100);
+    padding: 10px; border-radius: 999px; background: var(--color-surface);
+    border: 1px solid var(--color-divider);
     color: var(--color-accent-700); font-size: 13px; font-weight: 700; text-decoration: none;
   }
   .stat-row {
-    display: flex; background: var(--color-neutral-100); border-radius: 16px;
-    padding: 16px 0; margin-bottom: 20px;
+    display: flex; background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: 16px; padding: 16px 0; margin-bottom: 20px;
   }
   .stat-row .stat { flex: 1; text-align: center; }
   .stat-row .stat .val { font-size: 17px; font-weight: 700; }
   .stat-row .stat .lbl { font-size: 11px; color: var(--color-neutral-600); margin-top: 2px; }
   .stat-row .divider { width: 1px; background: var(--color-divider); }
   .fav-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-  .history-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 0; border-bottom: 1px solid var(--color-divider);
-  }
+  .history-row { display: flex; align-items: center; justify-content: space-between; }
   .history-row .service { font-size: 13px; font-weight: 700; }
   .history-row .meta { font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
   .history-row .price { font-size: 13px; font-weight: 700; }
+  .see-more-btn {
+    display: block; width: 100%; text-align: center; background: none; border: none;
+    color: var(--color-accent-700); font-family: var(--font-body); font-size: 13px; font-weight: 700;
+    padding: 12px 0 20px; cursor: pointer;
+  }
 
   .photo-grid {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px;
@@ -2802,13 +2803,14 @@ function openMonthCalendar(initialDate) {
 }
 
 function clientStats(clientId) {
+  const client = state.clients.find(c => c.id === clientId);
   const history = state.appointments
     .filter(a => a.client?.id === clientId)
     .sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
   const visits = history.length;
   const spent = history.reduce((sum, a) => sum + Number(a.service?.price || 0), 0);
   const lastVisit = history[0] ? fmtDate(history[0].starts_at) : '—';
-  const isVip = visits >= 5;
+  const isVip = !!client?.vip;
 
   const freq = {};
   history.forEach(a => {
@@ -2844,7 +2846,7 @@ function renderClients() {
       const { lastVisit, isVip } = clientStats(c.id);
       const color = colorForId(c.id);
       return `
-        <div class="client-list-card" data-id="${c.id}">
+        <div class="list-row client-list-card" data-id="${c.id}">
           <div class="avatar-round" style="width:42px;height:42px;font-size:14px;background:${color.border}">${initials(c.name)}</div>
           <div style="flex:1">
             <div class="title">${c.name}</div>
@@ -2858,11 +2860,14 @@ function renderClients() {
   app.querySelectorAll('.client-list-card[data-id]').forEach(card => {
     card.onclick = async () => {
       state.selectedClientId = card.dataset.id;
+      state.clientHistoryExpanded = false;
       if (!state.clientPhotos[card.dataset.id]) await loadClientPhotos(card.dataset.id);
       render();
     };
   });
 }
+
+const HISTORY_PREVIEW_COUNT = 3;
 
 function renderClientDetail() {
   const c = state.clients.find(cl => cl.id === state.selectedClientId);
@@ -2872,6 +2877,7 @@ function renderClientDetail() {
   document.getElementById('greetingSub').textContent = '';
 
   const { history, visits, spent, lastVisit, isVip, favoriteServices } = clientStats(c.id);
+  const visibleHistory = state.clientHistoryExpanded ? history : history.slice(0, HISTORY_PREVIEW_COUNT);
   const color = colorForId(c.id);
   const waPhone = (c.phone || '').replace(/[^\d]/g, '');
   const photos = state.clientPhotos[c.id] || [];
@@ -2882,7 +2888,7 @@ function renderClientDetail() {
       <div class="avatar-round" style="width:64px;height:64px;font-size:20px;background:${color.border}">${initials(c.name)}</div>
       <div>
         <div class="name">${c.name}</div>
-        ${isVip ? '<span class="tag tag-accent" style="margin-top:6px;">CLIENTE VIP</span>' : ''}
+        <button class="tag ${isVip ? 'tag-accent' : 'tag-vip-off'}" id="vipToggleBtn" style="margin-top:6px; border:none; cursor:pointer;">${isVip ? '★ CLIENTE VIP' : '☆ Marcar como VIP'}</button>
       </div>
     </div>
     <div class="profile-actions">
@@ -2930,8 +2936,8 @@ function renderClientDetail() {
       </div>
     ` : ''}
     <h2>Histórico de visitas</h2>
-    ${history.length ? history.map(a => `
-      <div class="history-row" style="cursor:pointer;" data-appt-id="${a.id}">
+    ${history.length ? visibleHistory.map(a => `
+      <div class="list-row history-row" style="cursor:pointer;" data-appt-id="${a.id}">
         <div>
           <div class="service">${a.service?.name || ''}</div>
           <div class="meta">${fmtDate(a.starts_at)} · ${a.staff?.name || ''}</div>
@@ -2939,10 +2945,23 @@ function renderClientDetail() {
         <div class="price">€${Number(a.service?.price || 0).toFixed(0)}</div>
       </div>
     `).join('') : '<div class="empty">Nenhum atendimento registrado ainda.</div>'}
+    ${!state.clientHistoryExpanded && history.length > HISTORY_PREVIEW_COUNT
+      ? `<button class="see-more-btn" id="seeMoreHistoryBtn">Ver mais (${history.length - HISTORY_PREVIEW_COUNT})</button>`
+      : ''}
   `;
 
   document.getElementById('backToClients').onclick = () => {
     state.selectedClientId = null;
+    render();
+  };
+
+  document.getElementById('vipToggleBtn').onclick = async () => {
+    const newValue = !isVip;
+    const { data: updated, error } = await sb.from('clients').update({ vip: newValue }).eq('id', c.id).select();
+    if (error) { showToast('Erro ao salvar: ' + error.message); return; }
+    if (!updated || !updated.length) { showToast('Não foi possível salvar — faça login novamente.'); return; }
+    c.vip = newValue;
+    showToast(newValue ? 'Cliente marcada como VIP' : 'VIP removida');
     render();
   };
 
@@ -2964,6 +2983,14 @@ function renderClientDetail() {
       render();
     };
   });
+
+  const seeMoreBtn = document.getElementById('seeMoreHistoryBtn');
+  if (seeMoreBtn) {
+    seeMoreBtn.onclick = () => {
+      state.clientHistoryExpanded = true;
+      render();
+    };
+  }
 
   const photoInput = document.getElementById('photoInput');
   if (photoInput) {

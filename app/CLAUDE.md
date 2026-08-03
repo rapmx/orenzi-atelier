@@ -150,9 +150,22 @@ mesmo vermelho que `.pc-status.is-busy` ("Agenda praticamente lotada") e a seta
 de queda dos indicadores já usam. Não introduzir uma cor de alerta nova.
 
 Feito: Estoque (`.list-row.stock-row`, alerta de mínimo com fundo tingido +
-borda grossa + tag "Repor") e Agenda (`.timeline` no padrão de cartão,
-animação de toque em dia da semana/booking/botão +). Clientes e Questionário
-ainda não entraram.
+borda grossa + tag "Repor"), Agenda (`.timeline` no padrão de cartão,
+animação de toque em dia da semana/booking/botão +) e Clientes
+(`.list-row.client-list-card` na lista, `.list-row.history-row` no
+histórico de visitas do perfil). Questionário ainda não entrou.
+
+**Fase 3 — Clientes (03/08/2026).** Histórico de visitas mostra só as 3 mais
+recentes (`HISTORY_PREVIEW_COUNT`), com botão "ver mais" —
+`state.clientHistoryExpanded` controla, reseta ao trocar de cliente. Tag VIP
+deixou de ser automática (`visits >= 5`) e virou coluna
+`clients.vip boolean` (default `false`, ninguém migrado — decisão do
+Raphael foi começar do zero); `clientStats()` lê `client.vip` direto, e o
+botão `#vipToggleBtn` no perfil alterna e grava com `.select()` no fim, mesmo
+padrão de escrita autenticada do resto do app. Valor do atendimento editável
+por booking (coluna `appointments.price`) ficou de fora desta fase — decisão
+do Raphael foi não mexer agora, por afetar toda conta de receita
+(Insights, gasto da cliente).
 
 **Cor do booking é por categoria do serviço, não por profissional**
 (`colorForService()`, perto de `colorForId`). Com só uma profissional ativa,
