@@ -41,7 +41,7 @@ edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
 | Tela inicial, KPIs, ocupação | `renderHome()`, `occupancyPct()` |
 | Insights, gráfico de tendência | `renderInsights()`, `computeIndicatorsData()` |
 | Agenda, sobreposição, pausa | `renderAgenda()`, `layoutAppts()`, `segmentsOf()` |
-| Estoque | `// ── ESTOQUE`, `renderStock()`, `openProductModal()` |
+| Estoque | `// ── ESTOQUE`, `renderStock()`, `renderStockList()`, `renderStockInsights()`, `openProductModal()` |
 | Clientes, fotos, detalhe | `renderClients()`, `renderClientDetail()`, `renderApptDetail()` |
 | Login | `checkSession()`, `renderLogin()` |
 | Qual tela aparece | `render()` |
@@ -53,8 +53,17 @@ Estoque ocupou o lugar de Equipe em 02/08/2026 — com uma profissional só,
 ## Banco (Supabase, projeto `gsagtsxkhqlpxuvrijgw`)
 
 Tabelas: `appointments`, `clients`, `staff`, `staff_services`, `services`,
-`salon_settings`, `products`, `client_photos`, `client_questionnaires`,
-`booking_visits`, `lookup_attempts`.
+`salon_settings`, `products`, `product_movements`, `client_photos`,
+`client_questionnaires`, `booking_visits`, `lookup_attempts`.
+
+`product_movements` (03/08/2026) é o histórico de estoque: `product_id`,
+`kind` (`entrada` | `saida` | `ajuste`), `quantity` **sempre positivo** (o
+sinal vem do `kind`), `resulting_quantity` (o saldo congelado naquele
+momento), `actor`, `note`, `created_at`. Só `saida` conta como consumo —
+entrada é compra e ajuste é correção de contagem; somar os três inflaria a
+previsão. `products` ganhou `code`, `supplier`, `favorite`, `expires_at`,
+`image_url`. Bucket `product-photos` (público, mesmas políticas de
+`client-photos`).
 
 Duas RPCs `SECURITY DEFINER` — a página da cliente usa a chave anônima e a RLS de
 `appointments` só permite SELECT autenticado, então leitura direta voltava vazia e
@@ -149,8 +158,7 @@ depois) é sempre o par `--color-accent-2-100`/`--color-accent-2-700` — é o
 mesmo vermelho que `.pc-status.is-busy` ("Agenda praticamente lotada") e a seta
 de queda dos indicadores já usam. Não introduzir uma cor de alerta nova.
 
-Feito: Estoque (`.list-row.stock-row`, alerta de mínimo com fundo tingido +
-borda grossa + tag "Repor"), Agenda (`.timeline` no padrão de cartão,
+Feito: Estoque (redesenhado por inteiro em 03/08 — ver abaixo), Agenda (`.timeline` no padrão de cartão,
 animação de toque em dia da semana/booking/botão +) e Clientes (lista e
 perfil, os dois com redesign próprio — ver abaixo). Questionário ainda não
 entrou.
@@ -307,6 +315,67 @@ de campos soltos e virou um perfil com hierarquia por espaçamento
   adicionar foto), 160–200ms, sem exagero — nada de animação de entrada
   coreografada (fade sequencial dos blocos), que o prompt sugeria mas não é
   crítico e o app não tem esse padrão em nenhuma outra tela hoje.
+
+**Redesign do Estoque (03/08/2026, prompt de "design review" do Raphael —
+referência Apple Health/Linear/Stripe, sem copiar nenhum).** A aba deixou de
+ser uma lista de linhas e virou painel: resumo em 4 cartões → valor total →
+busca → chips → lista agrupada → sugestões → movimentações → estatísticas.
+
+- **Quatro estados, nenhuma cor nova** (`stockStatus()`): `sem` (qtd 0),
+  `critico` (qtd ≤ mínimo), `baixo` (qtd ≤ mínimo × `ESTOQUE_BAIXO_FATOR`),
+  `ok`. Cada estado é uma classe `.st-*` que declara **só** `--stk-color` e
+  `--stk-bg`; ponto, badge, borda do cartão, ícone de sugestão e ícone de
+  movimentação leem daí. Mudar um estado é mudar duas variáveis.
+  O prompt pedia amarelo — não existe amarelo na paleta, e a regra de não
+  introduzir cor de alerta nova vale. O degrau intermediário é o `accent` da
+  marca; `accent-2` continua reservado pro urgente.
+  **O verde teve que ser escurecido**: `#4f8a5b` (o ponto de "cliente ativa")
+  como *texto* de badge dava 3,2:1 sobre o próprio fundo tingido. Virou
+  `#3b6744`, 5,0:1 — medido no navegador, não estimado. Ponto e texto não
+  têm o mesmo requisito de contraste.
+- **Consumo, previsão e sugestão são derivados de `product_movements`**
+  (`consumoDiario`, `diasRestantes`, `sugestaoCompra`). Só entram na tela com
+  ao menos `CONSUMO_MIN_SAIDAS` saídas, e a janela tem piso de
+  `CONSUMO_MIN_DIAS` — sem esse piso, duas saídas na mesma tarde viravam
+  "consome isso por dia" e a previsão dizia que o estoque acaba amanhã.
+  Sem histórico a tela **diz que não tem histórico** em vez de mostrar
+  número; decisão explícita do Raphael, o banco de produção não foi semeado
+  com consumo inventado. O demo tem movimentações mockadas justamente porque
+  ele existe pra mostrar a tela cheia.
+- **Toda mudança de quantidade grava movimento** (`registrarMovimento`):
+  o −/+ do cartão, a edição manual, entrada/saída pela folha do FAB e a
+  quantidade alterada no cadastro. Buraco no histórico = previsão saindo de
+  um saldo que ninguém sabe de onde veio.
+- **Segurar o −/+ acumula na tela e grava uma vez só** (`bindQtyHold`).
+  Os passos alteram o `textContent` do `[data-qty-for]` direto, sem
+  re-render: re-renderizar a lista no meio do gesto destruiria o próprio
+  botão que está sob o dedo. Só no `pointerup` vai o total pro banco — uma
+  escrita, uma movimentação, não N.
+- **Toque no número abre a edição manual, e é toque simples.** O prompt pedia
+  duplo toque; em tela sensível o duplo toque disputa com o zoom do navegador
+  e falha metade das vezes, e o número já é um alvo próprio entre o − e o +.
+- **A busca e os chips não passam por `render()`** — `renderStockList()` /
+  `aplicarFiltroEstoque()` mexem só no `#stockListWrap` e nas classes
+  `.active`. Mesma armadilha da lista de clientes (foco do `<input>`), mais
+  uma nova: com `render()` cheio a animação de entrada em sequência
+  (`.stk-enter`) tocaria de novo a cada chip.
+- **Chips de categoria nascem do banco**, não de uma lista fixa. As
+  categorias reais (Coloração, Descoloração, Tratamento, Finalização,
+  Descartáveis) não são as que o prompt listou; chip fixo viraria filtro que
+  nunca acha nada. `STOCK_CATEGORY_ICONS` mapeia as conhecidas e qualquer
+  categoria nova cai no ícone genérico.
+- **Rótulos de grupo só na ordenação por prioridade.** Em "Nome (A–Z)" a
+  lista não está agrupada e o título mentiria.
+- **Ficou de fora, de propósito:** "Escanear código de barras"
+  (`BarcodeDetector` não existe no Safari do iPhone) e "Importar produtos"
+  (não há fluxo de importação) — mesma decisão de "Importar contatos" em
+  Clientes, confirmada com o Raphael. A folha do FAB tem três opções:
+  cadastrar produto, registrar entrada, registrar saída.
+- **`esc()`** (perto de `fmtQtd`) entrou junto: nome de produto é texto
+  digitado e agora aparece em cartão, sugestão, timeline e `aria-label`.
+- `.list-row` ficou sem nenhum uso no markup depois disso (o `.stock-row`
+  era o último) — a regra continua no CSS porque é compartilhada com
+  `.appt-modern-card`.
 
 **Cor do booking é por categoria do serviço, não por profissional**
 (`colorForService()`, perto de `colorForId`). Com só uma profissional ativa,

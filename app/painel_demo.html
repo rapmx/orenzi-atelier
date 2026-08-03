@@ -44,14 +44,45 @@ function mockData(table){
 
   // Mesmo catálogo que está no banco. Luvas e shampoo entram no mínimo de
   // propósito: é o estado "precisa repor" que a tela existe pra mostrar.
+  const emDias = (n) => new Date(now.getTime() + n * 86400000);
+  const dataSimples = (n) => emDias(n).toISOString().slice(0, 10);
+
   if (table === 'products') return [
-    {id:'p1', name:'Água oxigenada 20 vol', brand:'Welloxon', category:'Descoloração', unit:'ml', quantity:900, min_quantity:500, cost:0.01, notes:null, active:true},
-    {id:'p2', name:'Luvas descartáveis', brand:null, category:'Descartáveis', unit:'cx', quantity:2, min_quantity:2, cost:6, notes:null, active:true},
-    {id:'p3', name:'Máscara de reconstrução', brand:'Olaplex', category:'Tratamento', unit:'g', quantity:500, min_quantity:250, cost:0.12, notes:null, active:true},
-    {id:'p4', name:'Pó descolorante', brand:'Blondor', category:'Descoloração', unit:'g', quantity:450, min_quantity:200, cost:0.09, notes:null, active:true},
-    {id:'p5', name:'Shampoo pós-química', brand:'Sebastian', category:'Finalização', unit:'ml', quantity:250, min_quantity:300, cost:0.04, notes:null, active:true},
-    {id:'p6', name:'Tinta 7.0 louro médio', brand:'Koleston', category:'Coloração', unit:'un', quantity:3, min_quantity:2, cost:7.5, notes:null, active:true},
+    {id:'p1', name:'Água oxigenada 20 vol', brand:'Welloxon', category:'Descoloração', unit:'ml', quantity:900, min_quantity:500, cost:0.01, notes:null, active:true, code:'OX-20', supplier:'Beauty Supply DB', favorite:false, expires_at:null, image_url:null, updated_at: emDias(-1).toISOString()},
+    {id:'p2', name:'Luvas descartáveis', brand:null, category:'Descartáveis', unit:'cx', quantity:2, min_quantity:2, cost:6, notes:null, active:true, code:'LV-M', supplier:'Beauty Supply DB', favorite:true, expires_at:null, image_url:null, updated_at: emDias(0).toISOString()},
+    {id:'p3', name:'Máscara de reconstrução', brand:'Olaplex', category:'Tratamento', unit:'g', quantity:500, min_quantity:250, cost:0.12, notes:null, active:true, code:null, supplier:null, favorite:false, expires_at: dataSimples(210), image_url:null, updated_at: emDias(-4).toISOString()},
+    {id:'p4', name:'Pó descolorante', brand:'Blondor', category:'Descoloração', unit:'g', quantity:450, min_quantity:200, cost:0.09, notes:null, active:true, code:'BL-9', supplier:'Wella IE', favorite:true, expires_at:null, image_url:null, updated_at: emDias(-2).toISOString()},
+    // Validade curta de propósito: é o estado que o badge "Vence em X dias" existe pra mostrar.
+    {id:'p5', name:'Shampoo pós-química', brand:'Sebastian', category:'Finalização', unit:'ml', quantity:250, min_quantity:300, cost:0.04, notes:null, active:true, code:null, supplier:'Wella IE', favorite:false, expires_at: dataSimples(12), image_url:null, updated_at: emDias(0).toISOString()},
+    {id:'p6', name:'Tinta 7.0 louro médio', brand:'Koleston', category:'Coloração', unit:'un', quantity:3, min_quantity:2, cost:7.5, notes:null, active:true, code:'K-7.0', supplier:'Wella IE', favorite:false, expires_at:null, image_url:null, updated_at: emDias(-1).toISOString()},
   ];
+
+  // O painel real nasce sem histórico de propósito (não se inventa consumo num
+  // banco de produção) — mas o demo existe pra mostrar a tela funcionando, e
+  // sem movimentação não haveria previsão, sugestão nem timeline pra ver.
+  if (table === 'product_movements') {
+    const movs = [];
+    let mid = 0;
+    const reg = (produto, kind, qtd, saldo, diasAtras, hora, quem, nota) => {
+      const d = emDias(-diasAtras); d.setHours(hora, 15, 0, 0);
+      movs.push({ id: 'mv' + (mid++), product_id: produto, kind, quantity: qtd,
+        resulting_quantity: saldo, actor: quem, note: nota || null, created_at: d.toISOString() });
+    };
+    reg('p1', 'entrada', 10, 900, 0, 9, 'Juliane', 'Compra do fornecedor');
+    reg('p2', 'saida', 2, 2, 1, 16, 'Juliane', null);
+    reg('p6', 'saida', 1, 3, 2, 11, 'Juliane', 'Coloração da Marina');
+    reg('p5', 'saida', 60, 250, 3, 15, 'Juliane', null);
+    reg('p4', 'entrada', 500, 450, 5, 10, 'Juliane', 'Reposição mensal');
+    reg('p5', 'saida', 90, 310, 9, 14, 'Juliane', null);
+    reg('p6', 'saida', 2, 4, 12, 10, 'Juliane', null);
+    reg('p4', 'saida', 120, 380, 16, 12, 'Juliane', null);
+    reg('p2', 'saida', 1, 4, 20, 17, 'Juliane', null);
+    reg('p5', 'saida', 80, 400, 24, 11, 'Juliane', null);
+    reg('p3', 'saida', 150, 500, 28, 15, 'Juliane', null);
+    reg('p4', 'saida', 100, 500, 33, 13, 'Juliane', null);
+    reg('p6', 'ajuste', 1, 6, 40, 18, 'Juliane', 'Contagem do mês');
+    return movs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
 
   if (table === 'clients') {
     const names = ['Marina Costa','Beatriz Lima','Ana Souza','Carla Reis','Fernanda Alves','Julia Prado',
@@ -177,14 +208,27 @@ window.supabase = {
   createClient: function () {
     return {
       auth: {
-        getSession: async function () { return { data: { session: { user: { id: 'demo' } } } }; },
+        getSession: async function () { return { data: { session: { user: { id: 'demo', email: 'juliane@orenziatelier.com' } } } }; },
         signInWithPassword: async function () { return {}; },
         signOut: async function () { return {}; },
         onAuthStateChange: function () {},
       },
       channel: function () { return { on: function () { return { subscribe: function () {} }; } }; },
+      // Upload no demo não sai daqui: devolve sucesso sem URL, e o painel avisa
+      // que a foto não fica disponível nesta versão em vez de mostrar quebrada.
+      storage: {
+        from: function () {
+          return {
+            upload: async function () { return { error: null }; },
+            getPublicUrl: function () { return { data: { publicUrl: '' } }; },
+          };
+        },
+      },
       from: function (table) {
         const lista = function () { return Promise.resolve({ data: mockData(table), error: null }); };
+        // order(...) precisa ser aguardável e ainda aceitar .limit() encadeado —
+        // é assim que loadMovements() lê o histórico.
+        const listaOrder = function () { const p = lista(); p.limit = lista; return p; };
 
         // Escrita no demo não sai daqui: devolve sucesso pra tela seguir o fluxo
         // normal (inclusive o .select() que o painel usa pra provar que gravou).
@@ -199,9 +243,9 @@ window.supabase = {
         return {
           select: function () {
             return {
-              order: lista,
-              eq: function () { return { order: lista, maybeSingle: function () { return Promise.resolve({ data: null }); } }; },
-              neq: function () { return { order: lista }; },
+              order: listaOrder,
+              eq: function () { return { order: listaOrder, maybeSingle: function () { return Promise.resolve({ data: null }); } }; },
+              neq: function () { return { order: listaOrder }; },
             };
           },
           insert: function () { return escrita; },
@@ -1093,41 +1137,241 @@ window.supabase = {
 
   /* Clone do avatar que viaja da lista pro perfil (shared element). */
   .avatar-morph { position: fixed; z-index: 250; pointer-events: none; border-radius: 50%; }
-  /* ── Estoque ── */
-  /* No mínimo ou abaixo: usa o mesmo par accent-2 que já é a cor de "atenção"
-     no resto do painel (agenda lotada, indicador em queda) — não uma cor nova.
-     Tinge a linha inteira, engrossa a borda esquerda e marca o nome e a
-     quantidade, pra pular aos olhos sem precisar ler o número. */
-  .stock-row.low {
-    background: var(--color-accent-2-100);
-    border-color: var(--color-accent-2-700);
-    border-left: 4px solid var(--color-accent-2-700);
+  /* ══ Aba Estoque: painel de gestão ═══════════════════════════
+     Redesenho de 03/08/2026. Mesma regra da lista de clientes: a lista é
+     redesenhada sozinha (renderStockList) sem passar por render(), senão o
+     campo de busca perde o foco a cada tecla digitada.
+
+     Os quatro estados de estoque saem todos da paleta que já existe — não
+     entrou cor nova. Cada estado só declara duas variáveis (--stk-color e
+     --stk-bg) e todo o resto (ponto, badge, borda do cartão) lê delas. */
+  /* O verde do ponto de "cliente ativa" (#4f8a5b) só valia como ponto: como
+     TEXTO de badge sobre o próprio fundo tingido ele dava 3,2:1, abaixo do
+     mínimo legível. Mesmo verde, escurecido até 5,0:1 — medido, não chutado. */
+  .st-ok      { --stk-color: #3b6744; --stk-bg: rgba(79,138,91,0.14); }
+  .st-baixo   { --stk-color: var(--color-accent-700); --stk-bg: var(--color-accent-100); }
+  .st-critico { --stk-color: var(--color-accent-2-700); --stk-bg: var(--color-accent-2-100); }
+  .st-sem     { --stk-color: var(--color-neutral-600); --stk-bg: var(--color-neutral-200); }
+
+  /* Resumo em quatro cartões. Cada um é um atalho pro filtro correspondente —
+     número que não leva a lugar nenhum seria enfeite. */
+  .stock-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stk-sum-card {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: 16px; padding: 12px; cursor: pointer;
+    font-family: var(--font-body); color: var(--color-text);
+    transition: transform .16s ease, background .18s ease, border-color .18s ease;
   }
-  .stock-row.low .stock-info .title { color: var(--color-accent-2-700); }
-  .stock-row.low .qty-num { color: var(--color-accent-2-700); }
-  .stock-row.low .qty-btn { border-color: var(--color-accent-2-700); color: var(--color-accent-2-700); }
-  .tag-alert { background: var(--color-accent-2-100); color: var(--color-accent-2-700); margin-left: 6px; vertical-align: middle; }
-  .stock-info {
-    flex: 1; min-width: 0; background: none; border: none; padding: 0;
-    font-family: inherit; text-align: left; cursor: pointer; color: inherit;
-  }
-  .stock-info .title { font-weight: 600; font-size: 14px; }
-  .stock-info .sub {
-    font-size: 11.5px; color: var(--color-neutral-600); margin-top: 2px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .stock-qty { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-  .qty-btn {
-    width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--color-divider);
-    background: var(--color-bg); color: var(--color-neutral-600); font-size: 17px;
-    line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center;
-  }
-  .qty-btn:active { background: var(--color-neutral-100); }
-  .qty-num {
-    min-width: 52px; text-align: center; font-weight: 700; font-size: 15px;
+  .stk-sum-card:active { transform: scale(0.98); }
+  .stk-sum-card.active { border-color: var(--stk-color); background: var(--stk-bg); }
+  .stk-sum-card .ssc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--stk-color); }
+  .stk-sum-card .ssc-val {
+    font-family: var(--font-heading); font-weight: 600; font-size: 20px; line-height: 1;
     font-variant-numeric: tabular-nums;
   }
-  .qty-unit { font-size: 10px; font-weight: 500; color: var(--color-neutral-600); margin-left: 2px; }
+  .stk-sum-card .ssc-lbl { font-size: 10.5px; color: var(--color-neutral-600); margin-top: 3px; line-height: 1.25; }
+
+  .stock-value-card {
+    display: flex; align-items: center; gap: 14px; background: var(--color-surface);
+    border: 1px solid var(--color-divider); border-radius: 16px; padding: 16px; margin-bottom: 20px;
+  }
+  .stock-value-card .svc-icon {
+    width: 36px; height: 36px; border-radius: 12px; background: var(--color-accent-100);
+    color: var(--color-accent-700); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .stock-value-card .svc-icon svg { width: 18px; height: 18px; }
+  .stock-value-card .svc-body { flex: 1; min-width: 0; }
+  .stock-value-card .svc-val {
+    font-family: var(--font-heading); font-weight: 600; font-size: 26px; line-height: 1.1;
+    letter-spacing: -0.01em; font-variant-numeric: tabular-nums;
+  }
+  .stock-value-card .svc-lbl { font-size: 12px; color: var(--color-neutral-600); margin-top: 3px; }
+  .stock-value-card .svc-upd {
+    text-align: right; flex-shrink: 0; font-size: 10.5px; color: var(--color-neutral-600); line-height: 1.4;
+  }
+  .stock-value-card .svc-upd strong { display: block; font-size: 12.5px; color: var(--color-text); font-variant-numeric: tabular-nums; }
+
+  .stock-group-label {
+    display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-neutral-600);
+    margin: 20px 0 10px;
+  }
+  .stock-group-label:first-child { margin-top: 0; }
+  .stock-group-label .sgl-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--stk-color); }
+  .stock-count-label { font-size: 11.5px; color: var(--color-neutral-600); font-weight: 500; margin-bottom: 10px; }
+
+  /* Cartão de produto: mesma base do .client-card (surface + borda + raio 16),
+     empilhado — identificação em cima, números embaixo. Só o urgente ganha a
+     barra colorida na lateral; tingir o cartão inteiro, como a versão antiga
+     fazia, competia com o badge e com a própria lista. */
+  .product-card {
+    background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: 16px; padding: 12px; margin-bottom: 8px;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .product-card.is-critico, .product-card.is-sem { border-left: 3px solid var(--stk-color); }
+  .product-card:active { transform: scale(0.985); }
+  .pd-top { display: flex; align-items: center; gap: 12px; }
+  .pd-open {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px;
+    background: none; border: none; padding: 0; font-family: inherit; color: inherit;
+    text-align: left; cursor: pointer;
+  }
+  .pd-thumb {
+    width: 44px; height: 44px; border-radius: 13px; flex-shrink: 0; overflow: hidden;
+    background: var(--color-accent-100); color: var(--color-accent-700);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pd-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pd-thumb svg { width: 20px; height: 20px; }
+  .pd-head { flex: 1; min-width: 0; }
+  .pd-name { font-size: 14.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pd-sub {
+    font-size: 11.5px; color: var(--color-neutral-600); margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .pd-code { font-variant-numeric: tabular-nums; }
+  /* Estrela de favorito: 44px de área de toque com um ícone de 17px dentro. */
+  .pd-fav {
+    flex-shrink: 0; width: 44px; height: 44px; margin: -6px -6px -6px 0; border: none;
+    background: none; cursor: pointer; color: var(--color-neutral-300);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .16s cubic-bezier(.34,1.56,.64,1), color .18s ease;
+  }
+  .pd-fav svg { width: 17px; height: 17px; }
+  .pd-fav.is-on { color: var(--color-accent-700); }
+  .pd-fav:active { transform: scale(0.88); }
+
+  .pd-bottom {
+    display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--color-divider);
+  }
+  .pd-meta { flex: 1; min-width: 0; }
+  .stk-badge {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700;
+    padding: 4px 9px; border-radius: 999px; background: var(--stk-bg); color: var(--stk-color);
+    white-space: nowrap;
+  }
+  .stk-badge .sb-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pd-min { font-size: 11px; color: var(--color-neutral-600); margin-top: 5px; }
+  .pd-notes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .pd-note {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+    padding: 4px 9px; border-radius: 999px; background: var(--color-neutral-200);
+    color: var(--color-neutral-700);
+  }
+  .pd-note svg { width: 12px; height: 12px; }
+  .pd-note.is-alert { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
+  .pd-note.is-soft { background: var(--color-accent-100); color: var(--color-accent-700); }
+
+  /* Contador: botões de 38px com a área de toque esticada pra 46 pelo ::after
+     (o alvo mínimo confortável), e o número no meio é ele próprio um botão —
+     é por ali que se digita a quantidade à mão. */
+  .stock-qty { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .qty-btn {
+    position: relative; width: 38px; height: 38px; border-radius: 50%;
+    border: 1px solid var(--color-divider); background: var(--color-bg);
+    color: var(--color-neutral-700); font-size: 19px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    transition: transform .14s ease, background .14s ease, border-color .14s ease;
+  }
+  .qty-btn::after { content: ''; position: absolute; inset: -4px; }
+  .qty-btn:active { background: var(--color-accent-100); border-color: var(--color-accent-600); transform: scale(0.9); }
+  .qty-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .qty-num {
+    min-width: 56px; height: 38px; padding: 0 2px; border: none; background: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: var(--font-body); color: var(--color-text);
+    font-weight: 700; font-size: 16px; line-height: 1; font-variant-numeric: tabular-nums;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    transition: transform .14s ease;
+  }
+  .qty-num:active { transform: scale(0.94); }
+  .qty-unit { font-size: 9.5px; font-weight: 600; color: var(--color-neutral-600); margin-top: 3px; letter-spacing: 0.03em; }
+
+  /* Sugestões, movimentações e estatísticas — blocos de fim de tela, todos no
+     mesmo cartão surface+borda do resto do app. */
+  .stock-section { margin-top: 32px; }
+  .stock-section-title {
+    display: flex; align-items: center; gap: 8px; font-family: var(--font-heading);
+    font-weight: 600; font-size: 16px; margin-bottom: 12px;
+  }
+  .stock-section-title .sst-icon { color: var(--color-accent-600); display: flex; flex-shrink: 0; }
+  .stock-section-title .sst-icon svg { width: 17px; height: 17px; }
+  .stock-section-title .sst-count { margin-left: auto; font-family: var(--font-body); font-size: 11.5px; font-weight: 500; color: var(--color-neutral-600); }
+
+  .suggestion-card {
+    display: flex; gap: 12px; background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: 16px; padding: 14px; margin-bottom: 8px;
+  }
+  .suggestion-card .sc-icon {
+    width: 32px; height: 32px; border-radius: 11px; flex-shrink: 0;
+    background: var(--stk-bg); color: var(--stk-color);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .suggestion-card .sc-icon svg { width: 16px; height: 16px; }
+  .suggestion-card .sc-body { flex: 1; min-width: 0; }
+  .suggestion-card .sc-name { font-size: 14px; font-weight: 700; }
+  .suggestion-card .sc-text { font-size: 12.5px; color: var(--color-neutral-600); margin-top: 4px; line-height: 1.45; }
+  .suggestion-card .sc-text strong { color: var(--color-text); font-weight: 700; }
+
+  /* Timeline de movimentação: mesma linguagem da timeline de visitas do perfil
+     da cliente (ponto + linha conectora), com o ícone dizendo o sentido. */
+  .mv-day-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--color-neutral-600); margin: 16px 0 8px;
+  }
+  .mv-day-label:first-child { margin-top: 0; }
+  .mv-item { display: flex; gap: 12px; }
+  .mv-rail { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .mv-icon {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: var(--stk-bg); color: var(--stk-color);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mv-icon svg { width: 15px; height: 15px; }
+  .mv-line { flex: 1; width: 1px; background: var(--color-divider); margin: 4px 0; min-height: 10px; }
+  .mv-item:last-child .mv-line { display: none; }
+  .mv-body { flex: 1; min-width: 0; padding-bottom: 14px; }
+  .mv-item:last-child .mv-body { padding-bottom: 0; }
+  .mv-top { display: flex; align-items: baseline; gap: 8px; }
+  .mv-qty { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--stk-color); flex-shrink: 0; }
+  .mv-name { font-size: 14px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mv-sub { font-size: 11.5px; color: var(--color-neutral-600); margin-top: 2px; }
+
+  .stock-stats {
+    background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: 16px; padding: 16px;
+  }
+  .stock-stats + .stock-stats { margin-top: 8px; }
+  .stock-stats .ss-head { font-size: 11.5px; font-weight: 700; color: var(--color-neutral-600); margin-bottom: 12px; }
+  .stock-stats .ss-pair { display: flex; gap: 12px; }
+  .stock-stats .ss-cell { flex: 1; min-width: 0; }
+  .stock-stats .ss-val {
+    font-family: var(--font-heading); font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums;
+  }
+  .stock-stats .ss-lbl { font-size: 10.5px; color: var(--color-neutral-600); margin-top: 3px; line-height: 1.3; }
+
+  .stock-empty-note {
+    display: flex; gap: 10px; align-items: flex-start; background: var(--color-surface);
+    border: 1px dashed var(--color-divider); border-radius: 16px; padding: 14px;
+    font-size: 12.5px; color: var(--color-neutral-600); line-height: 1.45;
+  }
+  .stock-empty-note .sen-icon { color: var(--color-neutral-600); display: flex; flex-shrink: 0; margin-top: 1px; }
+  .stock-empty-note .sen-icon svg { width: 16px; height: 16px; }
+
+  /* Entrada em sequência: resumo → busca → filtros → lista. Cada bloco leva a
+     própria classe com um delay inline; nada além de 220ms no último. */
+  @keyframes stkEnter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .stk-enter { animation: stkEnter .2s cubic-bezier(.22,.61,.36,1) both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stk-enter { animation: none; }
+    .stk-sum-card, .qty-btn, .qty-num, .pd-fav, .product-card { transition: none; }
+    .stk-sum-card:active, .qty-btn:active, .qty-num:active, .pd-fav:active, .product-card:active { transform: none; }
+  }
   .avatar-round {
     border-radius: 50%; color: var(--color-bg); font-family: var(--font-heading); font-style: normal; font-weight: 600;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
@@ -1387,7 +1631,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month', clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0 };
+const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month', clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '' };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -1588,7 +1832,7 @@ async function deleteApptPhoto(appointmentId, photoId) {
 }
 
 async function loadAll() {
-  await Promise.all([loadAppointments(), loadClients(), loadStaff(), loadServices(), loadProducts(), loadBookingVisits()]);
+  await Promise.all([loadAppointments(), loadClients(), loadStaff(), loadServices(), loadProducts(), loadMovements(), loadBookingVisits()]);
   render();
 }
 
@@ -1715,6 +1959,17 @@ const ICONS = {
   trendUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 16.5 9 11l4 4 7.5-7.5"/><path d="M15.5 7.5h5v5"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
   moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></svg>',
+  // ── Estoque ──
+  box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.5 12 3.5 3.5 7.5v9L12 20.5l8.5-4v-9Z"/><path d="m3.5 7.5 8.5 4 8.5-4M12 11.5v9"/></svg>',
+  arrowIn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>',
+  arrowOut: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V8M7.5 12.5 12 8l4.5 4.5M5 4.5h14"/></svg>',
+  warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2 2.8 19.3h18.4L12 4.2Z"/><path d="M12 10v4M12 16.8h.01"/></svg>',
+  bulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17.5h6M10 20.5h4"/><path d="M12 3.5a5.5 5.5 0 0 0-3.2 10c.5.4.7.9.7 1.5h5c0-.6.2-1.1.7-1.5A5.5 5.5 0 0 0 12 3.5Z"/></svg>',
+  flask: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3.5v6L4.6 17.6A2 2 0 0 0 6.3 20.5h11.4a2 2 0 0 0 1.7-2.9L14.5 9.5v-6"/><path d="M8.5 3.5h7M7.2 14.5h9.6"/></svg>',
+  sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 13.8 9l5.5 1.8-5.5 1.8L12 18.1l-1.8-5.5L4.7 10.8 10.2 9 12 3.5Z"/><path d="M18.5 16.5 19.2 18.6l2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7.7-2.1Z"/></svg>',
+  spray: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7.5" y="9" width="8" height="11.5" rx="2"/><path d="M10 9V6a1.5 1.5 0 0 1 1.5-1.5H13M18 5h.01M20.5 7.5h.01M18 10h.01M20.5 12h.01"/></svg>',
+  scissors: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="17.5" r="2.6"/><circle cx="6.5" cy="6.5" r="2.6"/><path d="M19.5 4.5 8.6 15.7M19.5 19.5 8.6 8.3"/></svg>',
+  glove: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20.5v-3.2a5 5 0 0 1-2-4V7.5a1.5 1.5 0 0 1 3 0V11m0 0V4.5a1.5 1.5 0 0 1 3 0V11m0 0V5.5a1.5 1.5 0 0 1 3 0V11m0 0V8a1.5 1.5 0 0 1 3 0v5.3a5 5 0 0 1-2 4v3.2"/><path d="M7 20.5h10"/></svg>',
 };
 
 // ── Aba Clientes: status, filtros e ordenação ────────────────
@@ -4277,14 +4532,68 @@ function renderQuestionario() {
 
 const UNIDADES = ['un', 'ml', 'g', 'cx'];
 
+// ── Parâmetros do painel de estoque ──────────────────────────
+// Quanto olhar pra trás pra estimar quanto sai por dia.
+const CONSUMO_JANELA_DIAS = 60;
+// Abaixo disso a média é ruído, não tendência: a tela prefere dizer "ainda sem
+// histórico" a mostrar uma previsão inventada.
+const CONSUMO_MIN_SAIDAS = 2;
+const CONSUMO_MIN_DIAS = 7;
+// Uma sugestão de compra cobre este tanto de dias acima do mínimo.
+const SUGESTAO_COBERTURA_DIAS = 30;
+// Acima do mínimo mas ainda perto dele → "baixo estoque".
+const ESTOQUE_BAIXO_FATOR = 1.5;
+// A partir daqui a validade vira aviso na tela.
+const VALIDADE_ALERTA_DIAS = 30;
+// Quantas movimentações a timeline do fim da tela mostra.
+const MOVIMENTOS_VISIVEIS = 12;
+
 // Quantidade sem casas decimais à toa: 3 em vez de 3.00, mas 2.5 continua 2,5.
 function fmtQtd(n) {
   const v = Number(n);
   return (Number.isInteger(v) ? v : v.toFixed(2).replace(/0$/, '')).toString().replace('.', ',');
 }
 
+// Nome de produto é texto digitado pela Juliane e agora aparece em muito mais
+// lugares (cartão, sugestão, timeline, aria-label) — escapar aqui é mais barato
+// que lembrar de escapar em cada um.
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function precisaRepor(p) {
   return Number(p.quantity) <= Number(p.min_quantity);
+}
+
+// Quatro degraus, do pior pro melhor. Sem estoque vem antes do "no mínimo"
+// porque zero é a única situação em que o atendimento simplesmente para.
+function stockStatus(p) {
+  const q = Number(p.quantity), m = Number(p.min_quantity);
+  if (q <= 0) return 'sem';
+  if (q <= m) return 'critico';
+  if (m > 0 && q <= m * ESTOQUE_BAIXO_FATOR) return 'baixo';
+  return 'ok';
+}
+const STOCK_STATUS_LABEL = {
+  ok: 'Em estoque', baixo: 'Baixo estoque', critico: 'Reposição urgente', sem: 'Sem estoque',
+};
+const STOCK_STATUS_ORDEM = { sem: 0, critico: 1, baixo: 2, ok: 3 };
+
+// Ícone por categoria. As categorias são texto livre no banco, então o mapa
+// cobre as que existem hoje e qualquer nova cai no ícone genérico — categoria
+// nova nunca quebra a tela.
+const STOCK_CATEGORY_ICONS = {
+  'coloração': 'drop', 'coloracao': 'drop',
+  'descoloração': 'flask', 'descoloracao': 'flask',
+  'tratamento': 'sparkle', 'tratamentos': 'sparkle',
+  'finalização': 'spray', 'finalizacao': 'spray', 'finalizadores': 'spray',
+  'oxidantes': 'flask',
+  'descartáveis': 'glove', 'descartaveis': 'glove',
+  'equipamentos': 'scissors',
+};
+function iconeDaCategoria(cat) {
+  return ICONS[STOCK_CATEGORY_ICONS[String(cat || '').trim().toLowerCase()] || 'box'];
 }
 
 async function loadProducts() {
@@ -4293,53 +4602,642 @@ async function loadProducts() {
   state.products = data;
 }
 
-function renderStock() {
-  document.getElementById('greeting').textContent = 'Estoque';
-  const repor = state.products.filter(precisaRepor);
-  document.getElementById('greetingSub').textContent =
-    repor.length ? `${repor.length} produto(s) para repor` : 'Tudo em dia';
+// Histórico de movimentação. É daqui que saem consumo médio, previsão de
+// duração e sugestão de compra — sem essa leitura, esses números seriam chute.
+async function loadMovements() {
+  const { data, error } = await sb.from('product_movements')
+    .select('*').order('created_at', { ascending: false }).limit(400);
+  if (error) { console.error(error); return; }
+  state.movements = data || [];
+}
 
-  // Quem está no fim primeiro: é o que precisa de decisão hoje.
-  const lista = [...state.products].sort((a, b) => (precisaRepor(b) - precisaRepor(a)) || a.name.localeCompare(b.name));
+// Toda mudança de quantidade passa por aqui. Grava o saldo resultante junto:
+// o histórico precisa dizer em quanto ficou naquele momento, e recalcular isso
+// depois seria impossível se um produto for editado à mão.
+async function registrarMovimento(produto, kind, quantidade, saldo, note) {
+  const linha = {
+    product_id: produto.id, kind, quantity: Math.abs(Number(quantidade)),
+    resulting_quantity: saldo, actor: state.userLabel || null, note: note || null,
+  };
+  const { data, error } = await sb.from('product_movements').insert(linha).select();
+  if (error) { console.error(error); return false; }
+  // O demo devolve um registro simbólico, então a linha que entra no state é
+  // montada aqui e não copiada da resposta — assim a timeline funciona nos dois.
+  state.movements.unshift({
+    ...linha,
+    id: (data && data[0] && data[0].id) || ('tmp-' + Date.now()),
+    created_at: (data && data[0] && data[0].created_at) || new Date().toISOString(),
+  });
+  return true;
+}
+
+// ── Consumo, previsão e sugestão ─────────────────────────────
+function movimentosDoProduto(id) {
+  return state.movements.filter(m => m.product_id === id);
+}
+
+// Quanto sai por dia. Só 'saida' conta: entrada é compra e ajuste é correção de
+// contagem — nenhum dos dois é consumo, e somá-los inflaria a previsão.
+function consumoDiario(p) {
+  const limite = Date.now() - CONSUMO_JANELA_DIAS * 86400000;
+  const saidas = movimentosDoProduto(p.id)
+    .filter(m => m.kind === 'saida' && new Date(m.created_at).getTime() >= limite);
+  if (saidas.length < CONSUMO_MIN_SAIDAS) return null;
+  const total = saidas.reduce((s, m) => s + Number(m.quantity), 0);
+  if (total <= 0) return null;
+  const maisAntigo = Math.min(...saidas.map(m => new Date(m.created_at).getTime()));
+  // Piso de dias: duas saídas na mesma tarde não podem virar "consome isso tudo
+  // por dia" e prever que o estoque acaba amanhã.
+  const dias = Math.max(CONSUMO_MIN_DIAS, (Date.now() - maisAntigo) / 86400000);
+  return total / dias;
+}
+
+function diasRestantes(p) {
+  const taxa = consumoDiario(p);
+  if (!taxa) return null;
+  return Math.floor(Number(p.quantity) / taxa);
+}
+
+// Repor até cobrir SUGESTAO_COBERTURA_DIAS acima do mínimo. Unidade contável
+// arredonda pra cima; ml/g arredondam pra dezena, que é como se compra.
+function sugestaoCompra(p) {
+  const taxa = consumoDiario(p);
+  if (!taxa) return null;
+  const falta = Number(p.min_quantity) + taxa * SUGESTAO_COBERTURA_DIAS - Number(p.quantity);
+  if (falta <= 0) return null;
+  return (p.unit === 'un' || p.unit === 'cx') ? Math.ceil(falta) : Math.ceil(falta / 10) * 10;
+}
+
+// Meio-dia, não meia-noite: com 'T00:00:00' a data vira meia-noite no fuso do
+// aparelho e um celular a oeste de Dublin lê o dia anterior. Mesma armadilha
+// que salonTimeToInstant() cobre no agendamento.
+function validadeInfo(p) {
+  if (!p.expires_at) return null;
+  const dias = Math.ceil((new Date(p.expires_at + 'T12:00:00').getTime() - Date.now()) / 86400000);
+  if (dias < 0) return { dias, vencido: true, label: 'Produto vencido' };
+  if (dias > VALIDADE_ALERTA_DIAS) return { dias, vencido: false, label: null };
+  return { dias, vencido: false, label: dias === 0 ? 'Vence hoje' : `Vence em ${dias} dia${dias === 1 ? '' : 's'}` };
+}
+
+function valorDoEstoque() {
+  return state.products.reduce((s, p) => s + (p.cost != null ? Number(p.cost) * Number(p.quantity) : 0), 0);
+}
+
+// "Atualizado" é o instante real mais recente entre edição de produto e
+// movimentação — não a hora de abrir a tela.
+function estoqueAtualizadoEm() {
+  const ts = state.products.map(p => p.updated_at)
+    .concat(state.movements.map(m => m.created_at))
+    .filter(Boolean).map(t => new Date(t).getTime()).filter(t => !isNaN(t));
+  return ts.length ? new Date(Math.max(...ts)) : null;
+}
+
+// ── Busca, filtros e ordenação ───────────────────────────────
+const STOCK_SORTS = [
+  { key: 'atencao', label: 'Prioridade (padrão)' },
+  { key: 'nome', label: 'Nome (A–Z)' },
+  { key: 'quantidade', label: 'Menor quantidade' },
+  { key: 'valor', label: 'Maior valor em estoque' },
+  { key: 'validade', label: 'Validade mais próxima' },
+];
+
+// Os chips de status são fixos; os de categoria nascem do que existe no banco.
+// Chip de categoria vazia seria um filtro que nunca acha nada.
+function stockFilters() {
+  const chips = [
+    { key: 'todos', label: 'Todos', icon: 'box' },
+    { key: 'critico', label: 'Reposição', icon: 'warning' },
+    { key: 'baixo', label: 'Baixo estoque', icon: 'bars' },
+  ];
+  if (state.products.some(p => p.favorite)) chips.push({ key: 'favoritos', label: 'Favoritos', icon: 'starFilled' });
+  if (state.products.some(p => validadeInfo(p))) chips.push({ key: 'vencendo', label: 'Validade', icon: 'clock' });
+  const cats = [...new Set(state.products.map(p => (p.category || '').trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  cats.forEach(c => chips.push({ key: 'cat:' + c, label: c, icon: STOCK_CATEGORY_ICONS[c.toLowerCase()] || 'box' }));
+  return chips;
+}
+
+function filteredSortedProducts() {
+  const termo = (state.stockSearch || '').trim().toLowerCase();
+  let rows = state.products.map(p => ({ p, status: stockStatus(p) }));
+
+  if (termo) {
+    rows = rows.filter(({ p }) =>
+      `${p.name || ''} ${p.brand || ''} ${p.category || ''} ${p.code || ''} ${p.supplier || ''}`
+        .toLowerCase().includes(termo));
+  }
+
+  const f = state.stockFilter || 'todos';
+  if (f === 'critico') rows = rows.filter(r => r.status === 'critico' || r.status === 'sem');
+  else if (f === 'baixo') rows = rows.filter(r => r.status === 'baixo');
+  else if (f === 'favoritos') rows = rows.filter(r => r.p.favorite);
+  else if (f === 'vencendo') rows = rows.filter(r => { const v = validadeInfo(r.p); return v && v.label; });
+  else if (f.startsWith('cat:')) rows = rows.filter(r => (r.p.category || '').trim() === f.slice(4));
+
+  const porNome = (a, b) => (a.p.name || '').localeCompare(b.p.name || '', 'pt-BR');
+  const ordem = state.stockSort || 'atencao';
+  rows.sort((a, b) => {
+    if (ordem === 'nome') return porNome(a, b);
+    if (ordem === 'quantidade') return Number(a.p.quantity) - Number(b.p.quantity) || porNome(a, b);
+    if (ordem === 'valor') {
+      const val = r => (r.p.cost != null ? Number(r.p.cost) * Number(r.p.quantity) : 0);
+      return val(b) - val(a) || porNome(a, b);
+    }
+    if (ordem === 'validade') {
+      // Sem validade cadastrada vai pro fim: não é urgência, é ausência de dado.
+      const d = r => (r.p.expires_at ? new Date(r.p.expires_at + 'T12:00:00').getTime() : Infinity);
+      return d(a) - d(b) || porNome(a, b);
+    }
+    return STOCK_STATUS_ORDEM[a.status] - STOCK_STATUS_ORDEM[b.status] || porNome(a, b);
+  });
+  return rows;
+}
+
+// ── A tela ───────────────────────────────────────────────────
+function renderStock() {
+  const total = state.products.length;
+  const contagem = { ok: 0, baixo: 0, critico: 0, sem: 0 };
+  state.products.forEach(p => { contagem[stockStatus(p)]++; });
+  const emEstoque = contagem.ok + contagem.baixo;
+  const urgentes = contagem.critico + contagem.sem;
+
+  document.getElementById('greeting').textContent = 'Estoque';
+  document.getElementById('greetingSub').textContent =
+    total ? `${total} produto${total === 1 ? '' : 's'} cadastrado${total === 1 ? '' : 's'}` : 'Nenhum produto ainda';
+
+  const atualizado = estoqueAtualizadoEm();
+  const resumo = [
+    { key: 'todos', st: 'ok', val: total, lbl: 'Produtos' },
+    { key: 'todos', st: 'ok', val: emEstoque, lbl: 'Em estoque' },
+    { key: 'baixo', st: 'baixo', val: contagem.baixo, lbl: 'Baixo estoque' },
+    { key: 'critico', st: 'critico', val: urgentes, lbl: 'Reposição urgente' },
+  ];
 
   app.innerHTML = `
-    <h2>Produtos</h2>
-    ${lista.length ? lista.map(p => `
-      <div class="list-row stock-row${precisaRepor(p) ? ' low' : ''}">
-        <button type="button" class="stock-info" data-edit="${p.id}" aria-label="Editar ${p.name}">
-          <div class="title">${p.name}${precisaRepor(p) ? ' <span class="tag tag-alert">Repor</span>' : ''}</div>
-          <div class="sub">${[p.brand, p.category].filter(Boolean).join(' · ') || 'Sem marca'} · mínimo ${fmtQtd(p.min_quantity)} ${p.unit}</div>
+    <h2 style="margin-top:8px;">Resumo do estoque</h2>
+    <div class="stock-summary stk-enter" style="animation-delay:0ms;">
+      ${resumo.map((r, i) => `
+        <button type="button" class="stk-sum-card st-${r.st} ${state.stockFilter === r.key && i > 1 ? 'active' : ''}" data-sum="${r.key}">
+          <span class="ssc-dot"></span>
+          <span>
+            <span class="ssc-val">${r.val}</span>
+            <span class="ssc-lbl">${r.lbl}</span>
+          </span>
         </button>
-        <div class="stock-qty">
-          <button type="button" class="qty-btn" data-dec="${p.id}" aria-label="Tirar 1 de ${p.name}">−</button>
-          <div class="qty-num">${fmtQtd(p.quantity)}<span class="qty-unit">${p.unit}</span></div>
-          <button type="button" class="qty-btn" data-inc="${p.id}" aria-label="Adicionar 1 em ${p.name}">+</button>
-        </div>
-      </div>
-    `).join('') : '<div class="empty">Nenhum produto cadastrado. Use o + para incluir o primeiro.</div>'}
+      `).join('')}
+    </div>
+
+    <div class="stock-value-card stk-enter" style="animation-delay:40ms;">
+      <span class="svc-icon">${ICONS.money}</span>
+      <span class="svc-body">
+        <span class="svc-val">€${valorDoEstoque().toFixed(0)}</span>
+        <span class="svc-lbl">Valor total do estoque</span>
+      </span>
+      ${atualizado ? `
+        <span class="svc-upd">
+          Atualizado ${daysAgoLabel(atualizado.toISOString())}
+          <strong>${fmtTime(atualizado)}</strong>
+        </span>` : ''}
+    </div>
+
+    <div class="clients-toolbar stk-enter" style="animation-delay:100ms;">
+      <label class="search-field" id="stockSearchField">
+        <span class="sf-icon">${ICONS.search}</span>
+        <input type="search" id="stockSearchInput" placeholder="Buscar produto, marca ou categoria…"
+               autocomplete="off" aria-label="Buscar produto" value="${esc(state.stockSearch || '')}">
+        <button class="search-clear" id="stockSearchClear" type="button" aria-label="Limpar busca">${ICONS.close}</button>
+      </label>
+      <button class="sort-btn" id="stockSortBtn" aria-label="Filtrar e ordenar">${ICONS.sliders}</button>
+    </div>
+
+    <div class="filter-chips stk-enter" id="stockFilterChips" style="animation-delay:160ms;">
+      ${stockFilters().map(f => `
+        <button class="filter-chip ${state.stockFilter === f.key ? 'active' : ''}" data-filter="${esc(f.key)}">
+          ${ICONS[f.icon] || ICONS.box}<span>${esc(f.label)}</span>
+        </button>
+      `).join('')}
+    </div>
+
+    <div id="stockListWrap" class="stk-enter" style="animation-delay:220ms;"></div>
+    <div id="stockInsightsWrap"></div>
   `;
 
-  app.querySelectorAll('[data-edit]').forEach(el => {
-    el.onclick = () => openProductModal(el.dataset.edit);
+  renderStockList();
+  renderStockInsights();
+  bindStockToolbar();
+}
+
+// Só a lista — chamada a cada tecla digitada na busca e a cada troca de chip.
+// Não pode passar por render(): o <input> seria recriado e perderia o foco.
+function renderStockList() {
+  const wrap = document.getElementById('stockListWrap');
+  if (!wrap) return;
+
+  if (!state.products.length) {
+    wrap.innerHTML = '<div class="empty">Nenhum produto cadastrado. Use o + para incluir o primeiro.</div>';
+    return;
+  }
+  const rows = filteredSortedProducts();
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="empty">${(state.stockSearch || '').trim()
+      ? 'Nenhum produto encontrado para essa busca.'
+      : 'Nenhum produto neste filtro.'}</div>`;
+    return;
+  }
+
+  // Os rótulos de grupo só fazem sentido na ordenação por prioridade — em
+  // "Nome (A–Z)" a lista não está agrupada e o título mentiria.
+  const agrupar = (state.stockSort || 'atencao') === 'atencao';
+  let html = agrupar ? '' : `<div class="stock-count-label">${rows.length} ${rows.length === 1 ? 'produto' : 'produtos'}</div>`;
+  const grupos = [
+    { st: 'critico', chaves: ['sem', 'critico'], label: 'Precisam de atenção' },
+    { st: 'baixo', chaves: ['baixo'], label: 'Estoque baixo' },
+    { st: 'ok', chaves: ['ok'], label: 'Em dia' },
+  ];
+
+  if (agrupar) {
+    grupos.forEach(g => {
+      const doGrupo = rows.filter(r => g.chaves.includes(r.status));
+      if (!doGrupo.length) return;
+      html += `<div class="stock-group-label st-${g.st}"><span class="sgl-dot"></span>${g.label} · ${doGrupo.length}</div>`;
+      html += doGrupo.map(productCardHtml).join('');
+    });
+  } else {
+    html += rows.map(productCardHtml).join('');
+  }
+
+  wrap.innerHTML = html;
+  bindStockCards(wrap);
+}
+
+function productCardHtml({ p, status }) {
+  const val = validadeInfo(p);
+  const dias = diasRestantes(p);
+  const notas = [];
+  if (val && val.label) {
+    notas.push(`<span class="pd-note ${val.vencido ? 'is-alert' : 'is-soft'}">${ICONS.clock}${esc(val.label)}</span>`);
+  }
+  if (dias != null) {
+    notas.push(`<span class="pd-note ${dias <= 7 ? 'is-alert' : ''}">${ICONS.trendUp}≈ ${dias} ${dias === 1 ? 'dia' : 'dias'} de estoque</span>`);
+  }
+  const identidade = [p.brand, p.category].filter(Boolean).map(esc).join(' · ') || 'Sem marca';
+  const codigo = p.code ? ` · <span class="pd-code">${esc(p.code)}</span>` : '';
+
+  return `
+    <div class="product-card st-${status} is-${status}" data-card="${p.id}">
+      <div class="pd-top">
+        <button type="button" class="pd-open" data-edit="${p.id}" aria-label="Abrir ${esc(p.name)}">
+          <span class="pd-thumb">${p.image_url
+            ? `<img src="${esc(p.image_url)}" alt="">`
+            : iconeDaCategoria(p.category)}</span>
+          <span class="pd-head">
+            <span class="pd-name">${esc(p.name)}</span>
+            <span class="pd-sub">${identidade}${codigo}</span>
+          </span>
+        </button>
+        <button type="button" class="pd-fav ${p.favorite ? 'is-on' : ''}" data-fav="${p.id}"
+                aria-label="${p.favorite ? 'Tirar' : 'Marcar'} ${esc(p.name)} dos favoritos"
+                aria-pressed="${p.favorite ? 'true' : 'false'}">${p.favorite ? ICONS.starFilled : ICONS.star}</button>
+      </div>
+      <div class="pd-bottom">
+        <div class="pd-meta">
+          <span class="stk-badge"><span class="sb-dot"></span>${STOCK_STATUS_LABEL[status]}</span>
+          <div class="pd-min">Mínimo ${fmtQtd(p.min_quantity)} ${esc(p.unit)}</div>
+        </div>
+        <div class="stock-qty">
+          <button type="button" class="qty-btn" data-dec="${p.id}" aria-label="Tirar 1 de ${esc(p.name)}" ${Number(p.quantity) <= 0 ? 'disabled' : ''}>−</button>
+          <button type="button" class="qty-num" data-qtyedit="${p.id}" aria-label="Editar quantidade de ${esc(p.name)}">
+            <span data-qty-for="${p.id}">${fmtQtd(p.quantity)}</span>
+            <span class="qty-unit">${esc(p.unit)}</span>
+          </button>
+          <button type="button" class="qty-btn" data-inc="${p.id}" aria-label="Adicionar 1 em ${esc(p.name)}">+</button>
+        </div>
+      </div>
+      ${notas.length ? `<div class="pd-notes">${notas.join('')}</div>` : ''}
+    </div>
+  `;
+}
+
+function bindStockCards(wrap) {
+  wrap.querySelectorAll('[data-edit]').forEach(el => { el.onclick = () => openProductModal(el.dataset.edit); });
+  wrap.querySelectorAll('[data-fav]').forEach(el => { el.onclick = () => alternarFavorito(el.dataset.fav); });
+  wrap.querySelectorAll('[data-qtyedit]').forEach(el => { el.onclick = () => openQtyEditSheet(el.dataset.qtyedit); });
+  wrap.querySelectorAll('[data-inc]').forEach(el => bindQtyHold(el, el.dataset.inc, 1));
+  wrap.querySelectorAll('[data-dec]').forEach(el => bindQtyHold(el, el.dataset.dec, -1));
+}
+
+// ── Sugestões, movimentações e estatísticas ──────────────────
+function renderStockInsights() {
+  const wrap = document.getElementById('stockInsightsWrap');
+  if (!wrap || !state.products.length) return;
+  wrap.innerHTML = suggestionsHtml() + movementsHtml() + statsHtml();
+  wrap.querySelectorAll('[data-edit]').forEach(el => { el.onclick = () => openProductModal(el.dataset.edit); });
+}
+
+function suggestionsHtml() {
+  const criticos = state.products
+    .filter(p => ['critico', 'sem', 'baixo'].includes(stockStatus(p)))
+    .map(p => ({ p, dias: diasRestantes(p), comprar: sugestaoCompra(p) }))
+    .filter(s => s.comprar != null)
+    .sort((a, b) => (a.dias == null ? Infinity : a.dias) - (b.dias == null ? Infinity : b.dias))
+    .slice(0, 3);
+
+  const vencendo = state.products.map(p => ({ p, v: validadeInfo(p) })).filter(x => x.v && x.v.label).slice(0, 2);
+
+  if (!criticos.length && !vencendo.length) {
+    // Sem histórico não existe sugestão possível. Dizer isso é melhor que
+    // esconder a seção — a Juliane fica sabendo que o número vai aparecer.
+    const semHistorico = state.products.some(p => precisaRepor(p)) && !state.movements.length;
+    if (!semHistorico) return '';
+    return `
+      <div class="stock-section">
+        <div class="stock-section-title"><span class="sst-icon">${ICONS.bulb}</span>Sugestões</div>
+        <div class="stock-empty-note">
+          <span class="sen-icon">${ICONS.history}</span>
+          <span>Ainda sem histórico de consumo. Conforme você registrar entradas e saídas, a previsão de duração e a quantidade sugerida de compra aparecem aqui.</span>
+        </div>
+      </div>`;
+  }
+
+  const cards = [
+    ...criticos.map(({ p, dias, comprar }) => {
+      const st = stockStatus(p);
+      return `
+        <button type="button" class="suggestion-card st-${st}" data-edit="${p.id}" style="width:100%;text-align:left;font-family:inherit;color:inherit;cursor:pointer;">
+          <span class="sc-icon">${ICONS.warning}</span>
+          <span class="sc-body">
+            <span class="sc-name">${esc(p.name)}</span>
+            <span class="sc-text">${dias != null
+              ? `Pelo consumo médio, restam cerca de <strong>${dias} ${dias === 1 ? 'dia' : 'dias'}</strong>. `
+              : ''}Sugestão: comprar <strong>${fmtQtd(comprar)} ${esc(p.unit)}</strong>.</span>
+          </span>
+        </button>`;
+    }),
+    ...vencendo.map(({ p, v }) => `
+      <button type="button" class="suggestion-card ${v.vencido ? 'st-critico' : 'st-baixo'}" data-edit="${p.id}" style="width:100%;text-align:left;font-family:inherit;color:inherit;cursor:pointer;">
+        <span class="sc-icon">${ICONS.clock}</span>
+        <span class="sc-body">
+          <span class="sc-name">${esc(p.name)}</span>
+          <span class="sc-text">${v.vencido
+            ? 'Produto <strong>vencido</strong> — vale conferir antes de usar.'
+            : `<strong>${esc(v.label)}</strong>. Priorize o uso deste antes de abrir outro.`}</span>
+        </span>
+      </button>`),
+  ];
+
+  return `
+    <div class="stock-section">
+      <div class="stock-section-title"><span class="sst-icon">${ICONS.bulb}</span>Sugestões</div>
+      ${cards.join('')}
+    </div>`;
+}
+
+const MOV_META = {
+  entrada: { st: 'ok', icon: 'arrowIn', sinal: '+', label: 'Entrada' },
+  saida: { st: 'critico', icon: 'arrowOut', sinal: '−', label: 'Saída' },
+  ajuste: { st: 'baixo', icon: 'sliders', sinal: '', label: 'Ajuste' },
+};
+const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+function rotuloDoDia(d) {
+  const dias = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0)) / 86400000);
+  if (dias <= 0) return 'Hoje';
+  if (dias === 1) return 'Ontem';
+  if (dias < 7) return DIAS_SEMANA[new Date(d).getDay()];
+  const { day, mon } = fmtDateShort(new Date(d).toISOString());
+  return `${day} ${mon}`;
+}
+
+function movementsHtml() {
+  if (!state.movements.length) {
+    return `
+      <div class="stock-section">
+        <div class="stock-section-title"><span class="sst-icon">${ICONS.history}</span>Movimentações recentes</div>
+        <div class="stock-empty-note">
+          <span class="sen-icon">${ICONS.history}</span>
+          <span>Nenhuma movimentação registrada ainda. Cada − e + no contador, e cada entrada ou saída pelo botão +, entra nesta lista.</span>
+        </div>
+      </div>`;
+  }
+
+  const recentes = state.movements.slice(0, MOVIMENTOS_VISIVEIS);
+  let ultimoDia = null;
+  const itens = recentes.map(m => {
+    const p = state.products.find(x => x.id === m.product_id);
+    const meta = MOV_META[m.kind] || MOV_META.ajuste;
+    const dia = rotuloDoDia(m.created_at);
+    const cabecalho = dia !== ultimoDia ? `<div class="mv-day-label">${dia}</div>` : '';
+    ultimoDia = dia;
+    const quem = [meta.label, m.actor].filter(Boolean).join(' · ');
+    return `
+      ${cabecalho}
+      <div class="mv-item st-${meta.st}">
+        <div class="mv-rail"><span class="mv-icon">${ICONS[meta.icon]}</span><span class="mv-line"></span></div>
+        <div class="mv-body">
+          <div class="mv-top">
+            <span class="mv-qty">${meta.sinal}${fmtQtd(m.quantity)}</span>
+            <span class="mv-name">${esc(p ? p.name : 'Produto removido')}</span>
+          </div>
+          <div class="mv-sub">${esc(quem)} · ${fmtTime(new Date(m.created_at))}${
+            m.resulting_quantity != null ? ` · ficou em ${fmtQtd(m.resulting_quantity)}${p ? ' ' + esc(p.unit) : ''}` : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="stock-section">
+      <div class="stock-section-title">
+        <span class="sst-icon">${ICONS.history}</span>Movimentações recentes
+        <span class="sst-count">${state.movements.length} no total</span>
+      </div>
+      ${itens}
+    </div>`;
+}
+
+function statsHtml() {
+  const saidas = state.movements.filter(m => m.kind === 'saida');
+  const reposicao = state.products
+    .filter(p => ['critico', 'sem', 'baixo'].includes(stockStatus(p)))
+    .reduce((s, p) => {
+      const q = sugestaoCompra(p) ?? Math.max(0, Number(p.min_quantity) * ESTOQUE_BAIXO_FATOR - Number(p.quantity));
+      return s + (p.cost != null ? q * Number(p.cost) : 0);
+    }, 0);
+
+  // Sem saída registrada não há "mais usado" nem "categoria que mais consome" —
+  // a seção mostra só o que dá pra afirmar (valor e gasto estimado).
+  let usoHtml = '';
+  if (saidas.length) {
+    const porProduto = {}, porCategoria = {};
+    saidas.forEach(m => {
+      const p = state.products.find(x => x.id === m.product_id);
+      if (!p) return;
+      porProduto[p.name] = (porProduto[p.name] || 0) + Number(m.quantity);
+      const cat = (p.category || 'Sem categoria').trim();
+      porCategoria[cat] = (porCategoria[cat] || 0) + Number(m.quantity);
+    });
+    const topProduto = Object.entries(porProduto).sort((a, b) => b[1] - a[1])[0];
+    const topCategoria = Object.entries(porCategoria).sort((a, b) => b[1] - a[1])[0];
+    if (topProduto) {
+      usoHtml = `
+        <div class="stock-stats">
+          <div class="ss-head">No consumo dos últimos ${CONSUMO_JANELA_DIAS} dias</div>
+          <div class="ss-pair">
+            <div class="ss-cell">
+              <div class="ss-val" style="font-size:15px;">${esc(topProduto[0])}</div>
+              <div class="ss-lbl">Produto mais usado</div>
+            </div>
+            <div class="ss-cell">
+              <div class="ss-val" style="font-size:15px;">${esc(topCategoria ? topCategoria[0] : '—')}</div>
+              <div class="ss-lbl">Categoria com maior consumo</div>
+            </div>
+          </div>
+        </div>`;
+    }
+  }
+
+  return `
+    <div class="stock-section">
+      <div class="stock-section-title"><span class="sst-icon">${ICONS.bars}</span>Estatísticas</div>
+      <div class="stock-stats">
+        <div class="ss-pair">
+          <div class="ss-cell">
+            <div class="ss-val">€${valorDoEstoque().toFixed(0)}</div>
+            <div class="ss-lbl">Valor total parado em estoque</div>
+          </div>
+          <div class="ss-cell">
+            <div class="ss-val">€${reposicao.toFixed(0)}</div>
+            <div class="ss-lbl">Gasto estimado pra repor o que falta</div>
+          </div>
+        </div>
+      </div>
+      ${usoHtml}
+    </div>`;
+}
+
+// ── Toolbar (busca, chips, ordenação) ────────────────────────
+function bindStockToolbar() {
+  const field = document.getElementById('stockSearchField');
+  const input = document.getElementById('stockSearchInput');
+  const clear = document.getElementById('stockSearchClear');
+
+  if (input) {
+    field.classList.toggle('has-text', !!input.value);
+    input.oninput = () => {
+      state.stockSearch = input.value;
+      field.classList.toggle('has-text', !!input.value);
+      renderStockList();
+    };
+    input.onfocus = () => field.classList.add('is-focused');
+    input.onblur = () => field.classList.remove('is-focused');
+  }
+  if (clear) {
+    // mousedown, não click: o blur do input dispararia antes e o botão já teria
+    // sumido junto com a classe .has-text.
+    clear.onmousedown = (e) => {
+      e.preventDefault();
+      state.stockSearch = '';
+      input.value = '';
+      field.classList.remove('has-text');
+      input.focus();
+      renderStockList();
+    };
+  }
+
+  document.querySelectorAll('#stockFilterChips .filter-chip').forEach(chip => {
+    chip.onclick = () => { aplicarFiltroEstoque(chip.dataset.filter); };
   });
-  app.querySelectorAll('[data-inc]').forEach(el => {
-    el.onclick = () => ajustarQuantidade(el.dataset.inc, 1);
+  document.querySelectorAll('[data-sum]').forEach(btn => {
+    btn.onclick = () => aplicarFiltroEstoque(btn.dataset.sum);
   });
-  app.querySelectorAll('[data-dec]').forEach(el => {
-    el.onclick = () => ajustarQuantidade(el.dataset.dec, -1);
+  const sortBtn = document.getElementById('stockSortBtn');
+  if (sortBtn) sortBtn.onclick = openStockSortSheet;
+}
+
+// Troca de filtro sem passar por render(): só as classes .active mudam e a
+// lista é redesenhada. Se o render cheio rodasse, a animação de entrada
+// tocaria de novo a cada chip — e a busca perderia o foco.
+function aplicarFiltroEstoque(key) {
+  state.stockFilter = key;
+  document.querySelectorAll('#stockFilterChips .filter-chip')
+    .forEach(c => c.classList.toggle('active', c.dataset.filter === key));
+  document.querySelectorAll('[data-sum]')
+    .forEach((c, i) => c.classList.toggle('active', i > 1 && c.dataset.sum === key));
+  renderStockList();
+}
+
+function openStockSortSheet() {
+  modalContainer.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet">
+        <h2>Ordenar por</h2>
+        ${STOCK_SORTS.map(s => `
+          <button class="sheet-option ${state.stockSort === s.key ? 'is-selected' : ''}" data-sort="${s.key}">
+            <span>${s.label}</span>
+            <span class="so-check">${ICONS.check}</span>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+  modalContainer.querySelectorAll('.sheet-option[data-sort]').forEach(btn => {
+    btn.onclick = () => {
+      state.stockSort = btn.dataset.sort;
+      closeModal();
+      renderStockList();
+    };
   });
 }
 
-// Ajuste rápido do balcão: usou um, tira um. Atualiza a tela na hora e só
-// depois confirma no banco — se der erro, volta ao valor anterior.
+// ── Contador: toque simples, segurar e edição manual ─────────
+const HOLD_INICIO_MS = 420;  // antes disso ainda é um toque simples
+const HOLD_PASSO_MS = 110;   // depois, um passo a cada
+
+// Segurar não pode virar uma gravação por passo: os passos são acumulados na
+// tela e só o total vai pro banco quando o dedo solta — uma escrita, uma
+// movimentação. Por isso o número é atualizado no DOM direto: re-renderizar a
+// lista no meio do gesto destruiria o próprio botão que está sendo apertado.
+function bindQtyHold(btn, produtoId, sinal) {
+  let inicio = null, repete = null, acumulado = 0;
+
+  const passo = () => {
+    const p = state.products.find(x => x.id === produtoId);
+    if (!p) return;
+    if (sinal < 0 && Number(p.quantity) + acumulado <= 0) return;
+    acumulado += sinal;
+    const alvo = document.querySelector(`[data-qty-for="${produtoId}"]`);
+    if (alvo) alvo.textContent = fmtQtd(Number(p.quantity) + acumulado);
+  };
+
+  const soltar = () => {
+    clearTimeout(inicio); clearInterval(repete);
+    inicio = repete = null;
+    if (!acumulado) return;
+    const delta = acumulado;
+    acumulado = 0;
+    ajustarQuantidade(produtoId, delta);
+  };
+
+  btn.onpointerdown = (e) => {
+    e.preventDefault();
+    passo();
+    inicio = setTimeout(() => { repete = setInterval(passo, HOLD_PASSO_MS); }, HOLD_INICIO_MS);
+  };
+  btn.onpointerup = soltar;
+  btn.onpointercancel = soltar;
+  btn.onpointerleave = soltar;
+}
+
+// Ajuste do balcão: usou um, tira um. A tela já mostra o valor novo (o gesto
+// atualizou o DOM); aqui confirma no banco e volta atrás se falhar.
 async function ajustarQuantidade(id, delta) {
   const p = state.products.find(x => x.id === id);
   if (!p) return;
   const anterior = Number(p.quantity);
   const nova = Math.max(0, anterior + delta);
-  if (nova === anterior) return;
+  if (nova === anterior) { renderStockList(); return; }
   p.quantity = nova;
-  renderStock();
+  renderStockList();
 
   // O .select() é o que prova que gravou: com a sessão expirada a RLS deixa o
   // update passar sem tocar em nenhuma linha, e sem isso a tela mentiria.
@@ -4347,16 +5245,195 @@ async function ajustarQuantidade(id, delta) {
     .update({ quantity: nova, updated_at: new Date().toISOString() }).eq('id', id).select('id');
   if (error || !data || !data.length) {
     p.quantity = anterior;
-    renderStock();
+    renderStockList();
     showToast(error ? 'Não deu pra salvar: ' + error.message : 'Não foi possível salvar — faça login novamente.');
     return;
   }
+  await registrarMovimento(p, delta > 0 ? 'entrada' : 'saida', Math.abs(nova - anterior), nova, null);
+  renderStockInsights();
   if (precisaRepor(p)) showToast(`${p.name} chegou no mínimo — hora de repor`);
+}
+
+async function alternarFavorito(id) {
+  const p = state.products.find(x => x.id === id);
+  if (!p) return;
+  const novo = !p.favorite;
+  p.favorite = novo;
+  renderStockList();
+  const { data, error } = await sb.from('products')
+    .update({ favorite: novo, updated_at: new Date().toISOString() }).eq('id', id).select('id');
+  if (error || !data || !data.length) {
+    p.favorite = !novo;
+    renderStockList();
+    showToast('Não foi possível salvar — faça login novamente.');
+    return;
+  }
+  // O chip "Favoritos" só existe quando há algum favorito: marcar o primeiro
+  // (ou desmarcar o último) muda a faixa de chips, não só a lista.
+  if (novo || !state.products.some(x => x.favorite)) render();
+}
+
+// Toque no número abre a edição manual. É toque simples, não duplo: em tela
+// sensível o duplo toque disputa com o zoom do navegador e falha metade das
+// vezes — e o número é um alvo próprio, entre o − e o +.
+function openQtyEditSheet(id) {
+  const p = state.products.find(x => x.id === id);
+  if (!p) return;
+  modalContainer.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet">
+        <h2>${esc(p.name)}</h2>
+        <div class="modal-section">
+          <div class="modal-field-label">Quantidade em ${esc(p.unit)}</div>
+          <input type="number" id="qtyEditInput" min="0" step="0.5" inputmode="decimal" value="${fmtQtd(p.quantity).replace(',', '.')}">
+          <div class="modal-field-label">Motivo (opcional)</div>
+          <input type="text" id="qtyEditNote" placeholder="Ex.: contagem do mês" autocomplete="off">
+        </div>
+        <div class="slot-note">Entra no histórico como ajuste manual, não como consumo.</div>
+        <button class="btn btn-primary" id="qtyEditSave">Salvar quantidade</button>
+        <button class="btn btn-ghost" id="modalClose">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalClose').onclick = closeModal;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+  const campo = document.getElementById('qtyEditInput');
+  campo.focus();
+  campo.select();
+
+  document.getElementById('qtyEditSave').onclick = async () => {
+    const nova = Math.max(0, Number(campo.value) || 0);
+    const anterior = Number(p.quantity);
+    if (nova === anterior) { closeModal(); return; }
+    const { data, error } = await sb.from('products')
+      .update({ quantity: nova, updated_at: new Date().toISOString() }).eq('id', p.id).select('id');
+    if (error || !data || !data.length) {
+      showToast(error ? 'Não deu pra salvar: ' + error.message : 'Não foi possível salvar — faça login novamente.');
+      return;
+    }
+    p.quantity = nova;
+    await registrarMovimento(p, 'ajuste', Math.abs(nova - anterior), nova,
+      document.getElementById('qtyEditNote').value.trim() || null);
+    closeModal();
+    showToast('Quantidade atualizada');
+    renderStockList();
+    renderStockInsights();
+  };
+}
+
+// ── Folha do + (FAB) ─────────────────────────────────────────
+// "Escanear código" e "Importar produtos" ficaram de fora de propósito: não
+// existem no app, e botão que não faz nada é pior que botão nenhum — mesma
+// decisão já tomada em Clientes com "Importar contatos".
+function openStockFabSheet() {
+  const fab = document.getElementById('fabNewAppt');
+  if (fab) fab.classList.add('is-open');
+  const fechar = () => { if (fab) fab.classList.remove('is-open'); closeModal(); };
+
+  modalContainer.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet">
+        <h2>Estoque</h2>
+        <button class="sheet-option" data-acao="novo"><span>Cadastrar novo produto</span></button>
+        <button class="sheet-option" data-acao="entrada" ${state.products.length ? '' : 'disabled style="opacity:.4;"'}><span>Registrar entrada</span></button>
+        <button class="sheet-option" data-acao="saida" ${state.products.length ? '' : 'disabled style="opacity:.4;"'}><span>Registrar saída</span></button>
+        <button class="btn btn-ghost" id="modalClose">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalClose').onclick = fechar;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') fechar(); };
+  modalContainer.querySelectorAll('[data-acao]').forEach(btn => {
+    btn.onclick = () => {
+      const acao = btn.dataset.acao;
+      fechar();
+      if (acao === 'novo') openProductModal();
+      else openMovementSheet(acao);
+    };
+  });
+}
+
+function openMovementSheet(kind) {
+  const entrada = kind === 'entrada';
+  const lista = [...state.products].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  modalContainer.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet">
+        <h2>${entrada ? 'Registrar entrada' : 'Registrar saída'}</h2>
+        <div class="modal-section">
+          <div class="modal-field-label">Produto</div>
+          <select id="mvProduct">
+            ${lista.map(p => `<option value="${p.id}">${esc(p.name)}${p.brand ? ' · ' + esc(p.brand) : ''}</option>`).join('')}
+          </select>
+          <div class="modal-field-label">Quantidade</div>
+          <input type="number" id="mvQty" min="0" step="0.5" inputmode="decimal" value="1">
+          <div class="modal-field-label">Observação (opcional)</div>
+          <input type="text" id="mvNote" placeholder="${entrada ? 'Ex.: compra do fornecedor' : 'Ex.: usado na coloração'}" autocomplete="off">
+        </div>
+        <div class="slot-note" id="mvHint"></div>
+        <button class="btn btn-primary" id="mvSave">${entrada ? 'Registrar entrada' : 'Registrar saída'}</button>
+        <button class="btn btn-ghost" id="modalClose">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalClose').onclick = closeModal;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+
+  const sel = document.getElementById('mvProduct');
+  const hint = document.getElementById('mvHint');
+  const atualizarHint = () => {
+    const p = state.products.find(x => x.id === sel.value);
+    hint.textContent = p ? `Agora: ${fmtQtd(p.quantity)} ${p.unit} · mínimo ${fmtQtd(p.min_quantity)} ${p.unit}` : '';
+  };
+  sel.onchange = atualizarHint;
+  atualizarHint();
+
+  document.getElementById('mvSave').onclick = async () => {
+    const p = state.products.find(x => x.id === sel.value);
+    const qtd = Math.abs(Number(document.getElementById('mvQty').value) || 0);
+    if (!p || !qtd) { showToast('Informe uma quantidade'); return; }
+    const anterior = Number(p.quantity);
+    const nova = Math.max(0, entrada ? anterior + qtd : anterior - qtd);
+
+    const { data, error } = await sb.from('products')
+      .update({ quantity: nova, updated_at: new Date().toISOString() }).eq('id', p.id).select('id');
+    if (error || !data || !data.length) {
+      showToast(error ? 'Não deu pra salvar: ' + error.message : 'Não foi possível salvar — faça login novamente.');
+      return;
+    }
+    p.quantity = nova;
+    await registrarMovimento(p, kind, Math.abs(nova - anterior), nova,
+      document.getElementById('mvNote').value.trim() || null);
+    closeModal();
+    showToast(`${entrada ? 'Entrada' : 'Saída'} registrada · ${p.name}`);
+    renderStockList();
+    renderStockInsights();
+    if (precisaRepor(p)) showToast(`${p.name} chegou no mínimo — hora de repor`);
+  };
+}
+
+// Foto do produto. Bucket próprio (product-photos), mesma compressão das fotos
+// de cliente — frasco não precisa de mais resolução que cabelo.
+async function uploadProductPhoto(produtoId, file) {
+  showToast('Enviando foto…');
+  const compressed = await compressImage(file, 900, 0.8);
+  const path = `${produtoId}/${Date.now()}.jpg`;
+  const { error: upErr } = await sb.storage.from('product-photos').upload(path, compressed, { contentType: 'image/jpeg' });
+  if (upErr) { showToast('Erro ao enviar foto: ' + upErr.message); return null; }
+  const { data: pub } = sb.storage.from('product-photos').getPublicUrl(path);
+  if (!pub || !pub.publicUrl) { showToast('Foto não disponível nesta versão'); return null; }
+  return pub.publicUrl;
 }
 
 function openProductModal(id) {
   const p = id ? state.products.find(x => x.id === id) : null;
   const v = (x, alt = '') => (x == null ? alt : String(x));
+  // Foto escolhida antes de salvar fica aqui até o Salvar gravar a URL junto
+  // com o resto — subir a foto e o produto em dois passos deixaria produto sem
+  // foto se o segundo falhasse.
+  let fotoNova = null;
+
+  const historico = p ? movimentosDoProduto(p.id) : [];
 
   modalContainer.innerHTML = `
     <div class="modal-overlay" id="modalOverlay">
@@ -4364,38 +5441,91 @@ function openProductModal(id) {
         <button class="modal-close" id="modalClose" aria-label="Fechar">✕</button>
         <h2>${p ? 'Editar produto' : 'Novo produto'}</h2>
 
-        <label for="prodName">Produto</label>
-        <input type="text" id="prodName" placeholder="Ex.: Pó descolorante" value="${p ? v(p.name).replace(/"/g, '&quot;') : ''}">
-
-        <label for="prodBrand">Marca</label>
-        <input type="text" id="prodBrand" placeholder="Ex.: Wella" value="${p ? v(p.brand).replace(/"/g, '&quot;') : ''}">
-
-        <label for="prodCategory">Categoria</label>
-        <input type="text" id="prodCategory" placeholder="Ex.: Coloração" value="${p ? v(p.category).replace(/"/g, '&quot;') : ''}">
-
-        <div class="seg-row">
-          <div>
-            <label for="prodQty">Quantidade</label>
-            <input type="number" id="prodQty" min="0" step="0.5" inputmode="decimal" value="${p ? v(p.quantity, '0') : '0'}">
+        <div class="modal-section">
+          <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px;">
+            <button type="button" class="pd-thumb" id="prodPhotoBtn" style="width:56px;height:56px;border:none;cursor:pointer;"
+                    aria-label="Escolher foto do produto">
+              ${p && p.image_url ? `<img src="${esc(p.image_url)}" alt="">` : ICONS.camera}
+            </button>
+            <div style="font-size:12px;color:var(--color-neutral-600);line-height:1.4;">
+              Foto do produto<br>Opcional — ajuda a achar na prateleira.
+            </div>
+            <input type="file" id="prodPhotoInput" accept="image/*" style="display:none;">
           </div>
-          <div>
-            <label for="prodMin">Mínimo</label>
-            <input type="number" id="prodMin" min="0" step="0.5" inputmode="decimal" value="${p ? v(p.min_quantity, '0') : '0'}">
-          </div>
-          <div>
-            <label for="prodUnit">Unidade</label>
-            <select id="prodUnit" style="border-radius:999px;">
-              ${UNIDADES.map(u => `<option value="${u}" ${p && p.unit === u ? 'selected' : ''}>${u}</option>`).join('')}
-            </select>
-          </div>
+
+          <div class="modal-field-label">Produto</div>
+          <input type="text" id="prodName" placeholder="Ex.: Pó descolorante" value="${p ? esc(p.name) : ''}">
+
+          <div class="modal-field-label">Marca</div>
+          <input type="text" id="prodBrand" placeholder="Ex.: Wella" value="${p ? esc(p.brand) : ''}">
+
+          <div class="modal-field-label">Categoria</div>
+          <input type="text" id="prodCategory" placeholder="Ex.: Coloração" value="${p ? esc(p.category) : ''}">
+
+          <div class="modal-field-label">Código interno</div>
+          <input type="text" id="prodCode" placeholder="Opcional — o código que você usa" value="${p ? esc(p.code) : ''}">
+
+          <div class="modal-field-label">Fornecedor</div>
+          <input type="text" id="prodSupplier" placeholder="Opcional" value="${p ? esc(p.supplier) : ''}">
         </div>
-        <div class="slot-note">O aviso de repor aparece quando a quantidade chega no mínimo.</div>
 
-        <label for="prodCost">Custo por unidade (€)</label>
-        <input type="number" id="prodCost" min="0" step="0.01" inputmode="decimal" value="${p && p.cost != null ? v(p.cost) : ''}">
+        <div class="modal-section">
+          <div class="seg-row">
+            <div>
+              <div class="modal-field-label">Quantidade</div>
+              <input type="number" id="prodQty" min="0" step="0.5" inputmode="decimal" value="${p ? v(p.quantity, '0') : '0'}">
+            </div>
+            <div>
+              <div class="modal-field-label">Mínimo</div>
+              <input type="number" id="prodMin" min="0" step="0.5" inputmode="decimal" value="${p ? v(p.min_quantity, '0') : '0'}">
+            </div>
+            <div>
+              <div class="modal-field-label">Unidade</div>
+              <select id="prodUnit" style="border-radius:999px;">
+                ${UNIDADES.map(u => `<option value="${u}" ${p && p.unit === u ? 'selected' : ''}>${u}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="slot-note">O aviso de repor aparece quando a quantidade chega no mínimo.</div>
 
-        <label for="prodNotes">Observações</label>
-        <textarea id="prodNotes" placeholder="Fornecedor, validade, onde fica guardado…">${p ? v(p.notes) : ''}</textarea>
+          <div class="modal-field-label">Custo por unidade (€)</div>
+          <input type="number" id="prodCost" min="0" step="0.01" inputmode="decimal" value="${p && p.cost != null ? v(p.cost) : ''}">
+
+          <div class="modal-field-label">Validade</div>
+          <input type="date" id="prodExpires" value="${p ? esc(p.expires_at) : ''}">
+
+          <div class="modal-field-label">Observações</div>
+          <textarea id="prodNotes" placeholder="Onde fica guardado, diluição, o que for útil…">${p ? esc(p.notes) : ''}</textarea>
+        </div>
+
+        ${p ? `
+          <div class="stock-section" style="margin-top:20px;">
+            <div class="stock-section-title">
+              <span class="sst-icon">${ICONS.history}</span>Histórico do produto
+              <span class="sst-count">${historico.length} ${historico.length === 1 ? 'registro' : 'registros'}</span>
+            </div>
+            ${historico.length ? historico.slice(0, 20).map(m => {
+              const meta = MOV_META[m.kind] || MOV_META.ajuste;
+              return `
+                <div class="mv-item st-${meta.st}">
+                  <div class="mv-rail"><span class="mv-icon">${ICONS[meta.icon]}</span><span class="mv-line"></span></div>
+                  <div class="mv-body">
+                    <div class="mv-top">
+                      <span class="mv-qty">${meta.sinal}${fmtQtd(m.quantity)}</span>
+                      <span class="mv-name">${meta.label}${m.note ? ' · ' + esc(m.note) : ''}</span>
+                    </div>
+                    <div class="mv-sub">${fmtDate(m.created_at)} · ${fmtTime(m.created_at)}${
+                      m.actor ? ' · ' + esc(m.actor) : ''}${
+                      m.resulting_quantity != null ? ` · ficou em ${fmtQtd(m.resulting_quantity)} ${esc(p.unit)}` : ''}</div>
+                  </div>
+                </div>`;
+            }).join('') : `
+              <div class="stock-empty-note">
+                <span class="sen-icon">${ICONS.history}</span>
+                <span>Nada movimentado ainda. Entradas, saídas e ajustes deste produto aparecem aqui, com data, hora e quem registrou.</span>
+              </div>`}
+          </div>
+        ` : ''}
 
         <button class="btn btn-primary" id="saveProduct">Salvar produto</button>
         ${p ? '<button class="btn btn-ghost" id="deleteProduct">Remover do estoque</button>' : ''}
@@ -4411,26 +5541,55 @@ function openProductModal(id) {
     document.getElementById('prodError').innerHTML = msg ? `<div class="login-error">${msg}</div>` : '';
   };
 
+  const fileInput = document.getElementById('prodPhotoInput');
+  const photoBtn = document.getElementById('prodPhotoBtn');
+  photoBtn.onclick = () => fileInput.click();
+  fileInput.onchange = async () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    // Produto novo ainda não tem id — o caminho no bucket usa um temporário e o
+    // arquivo é o mesmo; o que importa é a URL pública, não a pasta.
+    const url = await uploadProductPhoto(p ? p.id : 'novos', file);
+    if (!url) return;
+    fotoNova = url;
+    photoBtn.innerHTML = `<img src="${esc(url)}" alt="">`;
+    showToast('Foto pronta — salve o produto');
+  };
+
   document.getElementById('saveProduct').onclick = async () => {
     const name = document.getElementById('prodName').value.trim();
     if (!name) { erro('Dê um nome ao produto.'); return; }
     const custo = document.getElementById('prodCost').value.trim();
+    const qtdNova = Math.max(0, Number(document.getElementById('prodQty').value) || 0);
+    const qtdAnterior = p ? Number(p.quantity) : null;
     const payload = {
       name,
       brand: document.getElementById('prodBrand').value.trim() || null,
       category: document.getElementById('prodCategory').value.trim() || null,
+      code: document.getElementById('prodCode').value.trim() || null,
+      supplier: document.getElementById('prodSupplier').value.trim() || null,
       unit: document.getElementById('prodUnit').value,
-      quantity: Math.max(0, Number(document.getElementById('prodQty').value) || 0),
+      quantity: qtdNova,
       min_quantity: Math.max(0, Number(document.getElementById('prodMin').value) || 0),
       cost: custo === '' ? null : Number(custo),
+      expires_at: document.getElementById('prodExpires').value || null,
       notes: document.getElementById('prodNotes').value.trim() || null,
       updated_at: new Date().toISOString(),
     };
+    if (fotoNova) payload.image_url = fotoNova;
+
     const { data, error } = p
       ? await sb.from('products').update(payload).eq('id', p.id).select('id')
       : await sb.from('products').insert(payload).select('id');
     if (error) { erro(error.message); return; }
     if (!data || !data.length) { erro('Não foi possível salvar — faça login novamente.'); return; }
+
+    // Mexer na quantidade pelo formulário também é movimentação — senão o
+    // histórico teria buracos e a previsão sairia de um saldo que ninguém sabe
+    // de onde veio.
+    if (p && qtdAnterior != null && qtdNova !== qtdAnterior) {
+      await registrarMovimento({ ...p, quantity: qtdNova }, 'ajuste', Math.abs(qtdNova - qtdAnterior), qtdNova, 'Editado no cadastro');
+    }
     closeModal();
     showToast(p ? 'Produto atualizado' : 'Produto cadastrado');
     await loadProducts();
@@ -4514,6 +5673,12 @@ function renderLogin(errorMsg) {
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
+    // Quem registrou a movimentação. Só existe uma conta hoje, mas o histórico
+    // guarda o nome mesmo assim — sem isso, "quem tirou 2 luvas?" fica sem
+    // resposta no dia em que houver uma segunda pessoa.
+    const email = (session.user && session.user.email) || '';
+    const apelido = email.split('@')[0].replace(/[._-]+/g, ' ').trim();
+    state.userLabel = apelido ? apelido.charAt(0).toUpperCase() + apelido.slice(1) : 'Painel';
     document.querySelector('nav').style.display = 'flex';
     document.getElementById('logoutBtn').style.display = 'inline';
     loadAll();
@@ -4776,7 +5941,7 @@ function renderNewApptModal(errorMsg) {
 // está. A Agenda ganhou o próprio + na pílula do mês (#agendaAddBtn).
 document.getElementById('fabNewAppt').onclick = () => {
   if (state.tab === 'clients') openNewClientSheet();
-  else openProductModal();
+  else openStockFabSheet();
 };
 
 // "Hoje" é elemento fixo fora do #app, então o clique é amarrado uma vez só
