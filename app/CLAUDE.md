@@ -174,42 +174,60 @@ de campos soltos e virou um perfil com hierarquia por espaçamento
 (`.profile-section`, 32px entre blocos) em vez de caixa dentro de caixa —
 "menos caixas, mais hierarquia" foi o pedido explícito.
 
-- **Header**: avatar 72px, nome como maior elemento tipográfico da tela,
+- **Header**: avatar 72px com badge de estrela sobreposto no canto (só
+  quando VIP, `.ph-vip-badge`, cor `--color-accent-700` — nunca `--color-accent-2`,
+  que é reservado pra alerta), nome como maior elemento tipográfico da tela,
   `.vip-pill` clicável abaixo do nome (ícone de estrela outline/preenchida,
   `ICONS.star`/`ICONS.starFilled` — o único lugar do app onde os dois
   variantes convivem, e é intencional: outline = não marcada, preenchida =
-  marcada), "Cliente desde {mês/ano}" a partir de `c.created_at` (dado real,
-  não inventado). **Não** entrou um menu de ações no canto superior direito
-  que o prompt pedia — não existe nenhuma ação além das que já têm lugar
-  próprio na tela, e um menu vazio seria UI decorativa.
+  marcada), "Cliente desde {ano}" a partir de `c.created_at` (dado real, não
+  inventado). Botões Ligar/WhatsApp viraram pill preenchido
+  (`--color-accent-100`, sem borda) em vez de outline. **Não** entrou um menu
+  de ações no canto superior direito que o prompt pedia — não existe nenhuma
+  ação além das que já têm lugar próprio na tela, e um menu vazio seria UI
+  decorativa (decisão confirmada com o Raphael).
+- **Métricas** (`.stat-row`): ícone acima de cada número (`ICONS.bag`,
+  `ICONS.money`, `ICONS.calendar`), label "Total investido" (não "gasto"),
+  e "Última visita" mostra data curta (`fmtDateShort()`, "09 Ago") com
+  `daysAgoLabel()` embaixo ("há 3 dias") — a data completa (dd/mm/aaaa)
+  continua em `clientStats().lastVisit`, usada na lista de clientes.
 - **Diagnóstico do cabelo**: os 4 campos (`hair_thickness`, `hair_density`,
-  `hair_porosity`, `hair_elasticity`) trocaram de `<select>` por segmented
-  control — reaproveita `.seg-toggle` (o mesmo toggle Mês/Semana de Insights)
-  com o modificador `.seg-full` (largura cheia, botões equal-width), em vez
-  de introduzir um componente novo. `hairSegmentedHtml()` substituiu
+  `hair_porosity`, `hair_elasticity`) trocaram de `<select>` por chips soltos
+  (`.hair-chip-row`/`.hair-chip`, não o `.seg-toggle` unido de Insights —
+  cada opção é seu próprio botão-pílula com espaço entre elas, pra bater com
+  a referência visual que o Raphael trouxe). `hairSegmentedHtml()` substituiu
   `hairSelectHtml()`. Clicar no valor já ativo desmarca (mantém a opção de
-  limpar o campo que o `<select>` tinha com "Selecione…"). Grava com
-  `.select()` no fim, mesmo padrão de escrita autenticada de sempre.
+  limpar o campo que o `<select>` tinha com "Selecione…"). Tudo dentro de um
+  card colapsável (`.diag-card`, fundo `--color-neutral-100`, chevron que
+  gira 90° — `state.clientDiagCollapsed`, reseta ao trocar de cliente junto
+  com `clientHistoryExpanded`). Grava com `.select()` no fim, mesmo padrão de
+  escrita autenticada de sempre.
 - **Fotos do cabelo**: com 0 fotos vira um estado vazio convidativo
-  (`.photo-empty-state`, ícone de câmera + "Adicionar foto" + "Toque para
-  adicionar"); com 1+ fotos vira uma galeria horizontal com scroll
-  (`.photo-scroll`) e o botão de adicionar no fim (`.photo-add-chip`). Essas
-  classes são exclusivas do perfil da cliente — `renderApptDetail()` (fotos
-  do atendimento) continua no grid antigo (`.photo-grid`/`.photo-add-tile`),
-  não foi tocado por escopo (o pedido era só a tela de perfil).
+  (`.photo-empty-state`, ícone de câmera + "Adicionar fotos" + "Arraste ou
+  toque para adicionar" + legenda `.photo-hint`); com 1+ fotos vira uma
+  galeria horizontal com scroll (`.photo-scroll`) e o botão de adicionar no
+  fim (`.photo-add-chip`). Essas classes são exclusivas do perfil da
+  cliente — `renderApptDetail()` (fotos do atendimento) continua no grid
+  antigo (`.photo-grid`/`.photo-add-tile`), não foi tocado por escopo (o
+  pedido era só a tela de perfil).
+- **Serviços favoritos**: ícone é `ICONS.star` (mesmo da tag VIP, reforça a
+  metáfora "favorito" — antes era `ICONS.heart`, removido do `ICONS` por não
+  ter mais uso). O chip "+ Adicionar serviço" que a referência mostrava
+  **não** entrou — favoritos são calculados automaticamente pela frequência
+  de agendamentos, não é campo editável hoje; adicionar isso seria
+  funcionalidade nova, fora do escopo combinado com o Raphael.
 - **Histórico de visitas**: virou timeline vertical (`.visit-timeline`,
   `.timeline-item`) com linha conectora entre os pontos (`.ti-line`, some no
-  último item) em vez da lista com `.list-row.history-row` da leva anterior
-  desta mesma fase — evolução do que já tinha sido feito, não convive com a
-  versão antiga.
+  último item) e data empilhada em 3 linhas (`.ti-date` > `.ti-day`/`.ti-mon`/`.ti-year`,
+  via `fmtDateShort()`) em vez de uma linha só.
 - **Ícones**: `ICONS` ganhou `star`/`starFilled`, `phone`, `chat`,
-  `clipboard`, `camera`, `heart`, `history`, `trash`, `plus` — todos no
+  `clipboard`, `camera`, `history`, `trash`, `plus`, `bag`, `drop` — todos no
   mesmo traço 1.6px dos ícones existentes. Substituíram os emojis que a tela
   usava (📞💬📋🗑☆★), única exceção sendo o restante do app, que ainda tem
   emoji em outras telas fora do escopo deste pedido.
 - **Microinterações**: `scale(0.96–0.98)` no `:active` de tudo que é tocável
-  (pill VIP, botões de contato, action-row, chips do segmented control, chip
-  de adicionar foto), 160–200ms, sem exagero — nada de animação de entrada
+  (pill VIP, botões de contato, action-row, chips do diagnóstico, chip de
+  adicionar foto), 160–200ms, sem exagero — nada de animação de entrada
   coreografada (fade sequencial dos blocos), que o prompt sugeria mas não é
   crítico e o app não tem esse padrão em nenhuma outra tela hoje.
 

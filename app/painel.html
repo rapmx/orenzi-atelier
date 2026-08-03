@@ -816,16 +816,23 @@
   .vip-pill:active { transform: scale(0.96); }
   .ph-meta { font-size: 12px; color: var(--color-neutral-600); margin-top: 7px; }
 
+  .ph-avatar-wrap { position: relative; flex-shrink: 0; }
+  .ph-vip-badge {
+    position: absolute; bottom: -2px; right: -2px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--color-accent-700); color: #fff; display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--color-bg);
+  }
+  .ph-vip-badge svg { width: 10px; height: 10px; }
+
   .profile-actions { display: flex; gap: 10px; margin-bottom: 18px; }
   .profile-actions a {
     flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
-    padding: 12px; border-radius: 14px; background: var(--color-surface);
-    border: 1px solid var(--color-divider);
+    padding: 12px; border-radius: 999px; background: var(--color-accent-100); border: none;
     color: var(--color-accent-700); font-size: 13px; font-weight: 700; text-decoration: none;
     transition: transform .18s ease, background .15s ease;
   }
   .profile-actions a svg { width: 15px; height: 15px; flex-shrink: 0; }
-  .profile-actions a:active { transform: scale(0.98); background: var(--color-neutral-100); }
+  .profile-actions a:active { transform: scale(0.98); background: var(--color-neutral-200); }
 
   .action-row {
     display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 26px;
@@ -846,8 +853,11 @@
     border-radius: 16px; padding: 18px 4px; margin-bottom: 8px;
   }
   .stat-row .stat { flex: 1; text-align: center; }
+  .stat-row .stat .stat-icon { display: flex; justify-content: center; color: var(--color-accent-600); margin-bottom: 6px; }
+  .stat-row .stat .stat-icon svg { width: 16px; height: 16px; }
   .stat-row .stat .val { font-family: var(--font-heading); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .stat-row .stat .lbl { font-size: 10.5px; font-weight: 500; color: var(--color-neutral-600); margin-top: 3px; letter-spacing: 0.01em; }
+  .stat-row .stat .stat-sub { font-size: 9.5px; color: var(--color-neutral-600); margin-top: 1px; }
   .stat-row .divider { width: 1px; background: var(--color-divider); }
 
   /* ── Perfil: seções (Diagnóstico/Fotos/Favoritos/Histórico) ────
@@ -863,15 +873,26 @@
   .profile-section-title .pst-text { font-family: var(--font-heading); font-weight: 600; font-size: 15px; }
   .profile-section-title .pst-meta { font-size: 11.5px; color: var(--color-accent-700); font-weight: 700; flex-shrink: 0; }
 
+  /* ── Diagnóstico: card tingido, colapsável, chips soltos ────── */
+  .diag-card { background: var(--color-neutral-100); border-radius: 18px; padding: 16px 16px 4px; }
+  .diag-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; margin-bottom: 14px; }
+  .diag-card-head .dc-chevron { color: var(--color-neutral-600); display: flex; transition: transform .2s ease; }
+  .diag-card-head .dc-chevron svg { width: 14px; height: 14px; }
+  .diag-card-head.is-open .dc-chevron { transform: rotate(90deg); }
+  .diag-card-body.is-collapsed { display: none; }
+
   .hair-field { margin-bottom: 16px; }
   .hair-field:last-child { margin-bottom: 0; }
   .hair-field-label { font-size: 12.5px; color: var(--color-neutral-600); font-weight: 500; margin-bottom: 8px; }
-  .seg-toggle.seg-full { width: 100%; }
-  .seg-toggle.seg-full button {
-    flex: 1; text-align: center; padding: 10px 8px; font-size: 12.5px;
-    transition: background .18s ease, color .18s ease, transform .12s ease;
+  .hair-chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .hair-chip {
+    padding: 8px 14px; border-radius: 999px; border: 1px solid var(--color-divider);
+    background: var(--color-surface); color: var(--color-neutral-600); font-family: var(--font-body);
+    font-size: 12.5px; font-weight: 600; cursor: pointer;
+    transition: transform .12s ease, background .18s ease, color .18s ease, border-color .18s ease;
   }
-  .seg-toggle.seg-full button:active { transform: scale(0.97); }
+  .hair-chip.active { background: var(--color-accent-100); border-color: var(--color-accent-100); color: var(--color-accent-700); }
+  .hair-chip:active { transform: scale(0.96); }
 
   .fav-tags { display: flex; gap: 8px; flex-wrap: wrap; }
 
@@ -883,9 +904,14 @@
   }
   .timeline-item:active { background: var(--color-neutral-100); }
   .ti-date {
-    width: 60px; flex-shrink: 0; padding-top: 2px; font-size: 11px; font-weight: 600;
-    color: var(--color-neutral-600); font-variant-numeric: tabular-nums;
+    width: 40px; flex-shrink: 0; padding-top: 1px; display: flex; flex-direction: column; align-items: center;
   }
+  .ti-date .ti-day {
+    font-family: var(--font-heading); font-size: 15px; font-weight: 600; line-height: 1.1;
+    color: var(--color-text); font-variant-numeric: tabular-nums;
+  }
+  .ti-date .ti-mon { font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; color: var(--color-accent-700); text-transform: uppercase; }
+  .ti-date .ti-year { font-size: 9px; color: var(--color-neutral-600); margin-top: 1px; }
   .ti-marker { position: relative; width: 8px; align-self: stretch; display: flex; justify-content: center; flex-shrink: 0; }
   .ti-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent-600); margin-top: 6px; position: relative; z-index: 1; }
   .ti-line { position: absolute; top: 15px; bottom: -15px; width: 1px; background: var(--color-divider); left: 50%; transform: translateX(-50%); }
@@ -924,6 +950,7 @@
   .photo-empty-state .pes-icon svg { width: 26px; height: 26px; }
   .photo-empty-state .pes-title { font-size: 13.5px; font-weight: 700; color: var(--color-text); }
   .photo-empty-state .pes-sub { font-size: 11.5px; color: var(--color-neutral-600); }
+  .photo-hint { font-size: 11.5px; color: var(--color-neutral-600); margin-top: 8px; text-align: center; }
 
   .photo-grid {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px;
@@ -1069,8 +1096,8 @@ const HAIR_ELASTICITY_OPTIONS = ['Normal', 'Sensível'];
 
 function hairSegmentedHtml(field, options, current) {
   return `
-    <div class="seg-toggle seg-full" data-hair-field="${field}">
-      ${options.map(opt => `<button type="button" class="${current === opt ? 'active' : ''}" data-value="${opt}">${opt}</button>`).join('')}
+    <div class="hair-chip-row" data-hair-field="${field}">
+      ${options.map(opt => `<button type="button" class="hair-chip ${current === opt ? 'active' : ''}" data-value="${opt}">${opt}</button>`).join('')}
     </div>
   `;
 }
@@ -1328,11 +1355,23 @@ const ICONS = {
   chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 3.3 6.5L4 20l1.2-3.5A7.96 7.96 0 0 1 4 12Z"/></svg>',
   clipboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4.5" width="12" height="16" rx="2.2"/><path d="M9.5 4V3.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V4M9 10h6M9 13.5h6M9 17h4"/></svg>',
   camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5A2 2 0 0 1 6 6.5h1.3l1-1.7a1.6 1.6 0 0 1 1.4-.8h4.6a1.6 1.6 0 0 1 1.4.8l1 1.7H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><circle cx="12" cy="12.5" r="3.6"/></svg>',
-  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.2s-7.5-4.6-9.7-9.3C.8 7.2 3 4 6.4 4c2 0 3.6 1.1 5.6 3.4C14 5.1 15.6 4 17.6 4 21 4 23.2 7.2 21.7 10.9 19.5 15.6 12 20.2 12 20.2Z"/></svg>',
   history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4.5V9h4.5M12 8v4.5l3 1.8"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 7h13M9.5 7V5a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 5v2M7 7l1 12.5A1.5 1.5 0 0 0 9.5 21h5a1.5 1.5 0 0 0 1.5-1.5L17 7"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8h11l1 12.5a1.5 1.5 0 0 1-1.5 1.5h-10a1.5 1.5 0 0 1-1.5-1.5Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>',
+  drop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5c3.4 4 6.5 7.9 6.5 11.3a6.5 6.5 0 1 1-13 0c0-3.4 3.1-7.3 6.5-11.3Z"/></svg>',
 };
+const MONTH_ABBR = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+function fmtDateShort(iso) {
+  const d = new Date(iso);
+  return { day: String(d.getDate()).padStart(2, '0'), mon: MONTH_ABBR[d.getMonth()], year: String(d.getFullYear()) };
+}
+function daysAgoLabel(iso) {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return 'hoje';
+  if (days === 1) return 'há 1 dia';
+  return `há ${days} dias`;
+}
 
 // ── componente genérico: lista de barras horizontais ─────────
 function distributionBarsHtml(rows, opts = {}) {
@@ -2921,6 +2960,7 @@ function clientStats(clientId) {
   const visits = history.length;
   const spent = history.reduce((sum, a) => sum + Number(a.service?.price || 0), 0);
   const lastVisit = history[0] ? fmtDate(history[0].starts_at) : '—';
+  const lastVisitIso = history[0]?.starts_at || null;
   const isVip = !!client?.vip;
 
   const freq = {};
@@ -2933,7 +2973,7 @@ function clientStats(clientId) {
     .slice(0, 3)
     .map(([name]) => name);
 
-  return { history, visits, spent, lastVisit, isVip, favoriteServices };
+  return { history, visits, spent, lastVisit, lastVisitIso, isVip, favoriteServices };
 }
 
 function renderClients() {
@@ -2972,6 +3012,7 @@ function renderClients() {
     card.onclick = async () => {
       state.selectedClientId = card.dataset.id;
       state.clientHistoryExpanded = false;
+      state.clientDiagCollapsed = false;
       if (!state.clientPhotos[card.dataset.id]) await loadClientPhotos(card.dataset.id);
       render();
     };
@@ -2987,20 +3028,22 @@ function renderClientDetail() {
   document.getElementById('greeting').textContent = c.name;
   document.getElementById('greetingSub').textContent = '';
 
-  const { history, visits, spent, lastVisit, isVip, favoriteServices } = clientStats(c.id);
+  const { history, visits, spent, lastVisit, lastVisitIso, isVip, favoriteServices } = clientStats(c.id);
   const visibleHistory = state.clientHistoryExpanded ? history : history.slice(0, HISTORY_PREVIEW_COUNT);
   const color = colorForId(c.id);
   const waPhone = (c.phone || '').replace(/[^\d]/g, '');
   const photos = state.clientPhotos[c.id] || [];
-  const memberSinceRaw = c.created_at
-    ? new Date(c.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-    : null;
-  const memberSince = memberSinceRaw ? memberSinceRaw.charAt(0).toUpperCase() + memberSinceRaw.slice(1) : null;
+  const memberSince = c.created_at ? new Date(c.created_at).getFullYear() : null;
+  const lastVisitShort = lastVisitIso ? fmtDateShort(lastVisitIso) : null;
+  const diagOpen = !state.clientDiagCollapsed;
 
   app.innerHTML = `
     <button class="profile-back" id="backToClients">${ICONS.chevron} Voltar</button>
     <div class="profile-header">
-      <div class="avatar-round" style="width:72px;height:72px;font-size:24px;background:${color.border}">${initials(c.name)}</div>
+      <div class="ph-avatar-wrap">
+        <div class="avatar-round" style="width:72px;height:72px;font-size:24px;background:${color.border}">${initials(c.name)}</div>
+        ${isVip ? `<span class="ph-vip-badge">${ICONS.starFilled}</span>` : ''}
+      </div>
       <div>
         <div class="name">${c.name}</div>
         <button class="vip-pill ${isVip ? 'is-active' : ''}" id="vipToggleBtn">${isVip ? ICONS.starFilled : ICONS.star} ${isVip ? 'Cliente VIP' : 'Marcar como VIP'}</button>
@@ -3017,30 +3060,42 @@ function renderClientDetail() {
       <span class="ar-chevron">${ICONS.chevron}</span>
     </button>
     <div class="stat-row">
-      <div class="stat"><div class="val">${visits}</div><div class="lbl">Visitas</div></div>
+      <div class="stat"><span class="stat-icon">${ICONS.bag}</span><div class="val">${visits}</div><div class="lbl">Visitas</div></div>
       <div class="divider"></div>
-      <div class="stat"><div class="val">€${spent.toFixed(0)}</div><div class="lbl">Total gasto</div></div>
+      <div class="stat"><span class="stat-icon">${ICONS.money}</span><div class="val">€${spent.toFixed(0)}</div><div class="lbl">Total investido</div></div>
       <div class="divider"></div>
-      <div class="stat"><div class="val">${lastVisit}</div><div class="lbl">Última visita</div></div>
+      <div class="stat">
+        <span class="stat-icon">${ICONS.calendar}</span>
+        <div class="val">${lastVisitShort ? `${lastVisitShort.day} ${lastVisitShort.mon}` : '—'}</div>
+        <div class="lbl">Última visita</div>
+        ${lastVisitIso ? `<div class="stat-sub">${daysAgoLabel(lastVisitIso)}</div>` : ''}
+      </div>
     </div>
 
     <div class="profile-section">
-      <div class="profile-section-title"><span class="pst-icon">${ICONS.target}</span><span class="pst-text">Diagnóstico do cabelo</span></div>
-      <div class="hair-field">
-        <div class="hair-field-label">Espessura do fio</div>
-        ${hairSegmentedHtml('hair_thickness', HAIR_THICKNESS_OPTIONS, c.hair_thickness)}
-      </div>
-      <div class="hair-field">
-        <div class="hair-field-label">Quantidade de cabelo</div>
-        ${hairSegmentedHtml('hair_density', HAIR_DENSITY_OPTIONS, c.hair_density)}
-      </div>
-      <div class="hair-field">
-        <div class="hair-field-label">Porosidade</div>
-        ${hairSegmentedHtml('hair_porosity', HAIR_POROSITY_OPTIONS, c.hair_porosity)}
-      </div>
-      <div class="hair-field">
-        <div class="hair-field-label">Elasticidade</div>
-        ${hairSegmentedHtml('hair_elasticity', HAIR_ELASTICITY_OPTIONS, c.hair_elasticity)}
+      <div class="diag-card">
+        <div class="diag-card-head ${diagOpen ? 'is-open' : ''}" id="diagCardHead">
+          <span class="pst-left"><span class="pst-icon">${ICONS.drop}</span><span class="pst-text">Diagnóstico do cabelo</span></span>
+          <span class="dc-chevron">${ICONS.chevron}</span>
+        </div>
+        <div class="diag-card-body ${diagOpen ? '' : 'is-collapsed'}">
+          <div class="hair-field">
+            <div class="hair-field-label">Espessura do fio</div>
+            ${hairSegmentedHtml('hair_thickness', HAIR_THICKNESS_OPTIONS, c.hair_thickness)}
+          </div>
+          <div class="hair-field">
+            <div class="hair-field-label">Quantidade de cabelo</div>
+            ${hairSegmentedHtml('hair_density', HAIR_DENSITY_OPTIONS, c.hair_density)}
+          </div>
+          <div class="hair-field">
+            <div class="hair-field-label">Porosidade</div>
+            ${hairSegmentedHtml('hair_porosity', HAIR_POROSITY_OPTIONS, c.hair_porosity)}
+          </div>
+          <div class="hair-field">
+            <div class="hair-field-label">Elasticidade</div>
+            ${hairSegmentedHtml('hair_elasticity', HAIR_ELASTICITY_OPTIONS, c.hair_elasticity)}
+          </div>
+        </div>
       </div>
     </div>
 
@@ -3065,15 +3120,16 @@ function renderClientDetail() {
       ` : `
         <label class="photo-empty-state">
           <span class="pes-icon">${ICONS.camera}</span>
-          <div class="pes-title">Adicionar foto</div>
-          <div class="pes-sub">Toque para adicionar</div>
+          <div class="pes-title">Adicionar fotos</div>
+          <div class="pes-sub">Arraste ou toque para adicionar</div>
           <input type="file" accept="image/*" id="photoInput" style="display:none;">
         </label>
+        <div class="photo-hint">Mostre o antes, o depois e a evolução dos fios.</div>
       `}
     </div>
 
     <div class="profile-section">
-      <div class="profile-section-title"><span class="pst-icon">${ICONS.heart}</span><span class="pst-text">Serviços favoritos</span></div>
+      <div class="profile-section-title"><span class="pst-icon">${ICONS.star}</span><span class="pst-text">Serviços favoritos</span></div>
       ${favoriteServices.length
         ? `<div class="fav-tags">${favoriteServices.map(s => `<span class="tag tag-accent-2">${s}</span>`).join('')}</div>`
         : '<div class="empty">Nenhum serviço registrado ainda.</div>'}
@@ -3083,9 +3139,11 @@ function renderClientDetail() {
       <div class="profile-section-title"><span class="pst-icon">${ICONS.history}</span><span class="pst-text">Histórico de visitas</span></div>
       ${history.length ? `
         <div class="visit-timeline">
-          ${visibleHistory.map(a => `
+          ${visibleHistory.map(a => {
+            const d = fmtDateShort(a.starts_at);
+            return `
             <div class="timeline-item" data-appt-id="${a.id}">
-              <div class="ti-date">${fmtDate(a.starts_at)}</div>
+              <div class="ti-date"><span class="ti-day">${d.day}</span><span class="ti-mon">${d.mon}</span><span class="ti-year">${d.year}</span></div>
               <div class="ti-marker"><span class="ti-dot"></span><span class="ti-line"></span></div>
               <div class="ti-body">
                 <div class="ti-service">${a.service?.name || ''}</div>
@@ -3093,7 +3151,8 @@ function renderClientDetail() {
               </div>
               <div class="ti-price">€${Number(a.service?.price || 0).toFixed(0)}</div>
             </div>
-          `).join('')}
+          `;
+          }).join('')}
         </div>
       ` : '<div class="empty">Nenhum atendimento registrado ainda.</div>'}
       ${!state.clientHistoryExpanded && history.length > HISTORY_PREVIEW_COUNT
@@ -3151,9 +3210,17 @@ function renderClientDetail() {
       if (file) uploadClientPhoto(c.id, file);
     };
   }
-  app.querySelectorAll('.seg-toggle[data-hair-field] button').forEach(btn => {
+  const diagCardHead = document.getElementById('diagCardHead');
+  if (diagCardHead) {
+    diagCardHead.onclick = () => {
+      state.clientDiagCollapsed = !state.clientDiagCollapsed;
+      render();
+    };
+  }
+
+  app.querySelectorAll('.hair-chip-row[data-hair-field] .hair-chip').forEach(btn => {
     btn.onclick = async () => {
-      const field = btn.closest('.seg-toggle').dataset.hairField;
+      const field = btn.closest('.hair-chip-row').dataset.hairField;
       const value = btn.classList.contains('active') ? null : btn.dataset.value;
       const { data: updated, error } = await sb.from('clients').update({ [field]: value }).eq('id', c.id).select();
       if (error) { showToast('Erro ao salvar: ' + error.message); return; }
