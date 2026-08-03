@@ -151,9 +151,55 @@ de queda dos indicadores já usam. Não introduzir uma cor de alerta nova.
 
 Feito: Estoque (`.list-row.stock-row`, alerta de mínimo com fundo tingido +
 borda grossa + tag "Repor"), Agenda (`.timeline` no padrão de cartão,
-animação de toque em dia da semana/booking/botão +) e Clientes
-(`.list-row.client-list-card` na lista; perfil da cliente com redesign
-próprio, ver abaixo). Questionário ainda não entrou.
+animação de toque em dia da semana/booking/botão +) e Clientes (lista e
+perfil, os dois com redesign próprio — ver abaixo). Questionário ainda não
+entrou.
+
+**Redesign da lista de clientes (03/08/2026, prompt de "design review" do
+Raphael com print de referência).** A tela ganhou busca, filtros, resumo e
+cartões com métricas. Tudo o que aparece é **derivado** de `appointments` e
+`clients.created_at` — nenhuma coluna nova:
+
+- **Status** (`clientStatus()`): "Nova" se cadastrada há ≤30 dias,
+  "Inativa" se a última visita passou de 60 dias (ou nunca veio), senão
+  "Ativa". Constantes no topo (`CLIENT_NEW_DAYS`, `CLIENT_INACTIVE_DAYS`).
+  Ponto colorido **com o rótulo em texto ao lado** — cor sozinha não
+  comunica pra quem não distingue verde de cinza.
+- **Filtros** (`CLIENT_FILTERS`): Todos · VIP · Recentes · Mais frequentes ·
+  Inativos. **"Favoritos" não existe** — exigiria uma coluna
+  `clients.favorite` separada do VIP, e o Raphael preferiu deixar de fora.
+- **Ordenação** (`CLIENT_SORTS`): última visita, nome, maior gasto, mais
+  frequentes, VIP primeiro. Abre em folha (`.sheet-option` dentro do
+  `.modal-sheet` que já existia).
+- **FAB "+" agora é de duas abas.** O mesmo `#fabNewAppt` abre produto no
+  Estoque e `openNewClientSheet()` em Clientes — antes cliente só nascia
+  dentro do fluxo de agendamento. As opções "Importar contatos" e "Escanear
+  cartão" do prompt **não** entraram: não existem no app, e botão que não
+  faz nada é pior que botão nenhum (decisão confirmada com o Raphael).
+  O FAB some no perfil, que é outra tela dentro da mesma aba.
+
+**A busca não pode passar por `render()`.** `renderClientsList()` reescreve
+só o `#clientsListWrap`; se o `render()` cheio rodasse a cada tecla, o
+`<input>` seria recriado e perderia o foco (com o cursor voltando pro
+começo) a cada letra digitada. Mesma família de armadilha do dropdown do
+diagnóstico e do slide da agenda: **o que anima ou tem foco não sobrevive a
+um `innerHTML` novo.** Pelo mesmo motivo o botão de limpar usa `mousedown`
+e não `click` — o `blur` do input dispararia primeiro e o botão já teria
+sumido junto com a classe `.has-text`.
+
+**Transição do avatar (shared element).** `morphAvatar()` clona o avatar,
+posiciona sobre o da lista e anima até a posição do avatar do perfil.
+A limpeza (`limpar()`) é **idempotente e tem três gatilhos**: `onfinish`,
+`oncancel` e um `setTimeout` de rede de segurança. Isso não é zelo
+excessivo — foi bug real encontrado no teste: sem composição de frames
+(aba em segundo plano) a animação não corre, `onfinish` nunca dispara, e o
+resultado eram clones empilhados na tela com o avatar verdadeiro preso em
+`opacity: 0`. Toda animação via Web Animations API neste projeto precisa de
+um caminho de limpeza que não dependa do `onfinish`.
+
+**Scroll** (`state.clientsScrollTop`): guardado ao abrir um perfil e
+devolvido ao voltar. Tocar na aba pelo rodapé zera de propósito — é entrada
+nova, não "voltar".
 
 **Fase 3 — Clientes (03/08/2026).** Histórico de visitas mostra só as 3 mais
 recentes (`HISTORY_PREVIEW_COUNT`), com botão "ver mais" —
