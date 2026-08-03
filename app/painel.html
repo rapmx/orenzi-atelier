@@ -876,9 +876,11 @@
   /* ── Diagnóstico: card tingido, colapsável, chips soltos ────── */
   .diag-card { background: var(--color-neutral-100); border-radius: 18px; padding: 16px 16px 4px; }
   .diag-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; margin-bottom: 14px; }
-  .diag-card-head .dc-chevron { color: var(--color-neutral-600); display: flex; transition: transform .2s ease; }
+  .diag-card-head:not(.is-open) { margin-bottom: 0; }
+  .diag-card-head .pst-icon svg { width: 17px; height: 17px; }
+  .diag-card-head .dc-chevron { color: var(--color-neutral-600); display: flex; flex-shrink: 0; transform: rotate(90deg); transition: transform .2s ease; }
   .diag-card-head .dc-chevron svg { width: 14px; height: 14px; }
-  .diag-card-head.is-open .dc-chevron { transform: rotate(90deg); }
+  .diag-card-head.is-open .dc-chevron { transform: rotate(-90deg); }
   .diag-card-body.is-collapsed { display: none; }
 
   .hair-field { margin-bottom: 16px; }
@@ -3012,7 +3014,7 @@ function renderClients() {
     card.onclick = async () => {
       state.selectedClientId = card.dataset.id;
       state.clientHistoryExpanded = false;
-      state.clientDiagCollapsed = false;
+      state.clientDiagCollapsed = true;
       if (!state.clientPhotos[card.dataset.id]) await loadClientPhotos(card.dataset.id);
       render();
     };
@@ -3129,14 +3131,14 @@ function renderClientDetail() {
     </div>
 
     <div class="profile-section">
-      <div class="profile-section-title"><span class="pst-icon">${ICONS.star}</span><span class="pst-text">Serviços favoritos</span></div>
+      <div class="profile-section-title"><span class="pst-left"><span class="pst-icon">${ICONS.star}</span><span class="pst-text">Serviços favoritos</span></span></div>
       ${favoriteServices.length
         ? `<div class="fav-tags">${favoriteServices.map(s => `<span class="tag tag-accent-2">${s}</span>`).join('')}</div>`
         : '<div class="empty">Nenhum serviço registrado ainda.</div>'}
     </div>
 
     <div class="profile-section">
-      <div class="profile-section-title"><span class="pst-icon">${ICONS.history}</span><span class="pst-text">Histórico de visitas</span></div>
+      <div class="profile-section-title"><span class="pst-left"><span class="pst-icon">${ICONS.history}</span><span class="pst-text">Histórico de visitas</span></span></div>
       ${history.length ? `
         <div class="visit-timeline">
           ${visibleHistory.map(a => {

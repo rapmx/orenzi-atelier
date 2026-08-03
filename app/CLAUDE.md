@@ -198,10 +198,25 @@ de campos soltos e virou um perfil com hierarquia por espaçamento
   a referência visual que o Raphael trouxe). `hairSegmentedHtml()` substituiu
   `hairSelectHtml()`. Clicar no valor já ativo desmarca (mantém a opção de
   limpar o campo que o `<select>` tinha com "Selecione…"). Tudo dentro de um
-  card colapsável (`.diag-card`, fundo `--color-neutral-100`, chevron que
-  gira 90° — `state.clientDiagCollapsed`, reseta ao trocar de cliente junto
-  com `clientHistoryExpanded`). Grava com `.select()` no fim, mesmo padrão de
-  escrita autenticada de sempre.
+  card dropdown (`.diag-card`), **colapsado por padrão** —
+  `state.clientDiagCollapsed = true` ao trocar de cliente (junto com
+  `clientHistoryExpanded`), só o cabeçalho aparece até o toque. Chevron
+  aponta pra baixo fechado, pra cima aberto (`.diag-card-head.is-open`,
+  `rotate(-90deg)` num ícone que nasce apontando pra direita). Grava com
+  `.select()` no fim, mesmo padrão de escrita autenticada de sempre.
+
+  **Armadilha já mordida uma vez:** `.diag-card-head` reaproveita as classes
+  internas de `.profile-section-title` (`.pst-left`/`.pst-icon`/`.pst-text`)
+  mas **não** a própria classe `.profile-section-title` — sem uma regra
+  `.diag-card-head .pst-icon svg { width/height }` própria, o SVG do ícone
+  ficava sem nenhum tamanho definido e renderizava enorme (ícone de gota
+  gigante, achado pelo Raphael no primeiro teste visual). Pelo mesmo motivo,
+  título de seção **sem** um segundo item pra equilibrar o
+  `justify-content: space-between` do `.profile-section-title` empurra o
+  texto sozinho pro canto direito — por isso ícone+texto de toda seção
+  (mesmo as sem contador, como Favoritos e Histórico) precisam estar
+  agrupados dentro de um `<span class="pst-left">`, nunca soltos como
+  irmãos diretos do título.
 - **Fotos do cabelo**: com 0 fotos vira um estado vazio convidativo
   (`.photo-empty-state`, ícone de câmera + "Adicionar fotos" + "Arraste ou
   toque para adicionar" + legenda `.photo-hint`); com 1+ fotos vira uma
