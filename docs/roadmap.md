@@ -4,6 +4,24 @@ Lista que o Raphael trouxe pra levar Agenda, Clientes, Estoque e Questionário
 ao mesmo padrão de Início/Insights, mais alguns comportamentos novos. Ordenado
 por dependência, não pela ordem em que ele escreveu.
 
+## 👉 Estado atual (fim da sessão de 02/08/2026) — comece por aqui
+
+**Fases 0, 1 e 2 concluídas** (padrão visual, Estoque, Agenda — incluindo duas
+rodadas de refino visual a partir de prints de referência do Apple Calendar).
+Tudo já commitado e no ar.
+
+**Próximo passo: Fase 3 — Clientes.** Antes de tocar em código, preciso de
+duas respostas do Raphael (ver "Travas" na seção da Fase 3 abaixo):
+- **D2** — valor do atendimento editável: confirma a coluna nova
+  `appointments.price` (vazia = usa o preço do serviço)?
+- **D3** — tag VIP manual: migra quem já é VIP hoje (5+ visitas) como VIP já
+  marcada, ou todo mundo começa sem tag?
+
+O que **não** depende dessas respostas — dá pra começar direto: padrão visual
+da lista/perfil de clientes e o "ver mais" no histórico (só as 3 últimas
+visitas). Sugestão: adiantar isso primeiro e perguntar D2/D3 quando chegar
+nos itens que dependem delas.
+
 ## Fase 0 — Padrão visual — ✅ concluída (02/08/2026)
 
 Modelo extraído de `.appt-modern-card` (card de agendamento da Home) e
