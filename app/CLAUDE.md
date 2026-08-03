@@ -287,6 +287,29 @@ campo aparecia lá mesmo sem existir em produção. Corrigido: Rebecca agora tem
 existe só pro histórico) e todo agendamento gerado no mock sai no nome da
 Juliane (`staff: juliane`, não mais `staff[i % 2]`).
 
+**Revisão de pixel (02/08/2026), a pedido do Raphael — "trate como revisão de
+design da Apple".** Medido no navegador (`getBoundingClientRect`/
+`getComputedStyle`), não só lido no CSS — duas inconsistências reais:
+
+- `.fab` (54px) e `.fab-today` (44px) tinham alturas diferentes. Os dois
+  ficam em `bottom:84px` nas pontas opostas da tela, então mesmo com a base
+  igual, o par lia como desalinhado. `.fab-today` passou a 54px também.
+- Espaço antes do rótulo "Cliente" (13,5px, depois do `.toggle-row`) era
+  visivelmente menor que antes de "Serviço" (18,2px, no topo da segunda
+  seção do modal) — mesmo papel visual, respiro diferente por causa de
+  colapso de margem. `.toggle-row`'s `margin-bottom` foi de 14px pra 18px
+  pra igualar. Confirmado depois: 17,5px vs 18,3px.
+
+De brinde: `font-variant-numeric: tabular-nums` em `.hour-label` e
+`.current-time-badge` — sem isso, dígitos de largura diferente (ex: "1" vs
+"8") fariam o texto parecer que "treme" sutilmente a cada atualização de
+minuto, mesmo com a caixa em largura fixa.
+
+**Coisas que pareciam suspeitas mas não eram (medidas e descartadas):** o
+espaço entre o fim de cada campo e a borda inferior dos cartões do modal já
+era ~12px nos dois — simétrico, só uma medição errada minha (comparando a
+`div` errada) sugeriu o contrário no primeiro passe.
+
 **Achado, não investigado:** `painel_demo.html` solta 2 erros no console já
 ao carregar, antes de qualquer clique. Confirmado com `git stash` que é
 anterior a 02/08 — não é regressão de nenhuma mudança recente, e a tela

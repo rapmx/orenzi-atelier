@@ -64,6 +64,12 @@ vermelho que "Agenda praticamente lotada" já usa. Documentado em
       `agendar.html`: expediente + grade de 30min, só bloco de trabalho
       ocupa (pausa fica livre, permite encaixe). Recalcula sozinho quando
       serviço/profissional/data mudam.
+- [x] Revisão de pixel (medida no navegador, não só lida no CSS): `.fab`
+      e `.fab-today` tinham alturas diferentes (54 vs 44px) apesar de
+      ficarem nas pontas opostas da mesma linha — igualado. Espaço antes
+      do rótulo "Cliente" no modal era ~5px menor que antes de "Serviço" —
+      igualado ajustando `.toggle-row`. `tabular-nums` nos dígitos de hora
+      (grade + linha do horário atual) pra não "tremer" a cada atualização.
 
 Achado pré-existente, não relacionado a esta fase: `painel_demo.html` solta 2
 erros no console já ao carregar (antes de qualquer interação), confirmado por
