@@ -70,6 +70,14 @@ vermelho que "Agenda praticamente lotada" já usa. Documentado em
       do rótulo "Cliente" no modal era ~5px menor que antes de "Serviço" —
       igualado ajustando `.toggle-row`. `tabular-nums` nos dígitos de hora
       (grade + linha do horário atual) pra não "tremer" a cada atualização.
+- [x] Segunda revisão a partir de print do Apple Calendar (layout, não
+      identidade visual): mês em pílula com setas dentro; `+` saiu do FAB
+      flutuante e virou squircle no `.day-nav` (FAB fixo agora é só do
+      Estoque); "Hoje" trocou de preenchido pra contornado neutro; hora com
+      `:00`; janela do desenho ampliada pra 5h-21h (não mexe no expediente
+      real nem em ocupação); ícones nas 6 abas do rodapé. Achado medindo:
+      linha do horário atual tinha 9,6px de diferença do horário real —
+      corrigido com `transform:translateY(-50%)`.
 
 Achado pré-existente, não relacionado a esta fase: `painel_demo.html` solta 2
 erros no console já ao carregar (antes de qualquer interação), confirmado por

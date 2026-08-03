@@ -310,6 +310,46 @@ espaço entre o fim de cada campo e a borda inferior dos cartões do modal já
 era ~12px nos dois — simétrico, só uma medição errada minha (comparando a
 `div` errada) sugeriu o contrário no primeiro passe.
 
+**Segunda revisão (mesmo dia), a partir de um print do Apple Calendar como
+referência de layout (não de identidade visual):**
+
+- **Mês em pílula** (`.month-pill`): as setas ficaram *dentro* de um
+  contêiner com borda, no lugar de duas flutuando soltas ao lado do texto.
+- **O `+` mudou de lugar.** Saiu do FAB circular flutuante (que só o Estoque
+  ainda usa) e virou um squircle (`.agenda-add-btn`, 42px, `border-radius:
+  13px`) dentro do `.day-nav`, ao lado da pílula do mês — `abaComFab`
+  (a variável que decidia quem via o FAB) foi removida, o FAB fixo agora só
+  aparece pra `state.tab === 'estoque'`.
+- **"Hoje" trocou de linguagem visual**: era preenchido em accent-100/700
+  (parecia ação de destaque); virou contorno neutro (`--color-surface` +
+  borda `--color-divider`, texto `--color-text`) — bate com a referência e
+  deixa mais claro que "Hoje" é navegação, não um CTA.
+- **Hora com `:00`**: `${h}h` virou `${String(h).padStart(2,'0')}:00`.
+- **Janela ampliada, 5h–21h** (`AGENDA_START_HOUR`/`AGENDA_END_HOUR`, eram
+  8/19) — só afeta o que a grade *desenha*; `OPEN_HOUR`/`CLOSE_HOUR` (9h–18h,
+  o expediente de verdade) continuam intocados, então nada em ocupação ou
+  horário oferecido muda. `HOUR_HEIGHT` desceu de 68 pra 56 (meio-termo:
+  mais compacto que antes, mais respirado que a referência) porque a janela
+  mais que dobrou de tamanho.
+- **Linha do horário atual desalinhada da hora — bug real, confirmado
+  medindo.** Injetei uma linha simulada exatamente nas 9h e comparei o
+  centro do selo contra o topo do `.hour-row` das 9h: **9,6px de
+  diferença**. Causa: `.current-time-line` usa `top` como topo da caixa, mas
+  a caixa cresce pra baixo a partir dali (a altura vem do badge, o filho
+  mais alto) — então o centro visual ficava abaixo do instante real, não em
+  cima dele. `.hour-label` não tem esse problema porque foi ajustada à mão
+  com `top:-8px`. Corrigido com `transform: translateY(-50%)` no
+  `.current-time-line` — centraliza a caixa exatamente no ponto de `top`,
+  qualquer que seja a altura do conteúdo. Confirmado depois: 0px de diferença.
+- **Ícones na barra inferior** (`nav button`): cada aba ganhou um SVG de
+  traço (`stroke="currentColor"`, sem preenchimento) empilhado sobre o rótulo
+  — herda a cor do botão sozinho, não precisou de JS novo pro estado
+  ativo/inativo. Isso engordou a barra de ~57px pra ~77px de altura; sem
+  ajustar mais nada, o "Hoje"/`+` ficariam a 7px dela (era ~24-27px). Achei
+  medindo — `bottom` dos dois foi de 84px pra 100px, e `body`'s
+  `padding-bottom` (que evita o fim do conteúdo ficar atrás do rodapé fixo)
+  também foi de 84 pra 100.
+
 **Achado, não investigado:** `painel_demo.html` solta 2 erros no console já
 ao carregar, antes de qualquer clique. Confirmado com `git stash` que é
 anterior a 02/08 — não é regressão de nenhuma mudança recente, e a tela

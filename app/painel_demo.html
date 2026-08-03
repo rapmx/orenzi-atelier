@@ -238,7 +238,9 @@ window.supabase = {
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--color-bg); color: var(--color-text);
-    font-family: var(--font-body); padding-bottom: 84px; padding-top: 26px;
+    /* 100px, não 84: o rodapé cresceu com os ícones (~77px de altura, era
+       ~57), senão o fim do conteúdo ficava encoberto por ele. */
+    font-family: var(--font-body); padding-bottom: 100px; padding-top: 26px;
   }
   header {
     padding: 24px 20px 8px; display: flex; align-items: center; justify-content: space-between;
@@ -507,13 +509,19 @@ window.supabase = {
   }
   nav {
     position: fixed; bottom: 0; left: 0; right: 0; background: var(--color-neutral-100);
-    display: none; justify-content: space-around; padding: 10px 0 20px;
+    display: none; justify-content: space-around; padding: 8px 0 20px;
     box-shadow: 0 -1px 0 var(--color-divider);
   }
+  /* Ícone empilhado sobre o texto — troca o rodapé de texto puro pelo
+     modelo de tab bar da referência. currentColor faz o SVG herdar a cor
+     do botão sozinho, sem JS extra pra estado ativo/inativo. */
   nav button {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
     background: none; border: none; font-family: var(--font-body); font-size: 10.5px;
-    color: var(--color-neutral-600); cursor: pointer; padding: 6px 4px; white-space: nowrap;
+    color: var(--color-neutral-600); cursor: pointer; padding: 5px 4px; white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
   }
+  nav button svg { width: 21px; height: 21px; flex-shrink: 0; }
   nav button.active { color: var(--color-accent-700); font-weight: 700; }
   #toast {
     position: fixed; top: 14px; left: 50%; transform: translateX(-50%) translateY(-60px);
@@ -522,30 +530,47 @@ window.supabase = {
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
 
-  /* Header inspirado no princípio do Calendar da Apple: seta · mês · seta,
-     tudo centralizado — não é cópia, é o mesmo tipo de hierarquia aplicado
-     aos tokens do Orenzi. Cabeçalho e faixa de dias ficam próximos (gap
-     pequeno abaixo) pra ler como UM sistema de navegação, não dois blocos
-     separados; o respiro "de verdade" fica pro título de data, que é onde a
-     tela realmente muda de assunto (controle → conteúdo). */
+  /* Header inspirado no princípio do Calendar da Apple: mês em pílula
+     (setas dentro, com borda) à esquerda, + à direita — não é cópia, é o
+     mesmo tipo de hierarquia aplicado aos tokens do Orenzi. Cabeçalho e
+     faixa de dias ficam próximos (gap pequeno abaixo) pra ler como UM
+     sistema de navegação; o respiro "de verdade" fica pro título de data,
+     que é onde a tela muda de assunto (controle → conteúdo). */
   .day-nav {
-    display: flex; align-items: center; justify-content: center; gap: 22px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
     margin: 22px 0 14px;
   }
-  .day-nav .day-label { font-family: var(--font-heading); font-weight: 600; font-size: 19px; }
-  .day-nav .day-label-btn {
-    display: flex; align-items: center; gap: 7px; background: none; border: none;
-    cursor: pointer; padding: 4px; color: inherit;
+  .month-pill {
+    display: flex; align-items: center; gap: 2px;
+    background: var(--color-surface); border: 1.5px solid var(--color-divider);
+    border-radius: 999px; padding: 4px 6px 4px 4px;
   }
-  .day-nav .day-label-btn svg { width: 11px; height: 11px; color: var(--color-neutral-600); flex-shrink: 0; }
-  .day-nav .day-label-btn:hover .day-label { color: var(--color-accent-700); }
-  .day-nav button.arrow {
-    width: 34px; height: 34px; border-radius: 50%; border: none;
-    background: var(--color-neutral-100); color: var(--color-text);
+  .month-pill .day-label { font-family: var(--font-heading); font-weight: 600; font-size: 16px; padding: 0 2px; }
+  .month-pill .day-label-btn {
+    display: flex; align-items: center; gap: 6px; background: none; border: none;
+    cursor: pointer; padding: 4px 2px; color: inherit;
+  }
+  .month-pill .day-label-btn svg { width: 10px; height: 10px; color: var(--color-neutral-600); flex-shrink: 0; }
+  .month-pill .day-label-btn:hover .day-label { color: var(--color-accent-700); }
+  .month-pill button.arrow {
+    width: 28px; height: 28px; border-radius: 50%; border: none;
+    background: none; color: var(--color-text);
     font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; transition: background .15s ease;
   }
-  .day-nav button.arrow:hover { background: var(--color-neutral-200); }
+  .month-pill button.arrow:hover { background: var(--color-neutral-100); }
+  /* + da agenda: squircle no topo, ao lado da pílula do mês — troca o FAB
+     circular flutuante que só o Estoque continua usando. */
+  .agenda-add-btn {
+    /* 42px, não 38 — bate com a altura real da .month-pill ao lado (o
+       conteúdo dela mede ~41.6px), senão os dois ficam ligeiramente
+       descasados na mesma linha. */
+    width: 42px; height: 42px; border-radius: 13px; border: none; flex-shrink: 0;
+    background: var(--color-accent); color: var(--color-bg); font-size: 22px; line-height: 1;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: transform .18s cubic-bezier(.34,1.56,.64,1); -webkit-tap-highlight-color: transparent;
+  }
+  .agenda-add-btn:active { transform: scale(0.9); }
 
   /* Título entre a faixa de dias e a agenda — hierarquia própria, não
      duplica o "Agenda" do cabeçalho nem o mês do day-nav. É o único respiro
@@ -683,6 +708,10 @@ window.supabase = {
     position: absolute; left: -52px; right: 0; display: flex; align-items: center;
     z-index: 30; pointer-events: none; animation: currentTimeFadeIn .22s ease;
     transition: top 1s linear;
+    /* `top` marca o instante exato, mas a caixa cresce pra baixo a partir
+       dele (a altura vem do badge, o filho mais alto) — sem isto o centro
+       visual do selo/ponto/linha ficava ~9px abaixo da hora real. */
+    transform: translateY(-50%);
   }
   .current-time-line::after {
     content: ''; flex: 1; height: 1.5px; background: var(--color-accent-700); margin-left: 5px;
@@ -791,7 +820,7 @@ window.supabase = {
   }
 
   .fab {
-    position: fixed; bottom: 84px; right: 20px; width: 54px; height: 54px; border-radius: 50%;
+    position: fixed; bottom: 100px; right: 20px; width: 54px; height: 54px; border-radius: 50%;
     background: var(--color-accent); color: var(--color-bg); border: none; cursor: pointer;
     font-size: 26px; box-shadow: var(--shadow-md, 0 3px 10px rgba(0,0,0,0.18));
     display: flex; align-items: center; justify-content: center; z-index: 50; line-height: 1;
@@ -806,18 +835,21 @@ window.supabase = {
   /* Mesma altura do .fab (54px) — os dois ficam nas pontas opostas da
      mesma linha de base, e um par com alturas diferentes lê como
      desalinhado mesmo com o bottom idêntico. */
+  /* Neutro/contornado (modelo: referência) em vez de preenchido na cor de
+     marca — "Hoje" é navegação, não uma ação de destaque como o +. */
   .fab-today {
-    position: fixed; bottom: 84px; left: 20px; height: 54px; padding: 0 18px;
-    border-radius: 999px; background: var(--color-accent-100); color: var(--color-accent-700);
-    border: none; cursor: pointer; font-family: var(--font-body); font-weight: 700; font-size: 13.5px;
+    position: fixed; bottom: 100px; left: 20px; height: 54px; padding: 0 18px;
+    border-radius: 999px; background: var(--color-surface); color: var(--color-text);
+    border: 1.5px solid var(--color-divider); cursor: pointer;
+    font-family: var(--font-body); font-weight: 700; font-size: 13.5px;
     box-shadow: var(--shadow-md, 0 3px 10px rgba(0,0,0,0.12));
     display: flex; align-items: center; justify-content: center; z-index: 50;
     transition: transform .18s cubic-bezier(.34,1.56,.64,1); -webkit-tap-highlight-color: transparent;
   }
   .fab-today:active { transform: scale(0.95); }
   @media (prefers-reduced-motion: reduce) {
-    .week-day, .timeline-appt, .fab, .fab-today { transition: none; }
-    .week-day:active, .timeline-appt:active, .fab:active, .fab-today:active { transform: none; }
+    .week-day, .timeline-appt, .fab, .fab-today, .agenda-add-btn { transition: none; }
+    .week-day:active, .timeline-appt:active, .fab:active, .fab-today:active, .agenda-add-btn:active { transform: none; }
     .week-day:active, .timeline-appt:active { opacity: 1; }
     .modal-overlay, .modal-sheet { animation: none; }
     .current-time-line { animation: none; transition: none; }
@@ -1045,12 +1077,30 @@ window.supabase = {
 <button class="fab-today" id="gotoTodayFab" style="display:none;">Hoje</button>
 <div id="modalContainer"></div>
 <nav>
-  <button data-tab="inicio" class="active">Início</button>
-  <button data-tab="insights">Insights</button>
-  <button data-tab="agenda">Agenda</button>
-  <button data-tab="clients">Clientes</button>
-  <button data-tab="estoque">Estoque</button>
-  <button data-tab="questionario">Questionário</button>
+  <button data-tab="inicio" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9"/><path d="M10 20v-6h4v6"/></svg>
+    <span>Início</span>
+  </button>
+  <button data-tab="insights">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11"/><path d="M12 20V5"/><path d="M19 20v-6"/></svg>
+    <span>Insights</span>
+  </button>
+  <button data-tab="agenda">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="2.2"/><path d="M8 3.5v4M16 3.5v4M4 10h16"/></svg>
+    <span>Agenda</span>
+  </button>
+  <button data-tab="clients">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.3" r="3"/><path d="M3.7 19.5c.3-3.2 2.6-5.5 5.3-5.5s5 2.3 5.3 5.5"/><circle cx="16.7" cy="9" r="2.2"/><path d="M15.3 14.3c2.2.4 3.9 2.4 4.1 4.7"/></svg>
+    <span>Clientes</span>
+  </button>
+  <button data-tab="estoque">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8 12 4l8.5 4L12 12 3.5 8Z"/><path d="M3.5 8v8.7L12 20.5l8.5-3.8V8"/><path d="M12 12v8.5"/></svg>
+    <span>Estoque</span>
+  </button>
+  <button data-tab="questionario">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4.2" width="12" height="16.8" rx="2"/><rect x="9.2" y="2.5" width="5.6" height="3" rx="1"/><path d="M9 11.5h6M9 15.3h6"/></svg>
+    <span>Questionário</span>
+  </button>
 </nav>
 
 <script>
@@ -2456,9 +2506,14 @@ function weekChartSvg(values, days) {
 // A grade da timeline vai das 8h às 19h de propósito: dá uma hora de respiro
 // antes e depois do expediente, pro encaixe e pro atendimento que atrasou
 // aparecerem na tela em vez de ficarem cortados fora dela.
-const AGENDA_START_HOUR = 8;
-const AGENDA_END_HOUR = 19;
-const HOUR_HEIGHT = 68;
+// Janela ampliada (5h–21h) só pra dar folga visual na rolagem — não é o
+// expediente (OPEN_HOUR/CLOSE_HOUR, 9h–18h), que é o que manda nas contas
+// de ocupação e nos horários oferecidos. HOUR_HEIGHT desceu de 68 pra 56
+// (meio-termo: mais compacto que antes, mas não tão apertado quanto a
+// referência) porque a janela ficou bem maior.
+const AGENDA_START_HOUR = 5;
+const AGENDA_END_HOUR = 22;
+const HOUR_HEIGHT = 56;
 const WEEKDAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
 // Expediente de verdade — o que o agendar.html oferece à cliente. Ocupação e
@@ -2638,7 +2693,7 @@ function buildAgendaGrid(day) {
     <div class="timeline-body" style="height:${(AGENDA_END_HOUR - AGENDA_START_HOUR) * HOUR_HEIGHT}px;">
       ${hours.map((h, i) => `
         <div class="hour-row" style="position:absolute; top:${i * HOUR_HEIGHT}px; left:0; right:0; height:${HOUR_HEIGHT}px;">
-          <div class="hour-label">${h}h</div>
+          <div class="hour-label">${String(h).padStart(2, '0')}:00</div>
         </div>
       `).join('')}
       ${blocksHtml}
@@ -2718,12 +2773,15 @@ function renderAgenda() {
 
   app.innerHTML = `
     <div class="day-nav">
-      <button class="arrow" id="prevWeek">‹</button>
-      <button class="day-label-btn" id="openMonthView">
-        <div class="day-label">${monthLabel}</div>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-      <button class="arrow" id="nextWeek">›</button>
+      <div class="month-pill">
+        <button class="arrow" id="prevWeek">‹</button>
+        <button class="day-label-btn" id="openMonthView">
+          <div class="day-label">${monthLabel}</div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <button class="arrow" id="nextWeek">›</button>
+      </div>
+      <button class="agenda-add-btn" id="agendaAddBtn" aria-label="Novo agendamento">+</button>
     </div>
     <div class="agenda-viewport" id="agendaWeekViewport">
       <div id="agendaWeekPane">
@@ -2749,6 +2807,7 @@ function renderAgenda() {
     renderAgendaTransition('forward');
   };
   document.getElementById('openMonthView').onclick = () => openMonthCalendar(day);
+  document.getElementById('agendaAddBtn').onclick = openNewApptModal;
 
   // Toque num dia dentro da MESMA semana: a faixa continua com as mesmas 7
   // datas, só a seleção muda (updateWeekStripSelection, sem refazer o HTML),
@@ -3647,9 +3706,9 @@ function openProductModal(id) {
 
 function render() {
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === state.tab));
-  // O + serve as duas telas que cadastram: agendamento na agenda, produto no estoque.
-  const abaComFab = state.tab === 'agenda' || state.tab === 'estoque';
-  document.getElementById('fabNewAppt').style.display = (abaComFab && !state.selectedApptId) ? 'flex' : 'none';
+  // O + flutuante agora é só do Estoque — a Agenda tem o dela embutido na
+  // pílula do mês (#agendaAddBtn, dentro de renderAgenda()).
+  document.getElementById('fabNewAppt').style.display = (state.tab === 'estoque' && !state.selectedApptId) ? 'flex' : 'none';
   document.getElementById('gotoTodayFab').style.display = (state.tab === 'agenda' && !state.selectedApptId) ? 'flex' : 'none';
   if (state.selectedApptId) { renderApptDetail(); return; }
   if (state.tab === 'inicio') renderHome();
@@ -3957,10 +4016,9 @@ function renderNewApptModal(errorMsg) {
   };
 }
 
-document.getElementById('fabNewAppt').onclick = () => {
-  if (state.tab === 'estoque') openProductModal();
-  else openNewApptModal();
-};
+// Só o Estoque ainda usa este botão fixo — a Agenda ganhou o próprio + na
+// pílula do mês (#agendaAddBtn).
+document.getElementById('fabNewAppt').onclick = openProductModal;
 
 // "Hoje" é elemento fixo fora do #app, então o clique é amarrado uma vez só
 // aqui — diferente de prevWeek/nextWeek/week-day, que são recriados a cada
