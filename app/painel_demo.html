@@ -1002,69 +1002,29 @@ window.supabase = {
   }
   .tag-accent { background: var(--color-accent-100); color: var(--color-accent-700); }
   .tag-accent-2 { background: var(--color-accent-2-100, #f0fae1); color: var(--color-accent-2-700, #56633f); }
-  /* ══ Aba Clientes — migrada para o Design System em 03/08/2026,
-     correção de densidade em 04/08/2026 ═══ docs/04_COMPONENT_LIBRARY.md.
+  /* ══ Abas Clientes (03/08/2026) e Estoque (04/08/2026) — toolbar e chips
+     migrados para o Design System ═══ docs/04_COMPONENT_LIBRARY.md.
      Fundo, borda, raio, cor e tipografia vêm dos primitivos (.o-card,
      .o-avatar, .o-badge, .o-chip, .o-divider, .o-search-field,
      .o-search-filter-bar, .o-chip-group-scroll, .o-card-metric-summary,
      .o-icon-btn) em app/ds/orenzi-components.css. O que segue é só a
-     anatomia própria desta tela.
+     anatomia própria de cada tela.
 
-     .clients-toolbar / .search-field / .sort-btn / .filter-chips /
-     .filter-chip continuam definidos aqui embaixo porque o Estoque ainda
-     usa essas mesmas classes — migrar os dois ao mesmo tempo estava fora
-     do escopo deste PR (só Clientes). Clientes passou a usar os
-     equivalentes do Design System (.o-search-filter-bar,
-     .o-chip-group-scroll) no lugar delas. Retirar as classes antigas
-     fica para quando o Estoque migrar.
+     .search-field / .sort-btn / .filter-chips / .filter-chip perderam o
+     último consumidor com a migração do Estoque e saíram daqui.
+     .clients-toolbar e .search-clear ficam órfãs — nenhuma tela usa mais
+     essas duas, mas remover classe fora do escopo explícito deste PR (só
+     toolbar/chips do Estoque) fica pra próxima limpeza.
 
      A regra que segue valendo: a lista é redesenhada sozinha
-     (renderClientsList) sem passar por render(), senão o campo de
-     busca perde o foco a cada tecla digitada. */
+     (renderClientsList / renderStockList) sem passar por render(), senão o
+     campo de busca perde o foco a cada tecla digitada. */
   .clients-toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
-  .search-field {
-    flex: 1; display: flex; align-items: center; gap: 9px; background: var(--color-surface);
-    border: 1px solid var(--color-divider); border-radius: 14px; padding: 0 13px; height: 46px;
-    transition: border-color .18s ease, box-shadow .18s ease;
-  }
-  .search-field.is-focused { border-color: var(--color-accent-600); box-shadow: 0 0 0 3px var(--color-accent-100); }
-  .search-field .sf-icon { color: var(--color-neutral-600); display: flex; flex-shrink: 0; }
-  .search-field .sf-icon svg { width: 17px; height: 17px; }
-  .search-field input {
-    flex: 1; min-width: 0; border: none; background: none; padding: 0; margin: 0;
-    font-family: var(--font-body); font-size: 15px; color: var(--color-text); outline: none;
-  }
-  .search-field input::placeholder { color: var(--color-neutral-600); transition: opacity .18s ease; }
-  .search-field.is-focused input::placeholder { opacity: 0; }
   .search-clear {
     display: none; border: none; background: none; padding: 0; cursor: pointer;
     color: var(--color-neutral-600); flex-shrink: 0; align-items: center;
   }
   .search-clear svg { width: 15px; height: 15px; }
-  .search-field.has-text .search-clear { display: flex; }
-  .sort-btn {
-    flex-shrink: 0; width: 46px; height: 46px; border-radius: 14px; cursor: pointer;
-    background: var(--color-accent-700); border: none; color: var(--color-bg);
-    display: flex; align-items: center; justify-content: center;
-    transition: transform .18s ease, background .15s ease;
-  }
-  .sort-btn svg { width: 18px; height: 18px; }
-  .sort-btn:active { transform: scale(0.94); }
-  .filter-chips {
-    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
-    margin: 0 -20px 18px; padding: 2px 20px;
-  }
-  .filter-chips::-webkit-scrollbar { display: none; }
-  .filter-chip {
-    flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-    padding: 8px 14px; border-radius: 999px; cursor: pointer; font-family: var(--font-body);
-    font-size: 12.5px; font-weight: 600; background: var(--color-surface);
-    border: 1px solid var(--color-divider); color: var(--color-neutral-600);
-    transition: transform .12s ease, background .18s ease, color .18s ease, border-color .18s ease;
-  }
-  .filter-chip svg { width: 13px; height: 13px; }
-  .filter-chip.active { background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-bg); }
-  .filter-chip:active { transform: scale(0.96); }
 
   /* Resumo de 4 métricas — usa .o-card-metric-summary (padding próprio
      pra layout em coluna, ver orenzi-components.css) em vez do padding
@@ -4861,20 +4821,20 @@ function renderStock() {
         </span>` : ''}
     </div>
 
-    <div class="clients-toolbar stk-enter" style="animation-delay:100ms;">
-      <label class="search-field" id="stockSearchField">
-        <span class="sf-icon">${ICONS.search}</span>
+    <div class="o-search-filter-bar stk-enter" style="animation-delay:100ms;">
+      <label class="o-search-field" id="stockSearchField">
+        <span class="o-search-field-icon" aria-hidden="true">${ICONS.search}</span>
         <input type="search" id="stockSearchInput" placeholder="Buscar produto, marca ou categoria…"
                autocomplete="off" aria-label="Buscar produto" value="${esc(state.stockSearch || '')}">
-        <button class="search-clear" id="stockSearchClear" type="button" aria-label="Limpar busca">${ICONS.close}</button>
+        <button class="o-search-clear" id="stockSearchClear" type="button" aria-label="Limpar busca">${ICONS.close}</button>
       </label>
-      <button class="sort-btn" id="stockSortBtn" aria-label="Filtrar e ordenar">${ICONS.sliders}</button>
+      <button class="o-icon-btn o-icon-btn-solid o-icon-btn-squircle" id="stockSortBtn" aria-label="Filtrar e ordenar">${ICONS.sliders}</button>
     </div>
 
-    <div class="filter-chips stk-enter" id="stockFilterChips" style="animation-delay:160ms;">
+    <div class="o-chip-group-scroll stk-enter" id="stockFilterChips" style="animation-delay:160ms;" role="group" aria-label="Filtrar produtos">
       ${stockFilters().map(f => `
-        <button class="filter-chip ${state.stockFilter === f.key ? 'active' : ''}" data-filter="${esc(f.key)}">
-          ${ICONS[f.icon] || ICONS.box}<span>${esc(f.label)}</span>
+        <button class="o-chip" aria-pressed="${state.stockFilter === f.key}" data-filter="${esc(f.key)}">
+          <span aria-hidden="true">${ICONS[f.icon] || ICONS.box}</span><span>${esc(f.label)}</span>
         </button>
       `).join('')}
     </div>
@@ -5196,6 +5156,10 @@ function bindStockToolbar() {
   const input = document.getElementById('stockSearchInput');
   const clear = document.getElementById('stockSearchClear');
 
+  // O anel de foco e o placeholder que some usam :focus-within do próprio
+  // .o-search-field — não precisam mais de classe amarrada em onfocus/onblur
+  // (docs/04 §SearchField). .has-text continua em JS porque CSS não sabe "o
+  // campo tem texto" sem :has(), que não é usado em mais nenhum lugar do projeto.
   if (input) {
     field.classList.toggle('has-text', !!input.value);
     input.oninput = () => {
@@ -5203,8 +5167,6 @@ function bindStockToolbar() {
       field.classList.toggle('has-text', !!input.value);
       renderStockList();
     };
-    input.onfocus = () => field.classList.add('is-focused');
-    input.onblur = () => field.classList.remove('is-focused');
   }
   if (clear) {
     // mousedown, não click: o blur do input dispararia antes e o botão já teria
@@ -5219,7 +5181,7 @@ function bindStockToolbar() {
     };
   }
 
-  document.querySelectorAll('#stockFilterChips .filter-chip').forEach(chip => {
+  document.querySelectorAll('#stockFilterChips .o-chip').forEach(chip => {
     chip.onclick = () => { aplicarFiltroEstoque(chip.dataset.filter); };
   });
   document.querySelectorAll('[data-sum]').forEach(btn => {
@@ -5229,13 +5191,13 @@ function bindStockToolbar() {
   if (sortBtn) sortBtn.onclick = openStockSortSheet;
 }
 
-// Troca de filtro sem passar por render(): só as classes .active mudam e a
+// Troca de filtro sem passar por render(): só aria-pressed/.active mudam e a
 // lista é redesenhada. Se o render cheio rodasse, a animação de entrada
 // tocaria de novo a cada chip — e a busca perderia o foco.
 function aplicarFiltroEstoque(key) {
   state.stockFilter = key;
-  document.querySelectorAll('#stockFilterChips .filter-chip')
-    .forEach(c => c.classList.toggle('active', c.dataset.filter === key));
+  document.querySelectorAll('#stockFilterChips .o-chip')
+    .forEach(c => c.setAttribute('aria-pressed', String(c.dataset.filter === key)));
   document.querySelectorAll('[data-sum]')
     .forEach((c, i) => c.classList.toggle('active', i > 1 && c.dataset.sum === key));
   renderStockList();
