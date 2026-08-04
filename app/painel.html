@@ -493,15 +493,19 @@
   .timeline.is-scrolling { scrollbar-color: var(--color-neutral-300) transparent; }
   .timeline.is-scrolling::-webkit-scrollbar-thumb { background: var(--color-neutral-300); }
   .hour-row {
-    position: relative; height: 68px; border-top: 1px solid rgba(43,36,32,0.07);
+    position: relative; height: 60px;
+    /* Linha extremamente discreta, derivada do token de texto (não um
+       cinza arbitrário) — a grade é fundo, nunca o elemento principal. */
+    border-top: 1px solid color-mix(in srgb, var(--color-text) 6%, transparent);
   }
   .hour-row:first-child { border-top: none; }
   /* Hierarquia da timeline: hora é o elemento de MENOR peso (só orienta),
      evento é o de destaque, linha do horário atual é o mais importante de
-     todos — ver z-index e cor abaixo. */
+     todos — ver z-index e cor abaixo. Opacidade baixa de propósito: a hora
+     orienta, não compete pela atenção com os agendamentos. */
   .hour-label {
     position: absolute; left: -52px; top: -8px; width: 46px; text-align: right;
-    font-size: 10.5px; color: var(--color-neutral-600); opacity: 0.8;
+    font-size: 10.5px; color: var(--color-neutral-600); opacity: 0.5; letter-spacing: 0.02em;
     font-variant-numeric: tabular-nums;
   }
   .timeline-body { position: relative; }
@@ -518,19 +522,21 @@
        visual do selo/ponto/linha ficava ~9px abaixo da hora real. */
     transform: translateY(-50%);
   }
+  /* Traço fino de propósito — a linha orienta, o selo é que carrega a
+     informação; um traço grosso competiria com os agendamentos. */
   .current-time-line::after {
-    content: ''; flex: 1; height: 1.5px; background: var(--color-accent-700); margin-left: 5px;
+    content: ''; flex: 1; height: 1px; background: var(--color-accent-700); margin-left: 5px;
   }
   .current-time-badge {
     font-family: var(--font-body); font-size: 10.5px; font-weight: 700; color: var(--color-bg);
     background: var(--color-accent-700); padding: 2px 6px; border-radius: 999px;
     width: 38px; text-align: center; flex-shrink: 0; font-variant-numeric: tabular-nums;
   }
+  /* Marcador circular do horário atual — respira sozinho, sem depender de
+     nenhum toque, pra reforçar "isto é agora" com o mínimo de ruído. */
   .current-time-dot {
     width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent-700);
     flex-shrink: 0; margin-left: 5px;
-    /* Respiração contínua e discreta — só pra marcar "isto é agora", sem
-       chamar mais atenção do que os agendamentos. Nada de bounce. */
     animation: currentTimeBreathe 4s ease-in-out infinite;
   }
   @keyframes currentTimeFadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -540,20 +546,26 @@
   @keyframes currentTimePulse { 0% { transform: scale(1); } 35% { transform: scale(1.22); } 100% { transform: scale(1); } }
   .current-time-line.is-highlighted .current-time-badge,
   .current-time-line.is-highlighted .current-time-dot { animation: currentTimePulse .6s ease; }
-  /* Evento: sem sombra (o contraste de cor já separa do fundo), cantos mais
-     soltos e padding mais confortável — leitura em primeiro lugar. */
+  /* Evento: sem sombra parada (o contraste de cor já separa do fundo),
+     cantos no raio compacto do Design System (--radius-sm) e padding nos
+     tokens de espaçamento — não valores soltos. Leitura em primeiro lugar. */
   .timeline-appt {
-    position: absolute; left: 6px; right: 6px; border-radius: 12px;
-    padding: 8px 12px; overflow: hidden;
-    cursor: pointer; transition: transform .16s cubic-bezier(.34,1.56,.64,1), opacity .12s ease, box-shadow .12s ease;
+    position: absolute; left: 6px; right: 6px; border-radius: var(--radius-sm, 12px);
+    padding: var(--space-3, 12px) var(--space-3-5, 14px); overflow: hidden;
+    cursor: pointer;
+    transition: transform var(--motion-instant, 80ms) var(--ease-out, ease-out),
+      opacity var(--motion-fast, 160ms) ease, box-shadow var(--motion-instant, 80ms) var(--ease-out, ease-out);
     -webkit-tap-highlight-color: transparent;
   }
   .timeline-appt:active { transform: scale(0.98); opacity: 0.92; }
   .timeline-appt .title, .timeline-appt .sub {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .timeline-appt .title { font-weight: 700; font-size: 12.5px; }
-  .timeline-appt .sub { font-size: 11px; opacity: 0.85; }
+  .timeline-appt .title { font-weight: 700; font-size: 12.5px; letter-spacing: -0.01em; }
+  /* Sub mais recuado (opacidade menor) que antes — a hierarquia cliente →
+     serviço → duração fica mais nítida quando o secundário recua de verdade. */
+  .timeline-appt .sub { font-size: 11px; opacity: 0.72; }
+  .timeline-appt .sub .dur { font-variant-numeric: tabular-nums; opacity: 0.85; }
   /* Bloco baixo demais pra ler serviço/profissional sem cortar — só o nome
      da cliente sobrevive. Ver heightTier em buildAgendaGrid(). */
   .timeline-appt.is-tiny .sub { display: none; }
@@ -561,12 +573,12 @@
   /* Reserva o espaço do selo de status (canto superior direito) pra ele nunca
      cobrir o nome da cliente quando é comprido. */
   .timeline-appt.is-expanded .title, .timeline-appt.is-expanded .sub { padding-right: 56px; }
-  /* Selo de status só aparece no tier expandido (altura sobrando) — reaproveita
+  /* Selo de status só aparece no tier expandido (duração maior) — reaproveita
      os mesmos tokens de cor do card da Home (.am-status), só um pouco menor
      pra caber dentro do bloco da agenda. */
   .timeline-appt .am-status {
     position: absolute; top: 6px; right: 8px; font-size: 9px; font-weight: 700; padding: 2px 7px;
-    border-radius: 999px; white-space: nowrap;
+    border-radius: var(--radius-full, 999px); white-space: nowrap;
     background: var(--color-accent-2-100); color: var(--color-accent-2-700);
   }
   .timeline-appt .am-status.st-confirmed { background: var(--color-accent-100); color: var(--color-accent-700); }
@@ -574,39 +586,48 @@
   /* Toque-e-eleva antes de navegar pro detalhe (bindTimelineApptClicks) —
      dá tempo do dedo perceber que tocou ANTES da tela trocar, em vez de sumir
      na hora. Puramente JS (classe ligada/desligada por setTimeout), não CSS
-     :active — o :active já solta antes do timeout de 80-120ms terminar. */
-  .timeline-appt.is-lifting { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(43,36,32,0.18); }
+     :active — o :active já solta antes do timeout de 80-120ms terminar.
+     Sombra é o token de elevação de toque em cartão (--elevation-hover), não
+     um valor novo. */
+  .timeline-appt.is-lifting { transform: translateY(-2px); box-shadow: var(--elevation-hover, 0 8px 20px rgba(43,36,32,0.16)); }
   /* Nasce suave, não "estala" na tela — só o agendamento recém-criado no
      mesmo dia ganha a classe (state.enteringApptId, consumida uma vez em
      buildAgendaGrid). */
-  .timeline-appt.is-entering { animation: apptEnter .22s cubic-bezier(.34,1.56,.64,1); }
+  .timeline-appt.is-entering { animation: apptEnter var(--motion-emphasized, 240ms) var(--ease-spring, cubic-bezier(.34,1.56,.64,1)); }
   @keyframes apptEnter { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  /* Some suave — preparado pro dia em que existir cancelamento/exclusão de
+     agendamento (hoje não existe esse fluxo no app; a classe fica pronta,
+     sem nada que a dispare ainda). */
+  .timeline-appt.is-leaving { animation: apptLeave var(--motion-standard, 200ms) var(--ease-standard, ease) forwards; }
+  @keyframes apptLeave { to { opacity: 0; } }
   /* Indicador de horário livre entre atendimentos — texto discreto, sem
-     fundo, sem borda, pra nunca parecer um cartão nem competir com os
-     agendamentos de verdade. */
+     fundo, sem borda, itálico (lê como uma nota de rodapé da própria grade,
+     não como um rótulo) — nunca card, nunca alerta. */
   .agenda-free-slot {
     position: absolute; left: 0; right: 6px; pointer-events: none;
     display: flex; align-items: center; justify-content: center;
   }
   .agenda-free-slot span {
-    font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
-    color: var(--color-neutral-600); opacity: 0.7;
+    font-size: 10px; font-style: italic; color: var(--color-neutral-600); opacity: 0.6;
   }
   /* Pausa: a profissional está livre aqui, então o bloco fica "vazado" —
-     listrado e sem fundo cheio, pra ler como buraco e não como atendimento. */
+     listrado, mais claro que o resto do bloco e com borda mais suave, pra
+     ler como tempo passivo mesmo sem ler o rótulo. O trabalho (segmento
+     sólido, sem overlay) continua igual — é o contraste entre os dois que
+     comunica onde ela está ocupada e onde está livre. */
   .appt-gap {
     position: absolute; left: 0; right: 0; pointer-events: none;
     background: repeating-linear-gradient(
       -45deg, transparent, transparent 5px,
-      rgba(255,255,255,0.55) 5px, rgba(255,255,255,0.55) 10px);
-    border-top: 1px dashed rgba(0,0,0,0.18);
-    border-bottom: 1px dashed rgba(0,0,0,0.18);
+      rgba(255,255,255,0.65) 5px, rgba(255,255,255,0.65) 10px);
+    border-top: 1px dashed rgba(0,0,0,0.12);
+    border-bottom: 1px dashed rgba(0,0,0,0.12);
     display: flex; align-items: center; justify-content: center;
   }
   .gap-label {
     font-size: 9.5px; font-weight: 600; letter-spacing: 0.03em;
     color: var(--color-neutral-600); background: var(--color-bg);
-    padding: 1px 6px; border-radius: 999px; white-space: nowrap;
+    padding: 1px 6px; border-radius: var(--radius-full, 999px); white-space: nowrap;
   }
 
   .login-wrap {
@@ -706,7 +727,7 @@
     .current-time-line.is-highlighted .current-time-badge,
     .current-time-line.is-highlighted .current-time-dot { animation: none; }
     .current-time-dot { animation: none; }
-    .timeline-appt.is-entering { animation: none; }
+    .timeline-appt.is-entering, .timeline-appt.is-leaving { animation: none; }
     .timeline-appt.is-lifting { transform: none; box-shadow: none; }
     .diag-card-body-wrap, .diag-card-head .dc-chevron { transition: none; }
   }
@@ -2939,12 +2960,12 @@ function weekChartSvg(values, days) {
 // aparecerem na tela em vez de ficarem cortados fora dela.
 // Janela ampliada (5h–21h) só pra dar folga visual na rolagem — não é o
 // expediente (OPEN_HOUR/CLOSE_HOUR, 9h–18h), que é o que manda nas contas
-// de ocupação e nos horários oferecidos. HOUR_HEIGHT desceu de 68 pra 56
-// (meio-termo: mais compacto que antes, mas não tão apertado quanto a
-// referência) porque a janela ficou bem maior.
+// de ocupação e nos horários oferecidos. HOUR_HEIGHT: 68 → 56 → 60 — o
+// refinamento visual (respiro/premium) pediu mais espaço negativo de volta,
+// sem repetir o aperto de 68 que existia antes da janela dobrar de tamanho.
 const AGENDA_START_HOUR = 5;
 const AGENDA_END_HOUR = 22;
-const HOUR_HEIGHT = 56;
+const HOUR_HEIGHT = 60;
 const WEEKDAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
 // Expediente de verdade — o que o agendar.html oferece à cliente. Ocupação e
@@ -2962,11 +2983,14 @@ const SLOT_MINUTES = 30;
 // Abaixo disso o "Xh livres" seria ruído — encaixe de meia hora já aparece
 // como espaço em branco na própria grade, não precisa de rótulo.
 const AGENDA_FREE_MIN_MINUTES = 45;
-// Altura (px) do bloco na timeline abaixo da qual serviço/profissional some
-// (is-tiny) ou acima da qual duração/status aparecem (expandido). Só
-// preparação visual — nenhuma regra de negócio muda com isso.
-const AGENDA_APPT_TINY_HEIGHT = 30;
-const AGENDA_APPT_EXPANDED_HEIGHT = 56;
+// Em MINUTOS de duração, não em pixels — desacoplado de HOUR_HEIGHT de
+// propósito, senão qualquer ajuste fino da grade (respiro, "premium")
+// precisaria recalibrar os dois tiers junto. Abaixo do primeiro,
+// serviço/profissional somem (is-tiny); a partir do segundo, duração e
+// status aparecem (is-expanded). Só preparação visual — nenhuma regra de
+// negócio muda com isso.
+const AGENDA_APPT_TINY_MAX_MINUTES = 30;
+const AGENDA_APPT_EXPANDED_MIN_MINUTES = 60;
 
 function sameDay(a, b) {
   return a.toDateString() === b.toDateString();
@@ -3173,13 +3197,14 @@ function buildAgendaGrid(day) {
       </div>`;
     }
 
-    // Altura disponível decide quanto o cartão consegue contar sem cortar:
-    // pouco espaço = só o nome; espaço de sobra = duração e status também.
-    // Puramente visual — não muda o que está gravado no agendamento.
-    const tiny = height < AGENDA_APPT_TINY_HEIGHT;
-    const expanded = height >= AGENDA_APPT_EXPANDED_HEIGHT;
+    // Duração real decide quanto o cartão consegue contar sem cortar: pouco
+    // tempo = só o nome; serviço mais longo = duração e status também. Em
+    // minutos, não em pixels — independe de HOUR_HEIGHT. Puramente visual,
+    // não muda o que está gravado no agendamento.
+    const tiny = durMins < AGENDA_APPT_TINY_MAX_MINUTES;
+    const expanded = durMins >= AGENDA_APPT_EXPANDED_MIN_MINUTES;
     const subLabel = expanded
-      ? `${a.service?.name || ''} · ${a.staff?.name || ''} · ${durationLabel(durMins)}`
+      ? `${a.service?.name || ''} · ${a.staff?.name || ''} · <span class="dur">${durationLabel(durMins)}</span>`
       : `${a.service?.name || ''} · ${a.staff?.name || ''}`;
     const statusPillHtml = expanded
       ? `<span class="am-status ${statusClass(a.status)}">${statusLabel(a.status)}</span>`
@@ -3407,8 +3432,10 @@ function slidePane(direction, viewportId, paneId, drawFn) {
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      newPane.style.transition = 'transform .22s cubic-bezier(.22,.61,.36,1)';
-      clone.style.transition = 'transform .22s cubic-bezier(.22,.61,.36,1)';
+      // .24s (--motion-emphasized): refinamento visual pediu a troca de dia
+      // "mais suave" — um tique acima do .22s anterior, mesma curva de saída.
+      newPane.style.transition = 'transform .24s cubic-bezier(.22,.61,.36,1)';
+      clone.style.transition = 'transform .24s cubic-bezier(.22,.61,.36,1)';
       newPane.style.transform = 'translateX(0)';
       clone.style.transform = `translateX(${exitTo})`;
     });
