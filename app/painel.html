@@ -529,8 +529,12 @@
   .current-time-dot {
     width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent-700);
     flex-shrink: 0; margin-left: 5px;
+    /* Respiração contínua e discreta — só pra marcar "isto é agora", sem
+       chamar mais atenção do que os agendamentos. Nada de bounce. */
+    animation: currentTimeBreathe 4s ease-in-out infinite;
   }
   @keyframes currentTimeFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes currentTimeBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
   /* Destaque de um instante, disparado pelo botão "Hoje" — pulso discreto,
      não pisca nem muda de cor. */
   @keyframes currentTimePulse { 0% { transform: scale(1); } 35% { transform: scale(1.22); } 100% { transform: scale(1); } }
@@ -541,12 +545,53 @@
   .timeline-appt {
     position: absolute; left: 6px; right: 6px; border-radius: 12px;
     padding: 8px 12px; overflow: hidden;
-    cursor: pointer; transition: transform .16s cubic-bezier(.34,1.56,.64,1), opacity .12s ease;
+    cursor: pointer; transition: transform .16s cubic-bezier(.34,1.56,.64,1), opacity .12s ease, box-shadow .12s ease;
     -webkit-tap-highlight-color: transparent;
   }
   .timeline-appt:active { transform: scale(0.98); opacity: 0.92; }
+  .timeline-appt .title, .timeline-appt .sub {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .timeline-appt .title { font-weight: 700; font-size: 12.5px; }
   .timeline-appt .sub { font-size: 11px; opacity: 0.85; }
+  /* Bloco baixo demais pra ler serviço/profissional sem cortar — só o nome
+     da cliente sobrevive. Ver heightTier em buildAgendaGrid(). */
+  .timeline-appt.is-tiny .sub { display: none; }
+  .timeline-appt.is-tiny .title { font-size: 11px; }
+  /* Reserva o espaço do selo de status (canto superior direito) pra ele nunca
+     cobrir o nome da cliente quando é comprido. */
+  .timeline-appt.is-expanded .title, .timeline-appt.is-expanded .sub { padding-right: 56px; }
+  /* Selo de status só aparece no tier expandido (altura sobrando) — reaproveita
+     os mesmos tokens de cor do card da Home (.am-status), só um pouco menor
+     pra caber dentro do bloco da agenda. */
+  .timeline-appt .am-status {
+    position: absolute; top: 6px; right: 8px; font-size: 9px; font-weight: 700; padding: 2px 7px;
+    border-radius: 999px; white-space: nowrap;
+    background: var(--color-accent-2-100); color: var(--color-accent-2-700);
+  }
+  .timeline-appt .am-status.st-confirmed { background: var(--color-accent-100); color: var(--color-accent-700); }
+  .timeline-appt .am-status.st-done { background: var(--color-neutral-200); color: var(--color-neutral-600); }
+  /* Toque-e-eleva antes de navegar pro detalhe (bindTimelineApptClicks) —
+     dá tempo do dedo perceber que tocou ANTES da tela trocar, em vez de sumir
+     na hora. Puramente JS (classe ligada/desligada por setTimeout), não CSS
+     :active — o :active já solta antes do timeout de 80-120ms terminar. */
+  .timeline-appt.is-lifting { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(43,36,32,0.18); }
+  /* Nasce suave, não "estala" na tela — só o agendamento recém-criado no
+     mesmo dia ganha a classe (state.enteringApptId, consumida uma vez em
+     buildAgendaGrid). */
+  .timeline-appt.is-entering { animation: apptEnter .22s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes apptEnter { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  /* Indicador de horário livre entre atendimentos — texto discreto, sem
+     fundo, sem borda, pra nunca parecer um cartão nem competir com os
+     agendamentos de verdade. */
+  .agenda-free-slot {
+    position: absolute; left: 0; right: 6px; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .agenda-free-slot span {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
+    color: var(--color-neutral-600); opacity: 0.7;
+  }
   /* Pausa: a profissional está livre aqui, então o bloco fica "vazado" —
      listrado e sem fundo cheio, pra ler como buraco e não como atendimento. */
   .appt-gap {
@@ -660,6 +705,9 @@
     .current-time-line { animation: none; transition: none; }
     .current-time-line.is-highlighted .current-time-badge,
     .current-time-line.is-highlighted .current-time-dot { animation: none; }
+    .current-time-dot { animation: none; }
+    .timeline-appt.is-entering { animation: none; }
+    .timeline-appt.is-lifting { transform: none; box-shadow: none; }
     .diag-card-body-wrap, .diag-card-head .dc-chevron { transition: none; }
   }
   .modal-overlay {
@@ -1373,7 +1421,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month', clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '' };
+const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month', clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -2911,6 +2959,14 @@ const WORK_MINUTES_PER_DAY = (CLOSE_HOUR - OPEN_HOUR) * 60;
 // Mesma granularidade do agendar.html — o dropdown de horário do modal de
 // novo agendamento usa essa grade.
 const SLOT_MINUTES = 30;
+// Abaixo disso o "Xh livres" seria ruído — encaixe de meia hora já aparece
+// como espaço em branco na própria grade, não precisa de rótulo.
+const AGENDA_FREE_MIN_MINUTES = 45;
+// Altura (px) do bloco na timeline abaixo da qual serviço/profissional some
+// (is-tiny) ou acima da qual duração/status aparecem (expandido). Só
+// preparação visual — nenhuma regra de negócio muda com isso.
+const AGENDA_APPT_TINY_HEIGHT = 30;
+const AGENDA_APPT_EXPANDED_HEIGHT = 56;
 
 function sameDay(a, b) {
   return a.toDateString() === b.toDateString();
@@ -2953,6 +3009,54 @@ function layoutAppts(appts) {
     it.nivel = Math.min(nivel, NIVEL_MAX);
   });
   return itens;
+}
+
+// Janelas sem nenhum atendimento dentro do expediente real (OPEN_HOUR–
+// CLOSE_HOUR, não a janela de desenho AGENDA_START/END_HOUR — fora do
+// expediente é sempre "livre" e mostrar isso seria ruído). Mescla
+// atendimentos sobrepostos (encaixe) antes de medir os buracos, senão dois
+// atendimentos que se cruzam abririam um "buraco" falso entre eles.
+function computeFreeGaps(day, dayAppts) {
+  const dayStart = new Date(day); dayStart.setHours(OPEN_HOUR, 0, 0, 0);
+  const dayEnd = new Date(day); dayEnd.setHours(CLOSE_HOUR, 0, 0, 0);
+
+  const busy = dayAppts
+    .map(a => ({ s: new Date(a.starts_at).getTime(), e: new Date(a.ends_at).getTime() }))
+    .sort((x, y) => x.s - y.s);
+  const merged = [];
+  busy.forEach(b => {
+    const last = merged[merged.length - 1];
+    if (last && b.s <= last.e) last.e = Math.max(last.e, b.e);
+    else merged.push({ s: b.s, e: b.e });
+  });
+
+  const gaps = [];
+  let cursor = dayStart.getTime();
+  merged.forEach(b => {
+    if (b.s > cursor) gaps.push({ s: cursor, e: Math.min(b.s, dayEnd.getTime()) });
+    cursor = Math.max(cursor, b.e);
+  });
+  if (cursor < dayEnd.getTime()) gaps.push({ s: cursor, e: dayEnd.getTime() });
+
+  return gaps
+    .map(g => ({ ...g, mins: Math.round((g.e - g.s) / 60000) }))
+    .filter(g => g.mins >= AGENDA_FREE_MIN_MINUTES);
+}
+
+function freeSlotLabel(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m} min livres`;
+  if (m === 0) return `${h}h ${h === 1 ? 'livre' : 'livres'}`;
+  return `${h}h${String(m).padStart(2, '0')} livres`;
+}
+
+function durationLabel(mins) {
+  const total = Math.round(mins);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m}min`;
+  return m === 0 ? `${h}h` : `${h}h${m}`;
 }
 
 // Posição (px) e rótulo da linha do horário atual dentro da grade, ou null
@@ -3037,6 +3141,12 @@ function buildAgendaGrid(day) {
   for (let h = AGENDA_START_HOUR; h < AGENDA_END_HOUR; h++) hours.push(h);
   const currentTime = sameDay(day, new Date()) ? currentTimeInfo() : null;
 
+  // Consumida uma vez só: o próximo full render depois de criar um
+  // agendamento marca o bloco novo com a animação de entrada, e nenhum
+  // render seguinte repete (senão tocaria de novo a cada troca de aba).
+  const enteringId = state.enteringApptId;
+  state.enteringApptId = null;
+
   const blocksHtml = layoutAppts(dayAppts).map(it => {
     const a = it.a;
     const start = new Date(a.starts_at);
@@ -3063,13 +3173,35 @@ function buildAgendaGrid(day) {
       </div>`;
     }
 
+    // Altura disponível decide quanto o cartão consegue contar sem cortar:
+    // pouco espaço = só o nome; espaço de sobra = duração e status também.
+    // Puramente visual — não muda o que está gravado no agendamento.
+    const tiny = height < AGENDA_APPT_TINY_HEIGHT;
+    const expanded = height >= AGENDA_APPT_EXPANDED_HEIGHT;
+    const subLabel = expanded
+      ? `${a.service?.name || ''} · ${a.staff?.name || ''} · ${durationLabel(durMins)}`
+      : `${a.service?.name || ''} · ${a.staff?.name || ''}`;
+    const statusPillHtml = expanded
+      ? `<span class="am-status ${statusClass(a.status)}">${statusLabel(a.status)}</span>`
+      : '';
+    const classes = ['timeline-appt', tiny ? 'is-tiny' : '', expanded ? 'is-expanded' : '', enteringId === a.id ? 'is-entering' : ''].filter(Boolean).join(' ');
+
     return `
-      <div class="timeline-appt" data-appt-id="${a.id}" style="top:${top}px; height:${height}px; left:${recuo}px; width:calc(100% - ${recuo + 6}px); right:auto; z-index:${10 + it.nivel}; background:${c.bg}; border-left:3px solid ${c.border};">
+      <div class="${classes}" data-appt-id="${a.id}" style="top:${top}px; height:${height}px; left:${recuo}px; width:calc(100% - ${recuo + 6}px); right:auto; z-index:${10 + it.nivel}; background:${c.bg}; border-left:3px solid ${c.border};">
         ${gapHtml}
+        ${statusPillHtml}
         <div class="title" style="color:${c.text}">${a.client?.name || 'Cliente'}</div>
-        <div class="sub" style="color:${c.text}">${a.service?.name || ''} · ${a.staff?.name || ''}</div>
+        <div class="sub" style="color:${c.text}">${subLabel}</div>
       </div>
     `;
+  }).join('');
+
+  const freeSlotsHtml = computeFreeGaps(day, dayAppts).map(g => {
+    const gStart = new Date(g.s);
+    const startMins = (gStart.getHours() - AGENDA_START_HOUR) * 60 + gStart.getMinutes();
+    const top = (startMins / 60) * HOUR_HEIGHT;
+    const height = (g.mins / 60) * HOUR_HEIGHT;
+    return `<div class="agenda-free-slot" style="top:${top}px; height:${height}px;"><span>${freeSlotLabel(g.mins)}</span></div>`;
   }).join('');
 
   const html = `
@@ -3079,6 +3211,7 @@ function buildAgendaGrid(day) {
           <div class="hour-label">${String(h).padStart(2, '0')}:00</div>
         </div>
       `).join('')}
+      ${freeSlotsHtml}
       ${blocksHtml}
       ${currentTime ? `
         <div class="current-time-line" id="currentTimeLine" style="top:${currentTime.top}px;">
@@ -3124,11 +3257,19 @@ function updateAgendaDateTitle(newDay) {
 
 function bindTimelineApptClicks() {
   app.querySelectorAll('.timeline-appt[data-appt-id]').forEach(block => {
-    block.onclick = async () => {
+    block.onclick = () => {
       const apptId = block.dataset.apptId;
-      if (!state.apptPhotos[apptId]) await loadApptPhotos(apptId);
-      state.selectedApptId = apptId;
-      render();
+      const abrir = async () => {
+        if (!state.apptPhotos[apptId]) await loadApptPhotos(apptId);
+        state.selectedApptId = apptId;
+        render();
+      };
+      // Eleva antes de trocar de tela — dá tempo do toque "assentar" antes do
+      // conteúdo mudar debaixo do dedo. Sem isso a tela trocava instantânea
+      // demais, quase parecendo que o toque não foi reconhecido.
+      if (prefersReducedMotion()) { abrir(); return; }
+      block.classList.add('is-lifting');
+      setTimeout(abrir, 100);
     };
   });
 }
@@ -5712,7 +5853,7 @@ function renderNewApptModal(errorMsg) {
       startsAt.setHours(hh, mm, 0, 0);
       const endsAt = new Date(startsAt.getTime() + service.duration_minutes * 60000);
 
-      const { error: apptErr } = await sb.from('appointments').insert({
+      const { data: createdAppt, error: apptErr } = await sb.from('appointments').insert({
         client_id: clientId,
         staff_id: staffId,
         service_id: serviceId,
@@ -5720,8 +5861,15 @@ function renderNewApptModal(errorMsg) {
         ends_at: endsAt.toISOString(),
         status: 'confirmed',
         source: 'manual',
-      });
+      }).select('id').single();
       if (apptErr) throw apptErr;
+
+      // Só anima a entrada se o agendamento cair no dia que a Agenda já está
+      // mostrando — senão o bloco nasceria animado numa tela que o usuário
+      // nem está vendo, e o efeito passaria em branco.
+      if (createdAppt && sameDay(startsAt, state.agendaDate)) {
+        state.enteringApptId = createdAppt.id;
+      }
 
       closeModal();
       showToast('Agendamento criado');
