@@ -24,6 +24,19 @@ função está cada assunto (agenda, estoque, insights, login, fuso). Leia ele e
 use grep direcionado — nunca varra os HTMLs inteiros, `painel.html` tem ~3.000
 linhas e custa caro.
 
+## Orenzi UI contract
+
+Before creating, modifying or reviewing any interface:
+
+1. Read `/docs/ORENZI_DESIGN_SYSTEM_v1.0.md`.
+2. Reuse the shared tokens, components and patterns defined by the Orenzi Design System.
+3. Do not introduce raw colors, arbitrary spacing, local radius values, new shadow styles or one-off animation durations unless explicitly approved.
+4. Mobile is the source of truth, supporting widths from 320px to 430px.
+5. When displayed in a desktop browser, the mobile application must remain centered and must not stretch across the entire viewport unless a separate desktop specification is provided.
+6. Preserve backend behavior, business logic, routes, APIs, database structure and data contracts during visual changes.
+7. Every interface must include appropriate loading, empty, error, disabled, focus-visible and reduced-motion behavior.
+8. If the Design System does not cover a requirement, stop and propose an extension before creating a local exception.
+
 ## Git
 
 Repo privado: `https://github.com/rapmx/orenzi-atelier` (conta `rapmx`).

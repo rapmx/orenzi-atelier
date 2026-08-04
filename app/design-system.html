@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orenzi — Design System</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap">
+
+<!-- Showcase isolado: só os três arquivos do Design System, sem Supabase,
+     sem autenticação. Ver docs/08_IMPLEMENTATION_RULES.md §18.
+     "Componente que não está aqui não está pronto." -->
+<link rel="stylesheet" href="ds/orenzi-tokens.css">
+<link rel="stylesheet" href="ds/orenzi-base.css">
+<link rel="stylesheet" href="ds/orenzi-components.css">
+
+<style>
+  /* CSS exclusivo desta página de showcase — nunca usado pelo produto.
+     Estrutura de demonstração (grade, rótulos de seção, simulador de
+     largura), não componentes do sistema. */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--color-neutral-200);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    padding-bottom: 80px;
+  }
+  .ds-page-header {
+    background: var(--color-bg);
+    border-bottom: var(--border-width) solid var(--color-divider);
+    padding: var(--space-6) var(--gutter) var(--space-5);
+    position: sticky;
+    top: 0;
+    z-index: var(--z-dropdown);
+  }
+  .ds-page-header h1 {
+    margin: 0 0 4px;
+    font-family: var(--font-heading);
+    font-size: var(--text-title-1-size);
+    font-weight: var(--text-title-1-weight);
+  }
+  .ds-page-header p {
+    margin: 0;
+    color: var(--color-neutral-600);
+    font-size: var(--text-caption-size);
+  }
+  .ds-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+  .ds-nav a {
+    font-size: var(--text-caption-size);
+    color: var(--color-accent-700);
+    text-decoration: none;
+    padding: 4px var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--color-accent-100);
+  }
+  .ds-section {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: var(--space-8) var(--gutter) 0;
+  }
+  .ds-section h2 {
+    font-family: var(--font-heading);
+    font-size: var(--text-title-2-size);
+    margin: 0 0 4px;
+  }
+  .ds-section .ds-note {
+    color: var(--color-neutral-600);
+    font-size: var(--text-caption-size);
+    margin: 0 0 var(--space-5);
+    max-width: 60ch;
+  }
+  .ds-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--space-3);
+  }
+  .ds-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+  .ds-swatch {
+    border-radius: var(--radius-sm);
+    border: var(--border-width) solid var(--color-divider);
+    overflow: hidden;
+    background: var(--color-surface);
+  }
+  .ds-swatch-color {
+    height: 64px;
+  }
+  .ds-swatch-label {
+    padding: var(--space-2) var(--space-2-5);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .ds-swatch-label b {
+    display: block;
+    font-family: monospace;
+    font-size: 11px;
+  }
+  .ds-swatch-label .ratio-ok::before { content: "✓ "; color: var(--color-success-700); }
+  .ds-swatch-label .ratio-fail::before { content: "⚠ "; color: var(--color-accent-2-700); }
+  .ds-type-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: var(--border-width) solid var(--color-divider);
+  }
+  .ds-type-row .token-name {
+    width: 160px;
+    flex-shrink: 0;
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--color-neutral-600);
+  }
+  .ds-space-bar {
+    background: var(--color-accent-600);
+    height: 20px;
+    border-radius: 3px;
+  }
+  .ds-space-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: 6px;
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--color-neutral-600);
+  }
+  .ds-space-row .token-name { width: 90px; }
+  .ds-radius-demo,
+  .ds-elevation-demo {
+    width: 88px;
+    height: 88px;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-divider);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: monospace;
+    font-size: 11px;
+    color: var(--color-neutral-600);
+    text-align: center;
+  }
+  .ds-state-label {
+    font-size: 11px;
+    color: var(--color-neutral-600);
+    text-align: center;
+    margin-top: 6px;
+  }
+  .ds-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 110px;
+  }
+  fieldset {
+    border: none;
+    padding: 0;
+    margin: 0 0 var(--space-5);
+  }
+
+  /* ── Simulador de largura ─────────────────────────────────────── */
+  .ds-viewport-controls {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+  }
+  .ds-viewport-controls button {
+    font-family: var(--font-body);
+    font-size: var(--text-caption-size);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-full);
+    border: var(--border-width) solid var(--color-divider);
+    background: var(--color-surface);
+    cursor: pointer;
+  }
+  .ds-viewport-controls button.is-active {
+    background: var(--color-accent-100);
+    border-color: var(--color-accent-600);
+    color: var(--color-accent-700);
+    font-weight: 600;
+  }
+  .ds-viewport-frame {
+    background: var(--color-bg);
+    border: var(--border-width) dashed var(--color-neutral-300);
+    margin: 0 auto;
+    padding: var(--space-5);
+    transition: width var(--motion-standard) var(--ease-standard);
+    width: 480px;
+    max-width: 100%;
+  }
+  .ds-viewport-frame[data-w="320"] { width: 320px; }
+  .ds-viewport-frame[data-w="390"] { width: 390px; }
+  .ds-viewport-frame[data-w="430"] { width: 430px; }
+  .ds-viewport-frame[data-w="480"] { width: 480px; }
+  .ds-viewport-frame[data-w="desktop"] { width: 100%; }
+  .ds-viewport-frame[data-w="desktop"] .o-app-shell {
+    background: var(--color-surface);
+    outline: var(--border-width) dashed var(--color-accent-600);
+  }
+
+  .ds-reduced-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-caption-size);
+    margin-bottom: var(--space-4);
+  }
+  /* Simulação de prefers-reduced-motion: reduce sem depender das
+     preferências reais do sistema operacional — só para revisão neste
+     showcase. As regras reais vivem em orenzi-base.css e
+     orenzi-components.css, ligadas ao @media verdadeiro. */
+  html.simulate-reduced * ,
+  html.simulate-reduced *::before,
+  html.simulate-reduced *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+</style>
+</head>
+<body>
+
+<header class="ds-page-header">
+  <h1>Orenzi Design System</h1>
+  <p>Showcase isolado · v1.1 · não faz parte do produto · docs/08_IMPLEMENTATION_RULES.md §18</p>
+  <nav class="ds-nav">
+    <a href="#paleta">Paleta</a>
+    <a href="#tipografia">Tipografia</a>
+    <a href="#espacamento">Espaçamento</a>
+    <a href="#raios">Raios</a>
+    <a href="#elevacao">Elevação</a>
+    <a href="#botoes">Botões</a>
+    <a href="#icon-buttons">Icon buttons</a>
+    <a href="#campos">Campos</a>
+    <a href="#chips">Chips</a>
+    <a href="#badges">Badges</a>
+    <a href="#avatares">Avatares</a>
+    <a href="#cards">Cards</a>
+    <a href="#skeleton">Skeleton &amp; Spinner</a>
+    <a href="#responsivo">Responsivo</a>
+  </nav>
+</header>
+
+<!-- ═══════════════════════ PALETA ═══════════════════════ -->
+<section class="ds-section" id="paleta">
+  <h2>Paleta</h2>
+  <p class="ds-note">Valores extraídos do código real. Razão de contraste medida contra <code>--color-bg</code> (#f3ede4), salvo indicação — ver docs/03_DESIGN_SYSTEM.md §6.</p>
+
+  <div class="ds-grid">
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-bg)"></div><div class="ds-swatch-label"><b>--color-bg</b>#f3ede4</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-surface)"></div><div class="ds-swatch-label"><b>--color-surface</b>#f7f1e8</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-neutral-200)"></div><div class="ds-swatch-label"><b>--color-neutral-200</b>#e8ddce</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-neutral-300)"></div><div class="ds-swatch-label"><b>--color-neutral-300</b>#ddcfba</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-neutral-600)"></div><div class="ds-swatch-label"><b>--color-neutral-600</b>#6b6053</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-neutral-700)"></div><div class="ds-swatch-label"><b>--color-neutral-700</b>#5c4f42</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-text)"></div><div class="ds-swatch-label"><b>--color-text</b>#2b2420 <span class="ratio-ok">13,11:1</span></div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-accent-100)"></div><div class="ds-swatch-label"><b>--color-accent-100</b>#ecdcc9</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-accent)"></div><div class="ds-swatch-label"><b>--color-accent</b>#b6784a — gráfico, 3,12:1 <span class="ratio-fail">não usar como texto</span></div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-accent-600)"></div><div class="ds-swatch-label"><b>--color-accent-600</b>#a1683f</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-accent-700);color:#fff"></div><div class="ds-swatch-label"><b>--color-accent-700</b>#8a5a34 <span class="ratio-ok">5,02:1 (fundo do CTA)</span></div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-accent-2-100)"></div><div class="ds-swatch-label"><b>--color-accent-2-100</b>#f7e7e7</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-accent-2)"></div><div class="ds-swatch-label"><b>--color-accent-2</b>#b23a3a <span class="ratio-ok">5,07:1</span></div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-accent-2-700);color:#fff"></div><div class="ds-swatch-label"><b>--color-accent-2-700</b>#8a2a2a <span class="ratio-ok">7,17:1 sobre accent-2-100</span></div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-success-100)"></div><div class="ds-swatch-label"><b>--color-success-100</b>#e7f0e9</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-success)"></div><div class="ds-swatch-label"><b>--color-success</b>#4f8a5b — gráfico, 3,53:1</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--color-success-700);color:#fff"></div><div class="ds-swatch-label"><b>--color-success-700</b>#3b6744 <span class="ratio-ok">5,62:1 sobre success-100</span></div></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ TIPOGRAFIA ═══════════════════════ -->
+<section class="ds-section" id="tipografia">
+  <h2>Tipografia</h2>
+  <p class="ds-note">Poppins (títulos) e Jost (corpo). Escala real do produto (11–26px) — ver docs/03 §7–8.</p>
+
+  <div class="ds-type-row"><span class="token-name">--text-display</span><span class="o-text-display">Agenda de hoje</span></div>
+  <div class="ds-type-row"><span class="token-name">--text-title-1</span><span class="o-text-title-1">Boa tarde, Juliane</span></div>
+  <div class="ds-type-row"><span class="token-name">--text-title-2</span><span class="o-text-title-2">Estoque</span></div>
+  <div class="ds-type-row"><span class="token-name">--text-title-3</span><span class="o-text-title-3">Produtos em alerta</span></div>
+  <div class="ds-type-row"><span class="token-name">--text-body</span><span class="o-text-body">Oxidante 20 vol acabou.</span></div>
+  <div class="ds-type-row"><span class="token-name">--text-body-strong</span><span class="o-text-body-strong">Salvar cliente</span></div>
+  <div class="ds-type-row"><span class="token-name">--text-caption</span><span class="o-text-caption">há 3 dias</span></div>
+  <div class="ds-type-row"><span class="token-name">--text-micro</span><span class="o-text-micro">VIP</span></div>
+</section>
+
+<!-- ═══════════════════════ ESPAÇAMENTO ═══════════════════════ -->
+<section class="ds-section" id="espacamento">
+  <h2>Espaçamento</h2>
+  <p class="ds-note">Inclui 10px e 14px de propósito — são dos valores mais usados no produto real. Ver docs/03 §9.</p>
+  <div class="ds-space-row"><span class="token-name">--space-1 · 4px</span><div class="ds-space-bar" style="width:4px"></div></div>
+  <div class="ds-space-row"><span class="token-name">--space-2 · 8px</span><div class="ds-space-bar" style="width:8px"></div></div>
+  <div class="ds-space-row"><span class="token-name">--space-2-5 · 10px</span><div class="ds-space-bar" style="width:10px"></div></div>
+  <div class="ds-space-row"><span class="token-name">--space-3 · 12px</span><div class="ds-space-bar" style="width:12px"></div></div>
+  <div class="ds-space-row"><span class="token-name">--space-3-5 · 14px</span><div class="ds-space-bar" style="width:14px"></div></div>
+  <div class="ds-space-row"><span class="token-name">--space-4 · 16px</span><div class="ds-space-bar" style="width:16px"></div></div>
+  <div class="ds-space-row"><span class="token-name">--space-5 · 20px (gutter)</span><div class="ds-space-bar" style="width:20px"></div></div>
+  <div class="ds-space-row"><span class="token-name">--space-6 · 24px</span><div class="ds-space-bar" style="width:24px"></div></div>
+  <div class="ds-space-row"><span class="token-name">--space-8 · 32px</span><div class="ds-space-bar" style="width:32px"></div></div>
+</section>
+
+<!-- ═══════════════════════ RAIOS ═══════════════════════ -->
+<section class="ds-section" id="raios">
+  <h2>Raios</h2>
+  <p class="ds-note">Escala convergida, aprovada em 03/08/2026. Migração gradual — ver docs/03 §11.</p>
+  <div class="ds-row">
+    <div class="ds-cell"><div class="ds-radius-demo" style="border-radius:var(--radius-sm)">12px</div><div class="ds-state-label">sm — controles</div></div>
+    <div class="ds-cell"><div class="ds-radius-demo" style="border-radius:var(--radius-md)">16px</div><div class="ds-state-label">md — cards</div></div>
+    <div class="ds-cell"><div class="ds-radius-demo" style="border-radius:var(--radius-lg)">20px</div><div class="ds-state-label">lg — destaque</div></div>
+    <div class="ds-cell"><div class="ds-radius-demo" style="border-radius:var(--radius-xl)">28px</div><div class="ds-state-label">xl — sheets</div></div>
+    <div class="ds-cell"><div class="ds-radius-demo" style="border-radius:var(--radius-full)">999px</div><div class="ds-state-label">full — pílula</div></div>
+    <div class="ds-cell"><div class="ds-radius-demo" style="border-radius:var(--radius-circle)">50%</div><div class="ds-state-label">circle — avatar</div></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ ELEVAÇÃO ═══════════════════════ -->
+<section class="ds-section" id="elevacao">
+  <h2>Elevação</h2>
+  <p class="ds-note">Resolve a inconsistência real: <code>--shadow-md</code> era referenciado sem existir, com dois fallbacks divergentes. Ver docs/03 §13.</p>
+  <div class="ds-row">
+    <div class="ds-cell"><div class="ds-elevation-demo" style="box-shadow:var(--elevation-raised);border-radius:var(--radius-md)">raised</div><div class="ds-state-label">FAB</div></div>
+    <div class="ds-cell"><div class="ds-elevation-demo" style="box-shadow:var(--elevation-hover);border-radius:var(--radius-md)">hover</div><div class="ds-state-label">toque em card</div></div>
+    <div class="ds-cell"><div class="ds-elevation-demo" style="box-shadow:var(--elevation-overlay);border-radius:var(--radius-md)">overlay</div><div class="ds-state-label">modal, sheet</div></div>
+    <div class="ds-cell"><div class="ds-elevation-demo" style="box-shadow:var(--focus-ring);border-radius:var(--radius-md)">focus</div><div class="ds-state-label">anel de foco</div></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ BOTÕES ═══════════════════════ -->
+<section class="ds-section" id="botoes">
+  <h2>Botões</h2>
+  <p class="ds-note">Sentence case — caixa alta eliminada (decisão de 03/08/2026). Primário em <code>--color-accent-700</code>, 5,02:1. Ver docs/04 §Button.</p>
+
+  <fieldset>
+    <legend class="o-text-caption" style="margin-bottom:8px">Variantes — default</legend>
+    <div class="ds-row">
+      <div class="ds-cell"><button class="o-btn o-btn-primary o-btn-inline">Salvar cliente</button><div class="ds-state-label">primary</div></div>
+      <div class="ds-cell"><button class="o-btn o-btn-secondary o-btn-inline">Cancelar</button><div class="ds-state-label">secondary</div></div>
+      <div class="ds-cell"><button class="o-btn o-btn-ghost o-btn-inline">Ver mais</button><div class="ds-state-label">ghost</div></div>
+      <div class="ds-cell"><button class="o-btn o-btn-destructive o-btn-inline">Excluir produto</button><div class="ds-state-label">destructive</div></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend class="o-text-caption" style="margin-bottom:8px">Estados — primary</legend>
+    <div class="ds-row">
+      <div class="ds-cell"><button class="o-btn o-btn-primary o-btn-inline">Default</button><div class="ds-state-label">default (:hover / :active reais)</div></div>
+      <div class="ds-cell"><button class="o-btn o-btn-primary o-btn-inline" disabled>Desabilitado</button><div class="ds-state-label">disabled</div></div>
+      <div class="ds-cell"><button class="o-btn o-btn-primary o-btn-inline" aria-busy="true"><span class="o-spinner" aria-hidden="true"></span>Salvando</button><div class="ds-state-label">loading</div></div>
+      <div class="ds-cell"><button class="o-btn o-btn-primary o-btn-inline">Navegue até aqui</button><div class="ds-state-label">pressione Tab para ver o focus-visible</div></div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend class="o-text-caption" style="margin-bottom:8px">Largura total (uso em formulário/sheet)</legend>
+    <button class="o-btn o-btn-primary" style="max-width:320px">Novo agendamento</button>
+  </fieldset>
+</section>
+
+<!-- ═══════════════════════ ICON BUTTONS ═══════════════════════ -->
+<section class="ds-section" id="icon-buttons">
+  <h2>Icon buttons</h2>
+  <p class="ds-note">44×44px reais em todas as variantes — inclusive <code>compact</code>, cujo alvo visível é menor mas a área de toque não. Ver docs/04 §IconButton, docs/07 §4.</p>
+  <div class="ds-row">
+    <div class="ds-cell"><button class="o-icon-btn" aria-label="Fechar"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5l10 10M15 5L5 15"/></svg></button><div class="ds-state-label">plain</div></div>
+    <div class="ds-cell"><button class="o-icon-btn o-icon-btn-outlined" aria-label="Voltar"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5l-5 5 5 5"/></svg></button><div class="ds-state-label">outlined</div></div>
+    <div class="ds-cell"><button class="o-icon-btn o-icon-btn-filled" aria-label="Adicionar"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 4v12M4 10h12"/></svg></button><div class="ds-state-label">filled</div></div>
+    <div class="ds-cell"><button class="o-icon-btn o-icon-btn-outlined o-icon-btn-squircle" aria-label="Editar"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 16l1-4 8-8 3 3-8 8-4 1z"/></svg></button><div class="ds-state-label">squircle</div></div>
+    <div class="ds-cell"><button class="o-icon-btn o-icon-btn-compact o-icon-btn-outlined" aria-label="Excluir foto"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5l10 10M15 5L5 15"/></svg></button><div class="ds-state-label">compact — 32px visível, 44px de toque</div></div>
+    <div class="ds-cell"><button class="o-icon-btn o-icon-btn-outlined" aria-label="Desabilitado" disabled><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 16l1-4 8-8 3 3-8 8-4 1z"/></svg></button><div class="ds-state-label">disabled</div></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ CAMPOS ═══════════════════════ -->
+<section class="ds-section" id="campos">
+  <h2>Campos</h2>
+  <p class="ds-note">Todo rótulo é <code>&lt;label for&gt;</code> associado. Foco por <code>:focus-within</code> — não depende de JS. Ver docs/04 §Input, §SearchField, docs/07 §7.</p>
+
+  <div class="ds-row" style="align-items:flex-start">
+    <div class="o-field" style="width:220px">
+      <label class="o-field-label" for="ds-input-1">Nome</label>
+      <input class="o-input" id="ds-input-1" type="text" placeholder="">
+    </div>
+    <div class="o-field" style="width:220px">
+      <label class="o-field-label" for="ds-input-2">Telefone</label>
+      <input class="o-input" id="ds-input-2" type="tel" placeholder="+353 87 123 4567">
+    </div>
+    <div class="o-field o-field-error" style="width:220px">
+      <label class="o-field-label" for="ds-input-3">Quantidade mínima</label>
+      <input class="o-input" id="ds-input-3" type="number" value="-2">
+      <span class="o-field-help">Informe um valor maior que zero.</span>
+    </div>
+    <div class="o-field" style="width:220px">
+      <label class="o-field-label" for="ds-input-4">Desabilitado</label>
+      <input class="o-input" id="ds-input-4" type="text" value="Não editável" disabled>
+    </div>
+  </div>
+
+  <div class="ds-row" style="align-items:flex-start">
+    <div class="o-field" style="width:280px">
+      <label class="o-field-label" for="ds-textarea-1">Observações</label>
+      <textarea class="o-textarea" id="ds-textarea-1" placeholder="Fórmula usada, reações, preferências…"></textarea>
+    </div>
+    <div class="o-field" style="width:220px">
+      <label class="o-field-label" for="ds-select-1">Serviço</label>
+      <select class="o-select" id="ds-select-1">
+        <option>Coloração</option>
+        <option>Corte</option>
+        <option>Tratamento</option>
+      </select>
+    </div>
+    <div class="o-field" style="width:260px">
+      <label class="o-field-label" for="ds-search-1">Buscar cliente</label>
+      <div class="o-search-field has-text">
+        <span class="o-search-field-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="6"/><path d="M17 17l-4-4"/></svg></span>
+        <input id="ds-search-1" type="search" value="maria" placeholder="Nome, telefone ou e-mail">
+        <button class="o-search-clear" aria-label="Limpar busca"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5l10 10M15 5L5 15"/></svg></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ CHIPS / BADGES ═══════════════════════ -->
+<section class="ds-section" id="chips">
+  <h2>Chips</h2>
+  <p class="ds-note">Ver docs/04 §Chip. Área de toque estendida a 44px mesmo com o desenho compacto.</p>
+  <div class="ds-row">
+    <button class="o-chip" aria-pressed="false">Todos</button>
+    <button class="o-chip is-active" aria-pressed="true">VIP</button>
+    <button class="o-chip" aria-pressed="false">Recentes</button>
+    <button class="o-chip" aria-pressed="false">Inativos</button>
+    <button class="o-chip" disabled>Desabilitado</button>
+  </div>
+</section>
+
+<section class="ds-section" id="badges">
+  <h2>Badges</h2>
+  <p class="ds-note">Nunca só cor — sempre com texto. Ver docs/03 §5, docs/07 §12.</p>
+  <div class="ds-row">
+    <span class="o-badge o-badge-neutral">Inativa</span>
+    <span class="o-badge o-badge-success">Ativa</span>
+    <span class="o-badge o-badge-attention">Baixo</span>
+    <span class="o-badge o-badge-critical">Crítico</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════ AVATARES ═══════════════════════ -->
+<section class="ds-section" id="avatares">
+  <h2>Avatares</h2>
+  <p class="ds-note">Iniciais em <code>accent-700</code> sobre <code>accent-100</code> — decisão de 03/08/2026. Pendências medidas: P9 (4,36:1 no tamanho sm) e P10 (forma pouco visível sem borda). Ver docs/03 §21.</p>
+  <div class="ds-row">
+    <div class="ds-cell"><span class="o-avatar o-avatar-sm">MS</span><div class="ds-state-label">sm, sem borda</div></div>
+    <div class="ds-cell"><span class="o-avatar o-avatar-sm o-avatar-outlined">MS</span><div class="ds-state-label">sm, outlined (P10)</div></div>
+    <div class="ds-cell">
+      <span class="o-avatar o-avatar-lg" style="position:relative">
+        MS
+        <span class="o-avatar-badge" aria-hidden="true"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2l2.2 5.6L18 9l-4.6 3.8L14.8 18 10 14.6 5.2 18l1.4-5.2L2 9l5.8-1.4z"/></svg></span>
+      </span>
+      <div class="ds-state-label">lg, com selo VIP</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ CARDS ═══════════════════════ -->
+<section class="ds-section" id="cards">
+  <h2>Cards</h2>
+  <p class="ds-note">Modelo canônico: 16px, borda 1px, fundo <code>--color-surface</code>. Ver docs/04 §Card.</p>
+  <div class="ds-row" style="align-items:stretch">
+    <div class="o-card" style="width:200px">
+      <p class="o-text-body-strong" style="margin:0 0 4px">Card estático</p>
+      <p class="o-text-caption" style="margin:0">Não é alvo de toque.</p>
+    </div>
+    <button class="o-card o-card-interactive" style="width:200px">
+      <p class="o-text-body-strong" style="margin:0 0 4px">Card interativo</p>
+      <p class="o-text-caption" style="margin:0">Pressione ou use Tab.</p>
+    </button>
+    <div class="o-card o-card-stateful" style="width:200px; --stk-color:var(--color-accent-2); --stk-bg:var(--color-accent-2-100)">
+      <p class="o-text-body-strong" style="margin:0 0 4px; color:var(--color-accent-2-700)">Card com estado</p>
+      <span class="o-badge o-badge-critical">Crítico</span>
+    </div>
+    <div class="o-card o-card-lg" style="width:200px">
+      <p class="o-text-body-strong" style="margin:0 0 4px">Card grande</p>
+      <p class="o-text-caption" style="margin:0">Raio 20px, padding 20px.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ SKELETON / SPINNER ═══════════════════════ -->
+<section class="ds-section" id="skeleton">
+  <h2>Skeleton &amp; Spinner</h2>
+  <p class="ds-note">Skeleton pulsa em 1200ms; estático com movimento reduzido. Spinner nunca em tela cheia — só ações pequenas. Ver docs/04 §Skeleton, §Spinner.</p>
+
+  <label class="ds-reduced-toggle">
+    <input type="checkbox" id="ds-reduced-motion-toggle">
+    Simular <code>prefers-reduced-motion: reduce</code> nesta página
+  </label>
+
+  <div class="ds-row">
+    <div class="ds-cell" style="width:160px">
+      <div class="o-skeleton o-skeleton-card" style="height:64px;margin-bottom:8px"></div>
+      <div class="o-skeleton o-skeleton-text" style="width:70%"></div>
+      <div class="ds-state-label">card</div>
+    </div>
+    <div class="ds-cell">
+      <span class="o-skeleton o-skeleton-circle" style="width:40px;height:40px;display:block"></span>
+      <div class="ds-state-label">avatar</div>
+    </div>
+    <div class="ds-cell">
+      <span class="o-spinner" aria-hidden="true" style="color:var(--color-accent-700)"></span>
+      <div class="ds-state-label">spinner</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ RESPONSIVO ═══════════════════════ -->
+<section class="ds-section" id="responsivo">
+  <h2>Responsivo</h2>
+  <p class="ds-note">320 / 390 / 430 / 480px e desktop largo (mostra o shell centralizado — docs/03 §17, docs/08 §14).</p>
+
+  <div class="ds-viewport-controls" role="group" aria-label="Largura de simulação">
+    <button data-w="320">320px</button>
+    <button data-w="390" class="is-active">390px</button>
+    <button data-w="430">430px</button>
+    <button data-w="480">480px</button>
+    <button data-w="desktop">Desktop largo</button>
+  </div>
+
+  <div class="ds-viewport-frame" data-w="390" id="ds-viewport">
+    <div class="o-app-shell">
+      <div class="o-card" style="margin-bottom:12px">
+        <p class="o-text-title-3" style="margin:0 0 4px">Boa tarde, Juliane</p>
+        <p class="o-text-caption" style="margin:0">Segunda, 3 de agosto</p>
+      </div>
+      <div class="ds-row" style="margin-bottom:12px">
+        <span class="o-avatar o-avatar-sm">MS</span>
+        <div>
+          <p class="o-text-body-strong" style="margin:0">Maria Silva</p>
+          <span class="o-badge o-badge-success">Ativa</span>
+        </div>
+      </div>
+      <button class="o-btn o-btn-primary">Novo agendamento</button>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Só desta página de showcase — troca a largura simulada e o alternador
+  // de movimento reduzido. Nenhum destes scripts é parte do produto.
+  var frame = document.getElementById('ds-viewport');
+  var buttons = document.querySelectorAll('.ds-viewport-controls button');
+  buttons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      buttons.forEach(function (b) { b.classList.remove('is-active'); });
+      btn.classList.add('is-active');
+      frame.setAttribute('data-w', btn.getAttribute('data-w'));
+    });
+  });
+
+  document.getElementById('ds-reduced-motion-toggle').addEventListener('change', function (e) {
+    document.documentElement.classList.toggle('simulate-reduced', e.target.checked);
+  });
+</script>
+
+</body>
+</html>

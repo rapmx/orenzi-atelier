@@ -13,6 +13,12 @@
 <meta name="theme-color" content="#f7f3ea">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<!-- Orenzi Design System — carregado antes do <style> local de propósito:
+     pela cascata, o CSS abaixo continua vencendo até esta página ser
+     migrada componente por componente. Ver docs/08_IMPLEMENTATION_RULES.md. -->
+<link rel="stylesheet" href="ds/orenzi-tokens.css">
+<link rel="stylesheet" href="ds/orenzi-base.css">
+<link rel="stylesheet" href="ds/orenzi-components.css">
 <style>
   :root {
     --color-bg: #f3ede4;
@@ -752,12 +758,25 @@
   .tag-accent { background: var(--color-accent-100); color: var(--color-accent-700); }
   .tag-accent-2 { background: var(--color-accent-2-100, #f0fae1); color: var(--color-accent-2-700, #56633f); }
 
-  .client-list-card { cursor: pointer; }
+  /* ══ Aba Clientes — migrada para o Design System em 03/08/2026,
+     correção de densidade em 04/08/2026 ═══ docs/04_COMPONENT_LIBRARY.md.
+     Fundo, borda, raio, cor e tipografia vêm dos primitivos (.o-card,
+     .o-avatar, .o-badge, .o-chip, .o-divider, .o-search-field,
+     .o-search-filter-bar, .o-chip-group-scroll, .o-card-metric-summary,
+     .o-icon-btn) em app/ds/orenzi-components.css. O que segue é só a
+     anatomia própria desta tela.
 
-  /* ══ Aba Clientes: busca, filtros, resumo e cartões ═══════════
-     Refinamento de 03/08/2026. A regra que governa tudo aqui: a lista é
-     redesenhada sozinha (renderClientsList) sem passar por render(), senão
-     o campo de busca perde o foco a cada tecla digitada. */
+     .clients-toolbar / .search-field / .sort-btn / .filter-chips /
+     .filter-chip continuam definidos aqui embaixo porque o Estoque ainda
+     usa essas mesmas classes — migrar os dois ao mesmo tempo estava fora
+     do escopo deste PR (só Clientes). Clientes passou a usar os
+     equivalentes do Design System (.o-search-filter-bar,
+     .o-chip-group-scroll) no lugar delas. Retirar as classes antigas
+     fica para quando o Estoque migrar.
+
+     A regra que segue valendo: a lista é redesenhada sozinha
+     (renderClientsList) sem passar por render(), senão o campo de
+     busca perde o foco a cada tecla digitada. */
   .clients-toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
   .search-field {
     flex: 1; display: flex; align-items: center; gap: 9px; background: var(--color-surface);
@@ -787,9 +806,6 @@
   }
   .sort-btn svg { width: 18px; height: 18px; }
   .sort-btn:active { transform: scale(0.94); }
-
-  /* Faixa de chips: rola na horizontal, nunca quebra linha. As margens
-     negativas sangram até a borda da tela pra faixa não parecer cortada. */
   .filter-chips {
     display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
     margin: 0 -20px 18px; padding: 2px 20px;
@@ -806,68 +822,75 @@
   .filter-chip.active { background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-bg); }
   .filter-chip:active { transform: scale(0.96); }
 
-  .clients-summary {
-    display: flex; background: var(--color-surface); border: 1px solid var(--color-divider);
-    border-radius: 16px; padding: 14px 4px; margin-bottom: 20px;
+  /* Resumo de 4 métricas — usa .o-card-metric-summary (padding próprio
+     pra layout em coluna, ver orenzi-components.css) em vez do padding
+     padrão do Card. Isto aqui é só o layout dos 4 itens dentro dele. */
+  .cli-summary { display: flex; }
+  .cli-summary .cs-item { flex: 1; text-align: center; min-width: 0; }
+  .cli-summary .cs-icon { display: flex; justify-content: center; color: var(--color-accent-600); margin-bottom: var(--space-1); }
+  .cli-summary .cs-icon svg { width: 15px; height: 15px; }
+  .cli-summary .cs-val {
+    font-family: var(--font-heading); font-size: var(--text-title-2-size); font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
-  .clients-summary .cs-item { flex: 1; text-align: center; min-width: 0; }
-  .clients-summary .cs-icon { display: flex; justify-content: center; color: var(--color-accent-600); margin-bottom: 5px; }
-  .clients-summary .cs-icon svg { width: 15px; height: 15px; }
-  .clients-summary .cs-val {
-    font-family: var(--font-heading); font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums;
-  }
-  .clients-summary .cs-lbl {
-    font-size: 9.5px; color: var(--color-neutral-600); margin-top: 2px; line-height: 1.25;
-    padding: 0 4px;
+  .cli-summary .cs-lbl {
+    font-size: var(--text-caption-size); color: var(--color-neutral-600); margin-top: 4px; line-height: 1.3;
+    padding: 0 var(--space-1);
   }
 
   .clients-list-label {
-    font-size: 11.5px; color: var(--color-neutral-600); font-weight: 500; margin-bottom: 10px;
+    font-size: var(--text-caption-size); color: var(--color-neutral-600); font-weight: 500;
+    margin-bottom: var(--space-3);
   }
 
-  /* Cartão de cliente: mesma base .list-row (surface + borda + raio 16),
-     mas empilhado — cabeçalho em cima, métricas embaixo. */
-  .client-card {
-    display: block; width: 100%; text-align: left; cursor: pointer;
-    background: var(--color-surface); border: 1px solid var(--color-divider);
-    border-radius: 16px; padding: 14px; margin-bottom: 10px; font-family: var(--font-body);
-    color: var(--color-text); transition: transform .18s ease, box-shadow .18s ease;
+  /* ClientCard (docs/04 §ClientCard) — a estrutura vem de .o-card +
+     .o-card-interactive (fundo, borda, raio 16, pressed, focus-visible,
+     hover). Padding e separação entre cartões são mais generosos que o
+     padrão do Card: correção de densidade de 04/08/2026 — o cartão
+     empilha várias linhas (nome, datas, telefone, métricas) e precisa
+     de mais respiro que uma linha de texto comum pra não ler como lista
+     comprimida. Escopado só em .client-card — não muda .o-card em
+     nenhum outro lugar do app. */
+  .client-card.o-card {
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
   }
-  .client-card:active { transform: scale(0.985); }
-  .cc-top { display: flex; align-items: center; gap: 12px; }
-  .cc-avatar-wrap { position: relative; flex-shrink: 0; }
-  .cc-vip-badge {
-    position: absolute; bottom: -1px; right: -1px; width: 17px; height: 17px; border-radius: 50%;
-    background: var(--color-accent-700); color: #fff; display: flex; align-items: center; justify-content: center;
-    border: 2px solid var(--color-surface);
-  }
-  .cc-vip-badge svg { width: 8px; height: 8px; }
+  .cc-top { display: flex; align-items: center; gap: var(--space-3); }
   .cc-head { flex: 1; min-width: 0; }
-  .cc-name-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .cc-name-row { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
   .cc-name {
-    font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-size: var(--text-body-strong-size); font-weight: 700;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .cc-name-row .tag { flex-shrink: 0; font-size: 9.5px; padding: 3px 8px; letter-spacing: 0.03em; }
-  .cc-sub { font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
+  .cc-name-row .o-badge { flex-shrink: 0; }
+  .cc-sub {
+    display: flex; align-items: center; gap: 4px;
+    font-size: var(--text-caption-size); color: var(--color-neutral-600); margin-top: 3px;
+  }
+  .cc-sub svg { width: 12px; height: 12px; flex-shrink: 0; }
+  /* Telefone é a informação mais auxiliar da linha de cima — mesmo
+     tamanho e cor de .cc-sub, só um pouco mais discreto (opacidade), e
+     fica por último na ordem visual: nome → datas → telefone. */
+  .cc-phone { opacity: 0.85; }
   .cc-chevron { color: var(--color-neutral-600); display: flex; flex-shrink: 0; }
   .cc-chevron svg { width: 15px; height: 15px; }
-  .cc-metrics {
-    display: flex; align-items: center; gap: 20px; margin-top: 12px; padding-top: 12px;
-    border-top: 1px solid var(--color-divider);
-  }
+  .cc-metrics { display: flex; align-items: center; gap: var(--space-5); }
+  .o-divider.cc-divider { margin: var(--space-4) 0; }
   .cc-metric { display: flex; align-items: center; gap: 6px; min-width: 0; }
   .cc-metric .ccm-icon { color: var(--color-accent-600); display: flex; flex-shrink: 0; }
   .cc-metric .ccm-icon svg { width: 14px; height: 14px; }
   .cc-metric .ccm-val { font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .cc-metric .ccm-lbl { font-size: 11px; color: var(--color-neutral-600); }
+  .cc-metric .ccm-lbl { font-size: var(--text-micro-size); color: var(--color-neutral-600); }
+  /* Status: ponto + rótulo em texto, sempre juntos — nunca só cor
+     (docs/02 §7, docs/07 §12). Preservado como está: docs/04 já chama
+     esta implementação de "modelo", não converter para Badge aqui
+     descaracterizaria o padrão que o resto do app deve seguir. */
   .cc-status {
     margin-left: auto; display: flex; align-items: center; gap: 5px; flex-shrink: 0;
-    font-size: 11.5px; font-weight: 600; color: var(--color-neutral-600);
+    font-size: var(--text-caption-size); font-weight: 600; color: var(--color-neutral-600);
   }
-  /* Ponto discreto em vez de badge — e o rótulo em texto ao lado, pra não
-     depender só da cor (daltonismo). */
   .cc-status .ccs-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-neutral-300); }
-  .cc-status.is-ativa .ccs-dot { background: #4f8a5b; }
+  .cc-status.is-ativa .ccs-dot { background: var(--color-success); }
   .cc-status.is-nova .ccs-dot { background: var(--color-accent-600); }
   .cc-status.is-inativa .ccs-dot { background: var(--color-neutral-300); }
 
@@ -1813,6 +1836,14 @@ function daysAgoLabel(iso) {
   if (days <= 0) return 'hoje';
   if (days === 1) return 'há 1 dia';
   return `há ${days} dias`;
+}
+// Par de daysAgoLabel pra data futura — usado no "Próximo atendimento" do
+// cartão de cliente (migração da tela Clientes, 03/08/2026).
+function daysUntilLabel(iso) {
+  const days = Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
+  if (days <= 0) return 'hoje';
+  if (days === 1) return 'amanhã';
+  return `em ${days} dias`;
 }
 
 // ── componente genérico: lista de barras horizontais ─────────
@@ -3405,6 +3436,14 @@ function clientStats(clientId) {
   const lastVisitIso = history[0]?.starts_at || null;
   const isVip = !!client?.vip;
 
+  // Próximo atendimento: derivado do mesmo state.appointments já carregado,
+  // sem coluna nova — mesmo espírito de lastVisit. Só usado no cartão da
+  // lista (migração da tela Clientes pro Design System, 03/08/2026).
+  const upcoming = state.appointments
+    .filter(a => a.client?.id === clientId && new Date(a.starts_at) > new Date())
+    .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  const nextVisitIso = upcoming[0]?.starts_at || null;
+
   const freq = {};
   history.forEach(a => {
     const name = a.service?.name;
@@ -3415,7 +3454,7 @@ function clientStats(clientId) {
     .slice(0, 3)
     .map(([name]) => name);
 
-  return { history, visits, spent, lastVisit, lastVisitIso, isVip, favoriteServices };
+  return { history, visits, spent, lastVisit, lastVisitIso, nextVisitIso, isVip, favoriteServices };
 }
 
 function renderClients() {
@@ -3444,29 +3483,29 @@ function renderClients() {
   const ativosSemana = todos.filter(r => daysSince(r.lastVisitIso) <= 7).length;
 
   app.innerHTML = `
-    <div class="clients-toolbar">
-      <label class="search-field" id="searchField">
-        <span class="sf-icon">${ICONS.search}</span>
+    <div class="o-search-filter-bar">
+      <label class="o-search-field" id="searchField">
+        <span class="o-search-field-icon" aria-hidden="true">${ICONS.search}</span>
         <input type="search" id="clientSearchInput" placeholder="Buscar por nome, telefone ou e-mail"
                autocomplete="off" aria-label="Buscar cliente" value="${(state.clientSearch || '').replace(/"/g, '&quot;')}">
-        <button class="search-clear" id="clientSearchClear" type="button" aria-label="Limpar busca">${ICONS.close}</button>
+        <button class="o-search-clear" id="clientSearchClear" type="button" aria-label="Limpar busca">${ICONS.close}</button>
       </label>
-      <button class="sort-btn" id="clientSortBtn" aria-label="Ordenar lista">${ICONS.sliders}</button>
+      <button class="o-icon-btn o-icon-btn-solid o-icon-btn-squircle" id="clientSortBtn" aria-label="Ordenar lista de clientes">${ICONS.sliders}</button>
     </div>
 
-    <div class="filter-chips" id="clientFilterChips">
+    <div class="o-chip-group-scroll" id="clientFilterChips" role="group" aria-label="Filtrar clientes">
       ${CLIENT_FILTERS.map(f => `
-        <button class="filter-chip ${state.clientFilter === f.key ? 'active' : ''}" data-filter="${f.key}">
-          ${ICONS[f.icon]}<span>${f.label}</span>
+        <button class="o-chip" aria-pressed="${state.clientFilter === f.key}" data-filter="${f.key}">
+          <span aria-hidden="true">${ICONS[f.icon]}</span><span>${f.label}</span>
         </button>
       `).join('')}
     </div>
 
-    <div class="clients-summary">
-      <div class="cs-item"><span class="cs-icon">${ICONS.users}</span><div class="cs-val">${total}</div><div class="cs-lbl">Clientes</div></div>
-      <div class="cs-item"><span class="cs-icon">${ICONS.starFilled}</span><div class="cs-val">${qtdVip}</div><div class="cs-lbl">VIP</div></div>
-      <div class="cs-item"><span class="cs-icon">${ICONS.userPlus}</span><div class="cs-val">${novosMes}</div><div class="cs-lbl">Novos este mês</div></div>
-      <div class="cs-item"><span class="cs-icon">${ICONS.trendUp}</span><div class="cs-val">${ativosSemana}</div><div class="cs-lbl">Ativos esta semana</div></div>
+    <div class="o-card o-card-metric-summary cli-summary">
+      <div class="cs-item"><span class="cs-icon" aria-hidden="true">${ICONS.users}</span><div class="cs-val">${total}</div><div class="cs-lbl">Clientes</div></div>
+      <div class="cs-item"><span class="cs-icon" aria-hidden="true">${ICONS.starFilled}</span><div class="cs-val">${qtdVip}</div><div class="cs-lbl">VIP</div></div>
+      <div class="cs-item"><span class="cs-icon" aria-hidden="true">${ICONS.userPlus}</span><div class="cs-val">${novosMes}</div><div class="cs-lbl">Novos este mês</div></div>
+      <div class="cs-item"><span class="cs-icon" aria-hidden="true">${ICONS.trendUp}</span><div class="cs-val">${ativosSemana}</div><div class="cs-lbl">Ativos esta semana</div></div>
     </div>
 
     <div id="clientsListWrap"></div>
@@ -3504,43 +3543,57 @@ function renderClientsList() {
 
   wrap.innerHTML = `
     <div class="clients-list-label">${rows.length} ${rows.length === 1 ? 'cliente' : 'clientes'} · ${rotuloOrdem}</div>
-    ${rows.map(({ c, visits, spent, lastVisitIso, isVip, status }) => {
+    ${rows.map(({ c, visits, spent, lastVisitIso, nextVisitIso, isVip, status }) => {
       const color = colorForId(c.id);
       const rotuloStatus = status === 'ativa' ? 'Ativa' : (status === 'nova' ? 'Nova' : 'Inativa');
+      // Uma linha só pra não crescer o cartão: "Última visita" e "Próximo
+      // atendimento" (derivado, sem coluna nova — ver clientStats()) juntos
+      // quando os dois existem; nunca anuncia ausência ("sem próximo
+      // atendimento") — docs/02 §2, o silêncio é o padrão.
+      const visitasLine = [
+        lastVisitIso ? `Última visita ${daysAgoLabel(lastVisitIso)}` : null,
+        nextVisitIso ? `${lastVisitIso ? 'próxima' : 'Próxima visita'} ${daysUntilLabel(nextVisitIso)}` : null,
+      ].filter(Boolean).join(' · ') || 'Ainda sem visitas';
       return `
-        <button class="client-card" data-id="${c.id}">
+        <button class="o-card o-card-interactive client-card" data-id="${c.id}">
           <div class="cc-top">
-            <div class="cc-avatar-wrap">
-              <div class="avatar-round" data-avatar-for="${c.id}" style="width:46px;height:46px;font-size:15px;background:${color.border}">${initials(c.name)}</div>
-              ${isVip ? `<span class="cc-vip-badge">${ICONS.starFilled}</span>` : ''}
-            </div>
+            <span class="o-avatar o-avatar-sm" style="--avatar-bg:${color.border};--avatar-color:var(--color-bg)" aria-hidden="true">
+              ${initials(c.name)}
+              ${isVip ? `<span class="o-avatar-badge" aria-hidden="true">${ICONS.starFilled}</span>` : ''}
+            </span>
             <div class="cc-head">
               <div class="cc-name-row">
                 <span class="cc-name">${c.name}</span>
-                ${isVip ? '<span class="tag tag-accent">VIP</span>' : ''}
+                ${isVip ? '<span class="o-badge o-badge-attention">VIP</span>' : ''}
               </div>
-              <div class="cc-sub">${lastVisitIso ? `Última visita ${daysAgoLabel(lastVisitIso)}` : 'Ainda sem visitas'}</div>
+              <div class="cc-sub">${visitasLine}</div>
+              ${c.phone ? `<div class="cc-sub cc-phone"><span aria-hidden="true">${ICONS.phone}</span><span>${c.phone}</span></div>` : ''}
             </div>
-            <span class="cc-chevron">${ICONS.chevron}</span>
+            <span class="cc-chevron" aria-hidden="true">${ICONS.chevron}</span>
           </div>
+          <div class="o-divider cc-divider"></div>
           <div class="cc-metrics">
             <span class="cc-metric">
-              <span class="ccm-icon">${ICONS.calendar}</span>
+              <span class="ccm-icon" aria-hidden="true">${ICONS.calendar}</span>
               <span class="ccm-val">${visits}</span><span class="ccm-lbl">visitas</span>
             </span>
             <span class="cc-metric">
-              <span class="ccm-icon">${ICONS.money}</span>
+              <span class="ccm-icon" aria-hidden="true">${ICONS.money}</span>
               <span class="ccm-val">€${spent.toFixed(0)}</span><span class="ccm-lbl">gasto</span>
             </span>
-            <span class="cc-status is-${status}"><span class="ccs-dot"></span>${rotuloStatus}</span>
+            <span class="cc-status is-${status}"><span class="ccs-dot" aria-hidden="true"></span>${rotuloStatus}</span>
           </div>
         </button>
       `;
     }).join('')}
   `;
 
+  // Sem aria-label no cartão: o nome de acessibilidade de um <button> vem do
+  // próprio texto visível (nome, telefone, visitas, status) — um aria-label
+  // aqui sobrescreveria tudo isso e um leitor de tela só ouviria "Nome, ver
+  // perfil", perdendo o resto da informação que já está na tela.
   wrap.querySelectorAll('.client-card[data-id]').forEach(card => {
-    card.onclick = () => abrirCliente(card.dataset.id, card.querySelector('.avatar-round'));
+    card.onclick = () => abrirCliente(card.dataset.id, card.querySelector('.o-avatar'));
   });
 }
 
@@ -3610,6 +3663,11 @@ function bindClientsToolbar() {
   const input = document.getElementById('clientSearchInput');
   const clear = document.getElementById('clientSearchClear');
 
+  // O anel de foco e o placeholder que some usam :focus-within do próprio
+  // .o-search-field — não precisam mais de classe amarrada em onfocus/onblur
+  // (docs/04 §SearchField corrigiu essa lacuna: antes o foco só funcionava
+  // com JS). .has-text continua em JS porque CSS não sabe "o campo tem
+  // texto" sem :has(), que não é usado em mais nenhum lugar do projeto.
   if (input) {
     field.classList.toggle('has-text', !!input.value);
     input.oninput = () => {
@@ -3617,8 +3675,6 @@ function bindClientsToolbar() {
       field.classList.toggle('has-text', !!input.value);
       renderClientsList();
     };
-    input.onfocus = () => field.classList.add('is-focused');
-    input.onblur = () => field.classList.remove('is-focused');
   }
   if (clear) {
     // mousedown, não click: o blur do input dispararia antes do click e o
@@ -3633,11 +3689,11 @@ function bindClientsToolbar() {
     };
   }
 
-  document.querySelectorAll('#clientFilterChips .filter-chip').forEach(chip => {
+  document.querySelectorAll('#clientFilterChips .o-chip').forEach(chip => {
     chip.onclick = () => {
       state.clientFilter = chip.dataset.filter;
-      document.querySelectorAll('#clientFilterChips .filter-chip')
-        .forEach(c => c.classList.toggle('active', c === chip));
+      document.querySelectorAll('#clientFilterChips .o-chip')
+        .forEach(c => c.setAttribute('aria-pressed', String(c === chip)));
       renderClientsList();
     };
   });
@@ -3678,15 +3734,17 @@ function openNewClientSheet() {
       <div class="modal-sheet">
         <h2>Novo cliente</h2>
         <div class="modal-section">
-          <div class="modal-field-label">Nome</div>
+          <label class="modal-field-label" for="ncName">Nome</label>
           <input type="text" id="ncName" placeholder="Nome completo" autocomplete="off">
-          <div class="modal-field-label">Telefone</div>
+          <label class="modal-field-label" for="ncPhone">Telefone</label>
           <input type="tel" id="ncPhone" placeholder="+353 ..." autocomplete="off">
-          <div class="modal-field-label">E-mail (opcional)</div>
+          <label class="modal-field-label" for="ncEmail">E-mail (opcional)</label>
           <input type="email" id="ncEmail" placeholder="email@exemplo.com" autocomplete="off">
         </div>
-        <button class="btn" id="ncSave">Cadastrar cliente</button>
-        <button class="btn btn-ghost" id="modalClose">Cancelar</button>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+          <button class="o-btn o-btn-primary" id="ncSave">Cadastrar cliente</button>
+          <button class="o-btn o-btn-ghost" id="modalClose">Cancelar</button>
+        </div>
       </div>
     </div>
   `;

@@ -1,0 +1,836 @@
+/* ═══════════════════════════════════════════════════════════════════
+   ORENZI DESIGN SYSTEM — COMPONENTES PRIMITIVOS
+   ═══════════════════════════════════════════════════════════════════
+   Primitivos de docs/04_COMPONENT_LIBRARY.md, prefixo .o- em tudo —
+   garante zero colisão com as classes existentes em painel.html,
+   painel_demo.html, agendar.html e index.html, condição para a
+   coexistência descrita em docs/08_IMPLEMENTATION_RULES.md §10.
+
+   Regras que valem para todo o arquivo:
+   - zero valor literal — só var(--token);
+   - especificidade de uma classe só; sem !important; sem seletor de
+     elemento nu (evita afetar o que já existe fora daqui);
+   - todo alvo interativo tem 44×44px reais, por padding ou por área
+     estendida (::after) quando o desenho pede algo visualmente menor;
+   - :focus-visible entra junto com cada componente — o anel global de
+     orenzi-base.css cobre elementos nativos, aqui reforça o caso do
+     componente ter outline removido para desenhar o próprio estado.
+
+   Nada neste arquivo está aplicado a nenhuma tela ainda. Ele existe
+   para ser revisado em app/design-system.html antes de qualquer
+   migração (docs/08 §18).
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ───────────────────────────────────────────────────────────────────
+   BUTTON — docs/04 §Button
+   ─────────────────────────────────────────────────────────────────── */
+.o-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-4);
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: var(--text-body-strong-size);
+  font-weight: var(--text-body-strong-weight);
+  /* Sentence case por padrão — caixa alta é proibida em botão
+     (docs/06 §11, decisão aprovada em 03/08/2026). */
+  text-transform: none;
+  letter-spacing: normal;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform var(--motion-instant) var(--ease-standard),
+              background-color var(--motion-fast) var(--ease-standard),
+              box-shadow var(--motion-fast) var(--ease-standard),
+              opacity var(--motion-fast) var(--ease-standard);
+}
+
+.o-btn:active {
+  transform: scale(0.98);
+  transition-duration: var(--motion-instant);
+}
+
+.o-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.o-btn:disabled,
+.o-btn[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* loading: rótulo trocado por indicador no markup (ver .o-spinner),
+   largura preservada, botão inerte */
+.o-btn[aria-busy="true"] {
+  cursor: wait;
+  opacity: 0.8;
+}
+
+.o-btn-primary {
+  /* 5,02:1 sobre --color-bg — aprova AA. Substitui --color-accent
+     (3,12:1, reprovava). Decisão de 03/08/2026, docs/03 §6. */
+  background: var(--color-accent-700);
+  color: var(--color-bg);
+}
+
+.o-btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: var(--border-width) solid var(--color-divider);
+}
+
+.o-btn-ghost {
+  background: transparent;
+  color: var(--color-neutral-700);
+}
+
+.o-btn-destructive {
+  background: var(--color-accent-2-100);
+  color: var(--color-accent-2-700);
+  border: var(--border-width) solid var(--color-accent-2);
+}
+
+/* Largura de conteúdo em vez de total — uso em linha, dentro de barra
+   de ação ou ao lado de outro botão. */
+.o-btn-inline {
+  width: auto;
+  padding: 0 var(--space-4);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   ICON BUTTON — docs/04 §IconButton
+   ─────────────────────────────────────────────────────────────────── */
+.o-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-circle);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: transform var(--motion-instant) var(--ease-standard),
+              background-color var(--motion-fast) var(--ease-standard);
+}
+
+.o-icon-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.o-icon-btn:active {
+  transform: scale(0.9);
+}
+
+.o-icon-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.o-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.o-icon-btn-outlined {
+  border: var(--border-width) solid var(--color-divider);
+}
+
+.o-icon-btn-filled {
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+}
+
+/* Mesmo tratamento do Button primary (5,02:1) — para uma ação de ícone que
+   precisa ler com o mesmo peso visual de um CTA, não de uma ação de apoio.
+   Adicionada durante a migração de Clientes: o botão de ordenar/filtrar fica
+   ao lado do campo de busca e precisa do mesmo peso dela na barra de
+   ferramentas. Nenhuma variante anterior cobria isso — `filled` é claro
+   demais para essa função. Serve qualquer tela com o mesmo padrão de
+   toolbar (Estoque já tem o caso idêntico). */
+.o-icon-btn-solid {
+  background: var(--color-accent-700);
+  color: var(--color-bg);
+}
+
+.o-icon-btn-squircle {
+  border-radius: var(--radius-sm);
+}
+
+/* Quando o desenho pede um alvo visualmente menor que 44px, usar esta
+   modificadora: reduz o tamanho visível, mas ::after estende a área de
+   toque real de volta a 44px (mesma técnica já correta em .qty-btn do
+   painel — docs/07 §4). */
+.o-icon-btn-compact {
+  width: 32px;
+  height: 32px;
+}
+
+.o-icon-btn-compact::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   CARD — docs/04 §Card
+   ─────────────────────────────────────────────────────────────────── */
+.o-card {
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-divider);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+}
+
+.o-card-lg {
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+/* Variante para resumo de métricas em colunas (docs/04 §MetricSummary) —
+   4 colunas empilhando ícone+número+rótulo pedem mais respiro vertical
+   que o padding padrão do Card, feito pra uma linha de texto comum.
+   Adicionada durante a correção de densidade da tela Clientes
+   (04/08/2026): o card de resumo estava usando o padding padrão do Card
+   e ficou visualmente comprimido. Qualquer tela com um resumo de
+   métricas em colunas (Estoque já tem um) se beneficia direto. */
+.o-card-metric-summary {
+  padding: var(--space-4) var(--space-2);
+}
+
+/* Toolbar de busca + ação de filtro/ordenar, lado a lado (docs/09
+   §SearchFilterBar). Adicionada durante a correção de densidade de
+   Clientes: a barra existia só como composição solta (.clients-toolbar,
+   local a cada tela) sem um nome oficial no Design System. */
+.o-search-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  margin-bottom: var(--space-3-5);
+}
+
+/* Faixa de chips horizontalmente rolável, nunca quebra linha (docs/09
+   §4, §Chip). As margens negativas sangram até a borda do canvas pra
+   faixa não parecer cortada; o padding lateral garante que o último
+   chip não fique colado na borda. */
+.o-chip-group-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+  overflow-x: auto;
+  /* Sem isto, overflow-y fica implícito como "auto", não "visible" — é
+     regra da spec de CSS Overflow: quando só overflow-x é declarado como
+     algo diferente de visible/clip, overflow-y computa pra auto também.
+     Foi essa a causa real do "chip se movendo verticalmente" num toque
+     real de celular — o container virava rolável nos dois eixos por
+     acidente, não por nenhum script ou transform. Achado lendo a
+     especificação, não estimado. */
+  overflow-y: hidden;
+  /* CORRIGIDO (04/08/2026): a versão anterior usava só `pan-x`, com a
+     ideia de "eu cuido do horizontal, o vertical passa direto pra
+     página". Estava errado — testado num aparelho real, o gesto
+     vertical iniciado sobre os chips travava a página inteira.
+     touch-action não funciona como "delego ao pai o que não listei";
+     ele define quais direções de pan o navegador tem permissão de
+     tratar como gesto nativo a partir do ponto de toque, e uma direção
+     ausente da lista fica bloqueada ali, não repassada. `pan-x` sozinho
+     proibia o vertical na origem do toque.
+     A correção é permitir os dois eixos: overflow-y:hidden acima já
+     garante que a própria faixa não tem pra onde rolar verticalmente,
+     então liberar pan-y aqui não faz o chip "roubar" o vertical — só
+     para de bloquear o gesto de chegar até o scroll da página. */
+  touch-action: pan-x pan-y;
+  /* Contém o scroll horizontal dentro do próprio container — o bounce
+     no fim da lista de chips não "vaza" pra tentar mover a página. */
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 0 calc(var(--gutter) * -1) var(--space-5);
+  padding: 2px var(--gutter);
+}
+
+.o-chip-group-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Card tocável — ver docs/04: <button> de largura total, nunca <div>
+   com manipulador de clique. */
+.o-card-interactive {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: transform var(--motion-fast) var(--ease-standard),
+              box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.o-card-interactive:active {
+  transform: scale(0.98);
+}
+
+.o-card-interactive:hover {
+  box-shadow: var(--elevation-hover);
+}
+
+.o-card-interactive:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.o-card-interactive:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Estado de estoque/status: o card só declara cor e fundo; ponto,
+   badge e ícone leem dessas duas variáveis — modelo já correto do
+   estoque, generalizado aqui (docs/03 §5). Uso:
+   <div class="o-card o-card-stateful" style="--stk-color:...;--stk-bg:..."> */
+.o-card-stateful {
+  border-color: var(--stk-color, var(--color-divider));
+  background: var(--stk-bg, var(--color-surface));
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   INPUT / TEXTAREA / SELECT — docs/04 §Input, §Textarea, §Select
+   ─────────────────────────────────────────────────────────────────── */
+.o-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.o-field-label {
+  font-family: var(--font-body);
+  font-size: var(--text-caption-size);
+  font-weight: var(--text-body-strong-weight);
+  color: var(--color-text);
+}
+
+.o-input,
+.o-textarea,
+.o-select {
+  width: 100%;
+  min-height: var(--touch-target-min);
+  padding: var(--space-3) var(--space-3-5);
+  border: var(--border-width) solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-normal);
+  transition: border-color var(--motion-fast) var(--ease-standard),
+              box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.o-textarea {
+  min-height: calc(var(--touch-target-min) * 3);
+  resize: none;
+}
+
+.o-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%235c4f42' stroke-width='1.6'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  background-size: 18px;
+  padding-right: var(--space-6);
+}
+
+.o-input::placeholder,
+.o-textarea::placeholder {
+  color: var(--color-neutral-600);
+}
+
+.o-input:focus,
+.o-textarea:focus,
+.o-select:focus {
+  outline: none;
+}
+
+.o-input:focus-visible,
+.o-textarea:focus-visible,
+.o-select:focus-visible {
+  border-color: var(--color-accent-600);
+  box-shadow: var(--focus-ring);
+}
+
+.o-input:disabled,
+.o-textarea:disabled,
+.o-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.o-field-error .o-input,
+.o-field-error .o-textarea,
+.o-field-error .o-select {
+  border-color: var(--color-accent-2);
+}
+
+.o-field-success .o-input,
+.o-field-success .o-textarea,
+.o-field-success .o-select {
+  border-color: var(--color-success);
+}
+
+.o-field-help {
+  font-size: var(--text-caption-size);
+  color: var(--color-neutral-600);
+}
+
+.o-field-error .o-field-help {
+  color: var(--color-accent-2-700);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   SEARCH FIELD — docs/04 §SearchField
+   ─────────────────────────────────────────────────────────────────── */
+.o-search-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  /* flex, não width:100% — width:100% brigava com o irmão (o botão de
+     ordenar) num flex row: o campo tentava tomar a linha inteira e o
+     botão era empurrado pra baixo, quebrando a barra em duas linhas.
+     flex:1 com min-width:0 cresce igual quando está sozinho e divide o
+     espaço direito quando está ao lado de outro elemento — achado
+     testando Clientes num aparelho real, corrigido aqui porque qualquer
+     tela com busca ao lado de botão (Estoque tem a mesma dupla) tinha o
+     mesmo problema esperando pra acontecer. */
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--touch-target-min);
+  padding: 0 var(--space-3-5);
+  border: var(--border-width) solid var(--color-divider);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  transition: border-color var(--motion-fast) var(--ease-standard);
+}
+
+/* :focus-within cobre o caso sem depender de uma classe aplicada por
+   JS — corrige a lacuna real do .search-field atual, cujo anel de
+   foco só funciona com JS (docs/04 §SearchField, docs/07 §6). */
+.o-search-field:focus-within {
+  border-color: var(--color-accent-600);
+  box-shadow: var(--focus-ring);
+}
+
+.o-search-field-icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--color-neutral-600);
+}
+
+.o-search-field-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.o-search-field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-body-size);
+  color: var(--color-text);
+}
+
+/* box-shadow:none aqui é o ponto real da correção — sem ele, o anel de
+   foco global (input:focus-visible em orenzi-base.css) soma o próprio
+   box-shadow ao do .o-search-field:focus-within, e os dois juntos
+   pareciam uma borda grossa e dupla ao tocar o campo num iPhone real
+   (Safari trata toque em input como focus-visible, mais permissivo que
+   Chromium). :focus aqui cobre :focus-visible também — todo elemento
+   com :focus-visible também casa :focus — e como esta regra tem mais
+   especificidade que a global, o box-shadow:none vence em qualquer
+   forma de foco (toque, clique, teclado). O anel visível continua
+   existindo — só que como um único anel, o do .o-search-field. */
+.o-search-field input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.o-search-field input::placeholder {
+  color: var(--color-neutral-600);
+  transition: opacity var(--motion-fast) var(--ease-standard);
+}
+
+.o-search-field:focus-within input::placeholder {
+  opacity: 0;
+}
+
+.o-search-clear {
+  position: relative;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-neutral-600);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Área de toque real de 44px sem aumentar o alvo visível. */
+.o-search-clear::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+
+.o-search-clear:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-circle);
+}
+
+.o-search-field.has-text .o-search-clear {
+  display: inline-flex;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   CHIP — docs/04 §Chip
+   ─────────────────────────────────────────────────────────────────── */
+.o-chip {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3-5);
+  border: var(--border-width) solid var(--color-divider);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-caption-size);
+  font-weight: var(--text-body-weight);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform var(--motion-instant) var(--ease-standard),
+              background-color var(--motion-fast) var(--ease-standard),
+              border-color var(--motion-fast) var(--ease-standard),
+              color var(--motion-fast) var(--ease-standard);
+}
+
+/* Área de toque real de 44px mesmo quando o desenho tem menos. */
+.o-chip::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+
+.o-chip svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.o-chip:active {
+  transform: scale(0.96);
+}
+
+.o-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.o-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.o-chip[aria-pressed="true"],
+.o-chip.is-active {
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+  border-color: var(--color-accent-600);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   BADGE — docs/04 §Badge
+   ─────────────────────────────────────────────────────────────────── */
+.o-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: var(--text-micro-size);
+  font-weight: var(--text-micro-weight);
+  line-height: 1.3;
+}
+
+.o-badge-neutral {
+  background: var(--color-neutral-200);
+  color: var(--color-neutral-600);
+}
+
+.o-badge-success {
+  background: var(--color-success-100);
+  color: var(--color-success-700);
+}
+
+.o-badge-attention {
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+}
+
+.o-badge-critical {
+  background: var(--color-accent-2-100);
+  color: var(--color-accent-2-700);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   AVATAR — docs/04 §Avatar
+   ─────────────────────────────────────────────────────────────────── */
+.o-avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-circle);
+  overflow: hidden;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  /* Iniciais: accent-700 sobre accent-100 — decisão de 03/08/2026,
+     substitui branco sobre --color-accent (3,64:1, reprovava AA).
+     No tamanho sm (40px / 13px), mede 4,36:1 — 3% abaixo do mínimo de
+     4,5:1 para texto pequeno; exceção registrada em
+     docs/03_DESIGN_SYSTEM.md §21 P9, pendente de decisão complementar.
+
+     --avatar-bg/--avatar-color são o hook de override, adicionados durante
+     a migração de Clientes: a lista de clientes já tinha uma cor por
+     cliente (colorForId(), a mesma paleta de STAFF_COLORS/CATEGORY_COLORS —
+     não é token do Design System, é dado de identidade visual por
+     entidade). Sem este hook, adotar o Avatar exigiria abrir mão dessa
+     cor por cliente ou duplicar a estrutura do componente numa exceção
+     local. Com ele, o padrão de estado (fundo+texto em duas variáveis, já
+     usado em .o-card-stateful) se estende ao Avatar: a estrutura
+     (tamanho, raio, fonte, badge) vem do componente; a cor de identidade,
+     quando existir, é passada pelo chamador. */
+  background: var(--avatar-bg, var(--color-accent-100));
+  color: var(--avatar-color, var(--color-accent-700));
+}
+
+.o-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.o-avatar-sm {
+  width: 40px;
+  height: 40px;
+  font-size: var(--text-caption-size);
+}
+
+.o-avatar-lg {
+  width: 72px;
+  height: 72px;
+  font-size: var(--text-title-2-size);
+}
+
+/* O círculo tingido mede 1,15:1 contra --color-bg — quase não se
+   distingue como forma sem foto de fundo. Modificadora com borda,
+   proposta pendente de aprovação (docs/03 §21 P10). Não aplicada por
+   padrão — usar .o-avatar-outlined explicitamente até a decisão. */
+.o-avatar-outlined {
+  border: var(--border-width) solid var(--color-divider);
+}
+
+/* Selo de destaque (VIP) sobreposto no canto — nunca cor de alerta. */
+/* Corrigido durante a migração de Clientes: a primeira versão deste
+   componente usava um "recorte" (fundo --color-surface, estrela em
+   accent-700) sem base no código real. O produto já tinha DOIS selos VIP
+   em produção — o da lista (.cc-vip-badge) e o do perfil (.ph-vip-badge) —
+   e os dois usam o mesmo tratamento: círculo sólido accent-700 com ícone
+   claro. Corrigido para bater com o que já existe e já foi validado,
+   em vez de inventar um terceiro visual (docs/10 §1 — o código é a fonte
+   de verdade da identidade). */
+.o-avatar-badge {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-circle);
+  background: var(--color-accent-700);
+  color: var(--color-bg);
+  border: 2px solid var(--color-surface);
+}
+
+.o-avatar-badge svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   DIVIDER — docs/04 §Divider
+   ─────────────────────────────────────────────────────────────────── */
+.o-divider {
+  border: none;
+  border-top: var(--border-width) solid var(--color-divider);
+  margin: 0;
+}
+
+.o-divider-inset {
+  margin-left: var(--space-4);
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   SKELETON — docs/04 §Skeleton
+   ─────────────────────────────────────────────────────────────────── */
+.o-skeleton {
+  background: var(--color-neutral-200);
+  border-radius: var(--radius-sm);
+  animation: o-skeleton-pulse 1200ms var(--ease-standard) infinite;
+}
+
+.o-skeleton-text {
+  height: 1em;
+  border-radius: 4px;
+}
+
+.o-skeleton-circle {
+  border-radius: var(--radius-circle);
+}
+
+.o-skeleton-card {
+  border-radius: var(--radius-md);
+}
+
+@keyframes o-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Estático em opacidade média — sem pulsação (docs/05 §18). Reforça
+   aqui porque a regra global de orenzi-base.css já zera a duração,
+   mas isso deixaria o skeleton preso em opacidade 1 (o primeiro frame)
+   em vez da leitura intermediária que comunica "carregando". */
+@media (prefers-reduced-motion: reduce) {
+  .o-skeleton {
+    animation: none;
+    opacity: 0.8;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   SPINNER — docs/04 §Spinner. Só para ações pequenas: dentro de botão,
+   ou espera curta em alvo pequeno. Nunca em tela cheia (docs/09 §14).
+   ─────────────────────────────────────────────────────────────────── */
+.o-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--radius-circle);
+  animation: o-spinner-spin 700ms linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes o-spinner-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Rotação contínua é exatamente o que a preferência pede para evitar
+   — substituída por pulsação de opacidade (docs/04 §Spinner). */
+@media (prefers-reduced-motion: reduce) {
+  .o-spinner {
+    animation: o-skeleton-pulse 1200ms var(--ease-standard) infinite;
+    border-right-color: currentColor;
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────
+   UTILITÁRIOS DE TEXTO — para o showcase e uso pontual, mapeando
+   diretamente a escala tipográfica de orenzi-tokens.css
+   ─────────────────────────────────────────────────────────────────── */
+.o-text-display {
+  font-family: var(--font-heading);
+  font-size: var(--text-display-size);
+  font-weight: var(--text-display-weight);
+  line-height: var(--leading-tight);
+}
+
+.o-text-title-1 {
+  font-family: var(--font-heading);
+  font-size: var(--text-title-1-size);
+  font-weight: var(--text-title-1-weight);
+  line-height: var(--leading-tight);
+}
+
+.o-text-title-2 {
+  font-family: var(--font-heading);
+  font-size: var(--text-title-2-size);
+  font-weight: var(--text-title-2-weight);
+  line-height: var(--leading-tight);
+}
+
+.o-text-title-3 {
+  font-family: var(--font-heading);
+  font-size: var(--text-title-3-size);
+  font-weight: var(--text-title-3-weight);
+  line-height: var(--leading-normal);
+}
+
+.o-text-body {
+  font-family: var(--font-body);
+  font-size: var(--text-body-size);
+  font-weight: var(--text-body-weight);
+  line-height: var(--leading-normal);
+}
+
+.o-text-body-strong {
+  font-family: var(--font-body);
+  font-size: var(--text-body-strong-size);
+  font-weight: var(--text-body-strong-weight);
+  line-height: var(--leading-normal);
+}
+
+.o-text-caption {
+  font-family: var(--font-body);
+  font-size: var(--text-caption-size);
+  font-weight: var(--text-caption-weight);
+  line-height: var(--leading-normal);
+  color: var(--color-neutral-600);
+}
+
+.o-text-micro {
+  font-family: var(--font-body);
+  font-size: var(--text-micro-size);
+  font-weight: var(--text-micro-weight);
+  line-height: var(--leading-normal);
+}

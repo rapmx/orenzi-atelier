@@ -1,0 +1,179 @@
+/* ═══════════════════════════════════════════════════════════════════
+   ORENZI DESIGN SYSTEM — TOKENS
+   ═══════════════════════════════════════════════════════════════════
+   Fonte única dos valores visuais do produto. Nenhuma regra de
+   componente vive aqui — só variáveis.
+
+   Todo valor foi extraído do código real (app/painel.html,
+   app/agendar.html, app/index.html) e revisado nos documentos de
+   docs/03_DESIGN_SYSTEM.md em diante. Nenhum valor foi inventado.
+
+   Convenção de nome: --<família>-<papel>[-<intensidade>].
+   Sem camada de alias --o-*: os nomes abaixo já são os nomes finais
+   (decisão do dono do produto, ver docs/08_IMPLEMENTATION_RULES.md §5).
+
+   Este arquivo é carregado ANTES do <style> inline de cada página, de
+   propósito — pela cascata, o CSS inline continua vencendo enquanto a
+   migração de cada tela não acontecer. Ver docs/08_IMPLEMENTATION_RULES.md.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ── Cor · neutros quentes ──────────────────────────────────────── */
+  --color-bg: #f3ede4;
+  --color-surface: #f7f1e8;
+  --color-neutral-200: #e8ddce;
+  --color-neutral-300: #ddcfba;
+  --color-neutral-600: #6b6053;
+  --color-neutral-700: #5c4f42;
+  --color-text: #2b2420;
+  --color-divider: rgba(43, 36, 32, 0.14);
+
+  /* --color-neutral-100 é, hoje, o mesmo hex que --color-surface — dois
+     nomes para a mesma cor. Alias de compatibilidade enquanto .card e
+     .action-row dependerem dele; remover quando os dois migrarem
+     (docs/08_IMPLEMENTATION_RULES.md §11). Nenhum código novo deve
+     usar --color-neutral-100. */
+  --color-neutral-100: var(--color-surface);
+
+  /* ── Cor · marca (caramelo) ──────────────────────────────────────── */
+  --color-accent-100: #ecdcc9;
+  --color-accent: #b6784a;
+  --color-accent-600: #a1683f;
+  --color-accent-700: #8a5a34;
+
+  /* --color-accent é cor gráfica e decorativa (FAB, ícone, ponto de
+     estado, linha de horário, série de gráfico). NUNCA fundo de
+     superfície com texto — reprova contraste AA (3,12:1). Toda
+     superfície sólida com rótulo usa --color-accent-700 (5,02:1),
+     decisão aprovada em 03/08/2026. Ver docs/03_DESIGN_SYSTEM.md §6. */
+
+  /* ── Cor · alerta (vermelho) — só em painel.html e painel_demo.html
+     no código atual; disponível aqui para todas as páginas ─────────── */
+  --color-accent-2-100: #f7e7e7;
+  --color-accent-2: #b23a3a;
+  --color-accent-2-700: #8a2a2a;
+
+  /* ── Cor · sucesso (verde) — hoje literal no CSS, promovido a token
+     aqui. Dois valores por exigência real de contraste: o tom gráfico
+     mede 3,53:1 sobre --color-bg (ok como elemento gráfico, reprova
+     como texto); o tom de texto foi escurecido para 5,62:1 sobre o
+     próprio fundo tingido. Nunca usar o gráfico como cor de texto. ── */
+  --color-success-100: #e7f0e9;
+  --color-success: #4f8a5b;
+  --color-success-700: #3b6744;
+
+  /* Não existe amarelo no Orenzi. O degrau intermediário de atenção é
+     o caramelo da marca (--color-accent-100 / --color-accent-700) —
+     decisão consciente, não lacuna. Ver docs/03_DESIGN_SYSTEM.md §5. */
+
+  /* ── Tipografia · família ────────────────────────────────────────── */
+  --font-heading: "Poppins", "Jost", system-ui, sans-serif;
+  --font-body: "Jost", system-ui, sans-serif;
+  /* Cormorant Garamond e Inter são exclusivas da landing pública e não
+     entram aqui — decisão aprovada em 03/08/2026, docs/03 §7. */
+
+  /* ── Tipografia · escala real do produto (11–26px, não os 16–32px de
+     uma escala "ideal" — o app é denso de informação em tela pequena).
+     Ver docs/03_DESIGN_SYSTEM.md §8. ─────────────────────────────── */
+  --text-display-size: 26px;
+  --text-display-weight: 700;
+
+  --text-title-1-size: 24px;
+  --text-title-1-weight: 600;
+
+  --text-title-2-size: 20px;
+  --text-title-2-weight: 700;
+
+  --text-title-3-size: 17px;
+  --text-title-3-weight: 600;
+
+  --text-body-size: 15px;
+  --text-body-weight: 400;
+
+  --text-body-strong-size: 15px;
+  --text-body-strong-weight: 600;
+
+  --text-caption-size: 13px;
+  --text-caption-weight: 400;
+
+  --text-micro-size: 11px;
+  --text-micro-weight: 700;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.4;
+  --leading-relaxed: 1.5;
+
+  /* ── Espaçamento — inclui 10px e 14px de propósito: são dois dos
+     valores mais usados no produto real. Ver docs/03 §9. ──────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-3-5: 14px;
+  --space-4: 16px;
+  --space-5: 20px;   /* gutter real da tela */
+  --space-6: 24px;
+  --space-8: 32px;   /* separação entre seções de assunto */
+
+  --gutter: var(--space-5);
+
+  /* ── Raio — escala convergida, aprovada em 03/08/2026.
+     Migração é gradual, componente por componente — nunca global.
+     Ver docs/03 §11. ──────────────────────────────────────────────── */
+  --radius-sm: 12px;   /* controles e superfícies compactas */
+  --radius-md: 16px;   /* cards e componentes padrão — canônico */
+  --radius-lg: 20px;   /* cards de maior destaque */
+  --radius-xl: 28px;   /* bottom sheets e modais grandes */
+  --radius-full: 999px; /* pílulas, botões, badges */
+  --radius-circle: 50%; /* avatares, botões circulares */
+
+  /* ── Borda ───────────────────────────────────────────────────────── */
+  --border-width: 1px;
+  --border-width-emphasis: 1.5px;
+
+  /* ── Elevação — hoje quebrada no código: painel.html referencia
+     var(--shadow-md, …) sem declarar --shadow-md, e os dois fallbacks
+     usados divergem entre si. Esta escala resolve isso. Ver docs/03 §13. */
+  --elevation-raised: 0 3px 10px rgba(43, 36, 32, 0.16);  /* FAB, botão flutuante */
+  --elevation-hover: 0 8px 20px rgba(43, 36, 32, 0.07);   /* resposta a toque em cartão */
+  --elevation-overlay: 0 20px 60px rgba(0, 0, 0, 0.25);   /* modal, folha inferior */
+  --focus-ring: 0 0 0 3px var(--color-accent-100);        /* foco de teclado */
+
+  /* ── Motion — teto de 350ms para transição rotineira. Ver docs/05. ── */
+  --motion-instant: 80ms;
+  --motion-fast: 160ms;
+  --motion-standard: 200ms;
+  --motion-emphasized: 240ms;
+  --motion-route: 280ms;
+
+  --ease-standard: cubic-bezier(.4, 0, .2, 1);
+  --ease-out: cubic-bezier(0, 0, .2, 1);
+  --ease-in: cubic-bezier(.4, 0, 1, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1); /* retorno elástico discreto — FAB, modal */
+
+  /* ── z-index — nomeado a partir da escala numérica já em uso no
+     painel (1/20/30/50/100/200/250/300/500), para não colidir com o
+     que existe enquanto a migração não chega lá. ───────────────────── */
+  --z-base: 1;
+  --z-dropdown: 30;
+  --z-fixed: 50;              /* FAB, barra de navegação */
+  --z-toast: 100;
+  --z-sheet: 200;              /* bottom sheet, modal */
+  --z-shared-transition: 250;  /* elemento em transição compartilhada (avatar) */
+  --z-overlay-top: 300;        /* acima de tudo, exceto lightbox */
+  --z-max: 500;
+
+  /* ── Toque e layout ──────────────────────────────────────────────── */
+  --touch-target-min: 44px;
+  --canvas-max-width: 480px;
+
+  /* ── Safe areas — nenhum tratamento existe hoje no projeto. Usar
+     estes tokens em padding de elementos fixos (barra inferior, FAB,
+     folhas). O fallback de 0px preserva o comportamento atual em
+     aparelhos sem área segura. Ver docs/07_ACCESSIBILITY.md §15. ──── */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}

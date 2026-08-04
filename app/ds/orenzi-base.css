@@ -1,0 +1,107 @@
+/* ═══════════════════════════════════════════════════════════════════
+   ORENZI DESIGN SYSTEM — BASE
+   ═══════════════════════════════════════════════════════════════════
+   Fundamentos globais e apenas isso: nada aqui muda a tipografia, cor
+   ou espaçamento de um elemento existente — isso mudaria as telas sem
+   revisão. Ver docs/08_IMPLEMENTATION_RULES.md §6.
+
+   Depende de app/ds/orenzi-tokens.css já estar carregado antes.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Higiene mínima ──────────────────────────────────────────────────
+   box-sizing e a remoção do highlight azul de toque no iOS/Android não
+   alteram nada visualmente — só removem um artefato de navegador. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Dígitos de largura fixa para números que mudam na tela (relógio,
+   contadores) não "tremerem" a cada atualização. Utilitário — só se
+   aplica onde a classe for usada, não afeta nada por padrão. */
+.o-tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Foco visível ────────────────────────────────────────────────────
+   Corrige a ausência total de :focus-visible no projeto (P0 de
+   docs/07_ACCESSIBILITY.md). :focus-visible só aparece em navegação
+   por teclado — não em toque ou clique de mouse — então não introduz
+   nenhum anel visual em uso normal do produto no celular.
+
+   Aplicado a elementos interativos nativos. Um componente com
+   outline:none removido continua sem indicador próprio até migrar
+   para os primitivos de orenzi-components.css — isso é dívida
+   conhecida (docs/07 §6), não algo que este arquivo pode corrigir à
+   distância sem tocar o CSS inline de cada tela. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* O anel de foco nunca é removido por movimento reduzido — é
+   orientação de navegação, não efeito decorativo (docs/05 §7). */
+
+/* ── Movimento reduzido ──────────────────────────────────────────────
+   Camada CSS da regra de docs/05_MOTION_SYSTEM.md §21. Isto por si só
+   NÃO cobre animações orquestradas em JavaScript (a transição
+   compartilhada do avatar, os slides da agenda) — essas continuam
+   exigindo a verificação equivalente no próprio JS, que é responsa-
+   bilidade da migração de cada tela, não deste arquivo de fundamentos.
+   Corrige o caso mais grave hoje: agendar.html não tem NENHUM
+   tratamento de prefers-reduced-motion (P0 de docs/07 §14). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Shell mobile centralizado ───────────────────────────────────────
+   Definido aqui, AINDA NÃO aplicado a nenhuma tela — aplicar é um
+   passo de migração separado (PR 3, docs/08 §14). Sem uso no markup
+   atual, esta classe não tem nenhum efeito visual até ser adotada.
+
+   .o-app-shell envolve o conteúdo em fluxo normal, centralizado em
+   até --canvas-max-width (480px).
+   .o-app-shell-fixed é para elementos com position:fixed (barra de
+   navegação, FAB, toast) — ancora no centro da janela e limita a
+   largura ao canvas, em vez de colar nas bordas da tela real. É o
+   mesmo padrão já usado no modo tela cheia do questionário do painel;
+   aqui ele vira classe reutilizável. */
+.o-app-shell {
+  max-width: var(--canvas-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+}
+
+.o-app-shell-fixed {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--canvas-max-width);
+}
+
+/* ── Safe areas — utilitários ────────────────────────────────────────
+   Aplicar a elementos fixos (barra inferior, FAB, folhas). Sem uso no
+   markup atual — utilitário disponível para a migração (docs/07 §15). */
+.o-safe-bottom {
+  padding-bottom: calc(var(--space-5) + var(--safe-bottom));
+}
+
+.o-safe-top {
+  padding-top: calc(var(--space-5) + var(--safe-top));
+}
