@@ -558,14 +558,28 @@
     -webkit-tap-highlight-color: transparent;
   }
   .timeline-appt:active { transform: scale(0.98); opacity: 0.92; }
+  /* Cabeçalho em linha (avatar + texto) — só existe fora do tier tiny, onde
+     nem o nome sozinho sobra espaço garantido pro avatar. */
+  .timeline-appt .appt-head { display: flex; align-items: center; gap: var(--space-2, 8px); min-width: 0; }
+  .timeline-appt .appt-body { min-width: 0; flex: 1; }
+  /* Extensão proposta do Avatar (docs/04) — .o-avatar hoje só tem sm(40)/lg(72);
+     a Agenda precisa de um selo de identidade dentro de um card de ~20-40px de
+     altura. Mesmos hooks --avatar-bg/--avatar-color do componente, só um
+     tamanho novo — não uma cor ou raio novo. Fica local até virar §Avatar. */
+  .timeline-appt .o-avatar.o-avatar-xs { width: 22px; height: 22px; font-size: 8.5px; flex-shrink: 0; }
+  .timeline-appt .o-avatar-xs .o-avatar-badge { width: 10px; height: 10px; border-width: 1.5px; }
+  .timeline-appt .o-avatar-xs .o-avatar-badge svg { width: 6px; height: 6px; }
   .timeline-appt .title, .timeline-appt .sub {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .timeline-appt .title { font-weight: 700; font-size: 12.5px; letter-spacing: -0.01em; }
-  /* Sub mais recuado (opacidade menor) que antes — a hierarquia cliente →
-     serviço → duração fica mais nítida quando o secundário recua de verdade. */
-  .timeline-appt .sub { font-size: 11px; opacity: 0.72; }
-  .timeline-appt .sub .dur { font-variant-numeric: tabular-nums; opacity: 0.85; }
+  /* Hierarquia cliente → serviço vem de peso e tamanho de fonte (title é
+     700/12.5px, sub é 400/11px), não de opacidade — testado no navegador:
+     com o fundo mais saturado, opacidade abaixo de 1 no .sub derrubava o
+     contraste da categoria Coloração pra 4,17:1 (abaixo do mínimo AA), até
+     em 0.85. Texto legível pesa mais que hierarquia por transparência. */
+  .timeline-appt .sub { font-size: 11px; }
+  .timeline-appt .sub .dur { font-variant-numeric: tabular-nums; }
   /* Bloco baixo demais pra ler serviço/profissional sem cortar — só o nome
      da cliente sobrevive. Ver heightTier em buildAgendaGrid(). */
   .timeline-appt.is-tiny .sub { display: none; }
@@ -600,16 +614,31 @@
      sem nada que a dispare ainda). */
   .timeline-appt.is-leaving { animation: apptLeave var(--motion-standard, 200ms) var(--ease-standard, ease) forwards; }
   @keyframes apptLeave { to { opacity: 0; } }
-  /* Indicador de horário livre entre atendimentos — texto discreto, sem
-     fundo, sem borda, itálico (lê como uma nota de rodapé da própria grade,
-     não como um rótulo) — nunca card, nunca alerta. */
+  /* Horário livre virou convite a agendar, não só informação — toque abre o
+     modal de novo agendamento já com o dia e (tentando) a hora certos
+     (bindFreeSlotClicks). Cor de sucesso (--color-success), não uma cor
+     nova: é o token que já existe pra "saudável/disponível" no Estoque. */
   .agenda-free-slot {
-    position: absolute; left: 0; right: 6px; pointer-events: none;
+    position: absolute; left: 0; right: 6px;
+    display: flex; align-items: center; justify-content: center; gap: var(--space-2, 8px);
+    border-radius: var(--radius-sm, 12px);
+    border: 1.5px dashed color-mix(in srgb, var(--color-success, #4f8a5b) 40%, transparent);
+    background: color-mix(in srgb, var(--color-success-100, #e7f0e9) 65%, transparent);
+    cursor: pointer;
+    transition: transform var(--motion-instant, 80ms) var(--ease-out, ease-out), opacity var(--motion-fast, 160ms) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .agenda-free-slot:active { transform: scale(0.98); opacity: 0.85; }
+  .agenda-free-slot .fs-plus {
+    width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+    background: var(--color-success, #4f8a5b); color: var(--color-bg);
     display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; line-height: 1;
   }
-  .agenda-free-slot span {
-    font-size: 10px; font-style: italic; color: var(--color-neutral-600); opacity: 0.6;
+  .agenda-free-slot span.fs-text {
+    font-size: 10.5px; font-weight: 600; color: var(--color-success-700, #3b6744);
   }
+  @media (prefers-reduced-motion: reduce) { .agenda-free-slot { transition: none; } .agenda-free-slot:active { transform: none; } }
   /* Pausa: a profissional está livre aqui, então o bloco fica "vazado" —
      listrado, mais claro que o resto do bloco e com borda mais suave, pra
      ler como tempo passivo mesmo sem ler o rótulo. O trabalho (segmento
@@ -625,10 +654,12 @@
     display: flex; align-items: center; justify-content: center;
   }
   .gap-label {
+    display: flex; align-items: center; gap: 3px;
     font-size: 9.5px; font-weight: 600; letter-spacing: 0.03em;
     color: var(--color-neutral-600); background: var(--color-bg);
     padding: 1px 6px; border-radius: var(--radius-full, 999px); white-space: nowrap;
   }
+  .gap-label svg { width: 9px; height: 9px; flex-shrink: 0; }
 
   .login-wrap {
     max-width: 340px; margin: 80px auto 0; padding: 0 20px; text-align: center;
@@ -2996,6 +3027,14 @@ function sameDay(a, b) {
   return a.toDateString() === b.toDateString();
 }
 
+// "YYYY-MM-DD" a partir dos componentes LOCAIS da data, não de
+// toISOString() (que converte pra UTC e pode virar o dia anterior fora do
+// fuso zero) — mesma armadilha de fuso que o projeto já documentou em
+// outro lugar. Usado só pra alimentar o <input type="date"> do modal.
+function dateInputValue(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function startOfWeek(date) {
   const d = new Date(date);
   d.setDate(d.getDate() - d.getDay()); // volta até domingo
@@ -3186,14 +3225,17 @@ function buildAgendaGrid(day) {
     const recuo = 6 + it.nivel * NIVEL_RECUO;
 
     // Faixa de pausa, quando o serviço tiver uma: é ela que mostra por que
-    // cabe um encaixe no meio de um atendimento longo.
+    // cabe um encaixe no meio de um atendimento longo. Ícone de relógio
+    // reforça "tempo passivo" sem inventar o que a profissional está
+    // fazendo — só o gap.gp é dado real; "aplicação"/"finalização" seriam
+    // suposição sobre um serviço que a gente não modela por etapa.
     const seg = segmentsOf(a);
     let gapHtml = '';
     if (seg.gp > 0) {
       const gapTop = (seg.wb / 60) * HOUR_HEIGHT;
       const gapH = (seg.gp / 60) * HOUR_HEIGHT;
       gapHtml = `<div class="appt-gap" style="top:${gapTop}px; height:${gapH}px;">
-        ${gapH >= 22 ? `<span class="gap-label">pausa · ${seg.gp}min</span>` : ''}
+        ${gapH >= 22 ? `<span class="gap-label">${ICONS.clock}pausa · ${seg.gp}min</span>` : ''}
       </div>`;
     }
 
@@ -3203,6 +3245,7 @@ function buildAgendaGrid(day) {
     // não muda o que está gravado no agendamento.
     const tiny = durMins < AGENDA_APPT_TINY_MAX_MINUTES;
     const expanded = durMins >= AGENDA_APPT_EXPANDED_MIN_MINUTES;
+    const clientName = a.client?.name || 'Cliente';
     const subLabel = expanded
       ? `${a.service?.name || ''} · ${a.staff?.name || ''} · <span class="dur">${durationLabel(durMins)}</span>`
       : `${a.service?.name || ''} · ${a.staff?.name || ''}`;
@@ -3211,12 +3254,39 @@ function buildAgendaGrid(day) {
       : '';
     const classes = ['timeline-appt', tiny ? 'is-tiny' : '', expanded ? 'is-expanded' : '', enteringId === a.id ? 'is-entering' : ''].filter(Boolean).join(' ');
 
+    // Fundo mais saturado que o tom pastel original — misturado com a própria
+    // cor de borda da categoria (nada de cor nova), pra ler como "card vivo"
+    // em vez de bloco monocromático suave. Medido no navegador: o texto que
+    // já existia (c.text) foi calibrado pro pastel puro e caía pra 3,0:1
+    // contra esse fundo mais escuro — abaixo do mínimo AA (4,5:1). Escurecer
+    // o próprio texto em 35% (mesma técnica, sem cor nova) devolve ≥5,6:1
+    // em todas as categorias.
+    const bgStrong = `color-mix(in srgb, ${c.bg} 60%, ${c.border} 40%)`;
+    const textStrong = `color-mix(in srgb, ${c.text} 65%, black 35%)`;
+    // Avatar de iniciais (não existe foto de perfil de cliente no app —
+    // client_photos são antes/depois de cabelo) + selo VIP, reaproveitando
+    // .o-avatar/.o-avatar-badge já usados em Clientes. Some no tier tiny:
+    // ali o bloco pode ter só ~20px, sem sobra pra um círculo de 22px.
+    const headHtml = tiny
+      ? `<div class="title" style="color:${textStrong}">${esc(clientName)}</div>`
+      : `
+        <div class="appt-head">
+          <span class="o-avatar o-avatar-xs" style="--avatar-bg:${c.border};--avatar-color:${c.bg}" aria-hidden="true">
+            ${initials(clientName)}
+            ${a.client?.vip ? `<span class="o-avatar-badge">${ICONS.starFilled}</span>` : ''}
+          </span>
+          <div class="appt-body">
+            <div class="title" style="color:${textStrong}">${esc(clientName)}</div>
+            <div class="sub" style="color:${textStrong}">${subLabel}</div>
+          </div>
+        </div>
+      `;
+
     return `
-      <div class="${classes}" data-appt-id="${a.id}" style="top:${top}px; height:${height}px; left:${recuo}px; width:calc(100% - ${recuo + 6}px); right:auto; z-index:${10 + it.nivel}; background:${c.bg}; border-left:3px solid ${c.border};">
+      <div class="${classes}" data-appt-id="${a.id}" style="top:${top}px; height:${height}px; left:${recuo}px; width:calc(100% - ${recuo + 6}px); right:auto; z-index:${10 + it.nivel}; background:${bgStrong}; border-left:3px solid ${c.border};">
         ${gapHtml}
         ${statusPillHtml}
-        <div class="title" style="color:${c.text}">${a.client?.name || 'Cliente'}</div>
-        <div class="sub" style="color:${c.text}">${subLabel}</div>
+        ${headHtml}
       </div>
     `;
   }).join('');
@@ -3226,7 +3296,16 @@ function buildAgendaGrid(day) {
     const startMins = (gStart.getHours() - AGENDA_START_HOUR) * 60 + gStart.getMinutes();
     const top = (startMins / 60) * HOUR_HEIGHT;
     const height = (g.mins / 60) * HOUR_HEIGHT;
-    return `<div class="agenda-free-slot" style="top:${top}px; height:${height}px;"><span>${freeSlotLabel(g.mins)}</span></div>`;
+    // Arredondado pra CIMA na grade de SLOT_MINUTES (a mesma que o dropdown
+    // de horário do modal usa) — o início real do buraco (ex: 09:45) quase
+    // nunca cai exatamente num múltiplo de 30min, e um horário sugerido que
+    // não existe como opção nunca seria selecionado automaticamente.
+    const suggestedMins = Math.ceil((gStart.getHours() * 60 + gStart.getMinutes()) / SLOT_MINUTES) * SLOT_MINUTES;
+    const hh = String(Math.floor(suggestedMins / 60)).padStart(2, '0');
+    const mm = String(suggestedMins % 60).padStart(2, '0');
+    return `<div class="agenda-free-slot" data-free-date="${dateInputValue(day)}" data-free-time="${hh}:${mm}" style="top:${top}px; height:${height}px;">
+      <span class="fs-plus">+</span><span class="fs-text">${freeSlotLabel(g.mins)}</span>
+    </div>`;
   }).join('');
 
   const html = `
@@ -3296,6 +3375,15 @@ function bindTimelineApptClicks() {
       block.classList.add('is-lifting');
       setTimeout(abrir, 100);
     };
+  });
+}
+
+// Toque no card de "Xh livres" abre o modal de novo agendamento já com o
+// dia certo (openNewApptModalAt) — o horário exato só se confirma depois
+// que o usuário escolhe o serviço (refreshApptTimeOptions tenta casar).
+function bindFreeSlotClicks() {
+  app.querySelectorAll('.agenda-free-slot[data-free-date]').forEach(el => {
+    el.onclick = () => openNewApptModalAt(el.dataset.freeDate, el.dataset.freeTime);
   });
 }
 
@@ -3379,6 +3467,7 @@ function renderAgenda() {
   });
 
   bindTimelineApptClicks();
+  bindFreeSlotClicks();
   attachTimelineScrollbarFade(document.getElementById('timelineEl'));
   scrollTimelineTo(document.getElementById('timelineEl'), computeRelevantScrollTop(day, dayAppts), { animate: false });
 }
@@ -3475,6 +3564,7 @@ function renderAgendaGridTransition(direction) {
     const el = document.getElementById('timelineEl');
     el.innerHTML = html;
     bindTimelineApptClicks();
+    bindFreeSlotClicks();
     scrollTimelineTo(el, computeRelevantScrollTop(day, dayAppts), { animate: false });
   });
 }
@@ -5662,6 +5752,14 @@ sb.auth.onAuthStateChange((event) => {
 // ── NOVO AGENDAMENTO MANUAL (botão +) ────────────────────────
 const modalContainer = document.getElementById('modalContainer');
 let newApptClientMode = 'existing'; // 'existing' | 'new'
+// Preenchidos quando o modal abre a partir de um toque no indicador de
+// horário livre da Agenda ("+ Xh livres"), pra poupar o passo de escolher
+// data/hora de novo. `newApptPrefillTime` só pode virar a hora escolhida
+// DEPOIS que o serviço define a duração — refreshApptTimeOptions() é quem
+// tenta casar com ela. Nulos = comportamento de sempre (data de hoje, sem
+// hora sugerida).
+let newApptPrefillDate = null;
+let newApptPrefillTime = null;
 
 function closeModal() {
   modalContainer.innerHTML = '';
@@ -5669,6 +5767,18 @@ function closeModal() {
 
 function openNewApptModal() {
   newApptClientMode = 'existing';
+  newApptPrefillDate = null;
+  newApptPrefillTime = null;
+  renderNewApptModal();
+}
+
+// Aberto pelo toque no card de horário livre da Agenda — mesma folha, só
+// que já chega com o dia certo e tenta sugerir o horário do início do
+// intervalo assim que o usuário escolher o serviço.
+function openNewApptModalAt(dateStr, timeStr) {
+  newApptClientMode = 'existing';
+  newApptPrefillDate = dateStr;
+  newApptPrefillTime = timeStr;
   renderNewApptModal();
 }
 
@@ -5731,7 +5841,11 @@ function refreshApptTimeOptions() {
   const service = state.services.find(s => s.id === document.getElementById('serviceSelect').value);
   const staffId = currentModalStaffId();
   const dateStr = document.getElementById('apptDate').value;
-  const previous = timeEl.value;
+  // Sem hora ainda escolhida pelo usuário (dropdown ainda no placeholder):
+  // tenta a hora sugerida pelo card de horário livre. Uma vez que o usuário
+  // escolhe algo no dropdown, timeEl.value passa a mandar — o prefill só
+  // serve pra abrir a folha já num bom palpite.
+  const previous = timeEl.value || newApptPrefillTime || '';
 
   if (!service || !staffId || !dateStr) {
     timeEl.innerHTML = '<option value="">Escolha serviço e data…</option>';
@@ -5753,7 +5867,7 @@ function refreshApptTimeOptions() {
 
 function renderNewApptModal(errorMsg) {
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const todayStr = newApptPrefillDate || now.toISOString().split('T')[0];
 
   modalContainer.innerHTML = `
     <div class="modal-overlay" id="modalOverlay">
