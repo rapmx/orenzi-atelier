@@ -343,7 +343,9 @@
      que é onde a tela muda de assunto (controle → conteúdo). */
   .day-nav {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    margin: 22px 0 14px;
+    /* Era 22px/14px — o cabeçalho expandido devia ficar "ligeiramente mais
+       compacto" sem apertar os touch targets; só respiro sobrando saiu. */
+    margin: 16px 0 10px;
   }
   .month-pill {
     display: flex; align-items: center; gap: 2px;
@@ -383,12 +385,16 @@
      e o conteúdo começa. */
   .agenda-date-title {
     font-family: var(--font-heading); font-weight: 600; font-size: 17px;
-    color: var(--color-text); margin: 22px 2px 18px;
+    color: var(--color-text);
+    /* Era 22px/18px — o maior gasto de espaço vertical do cabeçalho
+       expandido antes da grade começar. Ainda é o respiro "de verdade"
+       da zona (controle → conteúdo), só não em dobro do necessário. */
+    margin: 14px 2px 12px;
   }
 
   .week-strip {
     display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
   .week-day {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
@@ -467,6 +473,55 @@
   }
   .month-cal-day.has-appts .wd-dot { visibility: visible; }
   .month-cal-day.selected .wd-dot { background: var(--color-accent-2); }
+  /* ── Cabeçalho colapsável da Agenda ───────────────────────────
+     Duas zonas colapsam junto (day-nav e faixa+título), uma terceira
+     (a barra compacta) faz o inverso. A altura é max-height MEDIDO via JS
+     (setAgendaHeaderCollapsed/scrollHeight) — mesma técnica já usada em
+     .diag-card-body-wrap neste arquivo. Tentei grid-template-rows 1fr↔0fr
+     primeiro (não precisa de JS medindo nada); não colapsou no teste real
+     (o track ficava preso no tamanho do conteúdo mesmo com min-height:0 no
+     item e 0fr aplicado) — max-height é mais verboso mas comprovadamente
+     funciona neste código. */
+  .agenda-chrome-collapsible {
+    overflow: hidden;
+    transition: max-height var(--motion-emphasized, 240ms) var(--ease-standard, ease);
+  }
+  .agenda-chrome-collapsible > div > * {
+    transition: opacity var(--motion-fast, 160ms) ease, transform var(--motion-emphasized, 240ms) var(--ease-standard, ease);
+  }
+  #agendaScreen.is-collapsed .agenda-chrome-expanded-grid > div > *,
+  #agendaScreen.is-collapsed .agenda-chrome-weekstrip-grid > div > * {
+    opacity: 0; transform: translateY(-6px);
+  }
+  /* Barra compacta: o inverso — começa em max-height:0 (embutido inline no
+     template a partir de state.agendaHeaderCollapsed) e só aparece quando
+     o cabeçalho colapsa. */
+  .agenda-chrome-compact-grid > div > * { opacity: 0; }
+  #agendaScreen.is-collapsed .agenda-chrome-compact-grid > div > * { opacity: 1; }
+  .agenda-compact-bar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 0 10px;
+  }
+  .agenda-compact-bar .compact-date {
+    flex: 1; text-align: center; font-family: var(--font-heading); font-weight: 600; font-size: 15px;
+    color: var(--color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* Toque mínimo de 44px mesmo com ícone pequeno — a caixa é que garante
+     a área de toque, não o traço visual. */
+  .chrome-toggle, .compact-nav-arrow {
+    width: 44px; height: 44px; border-radius: 50%; border: none; background: none;
+    color: var(--color-text); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; font-size: 17px; -webkit-tap-highlight-color: transparent;
+    transition: background .15s ease;
+  }
+  .chrome-toggle:hover, .compact-nav-arrow:hover { background: var(--color-neutral-100); }
+  .chrome-toggle:active, .compact-nav-arrow:active { background: var(--color-neutral-200); }
+  .chrome-toggle svg { width: 15px; height: 15px; }
+  @media (prefers-reduced-motion: reduce) {
+    .agenda-chrome-collapsible, .agenda-chrome-collapsible > div > * { transition: none; }
+    #agendaScreen.is-collapsed .agenda-chrome-expanded-grid > div > *,
+    #agendaScreen.is-collapsed .agenda-chrome-weekstrip-grid > div > * { transform: none; }
+  }
   /* Fundo/borda no padrão de cartão do resto do app (Início/Insights) —
      antes era o cinza chapado sem borda que só a Agenda ainda usava. O
      padding-left de 52px é geometria, não estilo: hour-label é ancorado
@@ -486,7 +541,12 @@
     /* Some por padrão, só aparece durante a rolagem (classe .is-scrolling,
        ligada/desligada por JS — CSS não tem "faz 1s que parou de rolar"). */
     scrollbar-width: thin; scrollbar-color: transparent transparent;
+    transition: max-height var(--motion-emphasized, 240ms) var(--ease-standard, ease);
   }
+  /* Cabeçalho colapsado libera espaço REAL pra grade, não só visual — a
+     grade cresce pra ocupar o que o cabeçalho deixou de ocupar. */
+  #agendaScreen.is-collapsed .timeline { max-height: 78vh; }
+  @media (prefers-reduced-motion: reduce) { .timeline { transition: none; } }
   .timeline::-webkit-scrollbar { width: 5px; }
   .timeline::-webkit-scrollbar-track { background: transparent; }
   .timeline::-webkit-scrollbar-thumb { background: transparent; border-radius: 999px; transition: background .3s ease; }
@@ -558,17 +618,19 @@
     -webkit-tap-highlight-color: transparent;
   }
   .timeline-appt:active { transform: scale(0.98); opacity: 0.92; }
-  /* Cabeçalho em linha (avatar + texto) — só existe fora do tier tiny, onde
-     nem o nome sozinho sobra espaço garantido pro avatar. */
+  /* Cabeçalho em linha (avatar + texto) — tier standard/expanded, onde
+     sobra altura de verdade pro avatar de 22px + duas linhas de texto. */
   .timeline-appt .appt-head { display: flex; align-items: center; gap: var(--space-2, 8px); min-width: 0; }
   .timeline-appt .appt-body { min-width: 0; flex: 1; }
   /* Extensão proposta do Avatar (docs/04) — .o-avatar hoje só tem sm(40)/lg(72);
-     a Agenda precisa de um selo de identidade dentro de um card de ~20-40px de
-     altura. Mesmos hooks --avatar-bg/--avatar-color do componente, só um
-     tamanho novo — não uma cor ou raio novo. Fica local até virar §Avatar. */
+     a Agenda precisa de selos de identidade bem menores, em dois tamanhos
+     (xs pro tier rico, 2xs pro tier compacto de 30-59min). Mesmos hooks
+     --avatar-bg/--avatar-color do componente — não uma cor ou raio novo.
+     Fica local até virar §Avatar. */
   .timeline-appt .o-avatar.o-avatar-xs { width: 22px; height: 22px; font-size: 8.5px; flex-shrink: 0; }
   .timeline-appt .o-avatar-xs .o-avatar-badge { width: 10px; height: 10px; border-width: 1.5px; }
   .timeline-appt .o-avatar-xs .o-avatar-badge svg { width: 6px; height: 6px; }
+  .timeline-appt .o-avatar.o-avatar-2xs { width: 16px; height: 16px; font-size: 7px; flex-shrink: 0; }
   .timeline-appt .title, .timeline-appt .sub {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
@@ -580,16 +642,57 @@
      em 0.85. Texto legível pesa mais que hierarquia por transparência. */
   .timeline-appt .sub { font-size: 11px; }
   .timeline-appt .sub .dur { font-variant-numeric: tabular-nums; }
-  /* Bloco baixo demais pra ler serviço/profissional sem cortar — só o nome
-     da cliente sobrevive. Ver heightTier em buildAgendaGrid(). */
-  .timeline-appt.is-tiny .sub { display: none; }
-  .timeline-appt.is-tiny .title { font-size: 11px; }
   /* Reserva o espaço do selo de status (canto superior direito) pra ele nunca
      cobrir o nome da cliente quando é comprido. */
+  .timeline-appt.is-standard .title, .timeline-appt.is-standard .sub,
   .timeline-appt.is-expanded .title, .timeline-appt.is-expanded .sub { padding-right: 56px; }
-  /* Selo de status só aparece no tier expandido (duração maior) — reaproveita
-     os mesmos tokens de cor do card da Home (.am-status), só um pouco menor
-     pra caber dentro do bloco da agenda. */
+  /* ── Tier is-micro (<30min): uma linha só, sem avatar ─────────────────
+     Padding mínimo real (não é o padrão escondendo linha) — o card mais
+     baixo desse tier mede ~16px, e o padrão de 12/14px sozinho já
+     estouraria essa altura. */
+  .timeline-appt.is-micro {
+    display: flex; align-items: center; padding: 1px 8px;
+  }
+  .micro-row {
+    display: flex; align-items: center; gap: 5px; width: 100%; min-width: 0;
+  }
+  .micro-row .micro-name {
+    font-weight: 700; font-size: 10.5px; letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
+  }
+  /* Duração nunca trunca — é a segunda informação mais importante do
+     tier (logo depois do nome) e precisa continuar sempre visível. */
+  .micro-row .micro-dur {
+    font-size: 9.5px; font-variant-numeric: tabular-nums; flex-shrink: 0; opacity: 0.9;
+  }
+  /* ── Tier is-compact (30-59min): nome + serviço + duração + status,
+     também numa linha só (a de 30min mede ~26px, sem sobra pra duas). ── */
+  .timeline-appt.is-compact {
+    display: flex; align-items: center; padding: 2px 9px;
+  }
+  .compact-row {
+    display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0;
+  }
+  .compact-row .compact-info {
+    font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
+  }
+  .compact-row .compact-info b { font-weight: 700; }
+  .compact-row .compact-dur {
+    font-size: 10px; font-variant-numeric: tabular-nums; flex-shrink: 0; opacity: 0.9;
+  }
+  /* Ponto de status (is-micro/is-compact) — o texto por extenso vira só
+     ponto+cor aqui; a leitura completa está no aria-label do card e no
+     detalhe. Cores idênticas ao .am-status (mesmos tokens, sem invenção). */
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    background: var(--color-accent-2-700);
+  }
+  .status-dot.st-confirmed { background: var(--color-accent-700); }
+  .status-dot.st-done { background: var(--color-neutral-600); }
+  .status-dot.st-urgent { background: var(--color-accent-2-700); }
+  /* Selo de status por extenso só aparece nos tiers ricos (60min+) —
+     reaproveita os mesmos tokens de cor do card da Home (.am-status), só
+     um pouco menor pra caber dentro do bloco da agenda. */
   .timeline-appt .am-status {
     position: absolute; top: 6px; right: 8px; font-size: 9px; font-weight: 700; padding: 2px 7px;
     border-radius: var(--radius-full, 999px); white-space: nowrap;
@@ -597,6 +700,10 @@
   }
   .timeline-appt .am-status.st-confirmed { background: var(--color-accent-100); color: var(--color-accent-700); }
   .timeline-appt .am-status.st-done { background: var(--color-neutral-200); color: var(--color-neutral-600); }
+  /* st-urgent é redundante com o fundo base do .am-status de propósito —
+     deixa explícito que cancelado/não-compareceu usam a MESMA cor de
+     alerta do resto do app (estoque baixo, agenda lotada), não uma nova. */
+  .timeline-appt .am-status.st-urgent { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
   /* Toque-e-eleva antes de navegar pro detalhe (bindTimelineApptClicks) —
      dá tempo do dedo perceber que tocou ANTES da tela trocar, em vez de sumir
      na hora. Puramente JS (classe ligada/desligada por setTimeout), não CSS
@@ -1473,7 +1580,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month', clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month', clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null, agendaHeaderCollapsed: false };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -1769,6 +1876,13 @@ function statusLabel(status) {
 }
 function statusClass(status) {
   if (status === 'completed' || status === 'done') return 'st-done';
+  // Cancelado/não-compareceu caíam no mesmo verde de "confirmado" por
+  // omissão — inofensivo enquanto só existia texto, mas o novo indicador
+  // por ponto (bookings curtos) depende dessa distinção pra não mentir
+  // visualmente sobre um agendamento problemático. hoje `loadAppointments()`
+  // já filtra `status != 'cancelled'` do banco, então isso só é alcançável
+  // por no_show ou por um item cancelado que ainda esteja em memória.
+  if (status === 'cancelled' || status === 'no_show') return 'st-urgent';
   return 'st-confirmed';
 }
 
@@ -3016,12 +3130,24 @@ const SLOT_MINUTES = 30;
 const AGENDA_FREE_MIN_MINUTES = 45;
 // Em MINUTOS de duração, não em pixels — desacoplado de HOUR_HEIGHT de
 // propósito, senão qualquer ajuste fino da grade (respiro, "premium")
-// precisaria recalibrar os dois tiers junto. Abaixo do primeiro,
-// serviço/profissional somem (is-tiny); a partir do segundo, duração e
-// status aparecem (is-expanded). Só preparação visual — nenhuma regra de
-// negócio muda com isso.
-const AGENDA_APPT_TINY_MAX_MINUTES = 30;
-const AGENDA_APPT_EXPANDED_MIN_MINUTES = 60;
+// precisaria recalibrar os tiers junto. Só preparação visual — nenhuma
+// regra de negócio muda com isso.
+//
+// Quatro tiers, validados no celular real (a versão anterior só tinha
+// dois — abaixo/acima de 60min — e deixava 30-59min ilegível, sem
+// duração nem status visíveis):
+//   is-micro    < 30min  — nome curto + duração + ponto de status
+//   is-compact  30-59min — nome + serviço + duração + ponto de status,
+//                          tudo numa linha só (o card mais baixo desse
+//                          tier mede ~26px; duas linhas não cabem)
+//   is-standard 60-119min — layout rico de sempre (avatar, selo VIP,
+//                          selo de status por extenso)
+//   is-expanded >=120min — mesmo layout rico do standard; a altura
+//                          sobrando já é suficiente, não precisa de
+//                          composição própria
+const AGENDA_APPT_MICRO_MAX_MINUTES = 30;
+const AGENDA_APPT_COMPACT_MAX_MINUTES = 60;
+const AGENDA_APPT_STANDARD_MAX_MINUTES = 120;
 
 function sameDay(a, b) {
   return a.toDateString() === b.toDateString();
@@ -3033,6 +3159,22 @@ function sameDay(a, b) {
 // outro lugar. Usado só pra alimentar o <input type="date"> do modal.
 function dateInputValue(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// "Qua · 5 Ago" — versão curta da data pra barra compacta do cabeçalho.
+// toLocaleDateString devolve "qua."/"ago." com ponto abreviado em pt-BR;
+// tiramos o ponto e maiusculizamos só a primeira letra (mesmo padrão de
+// monthLabel/dateTitle em renderAgenda()).
+function compactDateLabel(day) {
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const weekday = cap(day.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''));
+  const month = cap(day.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''));
+  return `${weekday} · ${day.getDate()} ${month}`;
+}
+
+function updateCompactDateLabel(day) {
+  const el = document.getElementById('compactDateLabel');
+  if (el) el.textContent = compactDateLabel(day);
 }
 
 function startOfWeek(date) {
@@ -3194,6 +3336,108 @@ function scrollTimelineTo(el, top, opts) {
   }
 }
 
+// Onde o scroll "descansa" depois de posicionar o dia — não é 0px (a
+// grade quase sempre abre perto do horário de abertura ou do primeiro
+// atendimento, não no topo literal da janela 5h-9h, que ninguém olha).
+// O colapso do cabeçalho mede a partir DAQUI, não do topo absoluto —
+// senão quase todo dia já nasceria com o cabeçalho colapsado (o scroll
+// inicial já passa dos ~64px de threshold só pra chegar na abertura).
+let agendaScrollBaseline = 0;
+
+// Envelope de scrollTimelineTo() que também recalibra a base do colapso
+// automático pro dia atual — chamado toda vez que a grade é reposicionada
+// pra um dia (renderAgenda cheio ou troca de dia dentro da semana).
+function positionTimelineForDay(el, day, dayAppts) {
+  scrollTimelineTo(el, computeRelevantScrollTop(day, dayAppts), { animate: false });
+  agendaScrollBaseline = el ? el.scrollTop : 0;
+}
+
+// Expandido → compacto ao rolar ~64px ALÉM de onde o dia abriu; volta a
+// expandir só perto de onde abriu de novo (~12px) — a folga entre os dois
+// thresholds evita flicker num scroll que oscila bem no limite.
+const AGENDA_HEADER_COLLAPSE_THRESHOLD = 64;
+const AGENDA_HEADER_EXPAND_THRESHOLD = 12;
+
+// Anima um wrapper colapsável (.agenda-chrome-collapsible) entre 0 e a
+// altura real do conteúdo, medida em scrollHeight — mesma técnica já usada
+// em .diag-card-body-wrap (perfil da cliente): scrollHeight funciona mesmo
+// com o elemento hoje em max-height:0/overflow:hidden, porque mede o
+// conteúdo, não o que está visível. Ao abrir, solta pra "none" depois da
+// transição, pra não prender conteúdo futuro (se algum dia mudar de
+// tamanho) num valor em px congelado.
+function animateChromeCollapsible(el, opening) {
+  if (!el) return;
+  if (prefersReducedMotion()) { el.style.maxHeight = opening ? 'none' : '0px'; return; }
+  if (opening) {
+    el.style.maxHeight = el.scrollHeight + 'px';
+    const onEnd = (e) => {
+      if (e.target === el && e.propertyName === 'max-height') {
+        el.style.maxHeight = 'none';
+        el.removeEventListener('transitionend', onEnd);
+      }
+    };
+    el.addEventListener('transitionend', onEnd);
+  } else {
+    // Não dá pra fazer transition de "none" pra "0px" — trava primeiro no
+    // valor atual (medido), força reflow, só depois manda pra 0.
+    el.style.maxHeight = el.scrollHeight + 'px';
+    void el.offsetHeight;
+    el.style.maxHeight = '0px';
+  }
+}
+
+function setAgendaHeaderCollapsed(collapsed) {
+  state.agendaHeaderCollapsed = collapsed;
+  const screen = document.getElementById('agendaScreen');
+  if (!screen) return;
+  screen.classList.toggle('is-collapsed', collapsed);
+  const toggleBtn = document.getElementById('chromeToggleBtn');
+  if (toggleBtn) toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+  animateChromeCollapsible(document.getElementById('agendaExpandedGrid'), !collapsed);
+  animateChromeCollapsible(document.getElementById('agendaWeekstripGrid'), !collapsed);
+  animateChromeCollapsible(document.getElementById('agendaCompactGrid'), collapsed);
+}
+
+// #timelineEl é recriado a cada renderAgenda() (renderAgendaGridTransition
+// só muta o innerHTML do mesmo nó, então o listener sobrevive e não
+// precisa ser reamarrado ali — mesmo raciocínio de attachTimelineScrollbarFade).
+function attachAgendaHeaderCollapse(el) {
+  if (!el) return;
+  el.addEventListener('scroll', () => {
+    const delta = el.scrollTop - agendaScrollBaseline;
+    if (!state.agendaHeaderCollapsed && delta > AGENDA_HEADER_COLLAPSE_THRESHOLD) {
+      setAgendaHeaderCollapsed(true);
+    } else if (state.agendaHeaderCollapsed && delta < AGENDA_HEADER_EXPAND_THRESHOLD) {
+      setAgendaHeaderCollapsed(false);
+    }
+  });
+}
+
+// Passo de um dia — usado pelas setas da barra compacta, que navegam por
+// dia (não por semana como prevWeek/nextWeek do cabeçalho expandido: sem a
+// faixa de dias visível, saltar semana inteira sem nenhum seletor de dia
+// à vista seria desorientador). Cruzar de semana precisa de um render
+// cheio (a faixa de 7 dias tem que ser refeita pra semana nova); dentro da
+// mesma semana, o caminho leve de sempre (updateWeekStripSelection +
+// slide só da grade) já resolve.
+function stepAgendaDay(direction) {
+  const oldDay = state.agendaDate;
+  const newDay = new Date(oldDay.getTime() + (direction === 'forward' ? 1 : -1) * 86400000);
+  const crossesWeek = startOfWeek(oldDay).getTime() !== startOfWeek(newDay).getTime();
+  state.agendaDate = newDay;
+  if (crossesWeek) {
+    // renderAgenda() reconstrói o #agendaScreen inteiro a partir de
+    // state.agendaHeaderCollapsed — já nasce no estado certo, não precisa
+    // reaplicar nada depois.
+    renderAgenda();
+  } else {
+    updateWeekStripSelection(newDay);
+    updateAgendaDateTitle(newDay);
+    updateCompactDateLabel(newDay);
+    renderAgendaGridTransition(direction);
+  }
+}
+
 // Miolo da grade (linhas de hora + eventos + linha do horário atual), sem o
 // wrapper .timeline em volta — extraído pra ser recalculado sozinho quando
 // só o dia muda dentro da mesma semana (renderAgendaGridTransition), sem
@@ -3239,20 +3483,34 @@ function buildAgendaGrid(day) {
       </div>`;
     }
 
-    // Duração real decide quanto o cartão consegue contar sem cortar: pouco
-    // tempo = só o nome; serviço mais longo = duração e status também. Em
-    // minutos, não em pixels — independe de HOUR_HEIGHT. Puramente visual,
-    // não muda o que está gravado no agendamento.
-    const tiny = durMins < AGENDA_APPT_TINY_MAX_MINUTES;
-    const expanded = durMins >= AGENDA_APPT_EXPANDED_MIN_MINUTES;
+    // Duração real decide o tier — em minutos, não em pixels, independe de
+    // HOUR_HEIGHT. Puramente visual, não muda o que está gravado no
+    // agendamento. Ver a explicação dos 4 tiers perto das constantes.
+    const durTier = durMins < AGENDA_APPT_MICRO_MAX_MINUTES ? 'micro'
+      : durMins < AGENDA_APPT_COMPACT_MAX_MINUTES ? 'compact'
+      : durMins < AGENDA_APPT_STANDARD_MAX_MINUTES ? 'standard'
+      : 'expanded';
+    const richTier = durTier === 'standard' || durTier === 'expanded';
+
     const clientName = a.client?.name || 'Cliente';
-    const subLabel = expanded
-      ? `${a.service?.name || ''} · ${a.staff?.name || ''} · <span class="dur">${durationLabel(durMins)}</span>`
-      : `${a.service?.name || ''} · ${a.staff?.name || ''}`;
-    const statusPillHtml = expanded
-      ? `<span class="am-status ${statusClass(a.status)}">${statusLabel(a.status)}</span>`
+    const firstName = clientName.trim().split(/\s+/)[0];
+    const serviceName = a.service?.name || '';
+    const staffName = a.staff?.name || '';
+    const durLabel = durationLabel(durMins);
+    const statusTxt = statusLabel(a.status);
+    const stClass = statusClass(a.status);
+    // Rótulo acessível completo em todo tier — é o que garante que um card
+    // reduzido a "Maria · 20min ●" não perca informação nenhuma pra quem
+    // usa leitor de tela; o ponto de status é aria-hidden de propósito.
+    const ariaLabel = `${clientName}, ${serviceName || 'serviço não definido'}, ${fmtTime(a.starts_at)}, ${durLabel}, ${statusTxt}`;
+
+    const subLabel = richTier
+      ? `${esc(serviceName)} · ${esc(staffName)} · <span class="dur">${durLabel}</span>`
+      : `${esc(serviceName)} · ${esc(staffName)}`;
+    const statusPillHtml = richTier
+      ? `<span class="am-status ${stClass}">${statusTxt}</span>`
       : '';
-    const classes = ['timeline-appt', tiny ? 'is-tiny' : '', expanded ? 'is-expanded' : '', enteringId === a.id ? 'is-entering' : ''].filter(Boolean).join(' ');
+    const classes = ['timeline-appt', `is-${durTier}`, enteringId === a.id ? 'is-entering' : ''].filter(Boolean).join(' ');
 
     // Fundo mais saturado que o tom pastel original — misturado com a própria
     // cor de borda da categoria (nada de cor nova), pra ler como "card vivo"
@@ -3263,13 +3521,34 @@ function buildAgendaGrid(day) {
     // em todas as categorias.
     const bgStrong = `color-mix(in srgb, ${c.bg} 60%, ${c.border} 40%)`;
     const textStrong = `color-mix(in srgb, ${c.text} 65%, black 35%)`;
-    // Avatar de iniciais (não existe foto de perfil de cliente no app —
-    // client_photos são antes/depois de cabelo) + selo VIP, reaproveitando
-    // .o-avatar/.o-avatar-badge já usados em Clientes. Some no tier tiny:
-    // ali o bloco pode ter só ~20px, sem sobra pra um círculo de 22px.
-    const headHtml = tiny
-      ? `<div class="title" style="color:${textStrong}">${esc(clientName)}</div>`
-      : `
+
+    let headHtml;
+    if (durTier === 'micro') {
+      // <30min: só o essencial — primeiro nome, duração (nunca some) e um
+      // ponto de status. Nome completo, serviço e profissional ficam só
+      // no detalhe (aberto ao tocar o card, que continua clicável inteiro).
+      headHtml = `
+        <div class="micro-row" style="color:${textStrong}">
+          <span class="micro-name">${esc(firstName)}</span>
+          <span class="micro-dur">${durLabel}</span>
+          <span class="status-dot ${stClass}" aria-hidden="true"></span>
+        </div>
+      `;
+    } else if (durTier === 'compact') {
+      // 30-59min: nome + serviço + duração + status numa linha só — o
+      // card mais baixo desse tier (30min) mede ~26px, sem sobra pra uma
+      // segunda linha. Avatar reduzido (o-avatar-2xs, 16px) em vez de
+      // sumir — ainda dá pra reconhecer de relance.
+      headHtml = `
+        <div class="compact-row" style="color:${textStrong}">
+          <span class="o-avatar o-avatar-2xs" style="--avatar-bg:${c.border};--avatar-color:${c.bg}" aria-hidden="true">${initials(clientName)}</span>
+          <span class="compact-info"><b>${esc(clientName)}</b> · ${esc(serviceName)}</span>
+          <span class="compact-dur">${durLabel}</span>
+          <span class="status-dot ${stClass}" aria-hidden="true"></span>
+        </div>
+      `;
+    } else {
+      headHtml = `
         <div class="appt-head">
           <span class="o-avatar o-avatar-xs" style="--avatar-bg:${c.border};--avatar-color:${c.bg}" aria-hidden="true">
             ${initials(clientName)}
@@ -3281,9 +3560,10 @@ function buildAgendaGrid(day) {
           </div>
         </div>
       `;
+    }
 
     return `
-      <div class="${classes}" data-appt-id="${a.id}" style="top:${top}px; height:${height}px; left:${recuo}px; width:calc(100% - ${recuo + 6}px); right:auto; z-index:${10 + it.nivel}; background:${bgStrong}; border-left:3px solid ${c.border};">
+      <div class="${classes}" data-appt-id="${a.id}" data-tier="${durTier}" aria-label="${esc(ariaLabel)}" style="top:${top}px; height:${height}px; left:${recuo}px; width:calc(100% - ${recuo + 6}px); right:auto; z-index:${10 + it.nivel}; background:${bgStrong}; border-left:3px solid ${c.border};">
         ${gapHtml}
         ${statusPillHtml}
         ${headHtml}
@@ -3407,27 +3687,57 @@ function renderAgenda() {
   });
 
   const { html: gridHtml, dayAppts } = buildAgendaGrid(day);
+  const collapsedClass = state.agendaHeaderCollapsed ? ' is-collapsed' : '';
+  const compactLabel = compactDateLabel(day);
+  // max-height inline embutido direto no HTML (não uma chamada JS pós-render):
+  // a primeira pintura já nasce no estado certo, sem precisar de um
+  // "setAgendaHeaderCollapsed(state atual)" logo depois só pra sincronizar.
+  const expandedMaxH = state.agendaHeaderCollapsed ? '0px' : 'none';
+  const compactMaxH = state.agendaHeaderCollapsed ? 'none' : '0px';
 
   app.innerHTML = `
-    <div class="day-nav">
-      <div class="month-pill">
-        <button class="arrow" id="prevWeek">‹</button>
-        <button class="day-label-btn" id="openMonthView">
-          <div class="day-label">${monthLabel}</div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <button class="arrow" id="nextWeek">›</button>
-      </div>
-      <button class="agenda-add-btn" id="agendaAddBtn" aria-label="Novo agendamento">+</button>
-    </div>
-    <div class="agenda-viewport" id="agendaWeekViewport">
-      <div id="agendaWeekPane">
-        <div class="week-strip" id="weekStrip">
-          ${weekDays.map(d => weekDayButtonHtml(d, day)).join('')}
+    <div class="agenda-screen${collapsedClass}" id="agendaScreen">
+      <div class="agenda-chrome-collapsible agenda-chrome-expanded-grid" id="agendaExpandedGrid" style="max-height:${expandedMaxH};">
+        <div>
+          <div class="day-nav">
+            <div class="month-pill">
+              <button class="arrow" id="prevWeek">‹</button>
+              <button class="day-label-btn" id="openMonthView">
+                <div class="day-label">${monthLabel}</div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <button class="arrow" id="nextWeek">›</button>
+            </div>
+            <button class="agenda-add-btn" id="agendaAddBtn" aria-label="Novo agendamento">+</button>
+          </div>
         </div>
-        <div class="agenda-date-title" id="agendaDateTitle">${dateTitle}</div>
-        <div class="agenda-viewport" id="agendaViewport">
-          <div class="timeline" id="timelineEl">${gridHtml}</div>
+      </div>
+      <div class="agenda-chrome-collapsible agenda-chrome-compact-grid" id="agendaCompactGrid" style="max-height:${compactMaxH};">
+        <div>
+          <div class="agenda-compact-bar">
+            <button class="chrome-toggle" id="chromeToggleBtn" aria-label="Expandir calendário" aria-expanded="${state.agendaHeaderCollapsed ? 'false' : 'true'}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <button class="compact-nav-arrow" id="compactPrevDay" aria-label="Dia anterior">‹</button>
+            <div class="compact-date" id="compactDateLabel">${compactLabel}</div>
+            <button class="compact-nav-arrow" id="compactNextDay" aria-label="Próximo dia">›</button>
+            <button class="agenda-add-btn" id="agendaAddBtnCompact" aria-label="Novo agendamento">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="agenda-viewport" id="agendaWeekViewport">
+        <div id="agendaWeekPane">
+          <div class="agenda-chrome-collapsible agenda-chrome-weekstrip-grid" id="agendaWeekstripGrid" style="max-height:${expandedMaxH};">
+            <div>
+              <div class="week-strip" id="weekStrip">
+                ${weekDays.map(d => weekDayButtonHtml(d, day)).join('')}
+              </div>
+              <div class="agenda-date-title" id="agendaDateTitle">${dateTitle}</div>
+            </div>
+          </div>
+          <div class="agenda-viewport" id="agendaViewport">
+            <div class="timeline" id="timelineEl">${gridHtml}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -3445,6 +3755,10 @@ function renderAgenda() {
   };
   document.getElementById('openMonthView').onclick = () => openMonthCalendar(day);
   document.getElementById('agendaAddBtn').onclick = openNewApptModal;
+  document.getElementById('agendaAddBtnCompact').onclick = openNewApptModal;
+  document.getElementById('chromeToggleBtn').onclick = () => setAgendaHeaderCollapsed(false);
+  document.getElementById('compactPrevDay').onclick = () => stepAgendaDay('back');
+  document.getElementById('compactNextDay').onclick = () => stepAgendaDay('forward');
 
   // Toque num dia dentro da MESMA semana: a faixa continua com as mesmas 7
   // datas, só a seleção muda (updateWeekStripSelection, sem refazer o HTML),
@@ -3462,6 +3776,7 @@ function renderAgenda() {
       state.agendaDate = novaData;
       updateWeekStripSelection(novaData);
       updateAgendaDateTitle(novaData);
+      updateCompactDateLabel(novaData);
       renderAgendaGridTransition(direction);
     };
   });
@@ -3469,7 +3784,8 @@ function renderAgenda() {
   bindTimelineApptClicks();
   bindFreeSlotClicks();
   attachTimelineScrollbarFade(document.getElementById('timelineEl'));
-  scrollTimelineTo(document.getElementById('timelineEl'), computeRelevantScrollTop(day, dayAppts), { animate: false });
+  attachAgendaHeaderCollapse(document.getElementById('timelineEl'));
+  positionTimelineForDay(document.getElementById('timelineEl'), day, dayAppts);
 }
 
 // #timelineEl é recriado a cada renderAgenda(), então o listener é
@@ -3565,7 +3881,7 @@ function renderAgendaGridTransition(direction) {
     el.innerHTML = html;
     bindTimelineApptClicks();
     bindFreeSlotClicks();
-    scrollTimelineTo(el, computeRelevantScrollTop(day, dayAppts), { animate: false });
+    positionTimelineForDay(el, day, dayAppts);
   });
 }
 
@@ -5693,6 +6009,9 @@ document.querySelectorAll('nav button').forEach(btn => {
     // Tocar na aba é entrada nova: começa do topo. O scroll guardado serve
     // pro caminho de volta do perfil, não pra troca de aba.
     state.clientsScrollTop = 0;
+    // Mesma lógica pro cabeçalho da Agenda: entrada nova começa expandido,
+    // mesmo que a última visita tenha terminado colapsada pelo scroll.
+    state.agendaHeaderCollapsed = false;
     render();
     window.scrollTo(0, 0);
   };
@@ -6046,7 +6365,13 @@ document.getElementById('gotoTodayFab').onclick = () => {
   // no botão pareceria não ter feito nada.
   const el = document.getElementById('timelineEl');
   const info = currentTimeInfo();
-  if (el && info) scrollTimelineTo(el, info.top - HOUR_HEIGHT * 1.5, { animate: true });
+  if (el && info) {
+    const target = info.top - HOUR_HEIGHT * 1.5;
+    scrollTimelineTo(el, target, { animate: true });
+    // Recentralizar também recalibra a base do colapso — senão o cabeçalho
+    // ficaria medindo contra uma posição que "Hoje" acabou de abandonar.
+    agendaScrollBaseline = Math.max(0, target);
+  }
   highlightCurrentTimeLine();
 };
 
