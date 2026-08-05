@@ -47,7 +47,20 @@
        ~57), senão o fim do conteúdo ficava encoberto por ele. */
     font-family: var(--font-body); padding-bottom: 100px;
   }
+  /* Some por completo (não só encolhe) quando a Agenda está colapsada — é o
+     que faz a área acima da grade caber em ~48-56px em vez de ~150px
+     (cabeçalho global + barra compacta somados). overflow:hidden é inerte
+     nas outras telas (conteúdo nunca é mais alto que a própria caixa);
+     max-height só é tocado via JS, nunca por CSS de outra aba. O padding
+     mora no wrapper INTERNO (.global-header-inner), não aqui: padding
+     nunca comprime abaixo do próprio tamanho mesmo com border-box, então
+     max-height:0 no <header> sozinho travaria em 32px (24+8 do padding)
+     em vez de 0 — medido no navegador. */
   header {
+    overflow: hidden;
+    transition: max-height var(--motion-emphasized, 240ms) var(--ease-standard, ease);
+  }
+  .global-header-inner {
     padding: 24px 20px 8px; display: flex; align-items: center; justify-content: space-between;
   }
   header .greeting { font-family: var(--font-heading); font-weight: 600; font-size: 24px; }
@@ -499,11 +512,13 @@
   .agenda-chrome-compact-grid > div > * { opacity: 0; }
   #agendaScreen.is-collapsed .agenda-chrome-compact-grid > div > * { opacity: 1; }
   .agenda-compact-bar {
-    display: flex; align-items: center; gap: 6px;
-    padding: 4px 0 10px;
+    display: flex; align-items: center; gap: 4px;
+    /* Padding vertical mínimo — a meta é 48-56px de altura total da barra,
+       não repetir o respiro do cabeçalho expandido. */
+    padding: 2px 0 6px;
   }
   .agenda-compact-bar .compact-date {
-    flex: 1; text-align: center; font-family: var(--font-heading); font-weight: 600; font-size: 15px;
+    flex: 1; min-width: 0; text-align: center; font-family: var(--font-heading); font-weight: 600; font-size: 14px;
     color: var(--color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   /* Toque mínimo de 44px mesmo com ícone pequeno — a caixa é que garante
@@ -517,7 +532,21 @@
   .chrome-toggle:hover, .compact-nav-arrow:hover { background: var(--color-neutral-100); }
   .chrome-toggle:active, .compact-nav-arrow:active { background: var(--color-neutral-200); }
   .chrome-toggle svg { width: 15px; height: 15px; }
+  /* "Hoje" dentro da barra compacta — mesma linguagem neutra/contornada do
+     .fab-today flutuante (navegação, não ação de destaque), só que inline
+     e sem position:fixed. O flutuante some quando a barra aparece (nunca
+     os dois ao mesmo tempo — ver render()). */
+  .compact-today-btn {
+    height: 44px; padding: 0 12px; border-radius: 999px;
+    background: var(--color-surface); color: var(--color-text);
+    border: 1.5px solid var(--color-divider); cursor: pointer;
+    font-family: var(--font-body); font-weight: 700; font-size: 12.5px;
+    flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+    transition: background .15s ease;
+  }
+  .compact-today-btn:active { background: var(--color-neutral-200); }
   @media (prefers-reduced-motion: reduce) {
+    header,
     .agenda-chrome-collapsible, .agenda-chrome-collapsible > div > * { transition: none; }
     #agendaScreen.is-collapsed .agenda-chrome-expanded-grid > div > *,
     #agendaScreen.is-collapsed .agenda-chrome-weekstrip-grid > div > * { transform: none; }
@@ -1532,14 +1561,16 @@
   </div>
 </div>
 <div id="toast"></div>
-<header>
-  <div>
-    <div class="greeting" id="greeting">Orenzi</div>
-    <div class="greeting-sub" id="greetingSub"></div>
-  </div>
-  <div style="display:flex; align-items:center; gap:12px;">
-    <span class="logout-link" id="logoutBtn" style="display:none;">Sair</span>
-    <div class="mark">O</div>
+<header id="globalHeader">
+  <div class="global-header-inner">
+    <div>
+      <div class="greeting" id="greeting">Orenzi</div>
+      <div class="greeting-sub" id="greetingSub"></div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span class="logout-link" id="logoutBtn" style="display:none;">Sair</span>
+      <div class="mark">O</div>
+    </div>
   </div>
 </header>
 <main id="app"></main>
@@ -3393,9 +3424,18 @@ function setAgendaHeaderCollapsed(collapsed) {
   screen.classList.toggle('is-collapsed', collapsed);
   const toggleBtn = document.getElementById('chromeToggleBtn');
   if (toggleBtn) toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+  // Cabeçalho global some junto — é o que faz a área acima da grade caber
+  // em ~48-56px em vez de ~150px (cabeçalho global + barra compacta).
+  animateChromeCollapsible(document.getElementById('globalHeader'), !collapsed);
   animateChromeCollapsible(document.getElementById('agendaExpandedGrid'), !collapsed);
   animateChromeCollapsible(document.getElementById('agendaWeekstripGrid'), !collapsed);
   animateChromeCollapsible(document.getElementById('agendaCompactGrid'), collapsed);
+  // O flutuante "Hoje" vira redundante com o da barra compacta — nunca os
+  // dois ao mesmo tempo.
+  const todayFab = document.getElementById('gotoTodayFab');
+  if (todayFab && state.tab === 'agenda' && !state.selectedApptId) {
+    todayFab.style.display = collapsed ? 'none' : 'flex';
+  }
 }
 
 // #timelineEl é recriado a cada renderAgenda() (renderAgendaGridTransition
@@ -3720,6 +3760,7 @@ function renderAgenda() {
             </button>
             <button class="compact-nav-arrow" id="compactPrevDay" aria-label="Dia anterior">‹</button>
             <div class="compact-date" id="compactDateLabel">${compactLabel}</div>
+            <button class="compact-today-btn" id="compactTodayBtn">Hoje</button>
             <button class="compact-nav-arrow" id="compactNextDay" aria-label="Próximo dia">›</button>
             <button class="agenda-add-btn" id="agendaAddBtnCompact" aria-label="Novo agendamento">+</button>
           </div>
@@ -3759,6 +3800,7 @@ function renderAgenda() {
   document.getElementById('chromeToggleBtn').onclick = () => setAgendaHeaderCollapsed(false);
   document.getElementById('compactPrevDay').onclick = () => stepAgendaDay('back');
   document.getElementById('compactNextDay').onclick = () => stepAgendaDay('forward');
+  document.getElementById('compactTodayBtn').onclick = goToToday;
 
   // Toque num dia dentro da MESMA semana: a faixa continua com as mesmas 7
   // datas, só a seleção muda (updateWeekStripSelection, sem refazer o HTML),
@@ -5989,7 +6031,16 @@ function render() {
     (state.tab === 'clients' && !state.selectedClientId && !state.viewQuestionnaire)
   );
   document.getElementById('fabNewAppt').style.display = mostraFab ? 'flex' : 'none';
-  document.getElementById('gotoTodayFab').style.display = (state.tab === 'agenda' && !state.selectedApptId) ? 'flex' : 'none';
+  // O flutuante "Hoje" some quando a barra compacta da Agenda tem o seu
+  // próprio — nunca os dois ao mesmo tempo (setAgendaHeaderCollapsed cobre
+  // a troca ao vivo; esta linha cobre trocar de aba/voltar do detalhe).
+  const agendaColapsadaAtiva = state.tab === 'agenda' && state.agendaHeaderCollapsed && !state.selectedApptId;
+  document.getElementById('gotoTodayFab').style.display = (state.tab === 'agenda' && !state.selectedApptId && !agendaColapsadaAtiva) ? 'flex' : 'none';
+  // Cabeçalho global some junto com o resto da Agenda quando colapsada —
+  // em qualquer outra tela (ou no detalhe de um atendimento) ele volta
+  // instantâneo, sem animação (não é uma troca de estado, é outra tela).
+  const globalHeader = document.getElementById('globalHeader');
+  if (globalHeader) globalHeader.style.maxHeight = agendaColapsadaAtiva ? '0px' : 'none';
   if (state.selectedApptId) { renderApptDetail(); return; }
   if (state.tab === 'inicio') renderHome();
   else if (state.tab === 'insights') renderInsights();
@@ -6350,8 +6401,10 @@ document.getElementById('fabNewAppt').onclick = () => {
 // "Hoje" é elemento fixo fora do #app, então o clique é amarrado uma vez só
 // aqui — diferente de prevWeek/nextWeek/week-day, que são recriados a cada
 // renderAgenda() e precisam ser reamarrados toda vez.
-document.getElementById('gotoTodayFab').onclick = () => {
-  if (state.tab !== 'agenda') return;
+// Compartilhado pelo "Hoje" flutuante (fora do #app, ligado uma vez só) e
+// pelo "Hoje" da barra compacta (dentro de renderAgenda(), reamarrado a
+// cada render).
+function goToToday() {
   const hoje = new Date();
   if (!sameDay(state.agendaDate, hoje)) {
     const direction = hoje > state.agendaDate ? 'forward' : 'back';
@@ -6373,6 +6426,11 @@ document.getElementById('gotoTodayFab').onclick = () => {
     agendaScrollBaseline = Math.max(0, target);
   }
   highlightCurrentTimeLine();
+}
+
+document.getElementById('gotoTodayFab').onclick = () => {
+  if (state.tab !== 'agenda') return;
+  goToToday();
 };
 
 // A cada 30s, se a agenda de hoje estiver na tela, reposiciona a linha do
