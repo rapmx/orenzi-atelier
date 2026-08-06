@@ -990,6 +990,18 @@
   .o-wizard-add-client:active { transform: scale(0.98); background: var(--color-accent-100); }
   .o-wizard-add-client:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 
+  /* Sub-tela "Novo cliente" (cadastro rápido) — mesmo ícone-em-círculo
+     tingido que o resto do produto usa pra dar boas-vindas a uma tela
+     curta (selo VIP, badge de avatar), e os campos agrupados num .o-card
+     em vez de soltos na folha, batendo com o resto do wizard. */
+  .o-wizard-nc-icon {
+    width: 64px; height: 64px; border-radius: var(--radius-circle);
+    background: var(--color-accent-100); color: var(--color-accent-700);
+    display: flex; align-items: center; justify-content: center;
+    margin: var(--space-3) auto var(--space-5);
+  }
+  .o-wizard-nc-icon svg { width: 28px; height: 28px; }
+
   /* Etapa 2 · serviços */
   .o-wizard-service-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2-5) var(--space-2); }
   .o-wizard-service-icon {
@@ -6345,15 +6357,18 @@ function wizStepQuickAddClient() {
     title: 'Novo cliente',
     subtitle: 'Cadastro rápido',
     bodyHtml: `
-      <div class="o-field" style="margin-top:var(--space-4)">
-        <label class="o-field-label" for="wizNcName">Nome</label>
-        <input type="text" id="wizNcName" class="o-input" placeholder="Nome completo" autocomplete="off">
+      <div class="o-wizard-nc-icon" aria-hidden="true">${ICONS.userPlus}</div>
+      <div class="o-card">
+        <div class="o-field">
+          <label class="o-field-label" for="wizNcName">Nome</label>
+          <input type="text" id="wizNcName" class="o-input" placeholder="Nome completo" autocomplete="off">
+        </div>
+        <div class="o-field" style="margin-top:var(--space-3)">
+          <label class="o-field-label" for="wizNcPhone">Telefone</label>
+          <input type="tel" id="wizNcPhone" class="o-input" placeholder="+353 ..." autocomplete="off">
+        </div>
       </div>
-      <div class="o-field" style="margin-top:var(--space-3)">
-        <label class="o-field-label" for="wizNcPhone">Telefone</label>
-        <input type="tel" id="wizNcPhone" class="o-input" placeholder="+353 ..." autocomplete="off">
-      </div>
-      <div id="wizNcError" class="login-error" style="display:none;margin-top:var(--space-2)"></div>
+      <div id="wizNcError" class="login-error" style="display:none;margin-top:var(--space-3)"></div>
     `,
     footHtml: `<button class="o-btn o-btn-primary" id="wizNcContinue">Continuar</button>`,
   };
