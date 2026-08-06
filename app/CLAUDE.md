@@ -621,3 +621,36 @@ diferentes por tela).
 
 Todo o CSS é inline em cada HTML. Mexer no visual do estoque é editar o
 `<style>` do `painel.html` **e** do `painel_demo.html`.
+
+## Cabeçalho da Agenda — compacto, sem colapso (05/08/2026)
+
+O cabeçalho da Agenda é **uma linha de controle + a faixa de dias**, e a
+grade começa logo abaixo. `agendaHeaderHtml()` monta, `bindAgendaHeader()`
+liga os eventos, os dois chamados só por `renderAgenda()`.
+
+A linha tem: pílula do mês (`‹ Ago 2026 ›`, o rótulo abre o calendário do
+mês e as setas trocam de semana), `Hoje` (`#agendaTodayBtn`) e `+`
+(`#agendaAddBtn`). Mês **abreviado** de propósito — "Agosto de 2026" não
+cabe na mesma linha em 320px junto com os dois botões.
+
+**Não existe estado expandido/colapsado.** Houve uma tentativa (03–05/08)
+de cabeçalho que encolhia ao rolar; foi removida por inteiro a pedido do
+Raphael — o que ele queria era um cabeçalho já compacto o tempo todo, não
+um que muda de tamanho. Se aparecer a ideia de "colapsar ao rolar" de
+novo, ela **já foi tentada e descartada**, não é terreno novo. Junto com
+ela saíram: `state.agendaHeaderCollapsed`, `setAgendaHeaderCollapsed()`,
+`attachAgendaHeaderCollapse()`, `agendaScrollBaseline`, `stepAgendaDay()`,
+o `body.tab-agenda { overflow:hidden }` e o painel de debug de scroll.
+
+Também saíram nessa limpeza:
+
+- **`.agenda-date-title`** (o "Quarta-feira, 5 de agosto de 2026" entre a
+  faixa e a grade) — era o maior gasto de espaço vertical da tela, e a
+  faixa de dias já diz que dia está selecionado. `updateAgendaDateTitle()`
+  não existe mais.
+- **`.fab-today`** (o "Hoje" flutuante no canto inferior esquerdo) — virou
+  a pílula inline na linha de controle. O `.fab` circular continua, só pro
+  Estoque e Clientes.
+
+Medido no navegador depois da mudança: a grade começa a **~21% da altura
+da tela** (era ~39%). Em 430px, 19%.
