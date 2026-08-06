@@ -1136,30 +1136,38 @@ window.supabase = {
     font-size: 11px; letter-spacing: 0.08em; color: var(--color-neutral-600);
     font-weight: 700; text-transform: uppercase; margin: 0 0 var(--space-2);
   }
-  .nc-card + .nc-section-label { margin-top: var(--space-4); }
+  /* 20px — dentro da faixa de 16-24px pedida, .nc-card precisa da classe no
+     markup pro seletor bater (bug do PR anterior: a classe nunca foi
+     aplicada, então o card e o título de "Anotações" ficavam colados). */
+  .nc-card + .nc-section-label { margin-top: var(--space-5); }
   /* Ícone ao lado do rótulo só no campo Nome (pedido explícito do PR) —
      mesmo padrão de "icone+texto agrupado" de .pst-left/.ar-icon, não um
      componente novo de campo-com-ícone. */
   .nc-field-label-icon { display: flex; align-items: center; gap: var(--space-2); }
   .nc-field-label-icon svg { width: 15px; height: 15px; color: var(--color-neutral-600); flex-shrink: 0; }
-  /* Telefone com +353 fixo: um .o-input composto, prefixo fica num segmento
-     não editável dentro da mesma caixa — não é outro campo, é o mesmo
-     controle visualmente dividido em duas partes. */
+  /* Telefone com +353 fixo: é o MESMO .o-input (borda, raio, fundo únicos),
+     o prefixo é só texto fixo dentro da caixa, separado por um traço fino —
+     não duas áreas visuais (correção 06/08/2026: a versão anterior dava um
+     fundo/borda próprios ao prefixo, lendo como campo quadrado colado num
+     campo redondo). */
   .nc-phone-field {
-    display: flex; align-items: stretch; min-height: var(--touch-target-min);
+    display: flex; align-items: center; min-height: var(--touch-target-min);
+    padding: 0 var(--space-3-5);
     border: var(--border-width) solid var(--color-divider); border-radius: var(--radius-sm);
-    background: var(--color-surface); overflow: hidden;
+    background: var(--color-surface);
     transition: border-color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard);
   }
   .nc-phone-field:focus-within { border-color: var(--color-accent-600); box-shadow: var(--focus-ring); }
   .nc-phone-prefix {
-    display: flex; align-items: center; padding: 0 var(--space-3);
     font-size: var(--text-body-size); font-weight: var(--text-body-strong-weight);
-    color: var(--color-neutral-700); background: var(--color-neutral-100);
-    border-right: var(--border-width) solid var(--color-divider); flex-shrink: 0;
+    color: var(--color-neutral-700); flex-shrink: 0;
+  }
+  .nc-phone-divider {
+    width: var(--border-width); align-self: stretch; margin: var(--space-2) var(--space-3);
+    background: var(--color-divider); flex-shrink: 0;
   }
   .nc-phone-field input {
-    flex: 1; min-width: 0; border: none; background: none; padding: var(--space-3) var(--space-3-5);
+    flex: 1; min-width: 0; border: none; background: none; padding: var(--space-3) 0;
     font-family: var(--font-body); font-size: var(--text-body-size); color: var(--color-text);
   }
   .nc-phone-field input:focus { outline: none; }
@@ -4630,7 +4638,7 @@ function openNewClientSheet() {
         </div>
 
         <div class="nc-section-label">Informações principais</div>
-        <div class="o-card">
+        <div class="o-card nc-card">
           <div class="o-field">
             <label class="o-field-label nc-field-label-icon" for="ncName">${ICONS.userPlus}<span>Nome completo</span></label>
             <input type="text" id="ncName" class="o-input" placeholder="Digite o nome completo" autocomplete="off">
@@ -4639,6 +4647,7 @@ function openNewClientSheet() {
             <label class="o-field-label" for="ncPhoneLocal">Telefone</label>
             <div class="nc-phone-field">
               <span class="nc-phone-prefix" aria-hidden="true">+353</span>
+              <span class="nc-phone-divider" aria-hidden="true"></span>
               <input type="tel" inputmode="numeric" id="ncPhoneLocal" placeholder="Digite o número" autocomplete="off" aria-label="Telefone, sem o código do país">
             </div>
           </div>
@@ -4650,7 +4659,7 @@ function openNewClientSheet() {
         </div>
 
         <div class="nc-section-label">Anotações (opcional)</div>
-        <div class="o-card">
+        <div class="o-card nc-card">
           <div class="o-field">
             <textarea id="ncNotes" class="o-textarea" maxlength="120" placeholder="Alguma observação sobre este cliente..."></textarea>
             <div class="o-field-help nc-notes-count" id="ncNotesCount">0/120</div>
