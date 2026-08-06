@@ -220,6 +220,17 @@ window.supabase = {
         onAuthStateChange: function () {},
       },
       channel: function () { return { on: function () { return { subscribe: function () {} }; } }; },
+      // find_or_create_client no demo: procura por telefone nos clientes
+      // mockados (mesmo comportamento da RPC real) e devolve o id existente,
+      // ou um id fake pra seguir o fluxo sem persistir — mesmo espírito da
+      // "escrita" abaixo, que devolve sucesso sem gravar.
+      rpc: function (fnName, params) {
+        if (fnName === 'find_or_create_client') {
+          const existente = mockData('clients').find(c => c.phone === params.p_phone);
+          return Promise.resolve({ data: existente ? existente.id : 'demo-client-novo', error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      },
       // Upload no demo não sai daqui: devolve sucesso sem URL, e o painel avisa
       // que a foto não fica disponível nesta versão em vez de mostrar quebrada.
       storage: {
@@ -258,7 +269,19 @@ window.supabase = {
           select: function () {
             return {
               order: listaOrder,
-              eq: function () { return { order: listaOrder, maybeSingle: function () { return Promise.resolve({ data: null }); } }; },
+              // .maybeSingle() de fato busca em mockData(table) — antes sempre
+              // devolvia null, o que escondia o fluxo de "telefone já
+              // cadastrado" (openNewClientSheet) atrás de um mock cego.
+              eq: function (col, val) {
+                return {
+                  order: listaOrder,
+                  maybeSingle: function () {
+                    const achado = mockData(table).find(function (row) { return row[col] === val; });
+                    return Promise.resolve({ data: achado || null });
+                  },
+                };
+              },
+              neq: function () { return { order: listaOrder }; },
               neq: function () { return { order: listaOrder }; },
             };
           },
@@ -1092,6 +1115,67 @@ window.supabase = {
     background: none; border: none; font-size: 20px; color: var(--color-neutral-600);
     cursor: pointer; float: right; line-height: 1;
   }
+  /* ── "Novo cliente" (aba Clientes) — redesign (06/08/2026), no padrão
+     premium do wizard de agendamento. .modal-sheet continua o container
+     (mesmo slide-up já usado em todo sheet do app), só o conteúdo interno
+     passa a usar o vocabulário do Design System (.o-card/.o-field) em vez
+     do antigo .modal-section solto. ── */
+  .nc-sheet { padding-top: 10px; }
+  .nc-handle {
+    width: 36px; height: 4px; border-radius: var(--radius-full);
+    background: var(--color-neutral-300); margin: 0 auto 14px;
+  }
+  .nc-head { display: flex; align-items: flex-start; gap: var(--space-2); margin-bottom: var(--space-4); }
+  .nc-titles { flex: 1; min-width: 0; }
+  .nc-title {
+    font-family: var(--font-heading); font-size: var(--text-title-2-size);
+    font-weight: var(--text-title-2-weight); color: var(--color-text); margin: 0;
+  }
+  .nc-subtitle { font-size: var(--text-caption-size); color: var(--color-neutral-600); margin-top: 3px; }
+  .nc-section-label {
+    font-size: 11px; letter-spacing: 0.08em; color: var(--color-neutral-600);
+    font-weight: 700; text-transform: uppercase; margin: 0 0 var(--space-2);
+  }
+  .nc-card + .nc-section-label { margin-top: var(--space-4); }
+  /* Ícone ao lado do rótulo só no campo Nome (pedido explícito do PR) —
+     mesmo padrão de "icone+texto agrupado" de .pst-left/.ar-icon, não um
+     componente novo de campo-com-ícone. */
+  .nc-field-label-icon { display: flex; align-items: center; gap: var(--space-2); }
+  .nc-field-label-icon svg { width: 15px; height: 15px; color: var(--color-neutral-600); flex-shrink: 0; }
+  /* Telefone com +353 fixo: um .o-input composto, prefixo fica num segmento
+     não editável dentro da mesma caixa — não é outro campo, é o mesmo
+     controle visualmente dividido em duas partes. */
+  .nc-phone-field {
+    display: flex; align-items: stretch; min-height: var(--touch-target-min);
+    border: var(--border-width) solid var(--color-divider); border-radius: var(--radius-sm);
+    background: var(--color-surface); overflow: hidden;
+    transition: border-color var(--motion-fast) var(--ease-standard), box-shadow var(--motion-fast) var(--ease-standard);
+  }
+  .nc-phone-field:focus-within { border-color: var(--color-accent-600); box-shadow: var(--focus-ring); }
+  .nc-phone-prefix {
+    display: flex; align-items: center; padding: 0 var(--space-3);
+    font-size: var(--text-body-size); font-weight: var(--text-body-strong-weight);
+    color: var(--color-neutral-700); background: var(--color-neutral-100);
+    border-right: var(--border-width) solid var(--color-divider); flex-shrink: 0;
+  }
+  .nc-phone-field input {
+    flex: 1; min-width: 0; border: none; background: none; padding: var(--space-3) var(--space-3-5);
+    font-family: var(--font-body); font-size: var(--text-body-size); color: var(--color-text);
+  }
+  .nc-phone-field input:focus { outline: none; }
+  .nc-notes-count { margin-top: var(--space-1); text-align: right; }
+  .nc-protect-card {
+    display: flex; align-items: flex-start; gap: var(--space-2-5);
+    background: var(--color-accent-100); border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-3-5); margin-top: var(--space-4);
+  }
+  .nc-protect-icon { color: var(--color-accent-700); flex-shrink: 0; margin-top: 2px; }
+  .nc-protect-icon svg { width: 17px; height: 17px; }
+  .nc-protect-title {
+    font-size: var(--text-body-strong-size); font-weight: var(--text-body-strong-weight);
+    color: var(--color-text); margin-bottom: 2px;
+  }
+  .nc-protect-text { font-size: var(--text-caption-size); color: var(--color-neutral-700); line-height: var(--leading-normal); }
   select {
     width: 100%; padding: 12px 14px; border-radius: 999px; border: 1px solid var(--color-divider);
     background: var(--color-neutral-100); font-family: var(--font-body); font-size: 14px;
@@ -4517,42 +4601,135 @@ function openClientSortSheet() {
   });
 }
 
+// Espelha normalize_ie_phone() do banco (RPC find_or_create_client): tira
+// tudo que não é dígito, remove 00353/353 se já vier com o código, remove
+// zero(s) à esquerda e prepende 353. Garante que "087 123 4567",
+// "+353 87 1234567" e "3538712 34567" apontem pro mesmo valor — é o valor
+// usado pra achar duplicata ANTES de gravar (a checagem em si é só leitura;
+// quem decide de fato find-or-create é sempre a RPC, no banco).
+function normalizeIePhone(phone) {
+  const digits = (phone || '').replace(/[^0-9]/g, '');
+  if (!digits) return null;
+  const semCodigo = digits.replace(/^(00353|353)/, '').replace(/^0+/, '');
+  return '353' + semCodigo;
+}
+
 function openNewClientSheet() {
   const fab = document.getElementById('fabNewAppt');
   if (fab) fab.classList.add('is-open');
   modalContainer.innerHTML = `
     <div class="modal-overlay" id="modalOverlay">
-      <div class="modal-sheet">
-        <h2>Novo cliente</h2>
-        <div class="modal-section">
-          <label class="modal-field-label" for="ncName">Nome</label>
-          <input type="text" id="ncName" placeholder="Nome completo" autocomplete="off">
-          <label class="modal-field-label" for="ncPhone">Telefone</label>
-          <input type="tel" id="ncPhone" placeholder="+353 ..." autocomplete="off">
-          <label class="modal-field-label" for="ncEmail">E-mail (opcional)</label>
-          <input type="email" id="ncEmail" placeholder="email@exemplo.com" autocomplete="off">
+      <div class="modal-sheet nc-sheet" role="dialog" aria-modal="true" aria-label="Novo cliente">
+        <div class="nc-handle" aria-hidden="true"></div>
+        <div class="nc-head">
+          <div class="nc-titles">
+            <h2 class="nc-title">Novo cliente</h2>
+            <p class="nc-subtitle">Preencha os dados para cadastrar um novo cliente.</p>
+          </div>
+          <button class="o-icon-btn" id="ncCloseBtn" aria-label="Fechar">${ICONS.close}</button>
         </div>
-        <div style="display:flex;flex-direction:column;gap:var(--space-2)">
-          <button class="o-btn o-btn-primary" id="ncSave">Cadastrar cliente</button>
-          <button class="o-btn o-btn-ghost" id="modalClose">Cancelar</button>
+
+        <div class="nc-section-label">Informações principais</div>
+        <div class="o-card">
+          <div class="o-field">
+            <label class="o-field-label nc-field-label-icon" for="ncName">${ICONS.userPlus}<span>Nome completo</span></label>
+            <input type="text" id="ncName" class="o-input" placeholder="Digite o nome completo" autocomplete="off">
+          </div>
+          <div class="o-field" style="margin-top:var(--space-3)">
+            <label class="o-field-label" for="ncPhoneLocal">Telefone</label>
+            <div class="nc-phone-field">
+              <span class="nc-phone-prefix" aria-hidden="true">+353</span>
+              <input type="tel" inputmode="numeric" id="ncPhoneLocal" placeholder="Digite o número" autocomplete="off" aria-label="Telefone, sem o código do país">
+            </div>
+          </div>
+          <div class="o-field" style="margin-top:var(--space-3)">
+            <label class="o-field-label" for="ncEmail">E-mail (opcional)</label>
+            <input type="email" id="ncEmail" class="o-input" placeholder="email@exemplo.com" autocomplete="off">
+            <div class="o-field-help">Usaremos para lembretes e confirmações.</div>
+          </div>
+        </div>
+
+        <div class="nc-section-label">Anotações (opcional)</div>
+        <div class="o-card">
+          <div class="o-field">
+            <textarea id="ncNotes" class="o-textarea" maxlength="120" placeholder="Alguma observação sobre este cliente..."></textarea>
+            <div class="o-field-help nc-notes-count" id="ncNotesCount">0/120</div>
+          </div>
+        </div>
+
+        <div class="nc-protect-card">
+          <span class="nc-protect-icon" aria-hidden="true">${ICONS.check}</span>
+          <div>
+            <div class="nc-protect-title">Dados protegidos</div>
+            <div class="nc-protect-text">As informações deste cliente são utilizadas apenas para gestão de atendimentos e relacionamento.</div>
+          </div>
+        </div>
+
+        <div id="ncError" class="login-error" style="display:none"></div>
+
+        <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-4)">
+          <button class="o-btn o-btn-primary" id="ncSave"><span aria-hidden="true">${ICONS.plus}</span><span>Cadastrar cliente</span></button>
+          <button class="o-btn o-btn-ghost" id="ncCancelBtn">Cancelar</button>
         </div>
       </div>
     </div>
   `;
   const fechar = () => { if (fab) fab.classList.remove('is-open'); closeModal(); };
-  document.getElementById('modalClose').onclick = fechar;
+  document.getElementById('ncCloseBtn').onclick = fechar;
+  document.getElementById('ncCancelBtn').onclick = fechar;
   document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') fechar(); };
 
-  document.getElementById('ncSave').onclick = async () => {
-    const name = document.getElementById('ncName').value.trim();
-    const phone = document.getElementById('ncPhone').value.trim();
-    const email = document.getElementById('ncEmail').value.trim();
-    if (!name) { showToast('Informe o nome da cliente'); return; }
+  const notesEl = document.getElementById('ncNotes');
+  const notesCountEl = document.getElementById('ncNotesCount');
+  notesEl.oninput = () => { notesCountEl.textContent = `${notesEl.value.length}/120`; };
 
-    const { data, error } = await sb
-      .from('clients').insert({ name, phone: phone || null, email: email || null }).select();
-    if (error) { showToast('Erro ao cadastrar: ' + error.message); return; }
-    if (!data || !data.length) { showToast('Não foi possível cadastrar — faça login novamente.'); return; }
+  const phoneLocalEl = document.getElementById('ncPhoneLocal');
+  phoneLocalEl.oninput = () => {
+    const digits = phoneLocalEl.value.replace(/[^0-9]/g, '');
+    if (digits !== phoneLocalEl.value) phoneLocalEl.value = digits;
+  };
+
+  document.getElementById('ncSave').onclick = async () => {
+    const errEl = document.getElementById('ncError');
+    const btn = document.getElementById('ncSave');
+    errEl.style.display = 'none';
+
+    const name = document.getElementById('ncName').value.trim();
+    const phoneLocal = phoneLocalEl.value.trim();
+    const email = document.getElementById('ncEmail').value.trim();
+    if (!name || !phoneLocal) {
+      errEl.textContent = 'Informe nome e telefone.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.setAttribute('aria-busy', 'true');
+    btn.disabled = true;
+
+    // Mesma regra de duplicidade do agendamento online (find_or_create_client
+    // + normalize_ie_phone): telefone já cadastrado reaproveita a cliente
+    // existente em vez de criar uma segunda entrada pro mesmo número.
+    const normalizedPhone = normalizeIePhone('353' + phoneLocal);
+    const { data: existing } = await sb.from('clients').select('id').eq('phone', normalizedPhone).maybeSingle();
+    if (existing) {
+      fechar();
+      showToast('Esse telefone já pertence a uma cliente cadastrada — abrindo o perfil dela.');
+      await abrirCliente(existing.id, null);
+      return;
+    }
+
+    const { data: clientId, error } = await sb.rpc('find_or_create_client', {
+      p_name: name,
+      p_phone: normalizedPhone,
+      p_email: email || null,
+    });
+    if (error || !clientId) {
+      errEl.textContent = 'Erro ao cadastrar: ' + (error ? error.message : 'faça login novamente.');
+      errEl.style.display = 'block';
+      btn.removeAttribute('aria-busy');
+      btn.disabled = false;
+      return;
+    }
 
     fechar();
     await loadClients();
@@ -6721,21 +6898,24 @@ function wizBindQuickAddClient() {
     }
     btn.setAttribute('aria-busy', 'true');
     btn.disabled = true;
-    const normalizedPhone = phone.replace(/[^\d]/g, '');
-    const { data: existing } = await sb.from('clients').select('id').eq('phone', normalizedPhone).maybeSingle();
-    let clientId = existing?.id;
-    if (!clientId) {
-      const { data: created, error } = await sb.from('clients').insert({ name, phone: normalizedPhone }).select('id').single();
-      if (error) {
-        errEl.textContent = 'Erro ao cadastrar: ' + error.message;
-        errEl.style.display = 'block';
-        btn.removeAttribute('aria-busy');
-        btn.disabled = false;
-        return;
-      }
-      clientId = created.id;
-      await loadClients();
+    // Mesma regra de duplicidade do agendamento online: find_or_create_client
+    // normaliza o telefone no banco (353 + sem zero à esquerda) e reaproveita
+    // a cliente se o número já existir. Antes essa checagem era feita aqui
+    // com só dígitos crus — não batia com um telefone gravado via RPC no
+    // mesmo formato "0871234567" vs "353871234567", e podia duplicar.
+    const { data: clientId, error } = await sb.rpc('find_or_create_client', {
+      p_name: name,
+      p_phone: phone,
+      p_email: null,
+    });
+    if (error || !clientId) {
+      errEl.textContent = 'Erro ao cadastrar: ' + (error ? error.message : 'faça login novamente.');
+      errEl.style.display = 'block';
+      btn.removeAttribute('aria-busy');
+      btn.disabled = false;
+      return;
     }
+    await loadClients();
     wiz.clientId = clientId;
     wiz.sub = null;
     wizGoToStep(2);
