@@ -1356,6 +1356,20 @@ window.supabase = {
 
   .o-wizard-empty { padding: var(--space-6) var(--space-3); text-align: center; color: var(--color-neutral-600); font-size: var(--text-body-size); }
 
+  /* Entrada contextual pelo "Xh livres" da Agenda (Fase 2b, 06/08/2026) —
+     tira a etapa Data quando ela já é conhecida. Banner discreto (superfície
+     neutra, sem cor de destaque) pra não competir com o conteúdo da etapa;
+     "Alterar" reaproveita .o-btn-ghost.o-btn-inline, nada novo. */
+  .o-wizard-context-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+    margin: 0 var(--space-5) var(--space-2); padding: var(--space-2-5) var(--space-3-5);
+    background: var(--color-surface); border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--radius-md); flex-shrink: 0;
+  }
+  .o-wizard-context-banner-text { font-size: var(--text-caption-size); color: var(--color-neutral-600); line-height: 1.4; }
+  .o-wizard-context-banner-text b { color: var(--color-text); font-weight: 600; }
+  .o-wizard-context-banner .o-btn-inline { padding: 0 var(--space-3); flex-shrink: 0; }
+
   /* ══ Abas Clientes (03/08/2026) e Estoque (04/08/2026) — toolbar e chips
      migrados para o Design System ═══ docs/04_COMPONENT_LIBRARY.md.
      Fundo, borda, raio, cor e tipografia vêm dos primitivos (.o-card,
@@ -3853,7 +3867,7 @@ function buildAgendaGrid(day) {
     const suggestedMins = Math.ceil((gStart.getHours() * 60 + gStart.getMinutes()) / SLOT_MINUTES) * SLOT_MINUTES;
     const hh = String(Math.floor(suggestedMins / 60)).padStart(2, '0');
     const mm = String(suggestedMins % 60).padStart(2, '0');
-    return `<div class="agenda-free-slot" data-free-date="${dateInputValue(day)}" data-free-time="${hh}:${mm}" style="top:${top}px; height:${height}px;">
+    return `<div class="agenda-free-slot" data-free-date="${dateInputValue(day)}" data-free-time="${hh}:${mm}" data-free-start="${g.s}" data-free-end="${g.e}" style="top:${top}px; height:${height}px;">
       <span class="fs-plus">+</span><span class="fs-text">${freeSlotLabel(g.mins)}</span>
     </div>`;
   }).join('');
@@ -3996,11 +4010,12 @@ function bindTimelineApptClicks() {
 }
 
 // Toque no card de "Xh livres" abre o wizard de novo agendamento já com o
-// dia certo (openNewApptModalAt) — o horário exato só se confirma na Etapa
-// 4, depois que o usuário escolhe o serviço (wizRenderSlots tenta casar).
+// dia certo e o intervalo real do buraco (openNewApptModalAt) — isso pula a
+// etapa Data inteira (wiz.source='free-slot'); o horário exato só se
+// confirma na etapa Horário, depois que o usuário escolhe o serviço.
 function bindFreeSlotClicks() {
   app.querySelectorAll('.agenda-free-slot[data-free-date]').forEach(el => {
-    el.onclick = () => openNewApptModalAt(el.dataset.freeDate, el.dataset.freeTime);
+    el.onclick = () => openNewApptModalAt(el.dataset.freeDate, el.dataset.freeTime, Number(el.dataset.freeStart), Number(el.dataset.freeEnd));
   });
 }
 
@@ -6328,7 +6343,13 @@ function iconForService(service) {
   return ICONS[SERVICE_CATEGORY_ICONS[service?.category]] || ICONS.bag;
 }
 
-function newWizState(prefillDate, prefillTime) {
+// `source`/`slotStart`/`slotEnd` são o contexto de entrada, integrados a
+// este mesmo objeto (nunca uma variável global solta): 'button' é o modo
+// normal (5 etapas, Data incluída); 'free-slot' é o modo contextual aberto
+// a partir do card "Xh livres" da Agenda (4 etapas, sem Data), com
+// slotStart/slotEnd em ms epoch marcando o buraco real clicado — usados só
+// pra filtrar os horários da etapa Horário, nunca pra recalcular disponibilidade.
+function newWizState(prefillDate, prefillTime, freeSlot) {
   const ativos = profissionaisAtivos();
   const base = prefillDate ? new Date(`${prefillDate}T00:00:00`) : new Date();
   return {
@@ -6345,6 +6366,9 @@ function newWizState(prefillDate, prefillTime) {
     time: null,
     preferredTime: prefillTime || null,
     error: null,
+    source: freeSlot ? 'free-slot' : 'button',
+    slotStart: freeSlot ? freeSlot.start : null,
+    slotEnd: freeSlot ? freeSlot.end : null,
   };
 }
 
@@ -6353,12 +6377,16 @@ function openNewApptModal() {
   renderWizard();
 }
 
-// Aberto pelo toque no card de horário livre da Agenda — mesma folha, só
-// que já chega com o dia certo pré-selecionado na Etapa 3; o horário
-// sugerido (preferredTime) só se confirma na Etapa 4, depois que o serviço
-// escolhido na Etapa 2 define a duração.
-function openNewApptModalAt(dateStr, timeStr) {
-  wiz = newWizState(dateStr, timeStr);
+// Aberto pelo toque no card de horário livre da Agenda — chega com o dia e
+// o intervalo real (slotStartMs/slotEndMs) já resolvidos, então o wizard
+// pula a etapa Data inteira (ver newWizState). O horário sugerido
+// (preferredTime) só se confirma na etapa Horário, depois que o serviço
+// escolhido define a duração.
+function openNewApptModalAt(dateStr, timeStr, slotStartMs, slotEndMs) {
+  const freeSlot = (Number.isFinite(slotStartMs) && Number.isFinite(slotEndMs))
+    ? { start: slotStartMs, end: slotEndMs }
+    : null;
+  wiz = newWizState(dateStr, timeStr, freeSlot);
   renderWizard();
 }
 
@@ -6426,9 +6454,59 @@ function wizStaffId() {
 }
 function wizStaff() { return state.staff.find(s => s.id === wizStaffId()) || null; }
 
+// ── Modo de entrada (Fase 2b) ─────────────────────────────────────────
+// Duas etapas (Cliente, Serviço) são sempre 1 e 2 nos dois modos — só o que
+// vem depois muda de número de tela conforme wiz.source, por isso o
+// dispatch é por NOME de etapa (wizStepName), não por número cru. Isso
+// evita ter duas tabelas de step separadas: normal e contextual compartilham
+// o mesmo `wiz.step` incremental, só a leitura difere.
 const WIZ_TOTAL_STEPS = 5;
+const WIZ_TOTAL_STEPS_CONTEXTUAL = 4;
+function wizIsContextual() { return wiz.source === 'free-slot'; }
+function wizTotalSteps() { return wizIsContextual() ? WIZ_TOTAL_STEPS_CONTEXTUAL : WIZ_TOTAL_STEPS; }
+function wizStepName() {
+  if (wiz.step === 1) return 'client';
+  if (wiz.step === 2) return 'service';
+  if (wizIsContextual()) return wiz.step === 3 ? 'time' : 'confirm';
+  if (wiz.step === 3) return 'date';
+  return wiz.step === 4 ? 'time' : 'confirm';
+}
+
+// "Alterar" (banner de contexto) e "Escolher outra data" (etapa Horário,
+// quando o serviço não cabe no intervalo) fazem exatamente a mesma coisa:
+// voltam ao fluxo completo de 5 etapas a partir de Data, sem perder
+// cliente/serviço já escolhidos. Depois de nova data, o fluxo segue normal
+// (wizGoToStep(4) do calendário já aponta pra Horário no modo de 5 etapas).
+function wizSwitchToFullFlowAtDate() {
+  wiz.source = 'button';
+  wiz.slotStart = null;
+  wiz.slotEnd = null;
+  wiz.time = null;
+  wizGoToStep(3);
+}
+
+function wizContextBannerHtml() {
+  if (!wizIsContextual()) return '';
+  const [y, m, d] = wiz.date.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const dateLabel = `${WEEKDAY_FULL_LABELS[(dt.getDay() + 6) % 7]}, ${dt.getDate()} ${MONTH_ABBR[dt.getMonth()]}`;
+  const hasInterval = wiz.slotStart && wiz.slotEnd;
+  const timeLabel = hasInterval
+    ? `${new Date(wiz.slotStart).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}–${new Date(wiz.slotEnd).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+    : '';
+  const spoken = `Agendando em ${dateLabel}${timeLabel ? `, ${timeLabel}` : ''}`;
+  return `
+    <div class="o-wizard-context-banner" role="note" aria-label="${spoken}">
+      <div class="o-wizard-context-banner-text" aria-hidden="true">
+        Agendando em <b>${dateLabel}</b>${timeLabel ? `<br>${timeLabel}` : ''}
+      </div>
+      <button class="o-btn o-btn-ghost o-btn-inline" id="wizContextAlterBtn" type="button">Alterar</button>
+    </div>
+  `;
+}
 
 function renderWizard() {
+  const total = wizTotalSteps();
   modalContainer.innerHTML = `
     <div class="modal-overlay" id="modalOverlay">
       <div class="o-wizard-sheet" role="dialog" aria-modal="true" aria-label="Novo agendamento">
@@ -6438,12 +6516,13 @@ function renderWizard() {
           <div class="o-wizard-titles"></div>
           <button class="o-icon-btn" id="wizCloseBtn" aria-label="Fechar">${ICONS.close}</button>
         </div>
-        <div class="o-wizard-dots" role="progressbar" aria-valuemin="1" aria-valuemax="${WIZ_TOTAL_STEPS}"
-          aria-valuenow="${wiz.step}" aria-label="Etapa ${wiz.step} de ${WIZ_TOTAL_STEPS}">
-          ${Array.from({ length: WIZ_TOTAL_STEPS }, (_, i) => i + 1).map(n => `
+        <div class="o-wizard-dots" role="progressbar" aria-valuemin="1" aria-valuemax="${total}"
+          aria-valuenow="${wiz.step}" aria-label="Etapa ${wiz.step} de ${total}">
+          ${Array.from({ length: total }, (_, i) => i + 1).map(n => `
             <span class="o-wizard-dot ${n === wiz.step ? 'is-active' : ''} ${n < wiz.step ? 'is-done' : ''}"></span>
           `).join('')}
         </div>
+        ${wizContextBannerHtml()}
         <div class="o-wizard-body" id="wizBody"></div>
         <div class="o-wizard-footer" id="wizFooter"></div>
       </div>
@@ -6452,6 +6531,8 @@ function renderWizard() {
   document.getElementById('wizCloseBtn').onclick = closeModal;
   document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
   document.getElementById('wizBack').onclick = wizGoBack;
+  const alterBtn = document.getElementById('wizContextAlterBtn');
+  if (alterBtn) alterBtn.onclick = wizSwitchToFullFlowAtDate;
   paintWizStep();
 }
 
@@ -6476,12 +6557,15 @@ function paintWizStep() {
   const footEl = document.getElementById('wizFooter');
   if (!bodyEl) return;
 
+  // Nome de etapa, não número cru: no modo contextual "3" é Horário, no
+  // normal "3" é Data. wizStepName() é a única fonte dessa tradução.
+  const name = wiz.sub === 'quickAddClient' ? null : wizStepName();
   let step;
   if (wiz.sub === 'quickAddClient') step = wizStepQuickAddClient();
-  else if (wiz.step === 1) step = wizStepClient();
-  else if (wiz.step === 2) step = wizStepService();
-  else if (wiz.step === 3) step = wizStepDate();
-  else if (wiz.step === 4) step = wizStepTime();
+  else if (name === 'client') step = wizStepClient();
+  else if (name === 'service') step = wizStepService();
+  else if (name === 'date') step = wizStepDate();
+  else if (name === 'time') step = wizStepTime();
   else step = wizStepConfirm();
 
   titlesEl.innerHTML = `
@@ -6493,10 +6577,10 @@ function paintWizStep() {
   wiz.back = false;
 
   if (wiz.sub === 'quickAddClient') wizBindQuickAddClient();
-  else if (wiz.step === 1) wizBindStepClient();
-  else if (wiz.step === 2) wizBindStepService();
-  else if (wiz.step === 3) wizBindStepDate();
-  else if (wiz.step === 4) wizBindStepTime();
+  else if (name === 'client') wizBindStepClient();
+  else if (name === 'service') wizBindStepService();
+  else if (name === 'date') wizBindStepDate();
+  else if (name === 'time') wizBindStepTime();
   else wizBindStepConfirm();
 }
 
@@ -6835,14 +6919,22 @@ function wizRenderCalendar() {
 
 // ── Etapa 4 · Horário ──────────────────────────────────────────
 // Mensagens de apresentação — ainda não refletem inteligência real (PR
-// combinado com o Raphael: placeholders por enquanto). Uma exceção
-// honesta: o horário que encosta exatamente no fim de outro atendimento
-// (fecha um buraco na agenda) ganha o selo "Recomendado" de verdade.
-function wizSlotMessages(slots, staffId, dateStr, durationMin) {
+// combinado com o Raphael: placeholders por enquanto). Duas exceções
+// honestas: o horário que encosta exatamente no fim de outro atendimento
+// (fecha um buraco na agenda) ganha "Recomendado" de verdade; no modo
+// contextual (opts.contextualFirst), quem ganha é o primeiro horário da
+// lista, porque a lista já foi filtrada pro intervalo clicado — ele É o
+// início do espaço livre, não decoração.
+function wizSlotMessages(slots, staffId, dateStr, durationMin, opts) {
+  const contextualFirst = !!(opts && opts.contextualFirst);
   const busy = busyBlocksForStaffOnDate(staffId, new Date(`${dateStr}T00:00:00`));
   const busyEnds = busy.map(([, be]) => be.getTime());
   let recommendedAssigned = false;
   return slots.map((t, i) => {
+    if (contextualFirst && i === 0) {
+      recommendedAssigned = true;
+      return { time: t, recommended: true, message: 'Usa o início do horário livre.' };
+    }
     const [hh, mm] = t.split(':').map(Number);
     const slotStart = new Date(`${dateStr}T00:00:00`);
     slotStart.setHours(hh, mm, 0, 0);
@@ -6854,6 +6946,19 @@ function wizSlotMessages(slots, staffId, dateStr, durationMin) {
     if (i === 0) return { time: t, recommended: false, message: 'Bom encaixe pela manhã' };
     if (i === slots.length - 1) return { time: t, recommended: false, message: 'Último horário disponível' };
     return { time: t, recommended: false, message: 'Agenda tranquila' };
+  });
+}
+// Restringe os horários (já calculados por computeAvailableSlots — regras
+// de negócio intactas) ao buraco real clicado na Agenda. Puro filtro por
+// cima do resultado, nunca recálculo de disponibilidade.
+function wizFilterSlotsToInterval(rawSlots, dateStr, durationMin) {
+  if (!wizIsContextual() || !wiz.slotStart || !wiz.slotEnd) return rawSlots;
+  return rawSlots.filter(t => {
+    const [hh, mm] = t.split(':').map(Number);
+    const slotStart = new Date(`${dateStr}T00:00:00`);
+    slotStart.setHours(hh, mm, 0, 0);
+    const slotEnd = new Date(slotStart.getTime() + durationMin * 60000);
+    return slotStart.getTime() >= wiz.slotStart && slotEnd.getTime() <= wiz.slotEnd;
   });
 }
 function wizDayPreviewHtml(staffId, durationMin) {
@@ -6897,23 +7002,49 @@ function wizRenderSlots() {
   const dateLabelRaw = new Date(y, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
   const dateLabel = dateLabelRaw.charAt(0).toUpperCase() + dateLabelRaw.slice(1);
 
-  const rawSlots = computeAvailableSlots(staffId, wiz.date, service.duration_minutes);
+  const daySlots = computeAvailableSlots(staffId, wiz.date, service.duration_minutes);
+  const contextual = wizIsContextual() && !!wiz.slotStart && !!wiz.slotEnd;
+  const rawSlots = contextual ? wizFilterSlotsToInterval(daySlots, wiz.date, service.duration_minutes) : daySlots;
   if (!wiz.time && wiz.preferredTime && rawSlots.includes(wiz.preferredTime)) wiz.time = wiz.preferredTime;
 
   if (!rawSlots.length) {
+    if (!contextual) {
+      wrap.innerHTML = `
+        <div class="o-wizard-section-label">${dateLabel}</div>
+        <div class="o-wizard-empty">Sem horário livre nesse dia. Volte e escolha outra data.</div>
+      `;
+      return;
+    }
+    // Modo contextual não tem etapa Data pra "voltar" — a saída é sempre uma
+    // ação explícita. `fits` distingue "não cabe neste intervalo, mas cabe
+    // em outro horário do dia" de "não sobrou nada nesse dia".
+    const fits = daySlots.length > 0;
     wrap.innerHTML = `
       <div class="o-wizard-section-label">${dateLabel}</div>
-      <div class="o-wizard-empty">Sem horário livre nesse dia. Volte e escolha outra data.</div>
+      <div class="o-wizard-empty">${fits ? 'Este serviço não cabe neste intervalo.' : 'Sem horário livre nesse dia.'}</div>
+      ${fits ? `<button class="o-btn o-btn-secondary" id="wizSeeOtherTimesBtn" type="button" style="margin-top:var(--space-3)">Ver outros horários neste dia</button>` : ''}
+      <button class="o-btn o-btn-ghost" id="wizPickAnotherDateBtn" type="button" style="margin-top:${fits ? 'var(--space-2)' : 'var(--space-3)'}">Escolher outra data</button>
     `;
+    if (fits) {
+      document.getElementById('wizSeeOtherTimesBtn').onclick = () => {
+        wiz.slotStart = null;
+        wiz.slotEnd = null;
+        // renderWizard(), não só wizRenderSlots(): o banner de contexto (fora
+        // de #wizBody) mostra o intervalo, e precisa sumir a linha de hora
+        // junto com a restrição.
+        renderWizard();
+      };
+    }
+    document.getElementById('wizPickAnotherDateBtn').onclick = wizSwitchToFullFlowAtDate;
     return;
   }
 
-  const slots = wizSlotMessages(rawSlots, staffId, wiz.date, service.duration_minutes);
+  const slots = wizSlotMessages(rawSlots, staffId, wiz.date, service.duration_minutes, { contextualFirst: contextual });
 
   wrap.innerHTML = `
     <div class="o-wizard-section-label">${dateLabel}</div>
     ${slots.map(s => `
-      <button class="o-card o-card-interactive o-wizard-slot-card ${wiz.time === s.time ? 'is-selected' : ''}" data-time="${s.time}">
+      <button class="o-card o-card-interactive o-wizard-slot-card ${wiz.time === s.time ? 'is-selected' : ''}" data-time="${s.time}" aria-selected="${wiz.time === s.time}">
         ${s.recommended ? `<div class="o-badge o-badge-attention o-wizard-slot-badge">${ICONS.sparkle} Recomendado</div>` : ''}
         <div class="o-wizard-slot-top">
           <span class="o-wizard-slot-time">${s.time}</span>
@@ -6929,7 +7060,7 @@ function wizRenderSlots() {
     btn.onclick = () => {
       wiz.time = btn.dataset.time;
       wizRenderSlots();
-      setTimeout(() => wizGoToStep(5), prefersReducedMotion() ? 0 : 200);
+      setTimeout(() => wizGoToStep(wizIsContextual() ? 4 : 5), prefersReducedMotion() ? 0 : 200);
     };
   });
 }
