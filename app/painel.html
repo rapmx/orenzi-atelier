@@ -890,11 +890,20 @@
     width: var(--border-width); align-self: stretch; margin: var(--space-2) var(--space-3);
     background: var(--color-divider); flex-shrink: 0;
   }
-  .nc-phone-field input {
-    flex: 1; min-width: 0; border: none; background: none; padding: var(--space-3) 0;
+  /* Seletor de id (não .nc-phone-field input): input[type=tel] tem uma
+     regra legada global (linha ~922 — pílula própria com fundo, borda,
+     raio, margin-bottom, usada por telefone/data/e-mail soltos no resto
+     do painel) com a MESMA especificidade de ".nc-phone-field input";
+     quem vence é só quem vem depois no arquivo, e a global vem depois —
+     por isso o input desenhava a segunda cápsula por cima mesmo com
+     border:none/background:none aqui. Um id sempre vence sem precisar de
+     !important nem tocar a regra global (que outras telas ainda usam). */
+  #ncPhoneLocal {
+    flex: 1; width: auto; min-width: 0; margin-bottom: 0;
+    padding: var(--space-3) 0; border: none; border-radius: 0; background: none;
     font-family: var(--font-body); font-size: var(--text-body-size); color: var(--color-text);
   }
-  .nc-phone-field input:focus { outline: none; }
+  #ncPhoneLocal:focus { outline: none; box-shadow: none; }
   .nc-notes-count { margin-top: var(--space-1); text-align: right; }
   .nc-protect-card {
     display: flex; align-items: flex-start; gap: var(--space-2-5);
