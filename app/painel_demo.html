@@ -1154,6 +1154,196 @@ window.supabase = {
   }
   .tag-accent { background: var(--color-accent-100); color: var(--color-accent-700); }
   .tag-accent-2 { background: var(--color-accent-2-100, #f0fae1); color: var(--color-accent-2-700, #56633f); }
+
+  /* ── Wizard "Novo agendamento" (Fase 2, 06/08/2026) ────────────────────
+     Substitui o formulário único por 5 etapas em tela cheia dentro da
+     mesma folha — nunca outro modal/popup. Reaproveita .modal-overlay como
+     scrim/BottomSheet; .o-wizard-sheet é a variante de altura cheia com
+     cabeçalho fixo + corpo rolável + rodapé fixo. Primitivos vêm de
+     app/ds/orenzi-components.css (.o-btn, .o-card, .o-search-field,
+     .o-chip, .o-avatar, .o-divider, .o-field, .o-badge) — o que segue é só
+     a anatomia própria do wizard. */
+  .o-wizard-sheet {
+    display: flex; flex-direction: column;
+    background: var(--color-bg); border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    width: 100%; max-width: var(--canvas-max-width);
+    height: min(92vh, 800px);
+    overflow: hidden;
+    animation: modalSheetIn .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .o-wizard-head {
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-4) var(--space-4) 0; flex-shrink: 0;
+  }
+  .o-wizard-back svg { transform: rotate(180deg); }
+  .o-wizard-titles { flex: 1; min-width: 0; padding: 0 var(--space-1); }
+  .o-wizard-title {
+    font-family: var(--font-heading); font-size: var(--text-title-3-size);
+    font-weight: var(--text-title-3-weight); color: var(--color-text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .o-wizard-subtitle {
+    font-size: var(--text-caption-size); color: var(--color-neutral-600); margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .o-wizard-dots {
+    display: flex; justify-content: center; align-items: center; gap: 6px;
+    padding: var(--space-3) 0 var(--space-2); flex-shrink: 0;
+  }
+  .o-wizard-dot {
+    width: 6px; height: 6px; border-radius: var(--radius-full);
+    background: var(--color-neutral-300);
+    transition: background-color var(--motion-fast) var(--ease-standard), width var(--motion-fast) var(--ease-standard);
+  }
+  .o-wizard-dot.is-active { width: 16px; background: var(--color-accent-700); }
+  .o-wizard-dot.is-done { background: var(--color-accent-600); }
+  .o-wizard-body { flex: 1 1 auto; overflow-y: auto; padding: 0 var(--space-5) var(--space-4); }
+  .o-wizard-footer { flex-shrink: 0; padding: var(--space-3) var(--space-5) calc(var(--space-5) + var(--safe-bottom)); }
+
+  .o-wizard-step { animation: wizStepInNext var(--motion-emphasized) var(--ease-out); }
+  .o-wizard-step.is-back { animation-name: wizStepInBack; }
+  @keyframes wizStepInNext {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes wizStepInBack {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .o-wizard-sheet, .o-wizard-step { animation: none; }
+  }
+
+  /* Etapa 1 · lista de clientes */
+  .o-wizard-list { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
+  .o-wizard-section-label {
+    font-size: var(--text-micro-size); font-weight: var(--text-micro-weight);
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-neutral-600);
+    margin: var(--space-3) 0 var(--space-1);
+  }
+  .o-wizard-client-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2-5) var(--space-2); }
+  .o-wizard-client-row .wcr-body { flex: 1; min-width: 0; text-align: left; }
+  .o-wizard-client-row .wcr-name {
+    font-size: var(--text-body-strong-size); font-weight: var(--text-body-strong-weight);
+    color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .o-wizard-client-row .wcr-phone { font-size: var(--text-caption-size); color: var(--color-neutral-600); }
+  .o-wizard-client-row .wcr-chevron { color: var(--color-neutral-600); flex-shrink: 0; }
+  .o-wizard-client-row .wcr-chevron svg { width: 16px; height: 16px; }
+
+  .o-wizard-add-client {
+    display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+    padding: var(--space-3-5); margin-top: var(--space-2); min-height: var(--touch-target-min);
+    border: 1.5px dashed var(--color-divider); border-radius: var(--radius-md);
+    background: transparent; color: var(--color-accent-700);
+    font-family: var(--font-body); font-size: var(--text-body-strong-size); font-weight: var(--text-body-strong-weight);
+    cursor: pointer; width: 100%;
+    transition: background-color var(--motion-fast) var(--ease-standard), transform var(--motion-instant) var(--ease-standard);
+  }
+  .o-wizard-add-client:active { transform: scale(0.98); background: var(--color-accent-100); }
+  .o-wizard-add-client:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+  /* Etapa 2 · serviços */
+  .o-wizard-service-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2-5) var(--space-2); }
+  .o-wizard-service-icon {
+    width: 40px; height: 40px; border-radius: var(--radius-sm); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--svc-bg, var(--color-accent-100)); color: var(--svc-color, var(--color-accent-700));
+  }
+  .o-wizard-service-icon svg { width: 19px; height: 19px; }
+  .o-wizard-service-row .wsr-body { flex: 1; min-width: 0; text-align: left; }
+  .o-wizard-service-row .wsr-name { font-size: var(--text-body-strong-size); font-weight: var(--text-body-strong-weight); color: var(--color-text); }
+  .o-wizard-service-row .wsr-meta { font-size: var(--text-caption-size); color: var(--color-neutral-600); }
+  .o-wizard-service-row .wsr-price {
+    font-family: var(--font-heading); font-weight: 700; font-size: var(--text-body-strong-size); color: var(--color-text); flex-shrink: 0;
+  }
+
+  /* Etapa 3 · calendário */
+  .o-wizard-cal-head { display: flex; align-items: center; justify-content: space-between; margin: var(--space-4) 0 var(--space-3); }
+  .o-wizard-cal-title { font-family: var(--font-heading); font-weight: 600; font-size: var(--text-title-3-size); color: var(--color-text); }
+  .o-wizard-cal-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
+    font-size: var(--text-micro-size); color: var(--color-neutral-600); margin-bottom: var(--space-1);
+  }
+  .o-wizard-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .o-wizard-cal-day {
+    position: relative; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; border: none; border-radius: var(--radius-sm); background: transparent; color: var(--color-text);
+    font-family: var(--font-body); font-size: var(--text-caption-size); cursor: pointer;
+    transition: background-color var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
+  }
+  .o-wizard-cal-day:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .o-wizard-cal-day:disabled { color: var(--color-neutral-300); cursor: not-allowed; }
+  .o-wizard-cal-day.is-outside { visibility: hidden; pointer-events: none; }
+  .o-wizard-cal-day.is-today { font-weight: 700; }
+  .o-wizard-cal-day.is-selected { background: var(--color-accent-700); color: var(--color-bg); }
+  .o-wizard-cal-day .wcd-dot { width: 5px; height: 5px; border-radius: var(--radius-full); background: transparent; }
+  .o-wizard-cal-day .wcd-dot.lvl-muitos { background: var(--color-success); }
+  .o-wizard-cal-day .wcd-dot.lvl-poucos { background: var(--color-accent-600); }
+  .o-wizard-cal-day .wcd-dot.lvl-nenhum { background: var(--color-neutral-300); }
+  .o-wizard-cal-day .wcd-dot.lvl-indisponivel { background: var(--color-accent-2); }
+  .o-wizard-cal-day.is-selected .wcd-dot { background: var(--color-bg); }
+  .o-wizard-cal-legend {
+    display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin-top: var(--space-4);
+    font-size: var(--text-micro-size); color: var(--color-neutral-600);
+  }
+  .o-wizard-cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .o-wizard-cal-legend i { width: 6px; height: 6px; border-radius: var(--radius-full); display: inline-block; }
+  .o-wizard-cal-legend i.lvl-muitos { background: var(--color-success); }
+  .o-wizard-cal-legend i.lvl-poucos { background: var(--color-accent-600); }
+  .o-wizard-cal-legend i.lvl-nenhum { background: var(--color-neutral-300); }
+  .o-wizard-cal-legend i.lvl-indisponivel { background: var(--color-accent-2); }
+
+  /* Etapa 4 · horários */
+  .o-wizard-slot-card { margin-bottom: var(--space-3); padding: var(--space-3-5) var(--space-4); animation: wizSlotIn var(--motion-standard) var(--ease-out) backwards; }
+  .o-wizard-slot-card:nth-child(1) { animation-delay: 0ms; }
+  .o-wizard-slot-card:nth-child(2) { animation-delay: 30ms; }
+  .o-wizard-slot-card:nth-child(3) { animation-delay: 60ms; }
+  .o-wizard-slot-card:nth-child(4) { animation-delay: 90ms; }
+  .o-wizard-slot-card:nth-child(n+5) { animation-delay: 110ms; }
+  @keyframes wizSlotIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .o-wizard-slot-card { animation: none; } }
+  .o-wizard-slot-card.is-selected { border-color: var(--color-accent-700); background: var(--color-accent-100); box-shadow: var(--elevation-hover); }
+  .o-wizard-slot-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .o-wizard-slot-time {
+    font-family: var(--font-heading); font-size: var(--text-title-2-size); font-weight: 700; color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .o-wizard-slot-check {
+    width: 22px; height: 22px; border-radius: var(--radius-circle); border: 1.5px solid var(--color-divider);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: transparent;
+    transition: background-color var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
+  }
+  .o-wizard-slot-check svg { width: 13px; height: 13px; }
+  .o-wizard-slot-card.is-selected .o-wizard-slot-check { background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-bg); }
+  .o-wizard-slot-msg { font-size: var(--text-caption-size); color: var(--color-neutral-600); margin-top: 2px; }
+  .o-wizard-slot-badge { margin-bottom: var(--space-1); }
+
+  .o-wizard-daypreview { margin-top: var(--space-2); }
+  .o-wizard-daypreview-track { position: relative; height: 28px; border-radius: var(--radius-full); background: var(--color-neutral-200); overflow: hidden; }
+  .o-wizard-daypreview-busy { position: absolute; top: 0; bottom: 0; background: var(--color-neutral-300); }
+  .o-wizard-daypreview-mark { position: absolute; top: -3px; bottom: -3px; width: 3px; border-radius: var(--radius-full); background: var(--color-accent-700); }
+  .o-wizard-daypreview-labels { display: flex; justify-content: space-between; font-size: var(--text-micro-size); color: var(--color-neutral-600); margin-top: var(--space-1); }
+
+  /* Etapa 5 · confirmação */
+  .o-wizard-summary-row { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-2-5) 0; }
+  .o-wizard-summary-row + .o-wizard-summary-row { border-top: 1px solid var(--color-divider); }
+  .o-wizard-summary-icon { width: 20px; height: 20px; color: var(--color-neutral-600); flex-shrink: 0; margin-top: 1px; }
+  .o-wizard-summary-icon svg { width: 100%; height: 100%; }
+  .o-wizard-summary-label {
+    font-size: var(--text-micro-size); font-weight: var(--text-micro-weight); letter-spacing: 0.04em;
+    text-transform: uppercase; color: var(--color-neutral-600);
+  }
+  .o-wizard-summary-value { font-size: var(--text-body-size); color: var(--color-text); margin-top: 1px; }
+  .o-wizard-notice {
+    display: flex; gap: var(--space-2); align-items: flex-start; margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-3-5); background: var(--color-accent-100); border-radius: var(--radius-md);
+    font-size: var(--text-caption-size); color: var(--color-accent-700);
+  }
+  .o-wizard-notice svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  .o-wizard-empty { padding: var(--space-6) var(--space-3); text-align: center; color: var(--color-neutral-600); font-size: var(--text-body-size); }
+
   /* ══ Abas Clientes (03/08/2026) e Estoque (04/08/2026) — toolbar e chips
      migrados para o Design System ═══ docs/04_COMPONENT_LIBRARY.md.
      Fundo, borda, raio, cor e tipografia vêm dos primitivos (.o-card,
@@ -3796,9 +3986,9 @@ function bindTimelineApptClicks() {
   });
 }
 
-// Toque no card de "Xh livres" abre o modal de novo agendamento já com o
-// dia certo (openNewApptModalAt) — o horário exato só se confirma depois
-// que o usuário escolhe o serviço (refreshApptTimeOptions tenta casar).
+// Toque no card de "Xh livres" abre o wizard de novo agendamento já com o
+// dia certo (openNewApptModalAt) — o horário exato só se confirma na Etapa
+// 4, depois que o usuário escolhe o serviço (wizRenderSlots tenta casar).
 function bindFreeSlotClicks() {
   app.querySelectorAll('.agenda-free-slot[data-free-date]').forEach(el => {
     el.onclick = () => openNewApptModalAt(el.dataset.freeDate, el.dataset.freeTime);
@@ -6106,37 +6296,61 @@ sb.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_OUT') renderLogin();
 });
 
-// ── NOVO AGENDAMENTO MANUAL (botão +) ────────────────────────
+// ── NOVO AGENDAMENTO MANUAL — WIZARD (Fase 2, 06/08/2026) ─────
+// Substitui o formulário único por um assistente guiado de 5 etapas —
+// Cliente → Serviço → Data → Horário → Confirmação — dentro da mesma folha
+// (nunca outro modal/popup: sub-telas como "Novo cliente" também deslizam
+// dentro de #wizBody). Lógica de disponibilidade, segmentos e o insert em
+// `appointments` continuam exatamente as mesmas de antes; só a experiência
+// mudou. `wiz` é recriado a cada abertura — não sobrevive ao fechar.
 const modalContainer = document.getElementById('modalContainer');
-let newApptClientMode = 'existing'; // 'existing' | 'new'
-// Preenchidos quando o modal abre a partir de um toque no indicador de
-// horário livre da Agenda ("+ Xh livres"), pra poupar o passo de escolher
-// data/hora de novo. `newApptPrefillTime` só pode virar a hora escolhida
-// DEPOIS que o serviço define a duração — refreshApptTimeOptions() é quem
-// tenta casar com ela. Nulos = comportamento de sempre (data de hoje, sem
-// hora sugerida).
-let newApptPrefillDate = null;
-let newApptPrefillTime = null;
+let wiz = null;
 
 function closeModal() {
   modalContainer.innerHTML = '';
+  wiz = null;
+}
+
+const SERVICE_CATEGORY_ICONS = {
+  'Coloração': 'drop', 'Corte': 'scissors', 'Alisamento': 'spray',
+  'Tratamentos': 'sparkle', 'Outros': 'star',
+};
+function iconForService(service) {
+  return ICONS[SERVICE_CATEGORY_ICONS[service?.category]] || ICONS.bag;
+}
+
+function newWizState(prefillDate, prefillTime) {
+  const ativos = profissionaisAtivos();
+  const base = prefillDate ? new Date(`${prefillDate}T00:00:00`) : new Date();
+  return {
+    step: 1,
+    back: false,
+    sub: null, // 'quickAddClient'
+    clientId: null,
+    clientQuery: '',
+    serviceId: null,
+    serviceQuery: '',
+    staffId: ativos.length ? ativos[0].id : null,
+    date: prefillDate || null,
+    calendarMonth: new Date(base.getFullYear(), base.getMonth(), 1),
+    time: null,
+    preferredTime: prefillTime || null,
+    error: null,
+  };
 }
 
 function openNewApptModal() {
-  newApptClientMode = 'existing';
-  newApptPrefillDate = null;
-  newApptPrefillTime = null;
-  renderNewApptModal();
+  wiz = newWizState(null, null);
+  renderWizard();
 }
 
 // Aberto pelo toque no card de horário livre da Agenda — mesma folha, só
-// que já chega com o dia certo e tenta sugerir o horário do início do
-// intervalo assim que o usuário escolher o serviço.
+// que já chega com o dia certo pré-selecionado na Etapa 3; o horário
+// sugerido (preferredTime) só se confirma na Etapa 4, depois que o serviço
+// escolhido na Etapa 2 define a duração.
 function openNewApptModalAt(dateStr, timeStr) {
-  newApptClientMode = 'existing';
-  newApptPrefillDate = dateStr;
-  newApptPrefillTime = timeStr;
-  renderNewApptModal();
+  wiz = newWizState(dateStr, timeStr);
+  renderWizard();
 }
 
 // Blocos ocupados da profissional no dia — só o trabalho (wb/wa), a pausa
@@ -6180,202 +6394,631 @@ function computeAvailableSlots(staffId, dateStr, durationMin) {
   return slots;
 }
 
-// Profissional em uso no modal: o campo, se existir, ou a única ativa
-// quando o campo nem é desenhado — mesma lógica do onclick de "Salvar".
-function currentModalStaffId() {
-  const staffEl = document.getElementById('staffSelect');
-  if (staffEl) return staffEl.value;
+// Nível de disponibilidade de um dia pro calendário da Etapa 3 (indicador
+// verde/amarelo/cinza/vermelho) — só calculável depois que o serviço
+// (duração) já foi escolhido na Etapa 2. `null` = ainda não dá pra saber.
+function dayAvailabilityLevel(dateStr, staffId, durationMin) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (!isSalonOpenDay(d)) return 'indisponivel';
+  if (!staffId || !durationMin) return null;
+  const total = Math.max(1, Math.floor((CLOSE_HOUR - OPEN_HOUR) * 60 / SLOT_MINUTES));
+  const slots = computeAvailableSlots(staffId, dateStr, durationMin);
+  if (!slots.length) return 'nenhum';
+  if (slots.length / total <= 0.3) return 'poucos';
+  return 'muitos';
+}
+
+function wizClient() { return state.clients.find(c => c.id === wiz.clientId) || null; }
+function wizService() { return state.services.find(s => s.id === wiz.serviceId) || null; }
+function wizStaffId() {
+  if (wiz.staffId) return wiz.staffId;
   const ativos = profissionaisAtivos();
-  return ativos.length === 1 ? ativos[0].id : '';
+  return ativos.length === 1 ? ativos[0].id : null;
 }
+function wizStaff() { return state.staff.find(s => s.id === wizStaffId()) || null; }
 
-// Recalcula o dropdown de horário sempre que serviço, profissional ou data
-// mudam no modal. Tenta manter o horário já escolhido se ele continuar
-// disponível na nova combinação; senão volta pro placeholder.
-function refreshApptTimeOptions() {
-  const timeEl = document.getElementById('apptTime');
-  if (!timeEl) return;
-  const service = state.services.find(s => s.id === document.getElementById('serviceSelect').value);
-  const staffId = currentModalStaffId();
-  const dateStr = document.getElementById('apptDate').value;
-  // Sem hora ainda escolhida pelo usuário (dropdown ainda no placeholder):
-  // tenta a hora sugerida pelo card de horário livre. Uma vez que o usuário
-  // escolhe algo no dropdown, timeEl.value passa a mandar — o prefill só
-  // serve pra abrir a folha já num bom palpite.
-  const previous = timeEl.value || newApptPrefillTime || '';
+const WIZ_TOTAL_STEPS = 5;
 
-  if (!service || !staffId || !dateStr) {
-    timeEl.innerHTML = '<option value="">Escolha serviço e data…</option>';
-    timeEl.disabled = true;
-    return;
-  }
-
-  const slots = computeAvailableSlots(staffId, dateStr, service.duration_minutes);
-  timeEl.disabled = false;
-  if (!slots.length) {
-    timeEl.innerHTML = '<option value="">Sem horário livre nesse dia</option>';
-    return;
-  }
-  timeEl.innerHTML = `
-    <option value="">Selecione…</option>
-    ${slots.map(t => `<option value="${t}" ${t === previous ? 'selected' : ''}>${t}</option>`).join('')}
-  `;
-}
-
-function renderNewApptModal(errorMsg) {
-  const now = new Date();
-  const todayStr = newApptPrefillDate || now.toISOString().split('T')[0];
-
+function renderWizard() {
   modalContainer.innerHTML = `
     <div class="modal-overlay" id="modalOverlay">
-      <div class="modal-sheet">
-        <button class="modal-close" id="modalClose">✕</button>
-        <h2>Novo agendamento</h2>
-
-        <div class="modal-section">
-          <div class="toggle-row">
-            <button id="modeExisting" class="${newApptClientMode === 'existing' ? 'active' : ''}">Cliente existente</button>
-            <button id="modeNew" class="${newApptClientMode === 'new' ? 'active' : ''}">Novo cliente</button>
-          </div>
-          <div id="clientFields"></div>
+      <div class="o-wizard-sheet" role="dialog" aria-modal="true" aria-label="Novo agendamento">
+        <div class="o-wizard-head">
+          <button class="o-icon-btn o-wizard-back" id="wizBack" aria-label="Voltar"
+            style="visibility:${(wiz.step > 1 || wiz.sub) ? 'visible' : 'hidden'}">${ICONS.chevron}</button>
+          <div class="o-wizard-titles"></div>
+          <button class="o-icon-btn" id="wizCloseBtn" aria-label="Fechar">${ICONS.close}</button>
         </div>
-
-        <div class="modal-section">
-          <label class="modal-field-label">Serviço</label>
-          <select id="serviceSelect">
-            <option value="">Selecione…</option>
-            ${state.services.map(s => `<option value="${s.id}">${s.name} (${s.duration_minutes} min)</option>`).join('')}
-          </select>
-
-          ${profissionaisAtivos().length > 1 ? `
-            <label class="modal-field-label">Profissional</label>
-            <select id="staffSelect">
-              <option value="">Selecione…</option>
-              ${profissionaisAtivos().map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
-            </select>
-          ` : ''}
-
-          <label class="modal-field-label">Data</label>
-          <input type="date" id="apptDate" value="${todayStr}">
-          <label class="modal-field-label">Horário</label>
-          <select id="apptTime" disabled>
-            <option value="">Escolha serviço e data…</option>
-          </select>
+        <div class="o-wizard-dots" role="progressbar" aria-valuemin="1" aria-valuemax="${WIZ_TOTAL_STEPS}"
+          aria-valuenow="${wiz.step}" aria-label="Etapa ${wiz.step} de ${WIZ_TOTAL_STEPS}">
+          ${Array.from({ length: WIZ_TOTAL_STEPS }, (_, i) => i + 1).map(n => `
+            <span class="o-wizard-dot ${n === wiz.step ? 'is-active' : ''} ${n < wiz.step ? 'is-done' : ''}"></span>
+          `).join('')}
         </div>
-
-        <button class="btn btn-primary" id="saveAppt">Salvar agendamento</button>
-        ${errorMsg ? `<div class="login-error">${errorMsg}</div>` : ''}
+        <div class="o-wizard-body" id="wizBody"></div>
+        <div class="o-wizard-footer" id="wizFooter"></div>
       </div>
     </div>
   `;
-
-  function renderClientFields() {
-    const wrap = document.getElementById('clientFields');
-    if (newApptClientMode === 'existing') {
-      wrap.innerHTML = `
-        <label class="modal-field-label">Cliente</label>
-        <select id="clientSelect">
-          <option value="">Selecione…</option>
-          ${state.clients.map(c => `<option value="${c.id}">${c.name}${c.phone ? ' · ' + c.phone : ''}</option>`).join('')}
-        </select>
-      `;
-    } else {
-      wrap.innerHTML = `
-        <label class="modal-field-label">Nome do cliente</label>
-        <input type="text" id="newClientName" placeholder="Nome completo">
-        <label class="modal-field-label">Telefone</label>
-        <input type="tel" id="newClientPhone" placeholder="+353 ...">
-        <label class="modal-field-label">E-mail</label>
-        <input type="email" id="newClientEmail" placeholder="cliente@email.com">
-      `;
-    }
-  }
-  renderClientFields();
-
-  // Horário depende de serviço (duração), profissional e data — recalcula
-  // sempre que um desses três muda, e uma vez já de cara pro caso de o
-  // errorMsg ter trazido tudo de volta preenchido.
-  document.getElementById('serviceSelect').onchange = refreshApptTimeOptions;
-  document.getElementById('apptDate').onchange = refreshApptTimeOptions;
-  const staffSelectForRefresh = document.getElementById('staffSelect');
-  if (staffSelectForRefresh) staffSelectForRefresh.onchange = refreshApptTimeOptions;
-  refreshApptTimeOptions();
-
-  document.getElementById('modalClose').onclick = closeModal;
+  document.getElementById('wizCloseBtn').onclick = closeModal;
   document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
-  document.getElementById('modeExisting').onclick = () => { newApptClientMode = 'existing'; renderClientFields(); document.getElementById('modeExisting').classList.add('active'); document.getElementById('modeNew').classList.remove('active'); };
-  document.getElementById('modeNew').onclick = () => { newApptClientMode = 'new'; renderClientFields(); document.getElementById('modeNew').classList.add('active'); document.getElementById('modeExisting').classList.remove('active'); };
+  document.getElementById('wizBack').onclick = wizGoBack;
+  paintWizStep();
+}
 
-  document.getElementById('saveAppt').onclick = async () => {
-    try {
-      const serviceId = document.getElementById('serviceSelect').value;
-      const ativos = profissionaisAtivos();
-      // Com uma profissional só o campo nem é desenhado: o agendamento sai no
-      // nome dela.
-      const staffEl = document.getElementById('staffSelect');
-      const staffId = staffEl ? staffEl.value : (ativos.length === 1 ? ativos[0].id : '');
-      const date = document.getElementById('apptDate').value;
-      const time = document.getElementById('apptTime').value.trim();
+function wizGoBack() {
+  if (wiz.sub) { wiz.sub = null; wiz.back = true; renderWizard(); return; }
+  if (wiz.step > 1) { wiz.step -= 1; wiz.back = true; renderWizard(); }
+}
 
-      if (!serviceId || !staffId || !date || !/^\d{1,2}:\d{2}$/.test(time)) {
-        renderNewApptModal(staffEl
-          ? 'Preencha serviço, profissional, data e escolha um horário.'
-          : 'Preencha serviço, data e escolha um horário.');
+function wizGoToStep(n) {
+  wiz.step = n; wiz.back = false; wiz.sub = null;
+  renderWizard();
+}
+
+// Preenche cabeçalho + corpo + rodapé da etapa atual. Chamada só na troca
+// de etapa/sub-tela — buscas (cliente/serviço) atualizam apenas a própria
+// lista via wizRenderClientList()/wizRenderServiceList(), nunca isto,
+// senão o <input> perderia o foco a cada letra (mesma armadilha já
+// documentada na lista de Clientes/Estoque).
+function paintWizStep() {
+  const titlesEl = document.querySelector('.o-wizard-titles');
+  const bodyEl = document.getElementById('wizBody');
+  const footEl = document.getElementById('wizFooter');
+  if (!bodyEl) return;
+
+  let step;
+  if (wiz.sub === 'quickAddClient') step = wizStepQuickAddClient();
+  else if (wiz.step === 1) step = wizStepClient();
+  else if (wiz.step === 2) step = wizStepService();
+  else if (wiz.step === 3) step = wizStepDate();
+  else if (wiz.step === 4) step = wizStepTime();
+  else step = wizStepConfirm();
+
+  titlesEl.innerHTML = `
+    <div class="o-wizard-title">${step.title}</div>
+    ${step.subtitle ? `<div class="o-wizard-subtitle">${step.subtitle}</div>` : ''}
+  `;
+  bodyEl.innerHTML = `<div class="o-wizard-step ${wiz.back ? 'is-back' : ''}">${step.bodyHtml}</div>`;
+  footEl.innerHTML = step.footHtml || '';
+  wiz.back = false;
+
+  if (wiz.sub === 'quickAddClient') wizBindQuickAddClient();
+  else if (wiz.step === 1) wizBindStepClient();
+  else if (wiz.step === 2) wizBindStepService();
+  else if (wiz.step === 3) wizBindStepDate();
+  else if (wiz.step === 4) wizBindStepTime();
+  else wizBindStepConfirm();
+}
+
+// ── Etapa 1 · Cliente ──────────────────────────────────────────
+function wizRecentClients() {
+  // "Clientes recentes" = últimos 6 pela última visita; sem histórico
+  // nenhum entra por cadastro mais novo, pra lista nunca ficar vazia à toa.
+  return state.clients
+    .map(c => ({ c, lastVisitIso: clientStats(c.id).lastVisitIso }))
+    .sort((a, b) => {
+      if (a.lastVisitIso && b.lastVisitIso) return new Date(b.lastVisitIso) - new Date(a.lastVisitIso);
+      if (a.lastVisitIso) return -1;
+      if (b.lastVisitIso) return 1;
+      return new Date(b.c.created_at || 0) - new Date(a.c.created_at || 0);
+    })
+    .slice(0, 6)
+    .map(r => r.c);
+}
+function wizFilteredClients() {
+  const q = (wiz.clientQuery || '').trim().toLowerCase();
+  if (!q) return null; // null = mostra "recentes" em vez de resultado de busca
+  return state.clients.filter(c => `${c.name || ''} ${c.phone || ''}`.toLowerCase().includes(q));
+}
+function wizClientRowHtml(c) {
+  const color = colorForId(c.id);
+  return `
+    <button class="o-card o-card-interactive o-wizard-client-row" data-client-id="${c.id}">
+      <span class="o-avatar o-avatar-sm" style="--avatar-bg:${color.border};--avatar-color:var(--color-bg)" aria-hidden="true">${initials(c.name)}</span>
+      <span class="wcr-body">
+        <span class="wcr-name">${c.name}</span>
+        ${c.phone ? `<div class="wcr-phone">${c.phone}</div>` : ''}
+      </span>
+      <span class="wcr-chevron" aria-hidden="true">${ICONS.chevron}</span>
+    </button>
+  `;
+}
+function wizStepClient() {
+  return {
+    title: 'Novo agendamento',
+    subtitle: 'Quem será atendido?',
+    bodyHtml: `
+      <label class="o-search-field" id="wizClientSearchField">
+        <span class="o-search-field-icon" aria-hidden="true">${ICONS.search}</span>
+        <input type="search" id="wizClientSearch" placeholder="Buscar cliente..." autocomplete="off"
+          aria-label="Buscar cliente" value="${(wiz.clientQuery || '').replace(/"/g, '&quot;')}">
+        <button class="o-search-clear" id="wizClientSearchClear" type="button" aria-label="Limpar busca">${ICONS.close}</button>
+      </label>
+      <div id="wizClientListWrap"></div>
+    `,
+    footHtml: '',
+  };
+}
+function wizBindStepClient() {
+  const field = document.getElementById('wizClientSearchField');
+  const input = document.getElementById('wizClientSearch');
+  const clear = document.getElementById('wizClientSearchClear');
+  field.classList.toggle('has-text', !!input.value);
+  input.oninput = () => {
+    wiz.clientQuery = input.value;
+    field.classList.toggle('has-text', !!input.value);
+    wizRenderClientList();
+  };
+  clear.onmousedown = (e) => {
+    e.preventDefault();
+    wiz.clientQuery = '';
+    input.value = '';
+    field.classList.remove('has-text');
+    input.focus();
+    wizRenderClientList();
+  };
+  wizRenderClientList();
+}
+function wizRenderClientList() {
+  const wrap = document.getElementById('wizClientListWrap');
+  if (!wrap) return;
+  const filtered = wizFilteredClients();
+  const list = filtered !== null ? filtered : wizRecentClients();
+  const label = filtered !== null
+    ? `${list.length} ${list.length === 1 ? 'resultado' : 'resultados'}`
+    : 'Clientes recentes';
+
+  wrap.innerHTML = `
+    ${state.clients.length ? `<div class="o-wizard-section-label">${label}</div>` : ''}
+    ${!list.length
+      ? `<div class="o-wizard-empty">${filtered !== null ? 'Nenhum cliente encontrado.' : 'Nenhum cliente ainda.'}</div>`
+      : `<div class="o-wizard-list">${list.map(wizClientRowHtml).join('')}</div>`}
+    <button class="o-wizard-add-client" id="wizAddClientBtn" type="button">
+      <span aria-hidden="true">${ICONS.plus}</span><span>Novo cliente</span>
+    </button>
+  `;
+
+  wrap.querySelectorAll('.o-wizard-client-row[data-client-id]').forEach(btn => {
+    btn.onclick = () => { wiz.clientId = btn.dataset.clientId; wizGoToStep(2); };
+  });
+  document.getElementById('wizAddClientBtn').onclick = () => {
+    wiz.sub = 'quickAddClient';
+    wiz.back = false;
+    renderWizard();
+  };
+}
+
+// Sub-tela de Etapa 1 · cadastro rápido — nunca outro modal, só um slide
+// dentro da mesma folha. Só nome e telefone, igual ao resto do wizard: uma
+// decisão por tela.
+function wizStepQuickAddClient() {
+  return {
+    title: 'Novo cliente',
+    subtitle: 'Cadastro rápido',
+    bodyHtml: `
+      <div class="o-field" style="margin-top:var(--space-4)">
+        <label class="o-field-label" for="wizNcName">Nome</label>
+        <input type="text" id="wizNcName" class="o-input" placeholder="Nome completo" autocomplete="off">
+      </div>
+      <div class="o-field" style="margin-top:var(--space-3)">
+        <label class="o-field-label" for="wizNcPhone">Telefone</label>
+        <input type="tel" id="wizNcPhone" class="o-input" placeholder="+353 ..." autocomplete="off">
+      </div>
+      <div id="wizNcError" class="login-error" style="display:none;margin-top:var(--space-2)"></div>
+    `,
+    footHtml: `<button class="o-btn o-btn-primary" id="wizNcContinue">Continuar</button>`,
+  };
+}
+function wizBindQuickAddClient() {
+  document.getElementById('wizNcContinue').onclick = async () => {
+    const nameEl = document.getElementById('wizNcName');
+    const phoneEl = document.getElementById('wizNcPhone');
+    const errEl = document.getElementById('wizNcError');
+    const btn = document.getElementById('wizNcContinue');
+    const name = nameEl.value.trim();
+    const phone = phoneEl.value.trim();
+    if (!name || !phone) {
+      errEl.textContent = 'Preencha nome e telefone.';
+      errEl.style.display = 'block';
+      return;
+    }
+    btn.setAttribute('aria-busy', 'true');
+    btn.disabled = true;
+    const normalizedPhone = phone.replace(/[^\d]/g, '');
+    const { data: existing } = await sb.from('clients').select('id').eq('phone', normalizedPhone).maybeSingle();
+    let clientId = existing?.id;
+    if (!clientId) {
+      const { data: created, error } = await sb.from('clients').insert({ name, phone: normalizedPhone }).select('id').single();
+      if (error) {
+        errEl.textContent = 'Erro ao cadastrar: ' + error.message;
+        errEl.style.display = 'block';
+        btn.removeAttribute('aria-busy');
+        btn.disabled = false;
         return;
       }
-
-      let clientId;
-      if (newApptClientMode === 'existing') {
-        clientId = document.getElementById('clientSelect').value;
-        if (!clientId) { renderNewApptModal('Selecione um cliente.'); return; }
-      } else {
-        const name = document.getElementById('newClientName').value.trim();
-        const phone = document.getElementById('newClientPhone').value.trim();
-        const email = document.getElementById('newClientEmail').value.trim();
-        if (!name || !phone) { renderNewApptModal('Preencha nome e telefone do novo cliente.'); return; }
-        const normalizedPhone = phone.replace(/[^\d]/g, '');
-        const { data: existing } = await sb.from('clients').select('id').eq('phone', normalizedPhone).maybeSingle();
-        if (existing) {
-          clientId = existing.id;
-        } else {
-          const { data: created, error: createErr } = await sb
-            .from('clients').insert({ name, phone: normalizedPhone, email: email || null }).select('id').single();
-          if (createErr) throw createErr;
-          clientId = created.id;
-        }
-      }
-
-      const service = state.services.find(s => s.id === serviceId);
-      const [hh, mm] = time.split(':').map(Number);
-      const startsAt = new Date(`${date}T00:00:00`);
-      startsAt.setHours(hh, mm, 0, 0);
-      const endsAt = new Date(startsAt.getTime() + service.duration_minutes * 60000);
-
-      const { data: createdAppt, error: apptErr } = await sb.from('appointments').insert({
-        client_id: clientId,
-        staff_id: staffId,
-        service_id: serviceId,
-        starts_at: startsAt.toISOString(),
-        ends_at: endsAt.toISOString(),
-        status: 'confirmed',
-        source: 'manual',
-      }).select('id').single();
-      if (apptErr) throw apptErr;
-
-      // Só anima a entrada se o agendamento cair no dia que a Agenda já está
-      // mostrando — senão o bloco nasceria animado numa tela que o usuário
-      // nem está vendo, e o efeito passaria em branco.
-      if (createdAppt && sameDay(startsAt, state.agendaDate)) {
-        state.enteringApptId = createdAppt.id;
-      }
-
-      closeModal();
-      showToast('Agendamento criado');
-      await loadAll();
-    } catch (e) {
-      renderNewApptModal(e.message);
+      clientId = created.id;
+      await loadClients();
     }
+    wiz.clientId = clientId;
+    wiz.sub = null;
+    wizGoToStep(2);
   };
+}
+
+// ── Etapa 2 · Serviço ──────────────────────────────────────────
+function wizServicesUsageOrder() {
+  // "Mais utilizados" = frequência real em appointments, não um campo do
+  // banco — mesmo espírito de clientStats()/favoriteServices.
+  const freq = {};
+  state.appointments.forEach(a => { if (a.service?.id) freq[a.service.id] = (freq[a.service.id] || 0) + 1; });
+  return [...state.services].sort((a, b) => (freq[b.id] || 0) - (freq[a.id] || 0));
+}
+function wizFilteredServices() {
+  const q = (wiz.serviceQuery || '').trim().toLowerCase();
+  const base = wizServicesUsageOrder();
+  if (!q) return base;
+  return base.filter(s => (s.name || '').toLowerCase().includes(q));
+}
+function wizServiceRowHtml(s) {
+  const color = colorForService(s.id);
+  return `
+    <button class="o-card o-card-interactive o-wizard-service-row" data-service-id="${s.id}">
+      <span class="o-wizard-service-icon" style="--svc-bg:${color.bg};--svc-color:${color.text}" aria-hidden="true">${iconForService(s)}</span>
+      <span class="wsr-body">
+        <span class="wsr-name">${s.name}</span>
+        <div class="wsr-meta">${s.duration_minutes} min</div>
+      </span>
+      <span class="wsr-price">€${Number(s.price || 0).toFixed(0)}</span>
+    </button>
+  `;
+}
+function wizStepService() {
+  const ativos = profissionaisAtivos();
+  return {
+    title: 'Qual serviço será realizado?',
+    subtitle: '',
+    bodyHtml: `
+      ${ativos.length > 1 ? `
+        <div class="o-field" style="margin-bottom:var(--space-4)">
+          <label class="o-field-label" for="wizStaffSelect">Profissional</label>
+          <select id="wizStaffSelect" class="o-select">
+            ${ativos.map(s => `<option value="${s.id}" ${wiz.staffId === s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
+          </select>
+        </div>
+      ` : ''}
+      <label class="o-search-field" id="wizServiceSearchField">
+        <span class="o-search-field-icon" aria-hidden="true">${ICONS.search}</span>
+        <input type="search" id="wizServiceSearch" placeholder="Buscar serviço..." autocomplete="off"
+          aria-label="Buscar serviço" value="${(wiz.serviceQuery || '').replace(/"/g, '&quot;')}">
+        <button class="o-search-clear" id="wizServiceSearchClear" type="button" aria-label="Limpar busca">${ICONS.close}</button>
+      </label>
+      <div id="wizServiceListWrap"></div>
+    `,
+    footHtml: '',
+  };
+}
+function wizBindStepService() {
+  const staffSelect = document.getElementById('wizStaffSelect');
+  if (staffSelect) staffSelect.onchange = () => { wiz.staffId = staffSelect.value || null; };
+
+  const field = document.getElementById('wizServiceSearchField');
+  const input = document.getElementById('wizServiceSearch');
+  const clear = document.getElementById('wizServiceSearchClear');
+  field.classList.toggle('has-text', !!input.value);
+  input.oninput = () => {
+    wiz.serviceQuery = input.value;
+    field.classList.toggle('has-text', !!input.value);
+    wizRenderServiceList();
+  };
+  clear.onmousedown = (e) => {
+    e.preventDefault();
+    wiz.serviceQuery = '';
+    input.value = '';
+    field.classList.remove('has-text');
+    input.focus();
+    wizRenderServiceList();
+  };
+  wizRenderServiceList();
+}
+function wizRenderServiceList() {
+  const wrap = document.getElementById('wizServiceListWrap');
+  if (!wrap) return;
+  const list = wizFilteredServices();
+  const label = (wiz.serviceQuery || '').trim()
+    ? `${list.length} ${list.length === 1 ? 'resultado' : 'resultados'}`
+    : 'Mais utilizados';
+  wrap.innerHTML = !list.length
+    ? `<div class="o-wizard-empty">Nenhum serviço encontrado.</div>`
+    : `
+      <div class="o-wizard-section-label">${label}</div>
+      <div class="o-wizard-list">${list.map(wizServiceRowHtml).join('')}</div>
+    `;
+  wrap.querySelectorAll('.o-wizard-service-row[data-service-id]').forEach(btn => {
+    btn.onclick = () => {
+      wiz.serviceId = btn.dataset.serviceId;
+      if (!wiz.date) {
+        const base = new Date();
+        wiz.date = base.toISOString().split('T')[0];
+        wiz.calendarMonth = new Date(base.getFullYear(), base.getMonth(), 1);
+      }
+      wizGoToStep(3);
+    };
+  });
+}
+
+// ── Etapa 3 · Data ─────────────────────────────────────────────
+function wizStepDate() {
+  return { title: 'Escolha uma data', subtitle: '', bodyHtml: `<div id="wizCalendarWrap"></div>`, footHtml: '' };
+}
+function wizBindStepDate() {
+  wizRenderCalendar();
+}
+function wizRenderCalendar() {
+  const wrap = document.getElementById('wizCalendarWrap');
+  if (!wrap) return;
+  const viewDate = wiz.calendarMonth;
+  const monthLabelRaw = viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const monthLabel = monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
+  const firstOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+  const gridStart = startOfWeek(firstOfMonth);
+  const cells = Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(gridStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const service = wizService();
+  const staffId = wizStaffId();
+
+  wrap.innerHTML = `
+    <div class="o-wizard-cal-head">
+      <button class="o-icon-btn o-icon-btn-outlined" id="wizCalPrev" aria-label="Mês anterior" style="transform:rotate(180deg)">${ICONS.chevron}</button>
+      <div class="o-wizard-cal-title">${monthLabel}</div>
+      <button class="o-icon-btn o-icon-btn-outlined" id="wizCalNext" aria-label="Próximo mês">${ICONS.chevron}</button>
+    </div>
+    <div class="o-wizard-cal-weekdays">${WEEKDAY_LABELS.map(l => `<div>${l}</div>`).join('')}</div>
+    <div class="o-wizard-cal-grid">
+      ${cells.map(d => {
+        const inMonth = d.getMonth() === viewDate.getMonth();
+        const dateStr = d.toISOString().split('T')[0];
+        const isPast = d < todayStart;
+        const level = inMonth && !isPast ? dayAvailabilityLevel(dateStr, staffId, service?.duration_minutes) : null;
+        const disabled = !inMonth || isPast || level === 'indisponivel';
+        const selected = wiz.date === dateStr;
+        return `
+          <button class="o-wizard-cal-day ${selected ? 'is-selected' : ''} ${sameDay(d, new Date()) ? 'is-today' : ''} ${!inMonth ? 'is-outside' : ''}"
+            data-date="${dateStr}" ${disabled ? 'disabled' : ''} aria-current="${selected ? 'date' : 'false'}"
+            aria-label="${d.getDate()} de ${monthLabel}">
+            <span>${d.getDate()}</span>
+            ${level ? `<span class="wcd-dot lvl-${level}" aria-hidden="true"></span>` : ''}
+          </button>
+        `;
+      }).join('')}
+    </div>
+    <div class="o-wizard-cal-legend">
+      <span><i class="lvl-muitos"></i>Muitos horários</span>
+      <span><i class="lvl-poucos"></i>Poucos horários</span>
+      <span><i class="lvl-nenhum"></i>Nenhum horário</span>
+      <span><i class="lvl-indisponivel"></i>Indisponível</span>
+    </div>
+  `;
+
+  document.getElementById('wizCalPrev').onclick = () => {
+    wiz.calendarMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
+    wizRenderCalendar();
+  };
+  document.getElementById('wizCalNext').onclick = () => {
+    wiz.calendarMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+    wizRenderCalendar();
+  };
+  wrap.querySelectorAll('.o-wizard-cal-day[data-date]:not(:disabled)').forEach(btn => {
+    btn.onclick = () => {
+      wiz.date = btn.dataset.date;
+      wiz.time = null;
+      wizGoToStep(4);
+    };
+  });
+}
+
+// ── Etapa 4 · Horário ──────────────────────────────────────────
+// Mensagens de apresentação — ainda não refletem inteligência real (PR
+// combinado com o Raphael: placeholders por enquanto). Uma exceção
+// honesta: o horário que encosta exatamente no fim de outro atendimento
+// (fecha um buraco na agenda) ganha o selo "Recomendado" de verdade.
+function wizSlotMessages(slots, staffId, dateStr, durationMin) {
+  const busy = busyBlocksForStaffOnDate(staffId, new Date(`${dateStr}T00:00:00`));
+  const busyEnds = busy.map(([, be]) => be.getTime());
+  let recommendedAssigned = false;
+  return slots.map((t, i) => {
+    const [hh, mm] = t.split(':').map(Number);
+    const slotStart = new Date(`${dateStr}T00:00:00`);
+    slotStart.setHours(hh, mm, 0, 0);
+    const fillsGap = busyEnds.some(end => Math.abs(end - slotStart.getTime()) < 60000);
+    if (fillsGap && !recommendedAssigned) {
+      recommendedAssigned = true;
+      return { time: t, recommended: true, message: 'Aproveita um intervalo livre sem aumentar sua jornada.' };
+    }
+    if (i === 0) return { time: t, recommended: false, message: 'Bom encaixe pela manhã' };
+    if (i === slots.length - 1) return { time: t, recommended: false, message: 'Último horário disponível' };
+    return { time: t, recommended: false, message: 'Agenda tranquila' };
+  });
+}
+function wizDayPreviewHtml(staffId, durationMin) {
+  const busy = busyBlocksForStaffOnDate(staffId, new Date(`${wiz.date}T00:00:00`));
+  const totalMin = (CLOSE_HOUR - OPEN_HOUR) * 60;
+  const pct = (mins) => `${Math.max(0, Math.min(100, (mins / totalMin) * 100))}%`;
+  const busyBars = busy.map(([bs, be]) => {
+    const startMin = (bs.getHours() * 60 + bs.getMinutes()) - OPEN_HOUR * 60;
+    const endMin = (be.getHours() * 60 + be.getMinutes()) - OPEN_HOUR * 60;
+    return `<div class="o-wizard-daypreview-busy" style="left:${pct(startMin)};width:${pct(endMin - startMin)}"></div>`;
+  }).join('');
+  let markHtml = '';
+  if (wiz.time) {
+    const [hh, mm] = wiz.time.split(':').map(Number);
+    const startMin = (hh * 60 + mm) - OPEN_HOUR * 60;
+    markHtml = `<div class="o-wizard-daypreview-mark" style="left:${pct(startMin)}"></div>`;
+  }
+  return `
+    <div class="o-wizard-daypreview">
+      <div class="o-wizard-daypreview-track">${busyBars}${markHtml}</div>
+      <div class="o-wizard-daypreview-labels"><span>${OPEN_HOUR}h</span><span>${CLOSE_HOUR}h</span></div>
+    </div>
+  `;
+}
+function wizStepTime() {
+  return { title: 'Horários disponíveis', subtitle: '', bodyHtml: `<div id="wizSlotsWrap"></div>`, footHtml: '' };
+}
+function wizBindStepTime() {
+  wizRenderSlots();
+}
+function wizRenderSlots() {
+  const wrap = document.getElementById('wizSlotsWrap');
+  if (!wrap) return;
+  const service = wizService();
+  const staffId = wizStaffId();
+  if (!service || !staffId || !wiz.date) {
+    wrap.innerHTML = `<div class="o-wizard-empty">Volte e escolha o serviço e a data.</div>`;
+    return;
+  }
+  const [y, m, d] = wiz.date.split('-').map(Number);
+  const dateLabelRaw = new Date(y, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const dateLabel = dateLabelRaw.charAt(0).toUpperCase() + dateLabelRaw.slice(1);
+
+  const rawSlots = computeAvailableSlots(staffId, wiz.date, service.duration_minutes);
+  if (!wiz.time && wiz.preferredTime && rawSlots.includes(wiz.preferredTime)) wiz.time = wiz.preferredTime;
+
+  if (!rawSlots.length) {
+    wrap.innerHTML = `
+      <div class="o-wizard-section-label">${dateLabel}</div>
+      <div class="o-wizard-empty">Sem horário livre nesse dia. Volte e escolha outra data.</div>
+    `;
+    return;
+  }
+
+  const slots = wizSlotMessages(rawSlots, staffId, wiz.date, service.duration_minutes);
+
+  wrap.innerHTML = `
+    <div class="o-wizard-section-label">${dateLabel}</div>
+    ${slots.map(s => `
+      <button class="o-card o-card-interactive o-wizard-slot-card ${wiz.time === s.time ? 'is-selected' : ''}" data-time="${s.time}">
+        ${s.recommended ? `<div class="o-badge o-badge-attention o-wizard-slot-badge">${ICONS.sparkle} Recomendado</div>` : ''}
+        <div class="o-wizard-slot-top">
+          <span class="o-wizard-slot-time">${s.time}</span>
+          <span class="o-wizard-slot-check" aria-hidden="true">${ICONS.check}</span>
+        </div>
+        <div class="o-wizard-slot-msg">${s.message}</div>
+      </button>
+    `).join('')}
+    ${wizDayPreviewHtml(staffId, service.duration_minutes)}
+  `;
+
+  wrap.querySelectorAll('.o-wizard-slot-card[data-time]').forEach(btn => {
+    btn.onclick = () => {
+      wiz.time = btn.dataset.time;
+      wizRenderSlots();
+      setTimeout(() => wizGoToStep(5), prefersReducedMotion() ? 0 : 200);
+    };
+  });
+}
+
+// ── Etapa 5 · Confirmação ──────────────────────────────────────
+function wizStepConfirm() {
+  const c = wizClient();
+  const s = wizService();
+  const staff = wizStaff();
+  if (!c || !s || !wiz.date || !wiz.time) {
+    return {
+      title: 'Confirmar agendamento',
+      subtitle: '',
+      bodyHtml: `<div class="o-wizard-empty">Algo ficou incompleto. Volte e revise as etapas anteriores.</div>`,
+      footHtml: '',
+    };
+  }
+  const [y, m, d] = wiz.date.split('-').map(Number);
+  const dateLabelRaw = new Date(y, m - 1, d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const dateLabel = dateLabelRaw.charAt(0).toUpperCase() + dateLabelRaw.slice(1);
+
+  const rows = [
+    { icon: ICONS.users, label: 'Cliente', value: `${c.name}${c.phone ? ` · ${c.phone}` : ''}` },
+    { icon: ICONS.tag, label: 'Serviço', value: `${s.name}${staff ? ` · ${staff.name}` : ''}` },
+    { icon: ICONS.calendar, label: 'Data', value: dateLabel },
+    { icon: ICONS.clock, label: 'Horário', value: wiz.time },
+    { icon: ICONS.target, label: 'Duração', value: `${s.duration_minutes} min` },
+    { icon: ICONS.money, label: 'Valor', value: `€${Number(s.price || 0).toFixed(0)}` },
+  ];
+
+  return {
+    title: 'Confirmar agendamento',
+    subtitle: 'Revise os detalhes antes de salvar',
+    bodyHtml: `
+      <div class="o-card" style="margin-top:var(--space-3)">
+        ${rows.map(r => `
+          <div class="o-wizard-summary-row">
+            <span class="o-wizard-summary-icon" aria-hidden="true">${r.icon}</span>
+            <div>
+              <div class="o-wizard-summary-label">${r.label}</div>
+              <div class="o-wizard-summary-value">${r.value}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="o-wizard-notice">
+        ${ICONS.chat}
+        <span>A cliente receberá a confirmação automaticamente.</span>
+      </div>
+      ${wiz.error ? `<div class="login-error" style="margin-top:var(--space-3)">${wiz.error}</div>` : ''}
+    `,
+    footHtml: `<button class="o-btn o-btn-primary" id="wizSaveBtn">Salvar agendamento</button>`,
+  };
+}
+function wizBindStepConfirm() {
+  const btn = document.getElementById('wizSaveBtn');
+  if (btn) btn.onclick = wizSaveAppointment;
+}
+async function wizSaveAppointment() {
+  const btn = document.getElementById('wizSaveBtn');
+  const c = wizClient();
+  const s = wizService();
+  const staffId = wizStaffId();
+  if (!c || !s || !staffId || !wiz.date || !wiz.time) {
+    wiz.error = 'Algo ficou incompleto. Volte e revise as etapas anteriores.';
+    paintWizStep();
+    return;
+  }
+  btn.setAttribute('aria-busy', 'true');
+  btn.disabled = true;
+  try {
+    const [hh, mm] = wiz.time.split(':').map(Number);
+    const startsAt = new Date(`${wiz.date}T00:00:00`);
+    startsAt.setHours(hh, mm, 0, 0);
+    const endsAt = new Date(startsAt.getTime() + s.duration_minutes * 60000);
+
+    const { data: createdAppt, error: apptErr } = await sb.from('appointments').insert({
+      client_id: c.id,
+      staff_id: staffId,
+      service_id: s.id,
+      starts_at: startsAt.toISOString(),
+      ends_at: endsAt.toISOString(),
+      status: 'confirmed',
+      source: 'manual',
+    }).select('id').single();
+    if (apptErr) throw apptErr;
+
+    // Só anima a entrada se o agendamento cair no dia que a Agenda já está
+    // mostrando — senão o bloco nasceria animado numa tela que o usuário
+    // nem está vendo, e o efeito passaria em branco.
+    if (createdAppt && sameDay(startsAt, state.agendaDate)) {
+      state.enteringApptId = createdAppt.id;
+    }
+
+    closeModal();
+    showToast('Agendamento criado');
+    await loadAll();
+  } catch (e) {
+    wiz.error = e.message;
+    paintWizStep();
+  }
 }
 
 // O mesmo botão fixo serve duas abas — o que ele cadastra depende de onde
