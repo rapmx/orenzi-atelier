@@ -47,6 +47,20 @@
        ~57), senão o fim do conteúdo ficava encoberto por ele. */
     font-family: var(--font-body); padding-bottom: 100px;
   }
+  /* Causa raiz do header que não colapsava no aparelho real: nenhuma outra
+     tela tem scroll próprio (só .timeline e .modal-sheet têm
+     overflow-y:auto) — body/html sempre puderam rolar como página inteira.
+     Na Agenda expandida, cabeçalho+faixa+grade (62vh) somados passam da
+     altura da tela; a PÁGINA tinha espaço pra rolar, e no toque real o
+     gesto rolava o documento inteiro (cabeçalho, faixa de dias e grade
+     juntos, como um bloco só) em vez de #timelineEl sozinho. O listener de
+     colapso está em #timelineEl; se é a página que rola, o scrollTop dele
+     mal se move e o delta nunca cruza o threshold — exatamente o sintoma
+     relatado ("continuam visíveis simultaneamente"). Travar a página SÓ na
+     aba Agenda (classe no <body>, nunca global — as outras abas dependem
+     do scroll da página, não têm container próprio) obriga o gesto a cair
+     no único scroll que sobra: #timelineEl. */
+  body.tab-agenda { height: 100vh; height: 100dvh; overflow: hidden; }
   /* Some por completo (display:none, não max-height/opacity) quando a
      Agenda está colapsada — syncAgendaChromeVisibility() troca isso.
      display:none nunca reserva altura, então o padding pode continuar no
@@ -540,6 +554,10 @@
     padding: 0 0 0 52px; margin-top: 4px;
     max-height: 62vh; overflow-y: auto; overflow-x: hidden;
     scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+    /* Reforça a trava de body.tab-agenda: mesmo se a página ainda tivesse
+       alguma folga de scroll, o gesto não "vaza" pro documento assim que
+       a grade chega no topo/fundo — fica só dentro dela. */
+    overscroll-behavior: contain;
     /* Some por padrão, só aparece durante a rolagem (classe .is-scrolling,
        ligada/desligada por JS — CSS não tem "faz 1s que parou de rolar"). */
     scrollbar-width: thin; scrollbar-color: transparent transparent;
@@ -3362,6 +3380,33 @@ function positionTimelineForDay(el, day, dayAppts) {
 const AGENDA_HEADER_COLLAPSE_THRESHOLD = 64;
 const AGENDA_HEADER_EXPAND_THRESHOLD = 12;
 
+// ── Diagnóstico TEMPORÁRIO de scroll da Agenda ────────────────────────
+// Ligado com ?debug=1 na URL (no demo fica sempre ligado — é a versão que
+// o Raphael testa no celular). Mostra ao vivo, durante o gesto real, qual
+// elemento está de fato rolando: se #timelineEl não mexe mas body/html/
+// window mexem, é a prova de que a página inteira está roubando o gesto
+// em vez de só a grade. REMOVER antes de fechar este PR.
+const AGENDA_DEBUG = new URLSearchParams(window.location.search).has('debug')
+  // .includes, não .endsWith: o servidor local serve URL limpa
+  // (/painel_demo, sem .html) — .endsWith('painel_demo.html') nunca batia.
+  || window.location.pathname.includes('painel_demo');
+function updateAgendaScrollDebug(source) {
+  if (!AGENDA_DEBUG) return;
+  let el = document.getElementById('agendaScrollDebug');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'agendaScrollDebug';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(0,0,0,.86);color:#7CFC00;font:10px/1.5 -apple-system,monospace;padding:4px 8px;white-space:pre-wrap;pointer-events:none;';
+    document.body.appendChild(el);
+  }
+  const tl = document.getElementById('timelineEl');
+  const tlTop = tl ? tl.scrollTop : 0;
+  const delta = tlTop - agendaScrollBaseline;
+  el.textContent =
+    `[${source}] ${state.agendaHeaderCollapsed ? 'collapsed' : 'expanded'} · tl:${Math.round(tlTop)} base:${Math.round(agendaScrollBaseline)} Δ:${Math.round(delta)} thr:${AGENDA_HEADER_COLLAPSE_THRESHOLD}\n` +
+    `body:${Math.round(document.body.scrollTop)} html:${Math.round(document.documentElement.scrollTop)} win:${Math.round(window.scrollY)} bodyLock:${document.body.classList.contains('tab-agenda')}`;
+}
+
 // #timelineEl é recriado a cada renderAgenda() (renderAgendaGridTransition
 // só muta o innerHTML do mesmo nó, então o listener sobrevive e não
 // precisa ser reamarrado ali — mesmo raciocínio de attachTimelineScrollbarFade).
@@ -3369,12 +3414,23 @@ function attachAgendaHeaderCollapse(el) {
   if (!el) return;
   el.addEventListener('scroll', () => {
     const delta = el.scrollTop - agendaScrollBaseline;
+    updateAgendaScrollDebug('timeline scroll');
     if (!state.agendaHeaderCollapsed && delta > AGENDA_HEADER_COLLAPSE_THRESHOLD) {
       setAgendaHeaderCollapsed(true);
     } else if (state.agendaHeaderCollapsed && delta < AGENDA_HEADER_EXPAND_THRESHOLD) {
       setAgendaHeaderCollapsed(false);
     }
   });
+  // Se a página (não a grade) estiver rolando, isso prova a causa raiz —
+  // ver comentário de AGENDA_DEBUG. window persiste entre renders (ao
+  // contrário de #timelineEl), então o listener só é ligado uma vez.
+  if (AGENDA_DEBUG) {
+    if (!window.__agendaWindowDebugBound) {
+      window.__agendaWindowDebugBound = true;
+      window.addEventListener('scroll', () => updateAgendaScrollDebug('window scroll'), { passive: true });
+    }
+    updateAgendaScrollDebug('attach');
+  }
 }
 
 // Passo de um dia — usado pelas setas da barra compacta, que navegam por
@@ -3725,6 +3781,11 @@ function syncAgendaChromeVisibility() {
   if (header) header.style.display = agendaColapsadaAtiva ? 'none' : '';
   const todayFab = document.getElementById('gotoTodayFab');
   if (todayFab) todayFab.style.display = (naAgenda && !state.agendaHeaderCollapsed) ? 'flex' : 'none';
+  // Trava o scroll da PÁGINA enquanto a grade da Agenda está na tela — é a
+  // causa raiz do colapso não acontecer no toque real (ver comentário em
+  // body.tab-agenda no CSS). Nunca liga fora da Agenda: as outras abas não
+  // têm scroll próprio, dependem do documento rolar normalmente.
+  document.body.classList.toggle('tab-agenda', naAgenda);
 }
 
 function setAgendaHeaderCollapsed(collapsed) {
@@ -3736,6 +3797,7 @@ function setAgendaHeaderCollapsed(collapsed) {
   // espaço real pra grade, não só um respiro visual embaixo dela.
   const screen = document.getElementById('agendaScreen');
   if (screen) screen.classList.toggle('is-collapsed', collapsed);
+  updateAgendaScrollDebug('setAgendaHeaderCollapsed(' + collapsed + ')');
 }
 
 function bindTimelineApptClicks() {
@@ -3774,7 +3836,7 @@ function renderAgenda() {
   const collapsedClass = state.agendaHeaderCollapsed ? ' is-collapsed' : '';
 
   app.innerHTML = `
-    <div class="agenda-screen${collapsedClass}" id="agendaScreen">
+    <div class="agenda-screen${collapsedClass}" id="agendaScreen" data-agenda-header-build="scroll-fix-1">
       <div id="agendaHeaderChrome"></div>
       <div class="agenda-viewport" id="agendaWeekViewport">
         <div id="agendaWeekPane">
@@ -3796,6 +3858,7 @@ function renderAgenda() {
   attachTimelineScrollbarFade(document.getElementById('timelineEl'));
   attachAgendaHeaderCollapse(document.getElementById('timelineEl'));
   positionTimelineForDay(document.getElementById('timelineEl'), day, dayAppts);
+  updateAgendaScrollDebug('renderAgenda');
 }
 
 // #timelineEl é recriado a cada renderAgenda(), então o listener é
