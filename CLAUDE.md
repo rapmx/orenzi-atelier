@@ -28,7 +28,10 @@ linhas e custa caro.
 
 Before creating, modifying or reviewing any interface:
 
-1. Read `/docs/ORENZI_DESIGN_SYSTEM_v1.0.md`.
+1. Read `/docs/README.md` and the numbered series it indexes (`01_PRODUCT_LANGUAGE.md`
+   through `10_GOVERNANCE_AND_CHANGELOG.md`). `ORENZI_DESIGN_SYSTEM_v1.0.md` is
+   superseded by `03_DESIGN_SYSTEM.md` — kept only as historical record, not a
+   reading source.
 2. Reuse the shared tokens, components and patterns defined by the Orenzi Design System.
 3. Do not introduce raw colors, arbitrary spacing, local radius values, new shadow styles or one-off animation durations unless explicitly approved.
 4. Mobile is the source of truth, supporting widths from 320px to 430px.

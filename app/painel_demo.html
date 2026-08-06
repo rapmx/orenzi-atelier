@@ -1964,6 +1964,7 @@ window.supabase = {
   </button>
 </nav>
 
+<script src="shared/salon.js"></script>
 <script>
 // ── CONFIGURAÇÃO ─────────────────────────────────────────────
 const SUPABASE_URL = 'https://gsagtsxkhqlpxuvrijgw.supabase.co';
@@ -2507,8 +2508,9 @@ function dayPanoramaCardHtml({ title, icon, date, dateAppts, emptyNote, quietNot
 
 const WEEKDAY_FULL_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const WEEKDAY_LONG_LABELS = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo'];
-// Dias em que o salão não abre (0 = domingo, 1 = segunda) — mesma regra usada no agendamento online.
-const CLOSED_WEEKDAYS = [0, 1];
+// Dias em que o salão não abre — window.OrenziSalon (shared/salon.js) é a
+// fonte única, mesma usada pelo agendamento online.
+const { CLOSED_WEEKDAYS, OPEN_HOUR, CLOSE_HOUR, SLOT_MINUTES } = window.OrenziSalon;
 function isSalonOpenDay(date) {
   return !CLOSED_WEEKDAYS.includes(date.getDay());
 }
@@ -3507,15 +3509,10 @@ const WEEKDAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 // Expediente de verdade — o que o agendar.html oferece à cliente. Ocupação e
 // capacidade se medem contra ISTO, não contra a grade acima: usar as 11h da
 // timeline dava um denominador que o formulário nunca consegue preencher (ele
-// só oferece 9h), e a ocupação saía estruturalmente baixa. Mesmos valores de
-// shared/salon.js — ao religar aquele arquivo, desestruturar de lá e apagar
-// estas duas linhas.
-const OPEN_HOUR = 9;
-const CLOSE_HOUR = 18;
+// só oferece 9h), e a ocupação saía estruturalmente baixa. OPEN_HOUR/CLOSE_HOUR/
+// SLOT_MINUTES vêm de window.OrenziSalon (shared/salon.js), desestruturados lá
+// em cima junto com CLOSED_WEEKDAYS.
 const WORK_MINUTES_PER_DAY = (CLOSE_HOUR - OPEN_HOUR) * 60;
-// Mesma granularidade do agendar.html — o dropdown de horário do modal de
-// novo agendamento usa essa grade.
-const SLOT_MINUTES = 30;
 // Abaixo disso o "Xh livres" seria ruído — encaixe de meia hora já aparece
 // como espaço em branco na própria grade, não precisa de rótulo.
 const AGENDA_FREE_MIN_MINUTES = 45;

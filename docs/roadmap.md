@@ -89,10 +89,13 @@ vermelho que "Agenda praticamente lotada" já usa. Documentado em
       linha do horário atual tinha 9,6px de diferença do horário real —
       corrigido com `transform:translateY(-50%)`.
 
-Achado pré-existente, não relacionado a esta fase: `painel_demo.html` solta 2
+Achado pré-existente, não relacionado a esta fase: `painel_demo.html` soltava 2
 erros no console já ao carregar (antes de qualquer interação), confirmado por
-`git stash` que já existia antes de hoje. Não afeta a tela — não investigado
-a fundo, fora do escopo desta lista.
+`git stash` em 02/08 que já existia antes daquele dia. Nunca foi investigado a
+fundo — sem mensagem nem stack registrados. Retestado em 06/08 (carga inicial,
+as 6 abas, wizard completo, aba nova sem cache): **não reproduzido**. Fica
+registrado como não confirmado, não como baseline aceita — se reaparecer,
+precisa de mensagem/stack pra virar achado de verdade.
 
 ## Fase 3 — Clientes — ✅ concluída (03/08/2026)
 

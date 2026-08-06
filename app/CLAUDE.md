@@ -582,10 +582,15 @@ referência de layout (não de identidade visual):**
   `padding-bottom` (que evita o fim do conteúdo ficar atrás do rodapé fixo)
   também foi de 84 pra 100.
 
-**Achado, não investigado:** `painel_demo.html` solta 2 erros no console já
-ao carregar, antes de qualquer clique. Confirmado com `git stash` que é
-anterior a 02/08 — não é regressão de nenhuma mudança recente, e a tela
-funciona normal apesar disso.
+**Não reproduzido (06/08/2026):** a nota abaixo (achado de 02/08, nunca
+investigado a fundo) descrevia 2 erros no console do `painel_demo.html` já ao
+carregar. Testado de novo agora — carga inicial, as 6 abas, wizard completo de
+novo agendamento, em aba nova sem cache — zero erro reproduzido. A nota
+original nunca capturou mensagem nem stack, só "existe". Entre 02/08 e hoje o
+arquivo passou por várias reescritas (wizard, header da agenda, profissional
+inativa) que podem ter corrigido isso como efeito colateral. Fica registrado
+como não confirmado, não como baseline aceita — se reaparecer, precisa de
+mensagem/stack pra virar achado de verdade.
 
 ## Convenções
 
@@ -602,11 +607,15 @@ funciona normal apesar disso.
 
 ## Dívida conhecida
 
-`agendar.html` tem a própria cópia de `OPEN_HOUR`/`CLOSE_HOUR`/`CLOSED_WEEKDAYS`.
-Hoje bate com o painel, mas é a duplicação de maior risco do projeto: se um lado
-mudar o expediente e o outro não, a cliente e o painel passam a oferecer horários
-diferentes para o mesmo dia, e isso aparece como overbooking. **Mudou expediente?
-Mudou nos dois.**
+**Resolvido (06/08/2026):** `OPEN_HOUR`/`CLOSE_HOUR`/`SLOT_MINUTES`/`CLOSED_WEEKDAYS`
+(e `SALON_TZ`, usado só pelo `agendar.html`) vivem em `shared/salon.js`
+(`window.OrenziSalon`), carregado por `<script src>` antes do `<script>` inline
+das três páginas e desestruturado no topo de cada uma. Mudou expediente? Mexe só
+lá. Antes disso cada arquivo tinha a própria cópia com os mesmos valores — o
+projeto já tinha passado por essa duplicação uma vez (o `shared/salon.js`
+original, mais completo, foi removido em 02/08 por estar órfão; este é uma
+versão enxuta, só a config, sem a lógica de segmentos/conflito que ele também
+carregava).
 
 A pausa voltou a valer no `agendar.html` em 02/08/2026: `loadAvailableSlots()`
 usa `get_busy_slots`, que devolve só os blocos de trabalho, então o encaixe

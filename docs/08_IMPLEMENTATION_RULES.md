@@ -358,8 +358,9 @@ Não há framework de teste e **não é o momento de introduzir um.** O que exis
 **Por migração:**
 - [ ] Comparação lado a lado com o anterior
 - [ ] Nenhuma diferença visual não intencional
-- [ ] Console sem erro novo (⚠ `painel_demo.html` já solta 2 erros ao carregar,
-      anteriores a 02/08 — é a linha de base, não regressão)
+- [ ] Console sem erro novo (nota de 02/08 sobre 2 erros ao carregar o
+      `painel_demo.html` não foi reproduzida em 06/08 após testar carga,
+      as 6 abas e o wizard completo — não tratar como linha de base aceita)
 - [ ] Painel e demo com o mesmo resultado
 - [ ] Fluxo real exercitado: agendar, alterar estoque, abrir perfil
 

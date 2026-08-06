@@ -6,6 +6,7 @@
 <title>Orenzi — Agendar horário</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="shared/salon.js"></script>
 <!-- Orenzi Design System — carregado antes do <style> local de propósito:
      pela cascata, o CSS abaixo continua vencendo até esta página ser
      migrada componente por componente. Ver docs/08_IMPLEMENTATION_RULES.md. -->
@@ -258,12 +259,9 @@
 const SUPABASE_URL = 'https://gsagtsxkhqlpxuvrijgw.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
-// Expediente do salão (ajuste conforme necessário)
-const OPEN_HOUR = 9;
-const CLOSE_HOUR = 18;
-const SLOT_MINUTES = 30;
-// Dias em que o salão não abre (0 = domingo, 1 = segunda) — usado no calendário e nos horários.
-const CLOSED_WEEKDAYS = [0, 1];
+// Expediente do salão — fonte única em shared/salon.js (painel e booking
+// público carregam o mesmo arquivo). Mudou expediente? Mexe só lá.
+const { SALON_TZ, OPEN_HOUR, CLOSE_HOUR, SLOT_MINUTES, CLOSED_WEEKDAYS } = window.OrenziSalon;
 
 // ── RELÓGIO DO SALÃO ─────────────────────────────────────────
 // O expediente é no fuso do SALÃO, não no do aparelho de quem está agendando.
@@ -271,7 +269,6 @@ const CLOSED_WEEKDAYS = [0, 1];
 // da cliente: quem marcasse "9h" com o telefone no horário do Brasil gravava 13h
 // em Dublin, e o erro é silencioso — a tela, o e-mail e o painel mostram valores
 // diferentes e ninguém percebe até o dia do atendimento.
-const SALON_TZ = 'Europe/Dublin';
 
 // Quantos minutos o fuso do salão está à frente do UTC naquele instante
 // (cobre o horário de verão irlandês automaticamente).
