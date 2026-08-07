@@ -603,7 +603,13 @@ window.supabase = {
     background: none; border: none; font-family: var(--font-body); font-size: 10.5px;
     color: var(--color-neutral-600); cursor: pointer; padding: 5px 4px; white-space: nowrap;
     -webkit-tap-highlight-color: transparent;
+    transition: transform var(--motion-instant) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
   }
+  /* PRESS (:active, físico, todo botão) é distinto de SELECTED (.active,
+     qual aba está ligada) — o toque nativo fica invisível por causa do
+     -webkit-tap-highlight-color acima, então sem isso o dedo não sente
+     nada até a tela trocar. */
+  nav button:active { transform: scale(0.98); }
   nav button svg { width: 21px; height: 21px; flex-shrink: 0; }
   nav button.active { color: var(--color-accent-700); font-weight: 700; }
   #toast {
