@@ -1717,6 +1717,50 @@
     transition: transform .18s ease, border-color .18s ease;
   }
   .photo-empty-state:active { transform: scale(0.99); }
+
+  /* ── EmptyState genérico (UX Polish Sprint 2) ──────────────────────
+     Generaliza .photo-empty-state pra listas de primeira vez, busca sem
+     resultado e outros vazios sem foto envolvida. Ver docs/04 §EmptyState
+     e docs/09 §10/11. */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; gap: var(--space-6);
+    padding: var(--space-8) var(--space-4) var(--space-4);
+  }
+  /* Dentro de um cartão que já tem padding próprio (ex.: .history-card em
+     Insights) — sem isto o respiro somava e ficava desproporcional. */
+  .empty-state.is-compact { padding: var(--space-2) var(--space-3) var(--space-1); gap: var(--space-4); }
+  .es-icon { display: flex; align-items: center; justify-content: center; color: var(--color-neutral-700); }
+  .es-icon svg { width: 24px; height: 24px; }
+  /* Glow só nos EmptyStates com ação primária embaixo (Clientes, Estoque) —
+     o calor baixo funciona como aceno silencioso pra ação; sem botão, o
+     mesmo glow pareceria prometer algo que a tela não entrega. */
+  .es-icon.is-glow { position: relative; width: 72px; height: 72px; color: var(--color-accent-700); }
+  .es-icon.is-glow::before {
+    content: ""; position: absolute; inset: 0; border-radius: var(--radius-circle);
+    background: radial-gradient(circle, var(--color-accent-100) 0%, transparent 70%);
+  }
+  .es-icon.is-glow svg { position: relative; }
+  .es-text { display: flex; flex-direction: column; gap: var(--space-2-5); max-width: 280px; }
+  .es-title {
+    font-family: var(--font-body); font-size: var(--text-body-strong-size); font-weight: 500;
+    line-height: var(--leading-relaxed); color: var(--color-text); margin: 0;
+  }
+  .es-caption {
+    font-size: var(--text-caption-size); line-height: var(--leading-relaxed);
+    color: var(--color-neutral-600); margin: 0;
+  }
+  .empty-state .btn { max-width: 280px; margin-top: 0; }
+  .empty-state .see-more-btn { margin-top: 0; padding-top: 0; width: auto; }
+
+  /* Agenda vazia — "vazio temporário" (docs/02 §10): frase curta e neutra,
+     sem ícone, sem ação. Fica dentro de #timelineEl (não no cabeçalho) de
+     propósito — assim atualiza tanto no render cheio quanto no caminho leve
+     de troca de dia (renderAgendaGridTransition), que só reescreve esse nó. */
+  .agenda-empty-note {
+    text-align: center; font-size: var(--text-caption-size); color: var(--color-neutral-600);
+    padding: var(--space-8) 0 var(--space-2);
+  }
   .photo-empty-state .pes-icon { color: var(--color-neutral-600); margin-bottom: 4px; }
   .photo-empty-state .pes-icon svg { width: 26px; height: 26px; }
   .photo-empty-state .pes-title { font-size: 13.5px; font-weight: 700; color: var(--color-text); }
@@ -2160,6 +2204,25 @@ const ICONS = {
   scissors: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="17.5" r="2.6"/><circle cx="6.5" cy="6.5" r="2.6"/><path d="M19.5 4.5 8.6 15.7M19.5 19.5 8.6 8.3"/></svg>',
   glove: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20.5v-3.2a5 5 0 0 1-2-4V7.5a1.5 1.5 0 0 1 3 0V11m0 0V4.5a1.5 1.5 0 0 1 3 0V11m0 0V5.5a1.5 1.5 0 0 1 3 0V11m0 0V8a1.5 1.5 0 0 1 3 0v5.3a5 5 0 0 1-2 4v3.2"/><path d="M7 20.5h10"/></svg>',
 };
+
+// ── EmptyState genérico — ícone + título + legenda + ação opcional.
+// Generaliza .photo-empty-state (docs/04_COMPONENT_LIBRARY.md §EmptyState:
+// "modelo correto, generalizar"). `glow` só é verdadeiro quando existe uma
+// ação primária embaixo (regra do estudo de ícone da Rodada 2 — glow existe
+// onde existe ação; sem ação, sem glow). `cta` é HTML já pronto (botão
+// primário ou link de texto), montado por quem chama, pra não prender este
+// helper a um único tipo de ação.
+function emptyStateHtml({ icon, glow = false, compact = false, title, caption = '', cta = '' }) {
+  return `
+    <div class="empty-state${compact ? ' is-compact' : ''}">
+      <span class="es-icon${glow ? ' is-glow' : ''}" aria-hidden="true">${icon}</span>
+      <div class="es-text">
+        <p class="es-title">${title}</p>
+        ${caption ? `<p class="es-caption">${caption}</p>` : ''}
+      </div>
+      ${cta}
+    </div>`;
+}
 
 // ── Aba Clientes: status, filtros e ordenação ────────────────
 // Nada disso vem do banco — é tudo derivado de `appointments` e de
@@ -3225,7 +3288,12 @@ function renderInsights() {
       <div class="home-section-head"><h2>Perfil de demanda</h2></div>
       <div class="home-section-caption">Horários mais procurados · ${currentMonthLabel()}</div>
       <div class="history-card">
-        ${demand.some(d => d.value > 0) ? distributionBarsHtml(demand) : '<div class="empty">Sem dados suficientes este mês.</div>'}
+        ${demand.some(d => d.value > 0) ? distributionBarsHtml(demand) : emptyStateHtml({
+          icon: ICONS.clock,
+          compact: true,
+          title: 'Seus números ainda estão se formando.',
+          caption: 'Eles ficam mais precisos conforme sua agenda for enchendo.',
+        })}
       </div>
     </div>
 
@@ -3699,7 +3767,18 @@ function buildAgendaGrid(day) {
     </div>`;
   }).join('');
 
+  // "Vazio temporário" (docs/02_DESIGN_PRINCIPLES.md §10): frase curta e
+  // neutra, sem ícone, sem ação — o toque em qualquer hora livre da própria
+  // grade já é o caminho pra agendar. Fica dentro do html de #timelineEl (e
+  // não no cabeçalho) de propósito: assim atualiza tanto no render cheio
+  // quanto no caminho leve de troca de dia (renderAgendaGridTransition),
+  // que só reescreve este nó.
+  const emptyNoteHtml = dayAppts.length
+    ? ''
+    : `<p class="agenda-empty-note">${sameDay(day, new Date()) ? 'Hoje sua agenda está livre.' : 'Nenhum atendimento neste dia.'}</p>`;
+
   const html = `
+    ${emptyNoteHtml}
     <div class="timeline-body" style="height:${(AGENDA_END_HOUR - AGENDA_START_HOUR) * HOUR_HEIGHT}px;">
       ${hours.map((h, i) => `
         <div class="hour-row" style="position:absolute; top:${i * HOUR_HEIGHT}px; left:0; right:0; height:${HOUR_HEIGHT}px;">
@@ -4149,13 +4228,26 @@ function renderClientsList() {
   const rotuloOrdem = (CLIENT_SORTS.find(s => s.key === state.clientSort) || CLIENT_SORTS[0]).label;
 
   if (!state.clients.length) {
-    wrap.innerHTML = '<div class="empty">Nenhum cliente ainda.</div>';
+    wrap.innerHTML = emptyStateHtml({
+      icon: ICONS.userPlus,
+      glow: true,
+      title: 'Seu salão está começando por aqui.',
+      caption: 'As próximas clientes que você atender ficam guardadas aqui, com histórico e preferências.',
+      cta: '<button class="btn btn-primary" id="emptyClientsCta">Cadastrar cliente</button>',
+    });
+    document.getElementById('emptyClientsCta').onclick = openNewClientSheet;
     return;
   }
   if (!rows.length) {
-    wrap.innerHTML = `<div class="empty">${buscando
-      ? 'Nenhum cliente encontrado para essa busca.'
-      : 'Nenhum cliente neste filtro.'}</div>`;
+    wrap.innerHTML = buscando
+      ? emptyStateHtml({
+          icon: ICONS.search,
+          title: 'Não encontramos ninguém com esse nome.',
+          caption: 'Talvez esteja escrito de um jeito diferente.',
+          cta: '<button type="button" class="see-more-btn" id="emptyClientsClearSearch">Limpar busca</button>',
+        })
+      : '<div class="empty">Nenhum cliente neste filtro.</div>';
+    if (buscando) document.getElementById('emptyClientsClearSearch').onclick = clearClientSearch;
     return;
   }
 
@@ -4276,6 +4368,18 @@ function morphAvatar(origem) {
   setTimeout(limpar, MORPH_MS + 120);
 }
 
+// Extraída pra ser chamada tanto pelo X do campo de busca quanto pelo link
+// "Limpar busca" do EmptyState de busca sem resultado.
+function clearClientSearch() {
+  state.clientSearch = '';
+  const input = document.getElementById('clientSearchInput');
+  const field = document.getElementById('searchField');
+  if (input) input.value = '';
+  if (field) field.classList.remove('has-text');
+  renderClientsList();
+  if (input) input.focus();
+}
+
 function bindClientsToolbar() {
   const field = document.getElementById('searchField');
   const input = document.getElementById('clientSearchInput');
@@ -4299,11 +4403,7 @@ function bindClientsToolbar() {
     // botão já teria sumido junto com a classe .has-text.
     clear.onmousedown = (e) => {
       e.preventDefault();
-      state.clientSearch = '';
-      input.value = '';
-      field.classList.remove('has-text');
-      input.focus();
-      renderClientsList();
+      clearClientSearch();
     };
   }
 
@@ -5370,14 +5470,28 @@ function renderStockList() {
   if (!wrap) return;
 
   if (!state.products.length) {
-    wrap.innerHTML = '<div class="empty">Nenhum produto cadastrado. Use o + para incluir o primeiro.</div>';
+    wrap.innerHTML = emptyStateHtml({
+      icon: ICONS.box,
+      glow: true,
+      title: 'Seu estoque está começando.',
+      caption: 'Cadastre o que você usa no dia a dia e acompanhe o consumo sem esforço.',
+      cta: '<button class="btn btn-primary" id="emptyStockCta">Cadastrar produto</button>',
+    });
+    document.getElementById('emptyStockCta').onclick = () => openProductModal();
     return;
   }
   const rows = filteredSortedProducts();
   if (!rows.length) {
-    wrap.innerHTML = `<div class="empty">${(state.stockSearch || '').trim()
-      ? 'Nenhum produto encontrado para essa busca.'
-      : 'Nenhum produto neste filtro.'}</div>`;
+    const buscandoProduto = !!(state.stockSearch || '').trim();
+    wrap.innerHTML = buscandoProduto
+      ? emptyStateHtml({
+          icon: ICONS.search,
+          title: 'Não encontramos esse produto no seu estoque.',
+          caption: 'Ele pode estar guardado em outra categoria.',
+          cta: '<button type="button" class="see-more-btn" id="emptyStockClearSearch">Limpar busca</button>',
+        })
+      : '<div class="empty">Nenhum produto neste filtro.</div>';
+    if (buscandoProduto) document.getElementById('emptyStockClearSearch').onclick = clearStockSearch;
     return;
   }
 
@@ -5665,6 +5779,18 @@ function statsHtml() {
     </div>`;
 }
 
+// Extraída pra ser chamada tanto pelo X do campo de busca quanto pelo link
+// "Limpar busca" do EmptyState de busca sem resultado.
+function clearStockSearch() {
+  state.stockSearch = '';
+  const input = document.getElementById('stockSearchInput');
+  const field = document.getElementById('stockSearchField');
+  if (input) input.value = '';
+  if (field) field.classList.remove('has-text');
+  renderStockList();
+  if (input) input.focus();
+}
+
 // ── Toolbar (busca, chips, ordenação) ────────────────────────
 function bindStockToolbar() {
   const field = document.getElementById('stockSearchField');
@@ -5688,11 +5814,7 @@ function bindStockToolbar() {
     // sumido junto com a classe .has-text.
     clear.onmousedown = (e) => {
       e.preventDefault();
-      state.stockSearch = '';
-      input.value = '';
-      field.classList.remove('has-text');
-      input.focus();
-      renderStockList();
+      clearStockSearch();
     };
   }
 
@@ -6085,7 +6207,7 @@ function openProductModal(id) {
             }).join('') : `
               <div class="stock-empty-note">
                 <span class="sen-icon">${ICONS.history}</span>
-                <span>Nada movimentado ainda. Entradas, saídas e ajustes deste produto aparecem aqui, com data, hora e quem registrou.</span>
+                <span>O histórico deste produto começa na primeira movimentação. Toda entrada, saída ou ajuste fica registrado aqui, com data e hora.</span>
               </div>`}
           </div>
         ` : ''}
@@ -6765,6 +6887,16 @@ function wizBindStepService() {
 function wizRenderServiceList() {
   const wrap = document.getElementById('wizServiceListWrap');
   if (!wrap) return;
+  // Catálogo vazio (nenhum serviço cadastrado no salão) é uma situação
+  // diferente de busca sem resultado dentro de um catálogo que existe —
+  // mesma distinção de docs/04 §EmptyState entre EmptyState e busca.
+  if (!state.services.length) {
+    wrap.innerHTML = emptyStateHtml({
+      icon: ICONS.scissors,
+      title: 'Assim que houver serviços cadastrados, eles aparecerão aqui.',
+    });
+    return;
+  }
   const list = wizFilteredServices();
   const label = (wiz.serviceQuery || '').trim()
     ? `${list.length} ${list.length === 1 ? 'resultado' : 'resultados'}`
