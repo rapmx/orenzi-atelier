@@ -343,6 +343,12 @@ const advanceBtn = document.getElementById('advanceBtn');
 let hasRenderedOnce = false;
 
 function renderTransition(direction) {
+  // Mesmo padrão de slidePane() em painel.html: checagem explícita no topo,
+  // antes de clonar/medir qualquer coisa — não dá pra confiar só na cascata
+  // do CSS global aqui, porque a coreografia (clone, RAF duplo, listener de
+  // transitionend, setTimeout de limpeza) rodaria do mesmo jeito, só que sem
+  // movimento visível.
+  if (window.orenziUI && orenziUI.prefersReducedMotion()) { render(); return; }
   const oldHeight = app.offsetHeight;
   const clone = app.cloneNode(true);
   clone.removeAttribute('id');

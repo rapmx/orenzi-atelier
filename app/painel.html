@@ -1424,7 +1424,7 @@
   }
   .pd-fav svg { width: 17px; height: 17px; }
   .pd-fav.is-on { color: var(--color-accent-700); }
-  .pd-fav:active { transform: scale(0.88); }
+  .pd-fav:active { transform: scale(0.9); } /* era 0.88 — migrado pro degrau oficial de icon-button (mesmo peso de .o-icon-btn/.qty-btn) */
 
   .pd-bottom {
     display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px;
@@ -1471,7 +1471,7 @@
     -webkit-tap-highlight-color: transparent; touch-action: manipulation;
     transition: transform .14s ease;
   }
-  .qty-num:active { transform: scale(0.94); }
+  .qty-num:active { transform: scale(0.9); } /* era 0.94 — migrado pro mesmo degrau do .qty-btn irmão, consistência dentro do stepper */
   .qty-unit { font-size: 9.5px; font-weight: 600; color: var(--color-neutral-600); margin-top: 3px; letter-spacing: 0.03em; }
 
   /* Sugestões, movimentações e estatísticas — blocos de fim de tela, todos no
