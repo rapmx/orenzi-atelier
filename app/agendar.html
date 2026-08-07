@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="shared/salon.js"></script>
+<script src="ds/orenzi-ui.js"></script>
 <!-- Orenzi Design System — carregado antes do <style> local de propósito:
      pela cascata, o CSS abaixo continua vencendo até esta página ser
      migrada componente por componente. Ver docs/08_IMPLEMENTATION_RULES.md. -->
@@ -544,6 +545,8 @@ function normalizePhone(phone) {
 
 async function confirmBooking() {
   state.error = null;
+  const btn = document.getElementById('confirm');
+  orenziUI.setButtonBusy(btn, 'Confirmando…');
   try {
     // Acha cliente existente pelo telefone (normalizado) ou cria um novo — via função
     // do banco com permissão controlada (a tabela clients não é legível publicamente).
@@ -568,11 +571,13 @@ async function confirmBooking() {
     });
     if (apptErr) throw apptErr;
 
+    await orenziUI.setButtonSuccess(btn, 'Confirmado');
     state.done = true;
     document.getElementById('stepCaption').textContent = '';
     renderTransition('forward');
   } catch (e) {
-    state.error = e.message;
+    console.error('agendar.confirmBooking', e);
+    state.error = 'Não foi possível confirmar o agendamento. Tente de novo.';
     render();
   }
 }

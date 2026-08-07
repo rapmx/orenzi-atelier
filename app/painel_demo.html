@@ -2080,6 +2080,7 @@ window.supabase = {
 </nav>
 
 <script src="shared/salon.js"></script>
+<script src="ds/orenzi-ui.js"></script>
 <script>
 // ── CONFIGURAÇÃO ─────────────────────────────────────────────
 const SUPABASE_URL = 'https://gsagtsxkhqlpxuvrijgw.supabase.co';
@@ -4721,8 +4722,7 @@ function openNewClientSheet() {
       return;
     }
 
-    btn.setAttribute('aria-busy', 'true');
-    btn.disabled = true;
+    orenziUI.setButtonBusy(btn, 'Cadastrando…');
 
     // Mesma regra de duplicidade do agendamento online (find_or_create_client
     // + normalize_ie_phone): telefone já cadastrado reaproveita a cliente
@@ -4730,6 +4730,7 @@ function openNewClientSheet() {
     const normalizedPhone = normalizeIePhone('353' + phoneLocal);
     const { data: existing } = await sb.from('clients').select('id').eq('phone', normalizedPhone).maybeSingle();
     if (existing) {
+      orenziUI.resetButton(btn);
       fechar();
       showToast('Esse telefone já pertence a uma cliente cadastrada — abrindo o perfil dela.');
       await abrirCliente(existing.id, null);
@@ -4742,13 +4743,16 @@ function openNewClientSheet() {
       p_email: email || null,
     });
     if (error || !clientId) {
-      errEl.textContent = 'Erro ao cadastrar: ' + (error ? error.message : 'faça login novamente.');
+      if (error) console.error('find_or_create_client', error);
+      errEl.textContent = error
+        ? 'Não foi possível cadastrar. Tente de novo.'
+        : 'Não foi possível cadastrar — faça login novamente.';
       errEl.style.display = 'block';
-      btn.removeAttribute('aria-busy');
-      btn.disabled = false;
+      orenziUI.resetButton(btn);
       return;
     }
 
+    await orenziUI.setButtonSuccess(btn, 'Cadastrada');
     fechar();
     await loadClients();
     showToast('Cliente cadastrada');
@@ -5106,6 +5110,7 @@ function renderApptDetail() {
   });
 
   document.getElementById('apptSave').onclick = async () => {
+    const btn = document.getElementById('apptSave');
     const payload = {
       technique: document.getElementById('apptTechnique').value || null,
       product_used: document.getElementById('apptProduct').value.trim() || null,
@@ -5114,9 +5119,11 @@ function renderApptDetail() {
       pause_time: document.getElementById('apptPause').value.trim() || null,
       notes: document.getElementById('apptNotes').value.trim() || null,
     };
+    orenziUI.setButtonBusy(btn, 'Salvando…');
     const { data: updated, error } = await sb.from('appointments').update(payload).eq('id', a.id).select();
-    if (error) { showToast('Erro ao salvar: ' + error.message); return; }
-    if (!updated || !updated.length) { showToast('Não foi possível salvar — faça login novamente.'); return; }
+    if (error) { console.error('appointments.update', error); orenziUI.resetButton(btn); showToast('Não foi possível salvar. Tente de novo.'); return; }
+    if (!updated || !updated.length) { orenziUI.resetButton(btn); showToast('Não foi possível salvar — faça login novamente.'); return; }
+    await orenziUI.setButtonSuccess(btn, 'Salvo');
     showToast('Detalhes salvos');
     await loadAppointments();
     state.selectedApptId = null;
@@ -6123,18 +6130,23 @@ function openQtyEditSheet(id) {
   campo.select();
 
   document.getElementById('qtyEditSave').onclick = async () => {
+    const btn = document.getElementById('qtyEditSave');
     const nova = Math.max(0, Number(campo.value) || 0);
     const anterior = Number(p.quantity);
     if (nova === anterior) { closeModal(); return; }
+    orenziUI.setButtonBusy(btn, 'Salvando…');
     const { data, error } = await sb.from('products')
       .update({ quantity: nova, updated_at: new Date().toISOString() }).eq('id', p.id).select('id');
     if (error || !data || !data.length) {
-      showToast(error ? 'Não deu pra salvar: ' + error.message : 'Não foi possível salvar — faça login novamente.');
+      if (error) console.error('products.update quantity', error);
+      orenziUI.resetButton(btn);
+      showToast(error ? 'Não foi possível salvar. Tente de novo.' : 'Não foi possível salvar — faça login novamente.');
       return;
     }
     p.quantity = nova;
     await registrarMovimento(p, 'ajuste', Math.abs(nova - anterior), nova,
       document.getElementById('qtyEditNote').value.trim() || null);
+    await orenziUI.setButtonSuccess(btn, 'Salvo');
     closeModal();
     showToast('Quantidade atualizada');
     renderStockList();
@@ -6210,21 +6222,26 @@ function openMovementSheet(kind) {
   atualizarHint();
 
   document.getElementById('mvSave').onclick = async () => {
+    const btn = document.getElementById('mvSave');
     const p = state.products.find(x => x.id === sel.value);
     const qtd = Math.abs(Number(document.getElementById('mvQty').value) || 0);
     if (!p || !qtd) { showToast('Informe uma quantidade'); return; }
     const anterior = Number(p.quantity);
     const nova = Math.max(0, entrada ? anterior + qtd : anterior - qtd);
 
+    orenziUI.setButtonBusy(btn, 'Registrando…');
     const { data, error } = await sb.from('products')
       .update({ quantity: nova, updated_at: new Date().toISOString() }).eq('id', p.id).select('id');
     if (error || !data || !data.length) {
-      showToast(error ? 'Não deu pra salvar: ' + error.message : 'Não foi possível salvar — faça login novamente.');
+      if (error) console.error('products.update movimento', error);
+      orenziUI.resetButton(btn);
+      showToast(error ? 'Não foi possível salvar. Tente de novo.' : 'Não foi possível salvar — faça login novamente.');
       return;
     }
     p.quantity = nova;
     await registrarMovimento(p, kind, Math.abs(nova - anterior), nova,
       document.getElementById('mvNote').value.trim() || null);
+    await orenziUI.setButtonSuccess(btn, 'Registrado');
     closeModal();
     showToast(`${entrada ? 'Entrada' : 'Saída'} registrada · ${p.name}`);
     renderStockList();
@@ -6378,6 +6395,7 @@ function openProductModal(id) {
   };
 
   document.getElementById('saveProduct').onclick = async () => {
+    const btn = document.getElementById('saveProduct');
     const name = document.getElementById('prodName').value.trim();
     if (!name) { erro('Dê um nome ao produto.'); return; }
     const custo = document.getElementById('prodCost').value.trim();
@@ -6399,11 +6417,12 @@ function openProductModal(id) {
     };
     if (fotoNova) payload.image_url = fotoNova;
 
+    orenziUI.setButtonBusy(btn, p ? 'Salvando…' : 'Cadastrando…');
     const { data, error } = p
       ? await sb.from('products').update(payload).eq('id', p.id).select('id')
       : await sb.from('products').insert(payload).select('id');
-    if (error) { erro(error.message); return; }
-    if (!data || !data.length) { erro('Não foi possível salvar — faça login novamente.'); return; }
+    if (error) { console.error('products.save', error); orenziUI.resetButton(btn); erro('Não foi possível salvar. Tente de novo.'); return; }
+    if (!data || !data.length) { orenziUI.resetButton(btn); erro('Não foi possível salvar — faça login novamente.'); return; }
 
     // Mexer na quantidade pelo formulário também é movimentação — senão o
     // histórico teria buracos e a previsão sairia de um saldo que ninguém sabe
@@ -6411,6 +6430,7 @@ function openProductModal(id) {
     if (p && qtdAnterior != null && qtdNova !== qtdAnterior) {
       await registrarMovimento({ ...p, quantity: qtdNova }, 'ajuste', Math.abs(qtdNova - qtdAnterior), qtdNova, 'Editado no cadastro');
     }
+    await orenziUI.setButtonSuccess(btn, 'Salvo');
     closeModal();
     showToast(p ? 'Produto atualizado' : 'Produto cadastrado');
     await loadProducts();
@@ -6420,10 +6440,12 @@ function openProductModal(id) {
   const btnDel = document.getElementById('deleteProduct');
   if (btnDel) btnDel.onclick = async () => {
     // Some da lista mas o registro fica: o histórico de custo não se perde.
+    orenziUI.setButtonBusy(btnDel, 'Removendo…');
     const { data, error } = await sb.from('products')
       .update({ active: false, updated_at: new Date().toISOString() }).eq('id', p.id).select('id');
-    if (error) { erro(error.message); return; }
-    if (!data || !data.length) { erro('Não foi possível remover — faça login novamente.'); return; }
+    if (error) { console.error('products.remove', error); orenziUI.resetButton(btnDel); erro('Não foi possível remover. Tente de novo.'); return; }
+    if (!data || !data.length) { orenziUI.resetButton(btnDel); erro('Não foi possível remover — faça login novamente.'); return; }
+    await orenziUI.setButtonSuccess(btnDel, 'Removido');
     closeModal();
     showToast('Produto removido do estoque');
     await loadProducts();
@@ -7327,8 +7349,7 @@ async function wizSaveAppointment() {
     paintWizStep();
     return;
   }
-  btn.setAttribute('aria-busy', 'true');
-  btn.disabled = true;
+  orenziUI.setButtonBusy(btn, 'Agendando…');
   try {
     const [hh, mm] = wiz.time.split(':').map(Number);
     const startsAt = new Date(`${wiz.date}T00:00:00`);
@@ -7353,11 +7374,13 @@ async function wizSaveAppointment() {
       state.enteringApptId = createdAppt.id;
     }
 
+    await orenziUI.setButtonSuccess(btn, 'Agendado');
     closeModal();
     showToast('Agendamento criado');
     await loadAll();
   } catch (e) {
-    wiz.error = e.message;
+    console.error('appointments.insert (wizard)', e);
+    wiz.error = 'Não foi possível agendar. Tente de novo.';
     paintWizStep();
   }
 }
