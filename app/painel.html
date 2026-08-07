@@ -2022,11 +2022,21 @@ async function uploadClientPhoto(clientId, file) {
   render();
 }
 
-async function deleteClientPhoto(clientId, photoId) {
-  if (!confirm('Remover essa foto?')) return;
-  await sb.from('client_photos').delete().eq('id', photoId);
-  await loadClientPhotos(clientId);
-  render();
+function deleteClientPhoto(clientId, photoId) {
+  const clientName = state.clients.find(c => c.id === clientId)?.name || 'da cliente';
+  orenziUI.confirm({
+    title: 'Remover foto?',
+    message: `Esta foto será removida do perfil de ${clientName}.`,
+    confirmLabel: 'Remover foto',
+    destructive: true,
+    successLabel: 'Removida',
+    onConfirm: async () => {
+      const { error } = await sb.from('client_photos').delete().eq('id', photoId);
+      if (error) { console.error('client_photos.delete', error); throw new Error('Não foi possível remover a foto. Tente de novo.'); }
+      await loadClientPhotos(clientId);
+      render();
+    },
+  });
 }
 
 async function loadApptPhotos(appointmentId) {
@@ -2050,11 +2060,20 @@ async function uploadApptPhoto(clientId, appointmentId, kind, file) {
   render();
 }
 
-async function deleteApptPhoto(appointmentId, photoId) {
-  if (!confirm('Remover essa foto?')) return;
-  await sb.from('client_photos').delete().eq('id', photoId);
-  await loadApptPhotos(appointmentId);
-  render();
+function deleteApptPhoto(appointmentId, photoId) {
+  orenziUI.confirm({
+    title: 'Remover foto?',
+    message: 'Esta foto será removida deste atendimento.',
+    confirmLabel: 'Remover foto',
+    destructive: true,
+    successLabel: 'Removida',
+    onConfirm: async () => {
+      const { error } = await sb.from('client_photos').delete().eq('id', photoId);
+      if (error) { console.error('client_photos.delete', error); throw new Error('Não foi possível remover a foto. Tente de novo.'); }
+      await loadApptPhotos(appointmentId);
+      render();
+    },
+  });
 }
 
 async function loadAll() {
@@ -6285,18 +6304,27 @@ function openProductModal(id) {
   };
 
   const btnDel = document.getElementById('deleteProduct');
-  if (btnDel) btnDel.onclick = async () => {
-    // Some da lista mas o registro fica: o histórico de custo não se perde.
-    orenziUI.setButtonBusy(btnDel, 'Removendo…');
-    const { data, error } = await sb.from('products')
-      .update({ active: false, updated_at: new Date().toISOString() }).eq('id', p.id).select('id');
-    if (error) { console.error('products.remove', error); orenziUI.resetButton(btnDel); erro('Não foi possível remover. Tente de novo.'); return; }
-    if (!data || !data.length) { orenziUI.resetButton(btnDel); erro('Não foi possível remover — faça login novamente.'); return; }
-    await orenziUI.setButtonSuccess(btnDel, 'Removido');
-    closeModal();
-    showToast('Produto removido do estoque');
-    await loadProducts();
-    render();
+  if (btnDel) btnDel.onclick = () => {
+    // Some da lista mas o registro fica: o histórico de custo não se perde
+    // — por isso a mensagem fala em "deixa de aparecer", nunca "excluído
+    // permanentemente" (é soft delete, `active:false`).
+    orenziUI.confirm({
+      title: 'Remover produto do estoque?',
+      message: `${p.name} deixará de aparecer na lista ativa do estoque.`,
+      confirmLabel: 'Remover produto',
+      destructive: true,
+      successLabel: 'Removido',
+      onConfirm: async () => {
+        const { data, error } = await sb.from('products')
+          .update({ active: false, updated_at: new Date().toISOString() }).eq('id', p.id).select('id');
+        if (error) { console.error('products.remove', error); throw new Error('Não foi possível remover. Tente de novo.'); }
+        if (!data || !data.length) { throw new Error('Não foi possível remover — faça login novamente.'); }
+        closeModal();
+        showToast('Produto removido do estoque');
+        await loadProducts();
+        render();
+      },
+    });
   };
 }
 

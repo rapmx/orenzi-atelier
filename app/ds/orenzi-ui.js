@@ -83,11 +83,203 @@ window.orenziUI = (function () {
     });
   }
 
+  /* ── Focus trap genérico (docs/07_ACCESSIBILITY.md §8) ────────────────
+     Primeiro utilitário desse tipo no projeto — nasce aqui pro
+     ConfirmationDialog e fica pronto pra qualquer folha/modal futuro que
+     precisar da mesma captura (BottomSheet ainda não migrado, por
+     exemplo). Devolve uma função de liberação: quem chama guarda essa
+     função e chama de volta ao fechar, senão o listener vaza. */
+  var FOCUSABLE_SELECTOR =
+    'a[href], button:not([disabled]), textarea:not([disabled]), ' +
+    'input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  function focusableChildren(container) {
+    return Array.prototype.slice
+      .call(container.querySelectorAll(FOCUSABLE_SELECTOR))
+      // offsetParent é null em elemento com display:none/oculto — não é o
+      // teste de visibilidade mais rigoroso que existe, mas cobre o caso
+      // real deste componente (nada escondido por posição fora da tela).
+      .filter(function (el) { return el.offsetParent !== null; });
+  }
+
+  function trapFocus(container) {
+    function onKeydown(e) {
+      if (e.key !== 'Tab') return;
+      var focusables = focusableChildren(container);
+      if (!focusables.length) return;
+      var first = focusables[0];
+      var last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    container.addEventListener('keydown', onKeydown);
+    return function release() {
+      container.removeEventListener('keydown', onKeydown);
+    };
+  }
+
+  /* ── ConfirmationDialog (docs/04_COMPONENT_LIBRARY.md §ConfirmationDialog,
+     docs/09_UX_PATTERNS.md §11/12) ──────────────────────────────────────
+     Substitui window.confirm() nativo. Anatomia converge com BottomSheet
+     (docs/05 §14: fundo + folha sobem juntos, sem bounce, sem scale) e usa
+     Button destructive já existente em orenzi-components.css
+     (.o-btn-destructive). Uma instância por vez — abrir uma nova fecha
+     qualquer anterior ainda de pé, mesmo espírito de "um toast por vez". */
+  var activeDialog = null;
+
+  function closeConfirmDialog(overlay, dialog, releaseFocus, opener) {
+    if (overlay.dataset.state === 'closing') return;
+    overlay.dataset.state = 'closing';
+    overlay.classList.remove('is-open');
+    overlay.classList.add('is-closing');
+    releaseFocus();
+    // Cobre também o fechamento forçado (uma nova confirmação substituindo
+    // uma anterior ainda aberta) — ali ninguém passa pelo close() de
+    // confirmDialog(), então o listener de Esc só sai daqui.
+    if (overlay._onKeydown) document.removeEventListener('keydown', overlay._onKeydown);
+    if (activeDialog === overlay) activeDialog = null;
+
+    var cleaned = false;
+    function remove() {
+      if (cleaned) return;
+      cleaned = true;
+      overlay.removeEventListener('transitionend', onEnd);
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      // Restaura o foco pra quem abriu — docs/07 §8.5. Se o elemento não
+      // existir mais (lista recarregou por baixo), não há pra onde voltar.
+      if (opener && document.contains(opener)) opener.focus();
+    }
+    function onEnd(e) {
+      if (e.target === overlay) remove();
+    }
+    overlay.addEventListener('transitionend', onEnd);
+    // Rede de segurança: mesma técnica de morphAvatar() no painel — nenhuma
+    // animação pode depender só do evento de término pra se limpar
+    // (docs/03_DESIGN_SYSTEM.md §20 regra 20; aba em segundo plano nunca
+    // compõe frames e o transitionend correspondente nunca dispara).
+    setTimeout(remove, 260);
+  }
+
+  function confirmDialog(opts) {
+    opts = opts || {};
+    var title = opts.title || '';
+    var message = opts.message || '';
+    var confirmLabel = opts.confirmLabel || 'Confirmar';
+    var cancelLabel = opts.cancelLabel || 'Cancelar';
+    var destructive = !!opts.destructive;
+    var successLabel = opts.successLabel || 'Feito';
+    var onConfirm = opts.onConfirm;
+
+    if (activeDialog) closeConfirmDialog.apply(null, activeDialog._closeArgs);
+
+    var opener = document.activeElement;
+    var uid = 'oDialog' + Date.now() + Math.floor(Math.random() * 1000);
+
+    var overlay = document.createElement('div');
+    overlay.className = 'o-dialog-overlay';
+    overlay.innerHTML =
+      '<div class="o-dialog" role="alertdialog" aria-modal="true" ' +
+      'aria-labelledby="' + uid + 'Title" aria-describedby="' + uid + 'Msg">' +
+      '<p class="o-dialog-title" id="' + uid + 'Title">' + escapeHtml(title) + '</p>' +
+      (message ? '<p class="o-dialog-message" id="' + uid + 'Msg">' + escapeHtml(message) + '</p>' : '') +
+      '<div class="o-dialog-error" id="' + uid + 'Error" role="alert" hidden></div>' +
+      '<div class="o-dialog-actions">' +
+      '<button type="button" class="o-btn o-btn-secondary" data-role="cancel">' + escapeHtml(cancelLabel) + '</button>' +
+      '<button type="button" class="o-btn ' + (destructive ? 'o-btn-destructive' : 'o-btn-primary') + '" data-role="confirm">' +
+      escapeHtml(confirmLabel) + '</button>' +
+      '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    var dialog = overlay.querySelector('.o-dialog');
+    var cancelBtn = overlay.querySelector('[data-role="cancel"]');
+    var confirmBtn = overlay.querySelector('[data-role="confirm"]');
+    var errorEl = overlay.querySelector('.o-dialog-error');
+    var release = trapFocus(dialog);
+
+    var closeArgs = [overlay, dialog, release, opener];
+    overlay._closeArgs = closeArgs;
+    activeDialog = overlay;
+
+    function close() {
+      closeConfirmDialog.apply(null, closeArgs);
+    }
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.hidden = false;
+    }
+    function hideError() {
+      errorEl.hidden = true;
+    }
+
+    function busy() {
+      return confirmBtn.dataset.orenziUiState === 'busy';
+    }
+
+    cancelBtn.onclick = function () {
+      if (busy()) return;
+      close();
+    };
+
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay && !busy()) close();
+    });
+
+    // Guardado no próprio overlay (não só na closure) porque
+    // closeConfirmDialog() também precisa removê-lo no caminho de
+    // fechamento forçado (uma confirmação nova substituindo esta) — ali
+    // ninguém passa pelo close() daqui embaixo.
+    overlay._onKeydown = function onKeydown(e) {
+      if (e.key !== 'Escape' || busy()) return;
+      close();
+    };
+    document.addEventListener('keydown', overlay._onKeydown);
+
+    confirmBtn.onclick = function () {
+      if (busy()) return;
+      hideError();
+      cancelBtn.disabled = true;
+      setButtonBusy(confirmBtn, opts.confirmingLabel || (destructive ? 'Removendo…' : 'Confirmando…'));
+      Promise.resolve()
+        .then(function () { return onConfirm && onConfirm(); })
+        .then(function () { return setButtonSuccess(confirmBtn, successLabel); })
+        .then(function () { close(); })
+        .catch(function (err) {
+          resetButton(confirmBtn);
+          cancelBtn.disabled = false;
+          showError((err && err.message) || 'Não foi possível concluir. Tente de novo.');
+        });
+    };
+
+    // Entrada: fundo + folha sobem juntos (docs/05 §14) — a classe some no
+    // frame seguinte, depois de o navegador já ter pintado o estado inicial
+    // (transform:translateY(100%)), senão não haveria transição pra animar.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        overlay.classList.add('is-open');
+      });
+    });
+
+    // Foco inicial em Cancelar, nunca no botão destrutivo (docs/04
+    // §ConfirmationDialog, docs/07 §8.4).
+    cancelBtn.focus();
+
+    return { close: close };
+  }
+
   return {
     setButtonBusy: setButtonBusy,
     setButtonSuccess: setButtonSuccess,
     resetButton: resetButton,
     prefersReducedMotion: prefersReducedMotion,
     SUCCESS_HOLD_MS: SUCCESS_HOLD_MS,
+    trapFocus: trapFocus,
+    confirm: confirmDialog,
   };
 })();
