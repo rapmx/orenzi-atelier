@@ -2138,7 +2138,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month', clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month', insightsChartEntered: false, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -3222,6 +3222,7 @@ function animateIndicatorValue(el, type, fromRaw, toRaw) {
   if (toRaw === null || toRaw === undefined || !isFinite(toRaw)) { el.textContent = '--'; return; }
   const from = (fromRaw === null || fromRaw === undefined || !isFinite(fromRaw)) ? 0 : fromRaw;
   if (from === toRaw) { el.textContent = formatIndicatorValue(type, toRaw); return; }
+  if (prefersReducedMotion()) { el.textContent = formatIndicatorValue(type, toRaw); return; }
   const downMs = 240, upMs = 420;
   const downStart = performance.now();
   function tickDown(now) {
@@ -3329,8 +3330,11 @@ function renderIndicatorsSection() {
   });
 }
 
-// Constrói (sem animação) o estado inicial do gráfico de evolução, no modo
-// atual (state.insightsTrendMonths). Usado no primeiro carregamento da aba.
+// Constrói o gráfico de evolução no modo atual (state.insightsTrendMonths).
+// Roda a cada visita à aba Insights — a linha só é DESENHADA (entrada
+// animada) na primeíssima vez da sessão (state.insightsChartEntered); nas
+// visitas seguintes assenta direto no estado final, senão a "estreia" se
+// repetiria toda vez que a Juliane tocasse a aba.
 function renderTrendChartSection() {
   const wrap = document.getElementById('trendChartWrap');
   if (!wrap) return;
@@ -3339,7 +3343,31 @@ function renderTrendChartSection() {
   const visibleMonths = state.insightsTrendMonths;
   wrap.innerHTML = buildTrendChartMarkup(fullHistory, visibleMonths);
   wrap.dataset.months = visibleMonths;
-  settleTrendPath(wrap.querySelector('#trendLinePath'), visibleMonths);
+  const pathEl = wrap.querySelector('#trendLinePath');
+  if (!state.insightsChartEntered && !prefersReducedMotion()) {
+    state.insightsChartEntered = true;
+    animateTrendChartEntrance(pathEl, visibleMonths);
+  } else {
+    settleTrendPath(pathEl, visibleMonths);
+  }
+}
+
+// Desenha a linha da esquerda pra direita uma única vez (ver comentário
+// acima). stroke-dashoffset, mesma técnica de settleTrendPath — só anima
+// uma propriedade, sem custo de layout.
+function animateTrendChartEntrance(pathEl, visibleMonths) {
+  if (!pathEl) return;
+  const totalLen = pathEl.getTotalLength();
+  const revealFraction = (visibleMonths - 1) / (TREND_FULL_MONTHS - 1);
+  pathEl.style.transition = 'none';
+  pathEl.style.strokeDasharray = `${totalLen}`;
+  pathEl.style.strokeDashoffset = `${totalLen}`;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      pathEl.style.transition = 'stroke-dashoffset .45s var(--ease-out)';
+      pathEl.style.strokeDashoffset = `${totalLen * (1 - revealFraction)}`;
+    });
+  });
 }
 
 // Anima a transição 6 ⇄ 12 meses no MESMO gráfico: os 6 meses recentes
@@ -3350,6 +3378,16 @@ function animateTrendTransition(targetMonths) {
   if (!wrap) return;
   const prevMonths = Number(wrap.dataset.months) || targetMonths;
   if (prevMonths === targetMonths) return;
+
+  // O loop de rAF abaixo não é CSS — a cascata global de reduced-motion não
+  // alcança ele. Vai direto pro estado final, mesmo padrão de slidePane().
+  if (prefersReducedMotion()) {
+    const fh = trendFullHistoryCache || monthlyRevenueHistory(TREND_FULL_MONTHS);
+    wrap.innerHTML = buildTrendChartMarkup(fh, targetMonths);
+    wrap.dataset.months = targetMonths;
+    settleTrendPath(wrap.querySelector('#trendLinePath'), targetMonths);
+    return;
+  }
 
   const fullHistory = trendFullHistoryCache || monthlyRevenueHistory(TREND_FULL_MONTHS);
   const fullCount = fullHistory.length;
