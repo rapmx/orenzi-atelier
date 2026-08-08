@@ -74,28 +74,6 @@
   .home-block.in {
     animation: homeFadeUp 0.5s cubic-bezier(.22,.61,.36,1) forwards;
   }
-  .home-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
-  .home-hero.is-triple { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-  .home-hero-card {
-    background: var(--color-surface); border-radius: 22px; padding: 20px 18px;
-    border: 1px solid var(--color-divider);
-    display: flex; flex-direction: column; gap: 14px; min-height: 128px;
-    transition: transform .25s ease, box-shadow .25s ease;
-  }
-  .home-hero.is-triple .home-hero-card { padding: 16px 14px; min-height: 96px; gap: 10px; }
-  .home-hero.is-triple .home-hero-card .hh-num { font-size: 20px; }
-  .home-hero-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(43,36,32,0.08); }
-  .home-hero-card .hh-icon {
-    width: 34px; height: 34px; border-radius: 11px; background: var(--color-accent-100);
-    color: var(--color-accent-700); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .home-hero-card .hh-icon svg { width: 17px; height: 17px; }
-  .home-hero-card.is-revenue .hh-icon { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
-  .home-hero-card .hh-num {
-    font-family: var(--font-heading); font-weight: 600; font-size: 28px; letter-spacing: -0.01em;
-    line-height: 1.05;
-  }
-  .home-hero-card .hh-label { font-size: 12.5px; color: var(--color-neutral-600); }
 
   .home-section { margin-top: 30px; }
   .home-section-head {
@@ -103,15 +81,7 @@
   }
   .home-section-head h2 { margin: 0; }
   .home-section-head .home-section-hint { font-size: 12px; color: var(--color-neutral-600); }
-  .home-section-caption { font-size: 12px; color: var(--color-neutral-600); margin: -8px 0 14px; }
 
-  .seg-toggle { display: flex; background: var(--color-accent-100); border-radius: 999px; padding: 3px; gap: 2px; flex-shrink: 0; }
-  .seg-toggle button {
-    border: none; background: transparent; font-family: var(--font-body); font-size: 11px; font-weight: 700;
-    color: var(--color-accent-700); padding: 5px 12px; border-radius: 999px; cursor: pointer;
-    transition: background .2s ease, color .2s ease;
-  }
-  .seg-toggle button.active { background: var(--color-accent-700); color: var(--color-bg); }
 
   /* ── PANORAMA DA AGENDA (Home operacional) ─────────────────── */
   .panorama-card {
@@ -170,100 +140,7 @@
   .trend-headline { font-family: var(--font-heading); font-weight: 600; font-size: 14.5px; }
   .trend-phrase { font-size: 12px; color: var(--color-neutral-600); margin-top: 3px; }
 
-  .comparison-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--color-divider); }
-  .comparison-row:last-child { border-bottom: none; }
-  .comparison-row .cr-label { flex: 1; font-size: 13px; font-weight: 700; }
-  .comparison-row .cr-values { font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
-  .comparison-row .cr-delta { font-size: 12.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
-  .comparison-row .cr-delta.is-up { background: #e7f0e9; color: #3f6b4c; }
-  .comparison-row .cr-delta.is-down { background: #f7e7e7; color: #a13a3a; }
-  .comparison-row .cr-delta.is-flat { background: var(--color-neutral-200); color: var(--color-neutral-600); }
 
-  .perf-card {
-    background: var(--color-surface); border: 1px solid var(--color-divider);
-    border-radius: 22px; padding: 20px 18px 16px;
-  }
-  .perf-top { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 18px; }
-  .perf-top-label { font-size: 11px; letter-spacing: 0.06em; color: var(--color-neutral-600); font-weight: 700; text-transform: uppercase; }
-  .perf-top-num { font-family: var(--font-heading); font-weight: 600; font-size: 26px; margin-top: 4px; }
-  .perf-top-badge {
-    font-size: 11px; font-weight: 700; color: var(--color-accent-700); background: var(--color-accent-100);
-    padding: 4px 10px; border-radius: 999px; white-space: nowrap;
-  }
-  .week-chart-wrap { width: 100%; }
-  .week-chart-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
-  .week-bar { transition: opacity .2s ease; }
-  .week-bar:hover { opacity: 0.72; }
-  .perf-foot {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--color-divider);
-  }
-  .perf-foot .pf-item .pf-val { font-family: var(--font-heading); font-weight: 600; font-size: 16px; }
-  .perf-foot .pf-item .pf-lbl { font-size: 11px; color: var(--color-neutral-600); margin-top: 1px; }
-  .perf-foot .pf-item:last-child { text-align: right; }
-
-  .trend-chart-wrap { width: 100%; }
-  .trend-chart-wrap svg { width: 100%; height: auto; display: block; overflow: visible; }
-  .trend-dot {
-    transition: opacity .32s cubic-bezier(.34,1.56,.64,1), transform .32s cubic-bezier(.34,1.56,.64,1);
-    transform-box: fill-box; transform-origin: center;
-  }
-  .trend-dot.is-hidden { opacity: 0; transform: scale(0.25); }
-  .trend-label {
-    transition: opacity .28s ease, transform .28s ease;
-    transform-box: fill-box; transform-origin: center;
-  }
-  .trend-label.is-hidden { opacity: 0; transform: translateY(4px); }
-
-  .history-card {
-    background: var(--color-surface); border: 1px solid var(--color-divider);
-    border-radius: 22px; padding: 18px 18px 14px;
-  }
-  .btn-see-more {
-    width: 100%; margin-top: 10px; padding: 11px; border-radius: 999px; border: 1px solid var(--color-divider);
-    background: transparent; color: var(--color-accent-700); font-family: var(--font-body);
-    font-size: 13px; font-weight: 700; cursor: pointer; transition: background .2s ease;
-  }
-  .btn-see-more:hover { background: var(--color-accent-100); }
-
-  .insights-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .insight-card {
-    background: var(--color-surface); border: 1px solid var(--color-divider); border-radius: 18px;
-    padding: 16px 14px; transition: transform .2s ease, box-shadow .2s ease; position: relative;
-  }
-  .insight-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(43,36,32,0.07); }
-  .insight-card .ic-icon { color: var(--color-accent-600); margin-bottom: 10px; }
-  .insight-card .ic-icon svg { width: 16px; height: 16px; }
-  .insight-card .ic-val { font-family: var(--font-heading); font-weight: 600; font-size: 20px; line-height: 1.1; }
-  .insight-card .ic-lbl { font-size: 11.5px; color: var(--color-neutral-600); margin-top: 3px; }
-  .ic-help-btn {
-    position: absolute; top: 10px; right: 10px; width: 18px; height: 18px; border-radius: 50%;
-    border: none; background: var(--color-accent-100); color: var(--color-accent-700);
-    font-size: 10.5px; font-weight: 700; cursor: pointer; padding: 0; line-height: 1;
-    display: flex; align-items: center; justify-content: center;
-    transition: background .2s ease, color .2s ease;
-  }
-  .ic-help-btn:hover { background: var(--color-accent-700); color: var(--color-bg); }
-
-  .help-popup-overlay {
-    position: fixed; inset: 0; background: rgba(43,36,32,0.45);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 250; padding: 24px; backdrop-filter: blur(2px);
-    animation: helpFadeIn .2s ease;
-  }
-  @keyframes helpFadeIn { from { opacity: 0; } to { opacity: 1; } }
-  .help-popup-card {
-    background: var(--color-bg); border-radius: 20px; padding: 22px 20px;
-    width: 100%; max-width: 320px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-    position: relative; animation: helpPopIn .25s cubic-bezier(.34,1.56,.64,1);
-  }
-  @keyframes helpPopIn { from { opacity: 0; transform: scale(.92) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-  .help-popup-card .hp-title { font-family: var(--font-heading); font-weight: 600; font-size: 16px; margin: 0 24px 8px 0; }
-  .help-popup-card .hp-text { font-size: 13.5px; line-height: 1.55; color: var(--color-neutral-700); }
-  .help-popup-close {
-    position: absolute; top: 18px; right: 18px; background: none; border: none; font-size: 17px;
-    color: var(--color-neutral-600); cursor: pointer; line-height: 1; padding: 0;
-  }
 
   /* ── Padrão de linha (modelo: Início/Insights) ─────────────────
      Base que toda lista do app usa: cartão em --color-surface com borda
@@ -291,11 +168,364 @@
   .appt-modern-card .am-status.st-done { background: var(--color-neutral-200); color: var(--color-neutral-600); }
 
   @media (max-width: 360px) {
-    .home-hero { grid-template-columns: 1fr; }
-    .home-hero.is-triple { grid-template-columns: 1fr; }
-    .insights-grid { grid-template-columns: 1fr 1fr; }
     .adc-stats { grid-template-columns: repeat(2, 1fr); row-gap: 10px; }
   }
+
+  /* ── INSIGHTS (arquitetura de 07/08/2026, refinada no R4) ──────
+     Tudo aqui usa token de app/ds/orenzi-tokens.css. Nenhum hex, raio,
+     sombra, duração ou tamanho tipográfico novo entrou.
+     Ritmo vertical em dois degraus: --space-6 dentro de um assunto,
+     --space-8 entre assuntos (docs/02 §3). */
+  .ins-period {
+    position: relative; display: flex; gap: 2px; padding: 3px;
+    margin: var(--space-3-5) 0 var(--space-6);
+    background: var(--color-accent-100); border-radius: var(--radius-full);
+  }
+  /* Cápsula física única — desliza entre as três posições em vez de
+     apagar um botão pintado e pintar outro. translateX(i*100%) usa a
+     LARGURA DA PRÓPRIA cápsula como referência (1/3 do trilho), por
+     isso i=0/1/2 já produz os três passos certos. */
+  .ins-period-pill {
+    position: absolute; top: 3px; bottom: 3px; left: 3px;
+    width: calc((100% - 6px) / 3);
+    background: var(--color-accent-700); border-radius: var(--radius-full);
+    transition: transform var(--motion-standard) var(--ease-standard);
+    z-index: 0;
+  }
+  .ins-period button {
+    position: relative; z-index: 1;
+    flex: 1; border: none; background: transparent; cursor: pointer;
+    font-family: var(--font-body); font-size: var(--text-caption-size); font-weight: 600;
+    color: var(--color-accent-700); padding: 0; height: 38px; border-radius: var(--radius-full);
+    transition: color var(--motion-fast) var(--ease-standard),
+                transform var(--motion-instant) var(--ease-standard);
+  }
+  /* Alvo de 44px sem engordar o desenho (docs/07 §4). */
+  .ins-period button::after { content: ''; position: absolute; inset: -3px 0; }
+  .ins-period button[aria-pressed="true"] { color: var(--color-bg); }
+  .ins-period button:active { transform: scale(0.97); }
+  .ins-period button:focus-visible { box-shadow: var(--focus-ring); }
+
+  .ins-floor { margin-top: var(--space-8); padding-top: var(--space-2); }
+  .ins-title {
+    font-family: var(--font-heading); font-size: var(--text-title-3-size);
+    font-weight: var(--text-title-3-weight); margin: 0 0 var(--space-3); letter-spacing: -0.005em;
+  }
+  .ins-read { font-size: var(--text-body-size); line-height: var(--leading-normal); margin: 0 0 var(--space-3-5); }
+  .ins-read em { font-style: normal; font-weight: 600; }
+
+  /* Conteúdo trocável (Hero..Canais) — troca de período faz um cross-fade
+     curto com deslocamento mínimo, nunca um blink de innerHTML instantâneo. */
+  #insContent { min-height: 40px; }
+
+  /* Hero — o número realizado é o maior elemento tipográfico da tela.
+     Os títulos de seção usam title-3 (17px) justamente para não competir. */
+  .ins-answer { padding-top: var(--space-1); }
+  .ins-eyebrow {
+    font-size: var(--text-micro-size); font-weight: var(--text-micro-weight);
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-neutral-600); margin: 0;
+  }
+  .ins-answer-row { display: flex; align-items: baseline; gap: var(--space-3); margin-top: var(--space-2-5); flex-wrap: wrap; }
+  .ins-answer-value {
+    font-family: var(--font-heading); font-size: var(--text-display-size); font-weight: 600;
+    line-height: var(--leading-tight); letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  }
+  .ins-answer-word { font-size: var(--text-body-size); color: var(--color-neutral-700); }
+  .ins-answer-vs { font-size: var(--text-caption-size); color: var(--color-neutral-600); margin: var(--space-2) 0 0; }
+  .ins-answer-ahead {
+    display: flex; align-items: center; gap: var(--space-2);
+    margin-top: var(--space-4); padding-top: var(--space-3);
+    border-top: var(--border-width) solid var(--color-divider);
+    font-size: var(--text-caption-size); color: var(--color-neutral-700);
+  }
+  .ins-answer-ahead strong {
+    font-family: var(--font-heading); font-weight: 600; font-size: var(--text-body-strong-size);
+    color: var(--color-text); font-variant-numeric: tabular-nums;
+  }
+  .ins-ahead-ic { display: flex; color: var(--color-neutral-600); flex-shrink: 0; }
+  .ins-ahead-ic svg { width: 15px; height: 15px; }
+
+  .ins-delta {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: var(--text-caption-size); font-weight: 700; padding: 3px 9px;
+    border-radius: var(--radius-full); white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  .ins-delta.is-up { background: var(--color-success-100); color: var(--color-success-700); }
+  .ins-delta.is-down { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
+
+  /* Considerações — empilhado, nunca em carrossel: uma leitura que exige
+     rolagem lateral para ser descoberta não cumpre o papel do bloco. */
+  .ins-stack { display: flex; flex-direction: column; gap: var(--space-2); }
+  .ins-alert {
+    display: flex; align-items: flex-start; gap: var(--space-3);
+    background: var(--color-accent-100); border: var(--border-width) solid var(--color-accent);
+    border-radius: var(--radius-md); padding: var(--space-3) var(--space-3-5);
+  }
+  .ins-alert-ic {
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 28px; height: 28px; border-radius: var(--radius-sm);
+    background: var(--color-surface); color: var(--color-accent-700);
+  }
+  .ins-alert-ic svg { width: 15px; height: 15px; }
+  .ins-alert-body { flex: 1; min-width: 0; }
+  .ins-alert-head { display: block; font-size: var(--text-body-strong-size); font-weight: 600; line-height: 1.3; }
+  .ins-alert-sub {
+    display: block; font-size: var(--text-caption-size); color: var(--color-neutral-700);
+    margin-top: 3px; font-variant-numeric: tabular-nums;
+  }
+
+  /* Sugestões — carrossel de UM card centralizado por vez. O card ocupa
+     a largura útil inteira (nada de peek do próximo: o peek fazia o
+     primeiro card parecer cortado na borda). */
+  .ins-rail-wrap { position: relative; }
+  .ins-rail {
+    display: flex; gap: var(--space-3); overflow-x: auto;
+    scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .ins-rail::-webkit-scrollbar { display: none; }
+  .ins-card {
+    flex: 0 0 100%; scroll-snap-align: center; min-width: 0; min-height: 132px;
+    display: flex; flex-direction: column; gap: var(--space-2-5); text-align: left;
+    background: var(--color-surface); border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--radius-md); padding: var(--space-4);
+    font-family: var(--font-body); color: var(--color-text);
+  }
+  .ins-card.is-actionable { cursor: pointer; transition: transform var(--motion-fast) var(--ease-spring), box-shadow var(--motion-fast) var(--ease-standard); }
+  .ins-card.is-actionable:active { transform: scale(0.98); box-shadow: var(--elevation-hover); }
+  .ins-card:focus-visible { box-shadow: var(--focus-ring); }
+  .ins-card-ic {
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 30px; height: 30px; border-radius: var(--radius-sm);
+    background: var(--color-accent-100); color: var(--color-accent-700);
+  }
+  .ins-card-ic svg { width: 16px; height: 16px; }
+  .ins-card-body { flex: 1; display: flex; flex-direction: column; gap: var(--space-1); }
+  .ins-card-head { display: block; font-size: 16px; font-weight: 600; line-height: 1.28; }
+  .ins-card-sub { display: block; font-size: var(--text-caption-size); color: var(--color-neutral-600); font-variant-numeric: tabular-nums; }
+  .ins-card-impact { display: block; font-size: var(--text-caption-size); font-weight: 700; color: var(--color-accent-700); font-variant-numeric: tabular-nums; }
+  .ins-card-go {
+    display: inline-flex; align-items: center; gap: 5px; margin-top: auto; padding-top: var(--space-1);
+    font-size: var(--text-caption-size); font-weight: 700; color: var(--color-accent-700);
+  }
+  .ins-card-go svg { width: 14px; height: 14px; }
+
+  /* Indicação de "tem mais" — chevron discreto na borda direita do
+     carrossel, visível enquanto não é o último card. Ensina com um aceno
+     curto (2–3 repetições) só na primeira exposição da sessão. */
+  .ins-rail-hint {
+    position: absolute; top: 50%; right: 2px; transform: translateY(-50%);
+    display: flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: var(--radius-circle);
+    background: var(--color-surface); color: var(--color-accent-700);
+    box-shadow: var(--elevation-hover); pointer-events: none;
+    opacity: 0; transition: opacity var(--motion-fast) var(--ease-standard);
+  }
+  .ins-rail-hint svg { width: 14px; height: 14px; }
+  .ins-rail-hint.is-visible { opacity: 0.92; }
+  @keyframes insHintNudge {
+    0%, 100% { transform: translateY(-50%) translateX(0); }
+    50% { transform: translateY(-50%) translateX(5px); }
+  }
+  .ins-rail-hint.is-teaching { animation: insHintNudge 700ms var(--ease-standard) 3; }
+
+  .ins-dots { display: flex; gap: 6px; justify-content: center; margin-top: var(--space-3); }
+  .ins-dots i {
+    width: 6px; height: 6px; border-radius: var(--radius-circle); background: var(--color-neutral-300);
+    transition: background var(--motion-fast) var(--ease-standard), width var(--motion-fast) var(--ease-standard);
+  }
+  .ins-dots i.is-on { background: var(--color-accent-700); width: 16px; border-radius: var(--radius-full); }
+
+  /* Indicadores — sem moldura: rótulo, valor e variação. A terceira
+     linha ("28 no mesmo ponto de julho") saiu de propósito. */
+  .ins-kpis { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--space-4); row-gap: var(--space-6); }
+  .ins-kpi { min-width: 0; }
+  .ins-kpi-lbl { display: flex; align-items: center; gap: var(--space-1); font-size: var(--text-caption-size); color: var(--color-neutral-600); }
+  .ins-kpi-row { display: flex; align-items: baseline; gap: var(--space-2); margin-top: 3px; flex-wrap: wrap; }
+  .ins-kpi-val {
+    font-family: var(--font-heading); font-size: var(--text-title-2-size); font-weight: 600;
+    line-height: var(--leading-tight); font-variant-numeric: tabular-nums;
+  }
+  .ins-kpi-delta { font-size: 12px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .ins-kpi-delta.is-up { color: var(--color-success-700); }
+  .ins-kpi-delta.is-down { color: var(--color-accent-2-700); }
+
+  /* Ajuda dos indicadores — 16px de desenho + área estendida invisível
+     até 44px (docs/07 §4). Nunca repetir o "?" de 18px sem extensão da
+     Insights V1. */
+  .ins-kpi-help {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: var(--radius-circle); flex-shrink: 0;
+    background: var(--color-neutral-200); color: var(--color-neutral-600);
+    border: none; cursor: pointer; padding: 0; font-size: 10px; font-weight: 700; line-height: 1;
+    font-family: var(--font-body); transition: background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
+  }
+  .ins-kpi-help::after { content: ''; position: absolute; inset: -14px; }
+  .ins-kpi-help:hover, .ins-kpi-help:active { background: var(--color-accent-700); color: var(--color-bg); }
+  .ins-kpi-help:focus-visible { box-shadow: var(--focus-ring); }
+
+  .ins-chart-card {
+    background: var(--color-surface); border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--radius-lg); padding: var(--space-4) var(--space-3) var(--space-3);
+  }
+  .ins-chart-card svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .ins-chart-foot {
+    font-size: var(--text-caption-size); color: var(--color-neutral-600);
+    margin: var(--space-3) 0 0; padding-top: var(--space-3);
+    border-top: var(--border-width) solid var(--color-divider); font-variant-numeric: tabular-nums;
+  }
+  .ins-chart-foot strong { color: var(--color-text); font-family: var(--font-heading); font-weight: 600; }
+
+  /* Onde há espaço — fractal por timeframe. Três degraus discretos em
+     token existente; ratio ABSOLUTO (não relativo ao máximo do conjunto),
+     pra um único vazio grande não espremer o resto no mesmo degrau
+     "cheio". O número em toda célula garante que a leitura não dependa
+     só de cor (docs/07 §12). */
+  .ins-map { width: 100%; border-collapse: separate; border-spacing: 3px; margin-top: var(--space-1); }
+  .ins-map th {
+    font-family: var(--font-body); font-size: var(--text-micro-size); font-weight: var(--text-micro-weight);
+    color: var(--color-neutral-600); padding: 0 0 2px; text-align: center;
+  }
+  .ins-map th.ins-map-lbl {
+    font-size: 12px; font-weight: 400; color: var(--color-neutral-600);
+    text-align: left; white-space: nowrap; padding: 0 var(--space-1) 0 0; width: 1%;
+  }
+  .ins-map-cell {
+    text-align: center; font-size: 12px; font-weight: 700; height: 40px;
+    border-radius: var(--radius-sm); font-variant-numeric: tabular-nums;
+    background: var(--color-neutral-200); color: var(--color-neutral-700);
+  }
+  .ins-map-cell.is-livre { background: var(--color-accent-100); color: var(--color-text); }
+  .ins-map-cell.is-muito-livre { background: var(--color-accent-700); color: var(--color-bg); }
+  /* R4.1: dia encerrado esmaece — a cor do degrau continua correta (é um
+     fato histórico), só perde destaque visual pra não competir com o que
+     ainda é oportunidade. Token existente (opacity), nada novo. */
+  .ins-map th.is-passado { opacity: 0.5; }
+  .ins-map-cell.is-passado { opacity: 0.6; }
+  .ins-map-legend { font-size: var(--text-micro-size); font-weight: var(--text-micro-weight); color: var(--color-neutral-600); margin: var(--space-3) 0 0; }
+
+  /* Nível Mês (semanas, uma linha) e Ano (meses, grade 6×2) — mesma
+     paleta tonal das células da semana, geometria própria de cada nível. */
+  .ins-space-row { display: flex; gap: var(--space-2); }
+  .ins-space-row .ins-space-tile { flex: 1; }
+  .ins-space-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-2); }
+  .ins-space-tile {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    border-radius: var(--radius-sm); padding: var(--space-2) 2px; min-height: 48px;
+    background: var(--color-neutral-200); color: var(--color-neutral-700);
+  }
+  .ins-space-tile .ist-lbl { font-size: var(--text-micro-size); font-weight: var(--text-micro-weight); opacity: 0.85; }
+  .ins-space-tile .ist-val { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .ins-space-tile.is-livre { background: var(--color-accent-100); color: var(--color-text); }
+  .ins-space-tile.is-muito-livre { background: var(--color-accent-700); color: var(--color-bg); }
+  /* R4.1: em Mês/Ano a leitura principal é histórica (retrospectiva), então
+     aqui é o FUTURO que esmaece — o oposto da Semana, e de propósito: a
+     pergunta que cada nível responde primeiro muda (ver docs da entrega). */
+  .ins-space-tile.is-futuro { opacity: 0.5; }
+  .ins-space-tile.is-atual { box-shadow: inset 0 0 0 var(--border-width-emphasis) var(--color-accent-700); }
+
+  /* Onde está o dinheiro */
+  .ins-svc { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2-5) 0; }
+  .ins-svc + .ins-svc { border-top: var(--border-width) solid var(--color-divider); }
+  .ins-svc-body { flex: 1; min-width: 0; }
+  .ins-svc-name { font-size: var(--text-body-strong-size); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ins-svc-track { display: block; height: 5px; border-radius: var(--radius-full); background: var(--color-accent-100); overflow: hidden; margin-top: 6px; }
+  .ins-svc-fill {
+    display: block; height: 100%; border-radius: var(--radius-full); background: var(--color-accent-600);
+    width: 0; transition: width var(--motion-emphasized) var(--ease-out);
+  }
+  .ins-svc-meta { font-size: 12px; color: var(--color-neutral-600); margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .ins-svc-right { text-align: right; flex-shrink: 0; }
+  .ins-svc-rev { font-family: var(--font-heading); font-size: var(--text-body-strong-size); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ins-svc-hour {
+    display: inline-block; margin-top: 4px; font-size: var(--text-micro-size); font-weight: var(--text-micro-weight);
+    padding: 2px 7px; border-radius: var(--radius-full); font-variant-numeric: tabular-nums;
+    background: var(--color-neutral-200); color: var(--color-neutral-700);
+  }
+
+  /* Como as clientes chegam */
+  .ins-ch-bar { display: flex; height: 8px; border-radius: var(--radius-full); overflow: hidden; }
+  .ins-ch-bar span { display: block; }
+  .ins-ch-keys { display: flex; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-2-5); font-size: var(--text-caption-size); color: var(--color-neutral-600); }
+  .ins-ch-keys span { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+  .ins-ch-keys i { width: 8px; height: 8px; border-radius: var(--radius-circle); display: block; flex-shrink: 0; }
+  .ins-ch-conv { font-size: var(--text-caption-size); color: var(--color-neutral-600); margin: var(--space-3) 0 0; font-variant-numeric: tabular-nums; }
+  .ins-ch-conv strong { color: var(--color-text); font-family: var(--font-heading); font-weight: 600; }
+
+  @media (max-width: 360px) {
+    .ins-kpis { column-gap: var(--space-3); }
+    .ins-map { border-spacing: 2px; }
+    .ins-map-cell { height: 36px; font-size: var(--text-micro-size); }
+    .ins-map th.ins-map-lbl { font-size: var(--text-micro-size); font-weight: 400; }
+    .ins-space-tile { min-height: 42px; }
+  }
+
+  /* Help dos indicadores — R4.1: micro-diálogo centralizado, não a folha
+     de largura cheia do ConfirmationDialog. Mesmo raio e mesma sombra do
+     `.month-cal-card` que a Agenda já usa pro calendário de mês — nenhuma
+     geometria nova, só a mesma família aplicada a um card menor. */
+  .ins-help-overlay {
+    position: fixed; inset: 0; z-index: var(--z-overlay-top);
+    background: rgba(43, 36, 32, 0.45); backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center; padding: var(--space-5);
+    opacity: 0; transition: opacity var(--motion-emphasized) var(--ease-out);
+  }
+  .ins-help-overlay.is-open { opacity: 1; }
+  .ins-help-overlay.is-closing { transition-duration: var(--motion-fast); transition-timing-function: var(--ease-in); opacity: 0; }
+  .ins-help-card {
+    position: relative; width: 100%; max-width: 320px;
+    background: var(--color-bg); border-radius: var(--radius-lg);
+    padding: var(--space-6) var(--space-5); box-shadow: var(--elevation-overlay);
+    transform: scale(0.96); transition: transform var(--motion-emphasized) var(--ease-out);
+  }
+  .ins-help-overlay.is-open .ins-help-card { transform: scale(1); }
+  .ins-help-overlay.is-closing .ins-help-card { transition-duration: var(--motion-fast); transition-timing-function: var(--ease-in); transform: scale(0.98); }
+  .ins-help-title {
+    font-family: var(--font-heading); font-size: var(--text-title-3-size);
+    font-weight: var(--text-title-3-weight); color: var(--color-text); margin: 0 var(--space-6) var(--space-2) 0;
+  }
+  .ins-help-text { font-family: var(--font-body); font-size: var(--text-body-size); color: var(--color-neutral-700); line-height: var(--leading-relaxed); margin: 0; }
+  .ins-help-close {
+    position: absolute; top: var(--space-3); right: var(--space-3);
+    width: var(--touch-target-min); height: var(--touch-target-min);
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; border-radius: var(--radius-circle); color: var(--color-neutral-600); cursor: pointer;
+    transition: background var(--motion-fast) var(--ease-standard);
+  }
+  .ins-help-close svg { width: 16px; height: 16px; }
+  .ins-help-close:hover { background: var(--color-neutral-200); }
+  .ins-help-close:focus-visible { box-shadow: var(--focus-ring); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ins-period-pill, .ins-period button, .ins-card.is-actionable, .ins-svc-fill, .ins-dots i, .ins-rail-hint { transition: none; }
+    .ins-period button:active, .ins-card.is-actionable:active { transform: none; }
+    .ins-rail { scroll-behavior: auto; }
+    .ins-rail-hint.is-teaching { animation: none; }
+    #insContent { transition: none !important; transform: none !important; }
+    /* Help: sem scale — o fade do overlay/card continua (é curto e não é
+       posicional), só o "surgir" cresce fica de fora, como pedido. */
+    .ins-help-card { transition: none; transform: none !important; }
+  }
+
+  /* ── Clientes: filtro contextual vindo do drill-through de Insights ── */
+  .cli-context-banner {
+    display: flex; align-items: center; gap: var(--space-3);
+    background: var(--color-accent-100); border: var(--border-width) solid var(--color-accent);
+    border-radius: var(--radius-md); padding: var(--space-3) var(--space-3-5);
+    margin-bottom: var(--space-3);
+  }
+  .cli-context-ic {
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 28px; height: 28px; border-radius: var(--radius-sm);
+    background: var(--color-surface); color: var(--color-accent-700);
+  }
+  .cli-context-ic svg { width: 15px; height: 15px; }
+  .cli-context-label { flex: 1; min-width: 0; font-size: var(--text-caption-size); font-weight: 600; color: var(--color-text); }
+  .cli-context-clear {
+    flex-shrink: 0; background: none; border: none; cursor: pointer; padding: var(--space-1) var(--space-2);
+    font-family: var(--font-body); font-size: var(--text-caption-size); font-weight: 700; color: var(--color-accent-700);
+  }
+  .cli-context-clear:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
 
   .card {
     background: var(--color-neutral-100); border-radius: 16px; padding: 14px 16px;
@@ -1733,7 +1963,7 @@
     text-align: center; gap: var(--space-6);
     padding: var(--space-8) var(--space-4) var(--space-4);
   }
-  /* Dentro de um cartão que já tem padding próprio (ex.: .history-card em
+  /* Dentro de um cartão que já tem padding próprio (ex.: os blocos de
      Insights) — sem isto o respiro somava e ficava desproporcional. */
   .empty-state.is-compact { padding: var(--space-2) var(--space-3) var(--space-1); gap: var(--space-4); }
   .es-icon { display: flex; align-items: center; justify-content: center; color: var(--color-neutral-700); }
@@ -1863,7 +2093,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsTrendMonths: 6, insightsIndicatorPeriod: 'month', insightsChartEntered: false, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -1943,25 +2173,50 @@ function showToast(text) {
 }
 
 // ── CARREGAMENTO DE DADOS ────────────────────────────────────
+// Leitura por faixa. Sem `.range()`, o PostgREST corta a resposta no teto
+// padrão (1.000 linhas) SEM erro — e como a ordem é crescente, o que some
+// são os registros mais RECENTES: Insights passaria a mostrar €0 nos meses
+// novos, em silêncio. Ler em blocos é a correção de menor risco possível:
+// não toca backend, não cria RPC, não muda nenhuma outra tela além de
+// passar a entregar a lista inteira a todas elas.
+const APPTS_PAGINA = 1000;
 async function loadAppointments() {
-  const { data, error } = await sb
-    .from('appointments')
-    .select(`
+  const campos = `
       id, starts_at, ends_at, status, notes, technique, product_used, oxidant_used, pause_time, color_formula, created_at, source,
       client:client_id ( id, name, phone ),
       staff:staff_id ( id, name ),
       service:service_id ( id, name, price )
-    `)
-    .neq('status', 'cancelled')
-    .order('starts_at');
-  if (error) { console.error(error); return; }
-  state.appointments = data;
+    `;
+  const todos = [];
+  for (let de = 0; ; de += APPTS_PAGINA) {
+    const { data, error } = await sb
+      .from('appointments')
+      .select(campos)
+      .neq('status', 'cancelled')
+      .order('starts_at')
+      .range(de, de + APPTS_PAGINA - 1);
+    if (error) { console.error(error); return; }
+    todos.push(...data);
+    if (data.length < APPTS_PAGINA) break;
+  }
+  state.appointments = todos;
 }
 
+// Mesma paginação de loadAppointments, e pela mesma razão: a ordem é
+// crescente, então o corte silencioso no teto de 1.000 linhas comeria as
+// visitas MAIS RECENTES — justamente as do período que a conversão de
+// Insights mede. O resultado não seria uma tela vazia, seria uma taxa
+// calculada sobre um denominador parcial. Ver docs/02 §8.
 async function loadBookingVisits() {
-  const { data, error } = await sb.from('booking_visits').select('id, created_at').order('created_at');
-  if (error) { console.error(error); return; }
-  state.bookingVisits = data;
+  const todos = [];
+  for (let de = 0; ; de += APPTS_PAGINA) {
+    const { data, error } = await sb.from('booking_visits')
+      .select('id, created_at').order('created_at').range(de, de + APPTS_PAGINA - 1);
+    if (error) { console.error(error); return; }
+    todos.push(...data);
+    if (data.length < APPTS_PAGINA) break;
+  }
+  state.bookingVisits = todos;
 }
 
 async function loadClients() {
@@ -2135,8 +2390,17 @@ function formatCurrency(n) {
   return '€' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+// ── D1 · leitura financeira centralizada ──────────────────────
+// Ponto ÚNICO de leitura do valor de um atendimento. Hoje só existe
+// `service.price`, que é o preço de tabela ATUAL: mudar o preço de um
+// serviço reescreve retroativamente todo o histórico de Insights.
+// Limitação conhecida, registrada, sem correção neste PR. Quando
+// `appointments.price` (preço congelado no atendimento) existir, muda
+// só a primeira expressão daqui — nenhuma migration entra agora.
 function appointmentRevenue(a) {
-  return Number(a.service?.price || 0);
+  if (!a) return 0;
+  const congelado = a.price;
+  return Number(congelado != null ? congelado : (a.service && a.service.price) || 0);
 }
 
 function serviceDurationMinutes(serviceId) {
@@ -2215,6 +2479,7 @@ const ICONS = {
   sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>',
   users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><path d="M16.5 5.2a3.5 3.5 0 0 1 0 5.6M18 13.8c2.1.8 3.5 2.8 3.5 5.2"/></svg>',
   trendUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 16.5 9 11l4 4 7.5-7.5"/><path d="M15.5 7.5h5v5"/></svg>',
+  trendDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5 9 13l4-4 7.5 7.5"/><path d="M15.5 16.5h5v-5"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
   moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></svg>',
   // ── Estoque ──
@@ -2296,6 +2561,15 @@ function filteredSortedClients() {
   const termo = (state.clientSearch || '').trim().toLowerCase();
   let rows = clientsWithStats();
 
+  // Filtro contextual vindo do drill-through de Insights (ex.: "7 clientes
+  // que passaram do intervalo delas") — é um teto sobre o conjunto, os
+  // chips e a busca continuam funcionando normalmente por cima dele.
+  // Nunca sobrescreve state.clientFilter, que é o filtro salvo da aba.
+  if (state.clientContext) {
+    const ids = new Set(state.clientContext.ids);
+    rows = rows.filter(r => ids.has(r.c.id));
+  }
+
   if (termo) {
     rows = rows.filter(r => {
       const alvo = `${r.c.name || ''} ${r.c.phone || ''} ${r.c.email || ''}`.toLowerCase();
@@ -2373,7 +2647,7 @@ function animateCounters(root) {
   });
 }
 function animateFills(root) {
-  root.querySelectorAll('.dr-fill, .adc-bar-fill').forEach(el => {
+  root.querySelectorAll('.dr-fill, .adc-bar-fill, .ins-svc-fill').forEach(el => {
     requestAnimationFrame(() => { el.style.width = el.dataset.targetWidth + '%'; });
   });
 }
@@ -2664,815 +2938,1564 @@ function renderHome() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// INSIGHTS · painel analítico — "Como está o desempenho do
-// meu negócio?"
+// INSIGHTS · "Como o negócio está indo — e o que dá para fazer"
+//
+// Arquitetura aprovada nas Fases 1–3 (preview/insights-v2-r2.html),
+// refinada no R4. Cada bloco responde UMA pergunta, nesta ordem:
+//   Hero .............. como estou indo?
+//   Considerações ..... o que merece ser observado?   (condicional)
+//   Sugestões ......... o que posso fazer agora?
+//   Indicadores ....... como está minha operação?
+//   Tendência ......... estou crescendo?
+//   Onde há espaço .... onde ainda posso vender mais / onde ficou ocioso?
+//   Onde está o dinheiro  o que está gerando receita?
+//   Como as clientes chegam  qual canal está funcionando?
+//
+// Um único seletor (Semana · Mês · Ano) governa a aba inteira — não
+// existe toggle local. Dois períodos simultâneos na mesma tela
+// impedem qualquer comparação de significar alguma coisa.
+//
+// R4: "Precisa de atenção" virou "Considerações" (nem tudo ali é
+// urgência — é o que merece ser observado). Todo card de Sugestão com
+// destino real ganhou CTA, inclusive Clientes (filtro contextual por
+// IDs). O carrossel passou a mostrar um card por vez, centralizado, com
+// um aceno de descoberta na primeira exposição. "Onde há espaço" ficou
+// fractal (Semana→dias, Mês→semanas, Ano→meses) e separa passado
+// (ocioso, um fato) de futuro (ainda disponível, uma oportunidade) em
+// vez de comparar os dois como se fossem a mesma métrica (R4.1). A troca
+// de período ganhou uma cápsula que desliza e conteúdo que não pisca.
 // ══════════════════════════════════════════════════════════════
-function currentWeekRevenue() {
-  const start = startOfWeekMonday(new Date());
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start);
-    d.setDate(d.getDate() + i);
-    return d;
-  });
-  const values = days.map(d => appointmentsOnDate(d).reduce((sum, a) => sum + appointmentRevenue(a), 0));
-  return { days, values };
-}
 
-function weekRevenueForStart(start) {
-  const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return d; });
-  return days.reduce((sum, d) => sum + appointmentsOnDate(d).reduce((s, a) => s + appointmentRevenue(a), 0), 0);
-}
+const INSIGHTS_PERIODS = [
+  { key: 'semana', label: 'Semana' },
+  { key: 'mes', label: 'Mês' },
+  { key: 'ano', label: 'Ano' },
+];
 
-function monthlyRevenueHistory(months = 6) {
-  const now = new Date();
-  const result = [];
-  for (let i = months - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const total = state.appointments
-      .filter(a => {
-        const s = new Date(a.starts_at);
-        return s.getFullYear() === d.getFullYear() && s.getMonth() === d.getMonth();
-      })
-      .reduce((sum, a) => sum + appointmentRevenue(a), 0);
-    result.push({
-      label: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
-      total,
-      isCurrent: d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(),
-    });
-  }
-  return result;
+// Amostras mínimas. Abaixo destes pisos a tela DIZ que não tem
+// histórico em vez de mostrar um número frágil — mesma regra que o
+// Estoque já aplica em CONSUMO_MIN_SAIDAS/CONSUMO_MIN_DIAS.
+const INS_MIN_APPTS_PERIODO = 5;   // nada é concluído abaixo disso
+const INS_MIN_SERVICO = 4;         // volume mínimo pra falar de um serviço
+const INS_MIN_SERVICO_QUEDA = 8;   // base pra DECLARAR queda: 4→3 numa semana é oscilação, não tendência
+// R4.1 — a base de "queda de serviço" precisa por timeframe: 8 atendimentos
+// é razoável de exigir num MÊS, mas quase nunca acontece numa SEMANA (o
+// detector ficaria sempre calado ali) e é baixo demais pro ANO (deixaria
+// passar ruído). Sem isso o detector não é "elegível" nos três — é só
+// tecnicamente presente e praticamente mudo fora do Mês.
+function insMinQuedaServico(kind) {
+  if (kind === 'semana') return 4;
+  if (kind === 'ano') return 20;
+  return INS_MIN_SERVICO_QUEDA;
 }
+const INS_MIN_VISITAS_CLIENTE = 3; // visitas pra ela ter "intervalo habitual"
+const INS_MIN_SEMANAS_MEDIA = 4;   // semanas fechadas pra existir "sua média"
+const INS_MIN_HORAS_LIVRES = 2;    // abaixo disso "espaço livre" é ruído
+const INS_ATRASO_FATOR = 1.5;      // 1,5× o intervalo dela = passou do ponto
+const INS_MIN_CLIENTES_RITMO_ANO = 8; // amostra mínima pra falar de ritmo de retorno no Ano
 
-function monthlyRevenueForOffset(monthsAgo) {
-  const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1);
-  return state.appointments
-    .filter(a => { const s = new Date(a.starts_at); return s.getFullYear() === d.getFullYear() && s.getMonth() === d.getMonth(); })
-    .reduce((sum, a) => sum + appointmentRevenue(a), 0);
+// ── Janela do período ─────────────────────────────────────────
+// `cut` é o "mesmo ponto" do período: para o atual é agora; para o
+// anterior é agora deslocado um período para trás. Comparar mês
+// parcial com mês inteiro deixaria o delta estruturalmente negativo
+// todo começo de mês — ruído vermelho por construção.
+function insPeriodStart(date, kind) {
+  const d = new Date(date);
+  if (kind === 'semana') return startOfWeekMonday(d);
+  d.setHours(0, 0, 0, 0);
+  if (kind === 'mes') { d.setDate(1); return d; }
+  d.setMonth(0, 1);
+  return d;
 }
-
-function currentMonthAppointments() {
-  const now = new Date();
+function insPeriodEnd(start, kind) {
+  const d = new Date(start);
+  if (kind === 'semana') d.setDate(d.getDate() + 7);
+  else if (kind === 'mes') d.setMonth(d.getMonth() + 1);
+  else d.setFullYear(d.getFullYear() + 1);
+  return d;
+}
+function insShiftBack(date, kind, n) {
+  const d = new Date(date);
+  if (kind === 'semana') { d.setDate(d.getDate() - 7 * n); return d; }
+  if (kind === 'ano') { d.setFullYear(d.getFullYear() - n); return d; }
+  // Mês: 31/03 menos um mês tem que virar 28/02, não 03/03.
+  const dia = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - n);
+  const ultimo = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(dia, ultimo));
+  return d;
+}
+function insWindow(kind, offset) {
+  const cut = offset ? insShiftBack(new Date(), kind, offset) : new Date();
+  const start = insPeriodStart(cut, kind);
+  return { start, end: insPeriodEnd(start, kind), cut };
+}
+function insApptsBetween(from, to) {
   return state.appointments.filter(a => {
     const s = new Date(a.starts_at);
-    return s.getFullYear() === now.getFullYear() && s.getMonth() === now.getMonth();
+    return s >= from && s < to;
   });
 }
-
-function newClientsThisMonth() {
-  const now = new Date();
-  const withDates = state.clients.filter(c => c.created_at);
-  if (!withDates.length) return null;
-  return withDates.filter(c => {
-    const d = new Date(c.created_at);
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-  }).length;
+// Duração real reservada na agenda (ends_at − starts_at), com a duração
+// do serviço como reserva se o par vier inconsistente. Toda conta de
+// ocupação de Insights usa ESTA função — antes conviviam duas fórmulas
+// diferentes na mesma tela.
+function insApptMinutes(a) {
+  const m = (new Date(a.ends_at) - new Date(a.starts_at)) / 60000;
+  return isFinite(m) && m > 0 ? m : serviceDurationMinutes(a.service && a.service.id);
 }
-
-function monthOccupancyPct(monthAppts) {
-  if (!profissionaisAtivos().length) return null;
-  const totalMinutes = monthAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
-  const now = new Date();
-  // Só os dias que o salão abriu entram na capacidade — contar domingo e segunda
-  // como dia de trabalho inflava o denominador e derrubava a ocupação do mês.
-  // Mesma conta que weekOccupancyPct já fazia.
-  let openDaysElapsed = 0;
-  for (let d = 1; d <= now.getDate(); d++) {
-    if (isSalonOpenDay(new Date(now.getFullYear(), now.getMonth(), d))) openDaysElapsed++;
+function insSumRevenue(list) {
+  return list.reduce((s, a) => s + appointmentRevenue(a), 0);
+}
+// Capacidade = só dias em que o salão abre, só profissionais ativas, e
+// contra o expediente real (OPEN_HOUR–CLOSE_HOUR), nunca contra a janela
+// de desenho da agenda.
+function insOpenDays(from, to) {
+  const dias = [];
+  const d = new Date(from); d.setHours(0, 0, 0, 0);
+  const fim = new Date(to);
+  while (d < fim) {
+    if (isSalonOpenDay(d)) dias.push(new Date(d));
+    d.setDate(d.getDate() + 1);
   }
-  openDaysElapsed = Math.max(1, openDaysElapsed);
-  const capacity = profissionaisAtivos().length * WORK_MINUTES_PER_DAY * openDaysElapsed;
-  if (!capacity) return null;
-  return Math.min(100, Math.round((totalMinutes / capacity) * 100));
+  return dias;
+}
+function insCapacityMinutes(from, to) {
+  const staff = Math.max(1, profissionaisAtivos().length);
+  return insOpenDays(from, to).length * WORK_MINUTES_PER_DAY * staff;
+}
+function insOccupancy(list, from, to) {
+  const cap = insCapacityMinutes(from, to);
+  if (!cap) return null;
+  const usados = list.reduce((s, a) => s + insApptMinutes(a), 0);
+  return Math.min(100, Math.round((usados / cap) * 100));
+}
+function insNewClients(from, to) {
+  const comData = state.clients.filter(c => c.created_at);
+  if (!comData.length) return null;
+  return comData.filter(c => { const d = new Date(c.created_at); return d >= from && d < to; }).length;
 }
 
-function topServicesThisMonth(monthAppts, limit = 5) {
-  const map = new Map();
-  monthAppts.forEach(a => {
-    const name = a.service?.name || 'Outro';
-    map.set(name, (map.get(name) || 0) + 1);
-  });
-  return Array.from(map.entries())
-    .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, limit);
+const INS_PERIOD_WORD = { semana: 'semana', mes: 'mês', ano: 'ano' };
+function insPeriodLabels(kind) {
+  const w = insWindow(kind, 0);
+  const fmtDia = d => d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
+  // Duas formas do mesmo rótulo, porque a regência muda: `vs` vem logo
+  // depois de um valor ("€1.010 na semana passada") e `rel` vem depois de
+  // "em relação" ("em relação à semana passada").
+  if (kind === 'semana') {
+    return { header: `${fmtDia(w.start)} – ${fmtDia(new Date(w.end - 1))}`, eyebrow: 'Esta semana',
+      vs: 'na semana passada', rel: 'à semana passada', restante: 'no restante da semana' };
+  }
+  if (kind === 'mes') {
+    const s = w.start.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    return { header: s.charAt(0).toUpperCase() + s.slice(1),
+      eyebrow: `1 – ${w.cut.getDate()} de ${w.start.toLocaleDateString('pt-BR', { month: 'long' })}`,
+      vs: 'no mesmo ponto do mês passado', rel: 'ao mesmo ponto do mês passado', restante: 'no restante do mês' };
+  }
+  return { header: String(w.start.getFullYear()), eyebrow: `1 de janeiro – ${fmtDia(w.cut)}`,
+    vs: 'no mesmo ponto do ano passado', rel: 'ao mesmo ponto do ano passado', restante: 'no restante do ano' };
 }
 
-function demandProfileThisMonth(monthAppts) {
-  const buckets = {};
-  for (let h = AGENDA_START_HOUR; h < AGENDA_END_HOUR; h++) buckets[h] = 0;
-  monthAppts.forEach(a => {
-    const h = new Date(a.starts_at).getHours();
-    if (buckets[h] !== undefined) buckets[h]++;
-  });
-  return Object.keys(buckets).map(h => ({ label: `${h}h`, value: buckets[h] }));
+// ── Dados do período ──────────────────────────────────────────
+// Um único objeto alimenta a tela inteira. `realizado` é derivado por
+// TEMPO (starts_at já passou) — o produto ainda não tem fluxo para
+// marcar concluído/não compareceu, então nenhum status é inventado.
+function insComputePeriod(kind) {
+  const atual = insWindow(kind, 0);
+  const anterior = insWindow(kind, 1);
+
+  const realizados = insApptsBetween(atual.start, atual.cut);
+  const agendados = insApptsBetween(atual.cut, atual.end);
+  const antRealizados = insApptsBetween(anterior.start, anterior.cut);
+
+  const receita = insSumRevenue(realizados);
+  const antReceita = insSumRevenue(antRealizados);
+
+  const ticket = realizados.length ? receita / realizados.length : null;
+  const antTicket = antRealizados.length ? antReceita / antRealizados.length : null;
+  const ocup = insOccupancy(realizados, atual.start, atual.cut);
+  const antOcup = insOccupancy(antRealizados, anterior.start, anterior.cut);
+  const novas = insNewClients(atual.start, atual.cut);
+  const antNovas = insNewClients(anterior.start, anterior.cut);
+
+  return {
+    kind, atual, anterior, realizados, agendados, antRealizados,
+    receita, antReceita, ticket, antTicket, ocup, antOcup, novas, antNovas,
+    agendado: insSumRevenue(agendados),
+    labels: insPeriodLabels(kind),
+    suficiente: realizados.length >= INS_MIN_APPTS_PERIODO,
+  };
 }
 
-function recentBookingHistory(limit = 6) {
-  const now = new Date();
-  return state.appointments
-    .filter(a => new Date(a.starts_at) < now)
-    .sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at))
-    .slice(0, limit);
+// ── Variação ──────────────────────────────────────────────────
+// Sem base anterior não existe variação — devolve null e a tela não
+// mostra delta nenhum, em vez de inventar "+100%".
+function insDelta(cur, prev, tipo) {
+  if (cur === null || cur === undefined || prev === null || prev === undefined) return null;
+  if (tipo === 'pp') {
+    const diff = Math.round(cur - prev);
+    if (!diff) return null;
+    return { dir: diff > 0 ? 'up' : 'down', text: `${Math.abs(diff)} p.p.` };
+  }
+  if (!prev) return null;
+  if (tipo === 'abs') {
+    const diff = Math.round(cur - prev);
+    if (!diff) return null;
+    return { dir: diff > 0 ? 'up' : 'down', text: String(Math.abs(diff)) };
+  }
+  const pct = Math.round(((cur - prev) / prev) * 100);
+  if (!pct) return null;
+  return { dir: pct > 0 ? 'up' : 'down', text: `${Math.abs(pct)}%` };
+}
+function insDeltaHtml(d, classe) {
+  if (!d) return '';
+  return `<span class="${classe} is-${d.dir}">${d.dir === 'up' ? '↑' : '↓'} ${d.text}</span>`;
 }
 
-function deltaInfo(cur, prev) {
-  const diff = cur - prev;
-  if (diff === 0) return { text: '— 0%', cls: 'is-flat' };
-  if (prev === 0) return { text: `+${formatCurrency(diff)}`, cls: 'is-up' };
-  const pct = Math.round((diff / prev) * 100);
-  return { text: `${pct > 0 ? '+' : ''}${pct}%`, cls: pct > 0 ? 'is-up' : 'is-down' };
-}
-
-function periodComparisons() {
-  const curWeekStart = startOfWeekMonday(new Date());
-  const prevWeekStart = new Date(curWeekStart); prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+// ── Faixas do dia ─────────────────────────────────────────────
+// Três faixas do expediente REAL. Nunca as 17 linhas da janela de
+// desenho da agenda (AGENDA_START_HOUR–AGENDA_END_HOUR).
+function insFaixas() {
+  const passo = (CLOSE_HOUR - OPEN_HOUR) / 3;
   return [
-    { label: 'Receita — semana atual vs. anterior', cur: weekRevenueForStart(curWeekStart), prev: weekRevenueForStart(prevWeekStart) },
-    { label: 'Receita — mês atual vs. anterior', cur: monthlyRevenueForOffset(0), prev: monthlyRevenueForOffset(1) },
+    { nome: 'Manhã', ini: OPEN_HOUR, fim: OPEN_HOUR + passo },
+    { nome: 'Início da tarde', ini: OPEN_HOUR + passo, fim: OPEN_HOUR + 2 * passo },
+    { nome: 'Fim da tarde', ini: OPEN_HOUR + 2 * passo, fim: CLOSE_HOUR },
   ];
 }
 
-function currentWeekAppointments() {
-  const start = startOfWeekMonday(new Date());
-  const end = new Date(start); end.setDate(end.getDate() + 7);
-  return state.appointments.filter(a => { const s = new Date(a.starts_at); return s >= start && s < end; });
-}
-
-function newClientsThisWeek() {
-  const start = startOfWeekMonday(new Date());
-  const end = new Date(start); end.setDate(end.getDate() + 7);
-  const withDates = state.clients.filter(c => c.created_at);
-  if (!withDates.length) return null;
-  return withDates.filter(c => { const d = new Date(c.created_at); return d >= start && d < end; }).length;
-}
-
-function weekOccupancyPct(weekAppts, weekStart) {
-  if (!profissionaisAtivos().length) return null;
-  const totalMinutes = weekAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
-  const now = new Date();
-  let openDaysElapsed = 0;
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStart); d.setDate(d.getDate() + i);
-    if (d > now) break;
-    if (isSalonOpenDay(d)) openDaysElapsed++;
+// ── Tendência ─────────────────────────────────────────────────
+// Só períodos FECHADOS entram na geometria. O período em curso ao lado
+// de períodos inteiros desenha uma queda que não aconteceu; ele vive em
+// texto, abaixo do gráfico.
+function insTrendSeries(kind) {
+  const n = kind === 'ano' ? 4 : 6;
+  const agora = new Date();
+  const out = [];
+  for (let i = n; i >= 1; i--) {
+    const start = insPeriodStart(insShiftBack(agora, kind, i), kind);
+    const end = insPeriodEnd(start, kind);
+    const lista = insApptsBetween(start, end);
+    let label;
+    if (kind === 'semana') label = `${start.getDate()}/${start.getMonth() + 1}`;
+    else if (kind === 'mes') { const m = start.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''); label = m.charAt(0).toUpperCase() + m.slice(1); }
+    else label = String(start.getFullYear());
+    out.push({ label, total: insSumRevenue(lista), count: lista.length });
   }
-  openDaysElapsed = Math.max(1, openDaysElapsed);
-  const capacity = profissionaisAtivos().length * WORK_MINUTES_PER_DAY * openDaysElapsed;
-  if (!capacity) return null;
-  return Math.min(100, Math.round((totalMinutes / capacity) * 100));
+  return out;
 }
 
-function weekRangeLabel() {
-  const start = startOfWeekMonday(new Date());
-  const end = new Date(start); end.setDate(end.getDate() + 6);
-  const fmt = d => d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' }).replace('.', '');
-  return `${fmt(start)} – ${fmt(end)}`;
+const INS_CHART = { W: 320, H: 132, PT: 30, PB: 22, PL: 10, PR: 10 };
+function insTrendSvg(serie) {
+  const { W, H, PT, PB, PL, PR } = INS_CHART;
+  const n = serie.length;
+  const vals = serie.map(p => p.total);
+  const topo = Math.max(...vals);
+  const base = Math.min(...vals);
+  const max = topo * 1.12 || 1;
+  const min = topo === base ? 0 : base * 0.74;
+  const x = i => n > 1 ? PL + (i / (n - 1)) * (W - PL - PR) : W / 2;
+  const y = v => PT + (1 - (v - min) / Math.max(1, max - min)) * (H - PT - PB);
+  const iMax = vals.indexOf(topo);
+
+  const d = serie.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.total).toFixed(1)}`).join(' ');
+  const area = `${d} L${x(n - 1).toFixed(1)},${H - PB} L${x(0).toFixed(1)},${H - PB} Z`;
+
+  // Destaque do melhor período: ponto maior + valor em --color-text, sem
+  // introduzir marca visual nova (nada de estrela ou selo).
+  const rotulos = serie.map((p, i) => {
+    const vx = Math.min(W - 20, Math.max(20, x(i)));
+    return `<text x="${vx.toFixed(1)}" y="${(y(p.total) - 12).toFixed(1)}" text-anchor="middle"
+      font-family="Poppins, sans-serif" font-size="11" font-weight="600"
+      fill="${i === iMax ? 'var(--color-text)' : 'var(--color-neutral-600)'}"
+      style="font-variant-numeric:tabular-nums">${formatCurrency(p.total)}</text>`;
+  }).join('');
+  const pontos = serie.map((p, i) =>
+    `<circle cx="${x(i).toFixed(1)}" cy="${y(p.total).toFixed(1)}" r="${i === iMax ? 4.2 : 2.8}" fill="var(--color-accent-600)"/>`).join('');
+  const eixo = serie.map((p, i) =>
+    `<text x="${x(i).toFixed(1)}" y="${H - 5}" text-anchor="middle" font-family="Jost, sans-serif"
+      font-size="11" font-weight="600" fill="var(--color-neutral-600)">${esc(p.label)}</text>`).join('');
+
+  const resumo = serie.map(p => `${p.label}: ${formatCurrency(p.total)}`).join('. ');
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img"
+      aria-label="Receita por período fechado. ${esc(resumo)}. Melhor: ${esc(serie[iMax].label)}.">
+    <path d="${area}" fill="var(--color-accent-100)" opacity=".5"/>
+    <path id="insTrendLine" d="${d}" fill="none" stroke="var(--color-accent-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pontos}${rotulos}${eixo}
+  </svg>`;
 }
 
-function currentMonthLabel() {
-  const s = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-  return s.charAt(0).toUpperCase() + s.slice(1);
+function insServicos(list) {
+  const mapa = new Map();
+  list.forEach(a => {
+    const nome = (a.service && a.service.name) || 'Outro';
+    if (!mapa.has(nome)) mapa.set(nome, { nome, receita: 0, qtd: 0, minutos: 0 });
+    const r = mapa.get(nome);
+    r.receita += appointmentRevenue(a);
+    r.qtd += 1;
+    r.minutos += insApptMinutes(a);
+  });
+  return Array.from(mapa.values())
+    .map(r => ({ ...r, hora: r.minutos > 0 ? r.receita / (r.minutos / 60) : null }))
+    .sort((a, b) => b.receita - a.receita);
 }
 
-// ── Evolução da receita: componente de gráfico único e persistente ───
-// Sempre trabalhamos com os 12 meses "por baixo do capó"; o modo 6 meses é só
-// um estado visual (6 pontos escondidos) — trocar de modo nunca troca o SVG,
-// só anima os mesmos elementos entre dois estados.
-const TREND_FULL_MONTHS = 12;
-const TREND_SHORT_MONTHS = 6;
-const TREND_W = 320, TREND_H = 106, TREND_TOP_PAD = 26, TREND_BOTTOM_PAD = 10;
-let trendFullHistoryCache = null;
+const INS_DIA_NOME = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 
-function trendXAt(count, idx) {
-  return count > 1 ? (idx / (count - 1)) * TREND_W : TREND_W / 2;
+// ══════════════════════════════════════════════════════════════
+// "ONDE SOBRA ESPAÇO" · fractal
+//
+// Cada timeframe mostra a decomposição imediatamente inferior:
+//   Semana → dias (com faixas do dia como segunda dimensão)
+//   Mês    → semanas do mês
+//   Ano    → meses do ano
+//
+// "Espaço" é sempre `capacidade − usado` do intervalo, sem distinguir
+// passado de futuro: para um dia que já passou isso é um fato histórico
+// (quanto ficou sem atendimento), para um dia futuro é oportunidade
+// disponível. A mesma fórmula serve aos dois — é o que permite mostrar
+// a SEMANA inteira (inclusive os dias que já aconteceram) em vez de
+// zerar dias passados como "lotados" só por não terem futuro restante.
+// ══════════════════════════════════════════════════════════════
+
+// Matriz dia×faixa para uma lista EXPLÍCITA de dias (cada um à meia-noite).
+// Reaproveitada tanto pelo bloco de exibição (Semana, semana inteira)
+// quanto pela Sugestão de espaço (só dias futuros, ver insSugestaoEspaco).
+function insDayFaixaMatrix(dias) {
+  const faixas = insFaixas();
+  const staff = Math.max(1, profissionaisAtivos().length);
+  const horasFaixa = (CLOSE_HOUR - OPEN_HOUR) / 3;
+  const celulas = faixas.map((fx, fi) => dias.map(d => {
+    const ini0 = new Date(d); ini0.setHours(Math.floor(fx.ini), (fx.ini % 1) * 60, 0, 0);
+    const fim0 = new Date(d); fim0.setHours(Math.floor(fx.fim), (fx.fim % 1) * 60, 0, 0);
+    const diaSeguinte = new Date(d); diaSeguinte.setDate(diaSeguinte.getDate() + 1);
+    let usado = 0;
+    insApptsBetween(d, diaSeguinte).forEach(a => {
+      const ini = new Date(a.starts_at), fimA = new Date(a.ends_at);
+      const sobrepos = Math.max(0, Math.min(fimA, fim0) - Math.max(ini, ini0)) / 3600000;
+      usado += sobrepos;
+    });
+    const cap = horasFaixa * staff;
+    return { dia: d.getDay(), data: new Date(d), faixa: fi, livre: Math.max(0, Math.round(cap - usado)), cap: Math.round(cap) };
+  }));
+  return { faixas, celulas };
 }
-function trendYAt(value, maxValue) {
-  const chartH = TREND_H - TREND_TOP_PAD - TREND_BOTTOM_PAD;
-  return TREND_TOP_PAD + (1 - value / Math.max(1, maxValue)) * chartH;
+
+// Nível MÊS → semanas: cada bucket é a fatia do mês pertencente àquela
+// semana (a primeira e a última podem ser parciais).
+function insFractalSemanas(atual) {
+  const semanas = [];
+  let cursor = new Date(atual.start);
+  let n = 1;
+  while (cursor < atual.end) {
+    const seg = startOfWeekMonday(cursor);
+    const fimSemanaCheia = new Date(seg); fimSemanaCheia.setDate(fimSemanaCheia.getDate() + 7);
+    const ate = fimSemanaCheia < atual.end ? fimSemanaCheia : atual.end;
+    semanas.push({ label: `Sem ${n}`, labelCompleto: `Semana ${n}`, de: new Date(cursor), ate: new Date(ate) });
+    cursor = ate;
+    n++;
+  }
+  return semanas;
 }
-function easeInOutCubic(t) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+// Nível ANO → meses: os 12 do ano selecionado. `label` fica abreviado
+// (cabe no tile de 6×2); `labelCompleto` existe pra frases narrativas —
+// "Ago ainda tem 146h disponíveis" lê como telegrama, "Agosto..." não.
+const MONTH_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+function insFractalMeses(atual) {
+  const ano = atual.start.getFullYear();
+  return Array.from({ length: 12 }, (_, m) => ({
+    label: MONTH_ABBR[m], labelCompleto: MONTH_FULL[m],
+    de: new Date(ano, m, 1), ate: new Date(ano, m + 1, 1),
+  }));
 }
 
-// Posição de cada mês (índice 0..11 do histórico completo) dentro de um
-// determinado "modo" (6 ou 12 meses visíveis). Os 6 mais recentes (índices
-// 6..11) existem nos dois modos e só mudam de x; os 6 mais antigos (0..5)
-// só existem fisicamente no modo de 12 meses.
-function trendPosFor(fullHistory, idx, visibleMonths, maxValue) {
-  const fullCount = fullHistory.length;
-  const addedCount = fullCount - TREND_SHORT_MONTHS;
-  const x = idx < addedCount
-    ? trendXAt(fullCount, idx)
-    : trendXAt(visibleMonths, idx - (fullCount - visibleMonths));
-  const y = trendYAt(fullHistory[idx].total, maxValue);
-  const visible = idx >= addedCount || visibleMonths === fullCount;
-  return { x, y, visible };
+// Três degraus em token existente, por RATIO absoluto (não relativo ao
+// máximo do conjunto) — um único vazio grande não pode mais espremer
+// todas as outras células no mesmo degrau "cheio".
+function insMapStep(livre, cap) {
+  if (!cap || livre <= 0) return 'is-cheio';
+  const r = livre / cap;
+  if (r >= 0.55) return 'is-muito-livre';
+  if (r >= 0.20) return 'is-livre';
+  return 'is-cheio';
 }
 
-// Constrói a marcação (repouso, sem animação) para um determinado modo.
-function buildTrendChartMarkup(fullHistory, visibleMonths) {
-  const fullCount = fullHistory.length;
-  const addedCount = fullCount - TREND_SHORT_MONTHS;
-  const visibleValues = fullHistory.slice(fullCount - visibleMonths).map(m => m.total);
-  const maxValue = Math.max(1, ...visibleValues);
-  const labelSize = visibleMonths > 8 ? 8 : 9.5;
+// R4.1 — correção semântica: a versão anterior misturava capacidade
+// HISTÓRICA (ociosa, um fato — o dia/semana/mês já aconteceu) com
+// capacidade FUTURA (ainda disponível, uma oportunidade) como se fossem
+// a mesma métrica. No Ano isso produzia frases como "Outubro é onde mais
+// houve espaço" em agosto — Outubro não tinha acontecido ainda. As duas
+// nunca são comparadas entre si a partir de agora: cada segmento (dia,
+// semana ou mês) recebe um status e só entra no ranking que faz sentido
+// pra ele.
+function insSegStatus(s, hoje) {
+  if (s.ate <= hoje) return 'encerrado';
+  if (s.de > hoje) return 'futuro';
+  return 'atual';
+}
 
-  const positions = fullHistory.map((m, idx) => trendPosFor(fullHistory, idx, visibleMonths, maxValue));
+// Monta o bloco "Onde há espaço" — HTML pronto por nível fractal.
+function insSpaceBlock(P) {
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
 
-  // Linha: sempre os 12 pontos, em ordem invertida (mais recente → mais antigo),
-  // pra que o "desenho" (dashoffset) fique ancorado no lado direito (presente).
-  let lineD = '';
-  for (let idx = fullCount - 1; idx >= 0; idx--) {
-    const p = positions[idx];
-    lineD += `${idx === fullCount - 1 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)} `;
+  if (P.kind === 'semana') {
+    const dias = insOpenDays(P.atual.start, P.atual.end); // semana inteira, passada + futura
+    const m = insDayFaixaMatrix(dias);
+    const flat = m.celulas.flat();
+    if (!flat.some(c => c.cap > 0)) return { temEspaco: false };
+
+    // "Ainda disponível" (hoje + futuro, bookável de verdade) e "já
+    // aconteceu" (só dias estritamente antes de hoje) respondem perguntas
+    // diferentes — oportunidade vs. fato histórico — e nunca viram uma
+    // frase só.
+    let melhorDisp = null, melhorPassado = null;
+    flat.forEach(c => {
+      if (c.data >= hoje) { if (!melhorDisp || c.livre > melhorDisp.livre) melhorDisp = c; }
+      else { if (!melhorPassado || c.livre > melhorPassado.livre) melhorPassado = c; }
+    });
+
+    let leitura;
+    if (melhorDisp && melhorDisp.livre >= INS_MIN_HORAS_LIVRES) {
+      leitura = `Você ainda tem espaço nesta semana — o maior é <em>${m.faixas[melhorDisp.faixa].nome.toLowerCase()} de ${INS_DIA_NOME[melhorDisp.dia]}</em>, ${melhorDisp.livre}h livres.`;
+    } else if (melhorPassado && melhorPassado.livre >= INS_MIN_HORAS_LIVRES) {
+      leitura = `Esta semana já fechou. <em>${m.faixas[melhorPassado.faixa].nome.toLowerCase()} de ${INS_DIA_NOME[melhorPassado.dia]}</em> foi onde mais sobrou tempo ocioso — ${melhorPassado.livre}h.`;
+    } else {
+      leitura = 'A agenda desta semana está cheia.';
+    }
+
+    const html = `
+      <table class="ins-map">
+        <thead><tr><th></th>${dias.map(d => `<th scope="col" class="${d < hoje ? 'is-passado' : ''}">${WEEKDAY_LABELS_3[d.getDay()]}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${m.celulas.map((linha, fi) => `<tr>
+            <th scope="row" class="ins-map-lbl">${m.faixas[fi].nome}</th>
+            ${linha.map(c => `<td class="ins-map-cell ${insMapStep(c.livre, c.cap)}${c.data < hoje ? ' is-passado' : ''}">${c.livre}h</td>`).join('')}
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      <p class="ins-map-legend">Dias já encerrados aparecem esmaecidos · quanto mais escuro, mais espaço</p>`;
+    return { temEspaco: true, leitura, html };
   }
 
-  // Preenchimento: só os pontos visíveis no modo atual.
-  const areaIdxs = [];
-  for (let idx = 0; idx < fullCount; idx++) if (positions[idx].visible) areaIdxs.push(idx);
-  const areaLineD = areaIdxs.map((idx, i) => {
-    const p = positions[idx];
-    return `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-  }).join(' ');
-  const firstAP = positions[areaIdxs[0]], lastAP = positions[areaIdxs[areaIdxs.length - 1]];
-  const areaD = `${areaLineD} L${lastAP.x.toFixed(1)},${TREND_H - TREND_BOTTOM_PAD} L${firstAP.x.toFixed(1)},${TREND_H - TREND_BOTTOM_PAD} Z`;
+  const mensal = P.kind === 'mes';
+  const segs = mensal ? insFractalSemanas(P.atual) : insFractalMeses(P.atual);
+  const linha = segs.map(s => {
+    const cap = insCapacityMinutes(s.de, s.ate);
+    const usados = insApptsBetween(s.de, s.ate).reduce((sum, a) => sum + insApptMinutes(a), 0);
+    return { label: s.label, labelCompleto: s.labelCompleto, cap: Math.round(cap / 60), livre: Math.round(Math.max(0, cap - usados) / 60), status: insSegStatus(s, hoje) };
+  });
+  if (!linha.some(c => c.cap > 0)) return { temEspaco: false };
 
-  const dotsHtml = fullHistory.map((m, idx) => {
-    const p = positions[idx];
-    const color = m.isCurrent ? 'var(--color-accent-700)' : 'var(--color-accent-600)';
-    return `<circle id="trendDot-${idx}" class="trend-dot${p.visible ? '' : ' is-hidden'}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${color}"><title>${m.label} · ${formatCurrency(m.total)}</title></circle>`;
-  }).join('');
+  // O ranking histórico usa SÓ segmentos encerrados — o atual ainda está
+  // em andamento (menos tempo passado = "livre" artificialmente alto) e o
+  // futuro nunca aconteceu. Nenhum dos dois entra na comparação.
+  const encerrados = linha.filter(c => c.status === 'encerrado' && c.cap > 0);
+  const atualSeg = linha.find(c => c.status === 'atual' && c.cap > 0);
+  let melhorHistorico = null;
+  encerrados.forEach(c => { if (!melhorHistorico || c.livre > melhorHistorico.livre) melhorHistorico = c; });
 
-  const labelsHtml = fullHistory.map((m, idx) => {
-    const p = positions[idx];
-    return `<text id="trendLabel-${idx}" class="trend-label${p.visible ? '' : ' is-hidden'}" x="${p.x.toFixed(1)}" y="${Math.max(9, p.y - 9).toFixed(1)}" text-anchor="middle" font-size="${labelSize}" font-weight="700" fill="${m.isCurrent ? 'var(--color-accent-700)' : 'var(--color-neutral-600)'}" font-family="Jost, system-ui, sans-serif">${m.label}</text>`;
-  }).join('');
+  const verbo = mensal ? 'sobrou' : 'houve'; // Ano é retrospectivo por natureza — a própria pergunta aprovada já vem no passado
+  const partes = [];
+  if (melhorHistorico && melhorHistorico.livre >= INS_MIN_HORAS_LIVRES) {
+    // Nome completo em frase narrativa ("Agosto", não "Ago") — abreviação
+    // só nos tiles, onde o espaço é compacto de propósito (R4.2).
+    partes.push(`<em>${esc(melhorHistorico.labelCompleto)}</em> é onde mais ${verbo} espaço ${mensal ? 'este mês' : 'este ano'} — ${melhorHistorico.livre}h livres.`);
+  } else if (!encerrados.length) {
+    partes.push(mensal ? 'O mês ainda está no começo — sem semanas encerradas para comparar.' : 'O ano ainda está no começo — sem meses encerrados para comparar.');
+  } else {
+    partes.push(`A agenda ficou cheia em ${mensal ? 'todas as semanas encerradas deste mês' : 'todos os meses encerrados deste ano'}.`);
+  }
+  // Disponibilidade futura é uma frase À PARTE, explicitamente rotulada —
+  // nunca dentro do ranking histórico acima.
+  if (atualSeg && atualSeg.livre >= INS_MIN_HORAS_LIVRES) {
+    partes.push(`${esc(atualSeg.labelCompleto)} ainda tem ${atualSeg.livre}h disponíveis.`);
+  }
+  const leitura = partes.join(' ');
+
+  const tiles = linha.map(c => `<div class="ins-space-tile ${insMapStep(c.livre, c.cap)}${c.status === 'futuro' ? ' is-futuro' : ''}${c.status === 'atual' ? ' is-atual' : ''}"><span class="ist-lbl">${esc(c.label)}</span><span class="ist-val">${c.livre}h</span></div>`).join('');
+  const html = `
+    <div class="${mensal ? 'ins-space-row' : 'ins-space-grid'}">${tiles}</div>
+    <p class="ins-map-legend">${mensal ? 'Semanas futuras' : 'Meses futuros'} aparecem esmaecidos · o atual tem contorno · quanto mais escuro, mais espaço</p>`;
+  return { temEspaco: true, leitura, html };
+}
+
+// Só para a Sugestão de espaço: sempre olha ~30 dias PRA FRENTE,
+// independente do timeframe selecionado — igual à Sugestão de agenda
+// (regra 1), que também ignora P.kind. "Ofereça X" só faz sentido para
+// um horário que ainda não aconteceu; o bloco de exibição acima é quem
+// pode (e deve) mostrar o passado.
+function insSugestaoEspaco(P) {
+  const agora = new Date();
+  const fim = new Date(Math.min(P.atual.end.getTime(), agora.getTime() + 30 * 86400000));
+  const hojeMeiaNoite = new Date(agora); hojeMeiaNoite.setHours(0, 0, 0, 0);
+  const dias = insOpenDays(hojeMeiaNoite, fim);
+  if (!dias.length) return null;
+  const m = insDayFaixaMatrix(dias);
+  let melhor = null;
+  m.celulas.forEach((linha, fi) => linha.forEach(c => {
+    const fimFaixa = new Date(c.data);
+    const fx = m.faixas[fi];
+    fimFaixa.setHours(Math.floor(fx.fim), (fx.fim % 1) * 60, 0, 0);
+    if (fimFaixa <= agora) return; // faixa de hoje já encerrada
+    if (!melhor || c.livre > melhor.livre) melhor = { ...c, faixaNome: fx.nome };
+  }));
+  return melhor;
+}
+
+// ══════════════════════════════════════════════════════════════
+// MOTOR DE SUGESTÕES E DE CONSIDERAÇÕES
+//
+// Nada é armazenado: candidatos → elegibilidade (amostra mínima) →
+// impacto estimado → as 3 melhores. Determinístico: os mesmos dados
+// produzem sempre a mesma lista. Um agendamento novo pode derrubar
+// uma sugestão, e é isso que se espera.
+//
+// "Considerações" aponta um problema ou desvio já ocorrido.
+// "Sugestão" recomenda uma próxima ação. Os dois não se misturam.
+// ══════════════════════════════════════════════════════════════
+
+// Intervalo habitual de cada cliente e há quanto tempo ela não vem.
+// Só entra quem tem histórico suficiente pra ter um "habitual".
+function insClientesAtrasadas() {
+  const agora = Date.now();
+  const porCliente = new Map();
+  state.appointments.forEach(a => {
+    if (!a.client || !a.client.id) return;
+    if (new Date(a.starts_at) > agora) return;
+    if (!porCliente.has(a.client.id)) porCliente.set(a.client.id, { id: a.client.id, nome: a.client.name || 'Cliente', datas: [], receita: 0 });
+    const r = porCliente.get(a.client.id);
+    r.datas.push(new Date(a.starts_at).getTime());
+    r.receita += appointmentRevenue(a);
+  });
+  const futuros = new Set(state.appointments
+    .filter(a => new Date(a.starts_at) > agora && a.client && a.client.id)
+    .map(a => a.client.id));
+
+  const out = [];
+  porCliente.forEach((r, id) => {
+    if (r.datas.length < INS_MIN_VISITAS_CLIENTE) return;
+    if (futuros.has(id)) return; // já tem retorno marcado: não está sumida
+    r.datas.sort((a, b) => a - b);
+    let soma = 0;
+    for (let i = 1; i < r.datas.length; i++) soma += r.datas[i] - r.datas[i - 1];
+    const intervalo = soma / (r.datas.length - 1);
+    const desde = agora - r.datas[r.datas.length - 1];
+    if (intervalo > 0 && desde > intervalo * INS_ATRASO_FATOR) {
+      out.push({
+        id, nome: r.nome, receita: r.receita,
+        semanas: Math.floor(desde / 604800000),
+        intervaloSemanas: Math.max(1, Math.round(intervalo / 604800000)),
+      });
+    }
+  });
+  return out.sort((a, b) => b.receita - a.receita);
+}
+
+// R4.1 — "N clientes passaram do intervalo" era uma fotografia GLOBAL
+// (quem está atrasada agora), idêntica em Semana/Mês/Ano — o mesmo número
+// não pode significar três perguntas diferentes. Esta versão só conta
+// quem CRUZOU o limite (última visita + intervalo habitual × fator)
+// DENTRO da janela pedida — "ficou atrasada NESTA semana/mês", não "está
+// atrasada agora". Usada só em Considerações; a Sugestão "Ligue para..."
+// continua com o snapshot global (ver insClientesAtrasadas) porque uma
+// ação é sempre sobre agora, não sobre uma janela de relatório.
+function insClientesForaCadenciaNaJanela(de, ate) {
+  const agora = Date.now();
+  const porCliente = new Map();
+  state.appointments.forEach(a => {
+    if (!a.client || !a.client.id) return;
+    if (new Date(a.starts_at) > agora) return;
+    if (!porCliente.has(a.client.id)) porCliente.set(a.client.id, { id: a.client.id, nome: a.client.name || 'Cliente', datas: [] });
+    porCliente.get(a.client.id).datas.push(new Date(a.starts_at).getTime());
+  });
+  const futuros = new Set(state.appointments
+    .filter(a => new Date(a.starts_at) > agora && a.client && a.client.id)
+    .map(a => a.client.id));
+
+  const out = [];
+  porCliente.forEach((r, id) => {
+    if (r.datas.length < INS_MIN_VISITAS_CLIENTE) return;
+    if (futuros.has(id)) return;
+    r.datas.sort((a, b) => a - b);
+    let soma = 0;
+    for (let i = 1; i < r.datas.length; i++) soma += r.datas[i] - r.datas[i - 1];
+    const intervalo = soma / (r.datas.length - 1);
+    if (intervalo <= 0) return;
+    const ultima = r.datas[r.datas.length - 1];
+    const vencimento = ultima + intervalo * INS_ATRASO_FATOR;
+    if (vencimento >= de.getTime() && vencimento < ate.getTime() && agora >= vencimento) {
+      out.push({ id, nome: r.nome, intervaloSemanas: Math.max(1, Math.round(intervalo / 604800000)) });
+    }
+  });
+  return out;
+}
+
+// R4.1 — Ano não pode repetir uma fotografia ("N atrasadas agora") como se
+// fosse uma leitura anual: uma fotografia de hoje não é insight sobre o
+// ano inteiro. Em vez disso, mede se o RITMO de retorno das clientes
+// recorrentes desacelerou — compara o intervalo mais recente de cada uma
+// (a última visita precisa estar dentro do ano selecionado) contra a
+// PRÓPRIA média histórica dela. Só entra com amostra mínima; sem isso, é
+// "presunçoso" (doc 01 §7) e a tela fica calada.
+function insRitmoRetornoAno(P) {
+  const porCliente = new Map();
+  state.appointments.forEach(a => {
+    if (!a.client || !a.client.id) return;
+    if (new Date(a.starts_at) > Date.now()) return;
+    if (!porCliente.has(a.client.id)) porCliente.set(a.client.id, []);
+    porCliente.get(a.client.id).push(new Date(a.starts_at).getTime());
+  });
+  let piorou = 0, total = 0;
+  porCliente.forEach(datas => {
+    if (datas.length < INS_MIN_VISITAS_CLIENTE + 1) return; // precisa de histórico ANTES do último intervalo
+    datas.sort((a, b) => a - b);
+    const ultima = datas[datas.length - 1];
+    if (ultima < P.atual.start.getTime() || ultima >= P.atual.cut.getTime()) return;
+    const penultima = datas[datas.length - 2];
+    const gapRecente = ultima - penultima;
+    const historicos = datas.slice(0, -1);
+    let soma = 0;
+    for (let i = 1; i < historicos.length; i++) soma += historicos[i] - historicos[i - 1];
+    const mediaHistorica = soma / (historicos.length - 1);
+    if (mediaHistorica <= 0) return;
+    total++;
+    if (gapRecente > mediaHistorica * 1.3) piorou++;
+  });
+  if (total < INS_MIN_CLIENTES_RITMO_ANO) return null;
+  return { pct: Math.round((piorou / total) * 100), total };
+}
+
+// Média de atendimentos por semana fechada, e o que já está marcado
+// para a próxima. Base do "abra N horários".
+function insProximaSemana() {
+  const agora = new Date();
+  const inicioAtual = startOfWeekMonday(agora);
+  const semanas = [];
+  for (let i = INS_MIN_SEMANAS_MEDIA + 3; i >= 1; i--) {
+    const s = new Date(inicioAtual); s.setDate(s.getDate() - 7 * i);
+    const e = new Date(s); e.setDate(e.getDate() + 7);
+    semanas.push(insApptsBetween(s, e).length);
+  }
+  const comMovimento = semanas.filter(n => n > 0);
+  if (comMovimento.length < INS_MIN_SEMANAS_MEDIA) return null;
+  const media = Math.round(comMovimento.reduce((a, b) => a + b, 0) / comMovimento.length);
+  const prox = new Date(inicioAtual); prox.setDate(prox.getDate() + 7);
+  const fimProx = new Date(prox); fimProx.setDate(fimProx.getDate() + 7);
+  const marcados = insApptsBetween(prox, fimProx).length;
+  return { media, marcados, faltam: Math.max(0, media - marcados), inicio: prox };
+}
+
+// ══════════════════════════════════════════════════════════════
+// MODELO DE CANDIDATO (R4.2) — Considerações e Sugestões compartilham a
+// mesma forma, o que permite um único mecanismo de seleção pros dois:
+//   categoria   assunto (deduplica: só 1 categoria por vez no top 3)
+//   valencia    'positive' | 'negative' | 'neutral' — só Considerações
+//   sinal       sourceSignal, código curto e estável, pra auditoria
+//   timeframe   P.kind no momento em que o candidato foi gerado
+//   confianca   0–1, derivado de "quão longe do piso mínimo" o sinal está
+//   peso        relevância bruta (Considerações) — usada pra ordenar
+//   impacto     € estimado (Sugestões) — usada pra ordenar; 0 quando
+//               não há como estimar em euro
+// ══════════════════════════════════════════════════════════════
+
+// Converte "quanto passou do piso de amostra" em confiança 0–1, sem
+// fingir precisão: exatamente no piso = 0.5, no dobro do piso ou mais = 1.
+function insConfianca(valor, piso) {
+  if (!piso) return 1;
+  return Math.max(0, Math.min(1, 0.5 + (valor - piso) / (piso * 2)));
+}
+
+// Seleciona até 3 candidatos por: relevância (campo) → diversidade de
+// assunto (uma categoria por vez) → em Considerações, tenta incluir ao
+// menos 1 positivo SE existir um genuinamente relevante — nunca troca por
+// um positivo fraco só pra equilibrar o tom (R4.2 §5: "o sistema não é
+// motivacional, é analítico"). Compartilhado por Considerações e
+// Sugestões — não existe um segundo motor.
+function insSelecionarTop3(candidatos, campo, comValencia) {
+  const elegiveis = candidatos.filter(Boolean).sort((a, b) => b[campo] - a[campo]);
+  const escolhidos = [];
+  const usadas = new Set();
+  for (const c of elegiveis) {
+    if (escolhidos.length >= 3) break;
+    if (usadas.has(c.categoria)) continue;
+    usadas.add(c.categoria);
+    escolhidos.push(c);
+  }
+  // Sobrou vaga e não há mais assunto novo elegível: melhor um ângulo
+  // repetido do que um card a menos.
+  for (const c of elegiveis) {
+    if (escolhidos.length >= 3) break;
+    if (!escolhidos.includes(c)) escolhidos.push(c);
+  }
+  if (comValencia) {
+    const temPositivo = escolhidos.some(c => c.valencia === 'positive');
+    if (!temPositivo) {
+      const melhorPositivo = elegiveis.find(c => c.valencia === 'positive' && !escolhidos.includes(c));
+      if (melhorPositivo && escolhidos.length) {
+        let piorIdx = 0;
+        escolhidos.forEach((c, i) => { if (c[campo] < escolhidos[piorIdx][campo]) piorIdx = i; });
+        // Só troca se o positivo for genuinamente relevante perto do que
+        // ele substitui — sem isso seria fabricar boa notícia.
+        if (melhorPositivo[campo] >= escolhidos[piorIdx][campo] * 0.4) escolhidos[piorIdx] = melhorPositivo;
+      }
+    }
+  }
+  return escolhidos.sort((a, b) => b[campo] - a[campo]);
+}
+
+// ══════════════════════════════════════════════════════════════
+// CONSIDERAÇÕES — "fatos relevantes sobre o negócio no timeframe
+// selecionado que valem a atenção da usuária." R4.2: deixou de ser uma
+// lista de más notícias. Procura sinais positivos e fatos neutros com o
+// mesmo rigor que procura problemas — nunca fabrica positividade, nunca
+// esconde um problema real, e só fala com amostra suficiente.
+// ══════════════════════════════════════════════════════════════
+function insBuildAtencao(P) {
+  const cand = [];
+  const push = c => { if (c) cand.push({ ...c, timeframe: P.kind }); };
+
+  // Receita, ocupação, gasto médio, clientes novas — os quatro comparam
+  // SEMPRE P contra o mesmo ponto do período anterior, então já são
+  // timeframe-aware por construção. Cada um vira consideração positiva
+  // OU negativa, nunca as duas ao mesmo tempo.
+  const metricas = [
+    { d: insDelta(P.receita, P.antReceita, 'pct'), categoria: 'receita', sinal: 'receita', piso: 10,
+      icone: ICONS.trendUp, iconeNeg: ICONS.trendDown,
+      up: v => `A receita cresceu ${v} em relação ${P.labels.rel}`,
+      down: v => `A receita caiu ${v} em relação ${P.labels.rel}`,
+      ev: () => `${formatCurrency(P.receita)} contra ${formatCurrency(P.antReceita)}` },
+    { d: insDelta(P.ocup, P.antOcup, 'pp'), categoria: 'ocupacao', sinal: 'ocupacao', piso: 5,
+      icone: ICONS.target, iconeNeg: ICONS.target,
+      up: v => `A ocupação melhorou ${v}`,
+      down: v => `A ocupação caiu ${v}`,
+      ev: () => `${P.ocup}% agora, contra ${P.antOcup}% ${P.labels.vs}` },
+    { d: insDelta(P.ticket, P.antTicket, 'pct'), categoria: 'gasto_medio', sinal: 'gasto_medio', piso: 10,
+      icone: ICONS.money, iconeNeg: ICONS.money,
+      up: v => `O gasto médio subiu ${v}`,
+      down: v => `O gasto médio caiu ${v}`,
+      ev: () => `${formatCurrency(P.ticket)} contra ${formatCurrency(P.antTicket)} ${P.labels.vs}` },
+    { d: insDelta(P.novas, P.antNovas, 'abs'), categoria: 'clientes_novas', sinal: 'clientes_novas', piso: 2,
+      icone: ICONS.userPlus, iconeNeg: ICONS.userPlus,
+      up: v => `Clientes novas aumentaram — mais ${v} que ${P.labels.vs}`,
+      down: v => `Clientes novas caíram — menos ${v} que ${P.labels.vs}`,
+      ev: () => `${P.novas} novas neste período, contra ${P.antNovas} ${P.labels.vs}` },
+  ];
+  metricas.forEach(m => {
+    if (!m.d || !P.suficiente) return;
+    const mag = parseFloat(m.d.text);
+    if (m.d.dir === 'up' && mag >= m.piso) {
+      push({ categoria: m.categoria, valencia: 'positive', sinal: m.sinal + '_alta', peso: mag,
+        confianca: insConfianca(mag, m.piso), icone: m.icone, titulo: m.up(m.d.text), evidencia: m.ev() });
+    } else if (m.d.dir === 'down' && mag >= m.piso) {
+      push({ categoria: m.categoria, valencia: 'negative', sinal: m.sinal + '_queda', peso: mag,
+        confianca: insConfianca(mag, m.piso), icone: m.iconeNeg, titulo: m.down(m.d.text), evidencia: m.ev() });
+    }
+  });
+
+  // Serviço em queda / em crescimento — mesmo cruzamento de dados, duas
+  // direções possíveis. O piso de amostra já escala por timeframe.
+  const atuais = insServicos(P.realizados);
+  const antesServ = insServicos(P.antRealizados);
+  const pisoServico = insMinQuedaServico(P.kind);
+  atuais.concat(antesServ.filter(a => !atuais.some(b => b.nome === a.nome)).map(a => ({ ...a, qtd: 0, receita: 0 })))
+    .forEach(s => {
+      const ant = antesServ.find(a => a.nome === s.nome);
+      if (!ant || ant.qtd < pisoServico) return;
+      const variacao = Math.round(((s.qtd - ant.qtd) / ant.qtd) * 100);
+      if (variacao <= -25) {
+        push({ categoria: 'servico_' + s.nome, valencia: 'negative', sinal: 'servico_demand_decline',
+          peso: Math.abs(variacao), confianca: insConfianca(Math.abs(variacao), 25), icone: ICONS.trendDown,
+          titulo: `${s.nome} caiu ${Math.abs(variacao)}% em relação ${P.labels.rel}`,
+          evidencia: `${s.qtd} atendimento${s.qtd === 1 ? '' : 's'} · eram ${ant.qtd}` });
+      } else if (variacao >= 25) {
+        push({ categoria: 'servico_' + s.nome, valencia: 'positive', sinal: 'servico_demand_growth',
+          peso: variacao, confianca: insConfianca(variacao, 25), icone: ICONS.trendUp,
+          titulo: `${s.nome} cresceu ${variacao}% em relação ${P.labels.rel}`,
+          evidencia: `${s.qtd} atendimentos · eram ${ant.qtd}` });
+      }
+    });
+
+  // Clientes fora da cadência — só existe versão negativa: "voltou mais
+  // rápido que o habitual" não muda nenhuma decisão, não vale inventar
+  // simetria onde não há utilidade real. Semana/Mês contam quem CRUZOU o
+  // limite dentro da janela; Ano troca a fotografia por leitura estrutural.
+  if (P.kind === 'ano') {
+    const ritmo = insRitmoRetornoAno(P);
+    if (ritmo && ritmo.pct >= 25) {
+      push({ categoria: 'retencao', valencia: 'negative', sinal: 'retorno_desacelerou', peso: ritmo.pct,
+        confianca: insConfianca(ritmo.pct, 25), icone: ICONS.users,
+        titulo: `${ritmo.pct}% das clientes recorrentes demoraram mais para voltar este ano`,
+        evidencia: `Comparado ao intervalo habitual de cada uma · ${ritmo.total} clientes analisadas` });
+    }
+  } else {
+    const foraCadencia = insClientesForaCadenciaNaJanela(P.atual.start, P.atual.cut);
+    const piso = P.kind === 'semana' ? 2 : 3;
+    if (foraCadencia.length >= piso) {
+      push({ categoria: 'retencao', valencia: 'negative', sinal: 'clientes_fora_cadencia',
+        peso: foraCadencia.length * 3, confianca: insConfianca(foraCadencia.length, piso), icone: ICONS.users,
+        titulo: `${foraCadencia.length} cliente${foraCadencia.length === 1 ? '' : 's'} passou${foraCadencia.length === 1 ? '' : 'ram'} do intervalo habitual ${P.kind === 'semana' ? 'nesta semana' : 'neste mês'}`,
+        evidencia: `Cada uma vinha, em média, a cada ${foraCadencia[0].intervaloSemanas} semanas` });
+    }
+  }
+
+  // Neutros — fatos notáveis, sem sinal de bom ou ruim. Só entram com
+  // amostra do período inteira (P.suficiente).
+  if (P.suficiente) {
+    const faixas = insFaixas();
+    const porFaixa = faixas.map(() => 0);
+    P.realizados.forEach(a => {
+      const h = new Date(a.starts_at).getHours() + new Date(a.starts_at).getMinutes() / 60;
+      const idx = faixas.findIndex(fx => h >= fx.ini && h < fx.fim);
+      if (idx >= 0) porFaixa[idx]++;
+    });
+    const totalFaixado = porFaixa.reduce((a, b) => a + b, 0);
+    if (totalFaixado) {
+      let maxIdx = 0;
+      porFaixa.forEach((v, i) => { if (v > porFaixa[maxIdx]) maxIdx = i; });
+      const pct = Math.round((porFaixa[maxIdx] / totalFaixado) * 100);
+      // Com 3 faixas, uniforme seria ~33% cada — 45% já é concentração real.
+      if (pct >= 45) {
+        const nomeFaixa = faixas[maxIdx].nome;
+        push({ categoria: 'concentracao_horario', valencia: 'neutral', sinal: 'concentracao_faixa',
+          peso: pct * 0.6, confianca: insConfianca(pct, 45), icone: ICONS.clock,
+          titulo: nomeFaixa === 'Manhã' ? 'As manhãs concentram boa parte da demanda' : `${nomeFaixa} concentra boa parte da demanda`,
+          evidencia: `${pct}% dos atendimentos do período caem nessa faixa` });
+      }
+    }
+
+    const svcTop = insServicos(P.realizados)[0];
+    if (svcTop && P.realizados.length >= INS_MIN_SERVICO) {
+      const pct = Math.round((svcTop.qtd / P.realizados.length) * 100);
+      if (pct >= 40) {
+        push({ categoria: 'servico_' + svcTop.nome, valencia: 'neutral', sinal: 'concentracao_servico',
+          peso: pct * 0.5, confianca: insConfianca(pct, 40), icone: ICONS.tag,
+          titulo: `${svcTop.nome} concentra boa parte do seu mix`,
+          evidencia: `${pct}% dos atendimentos do período` });
+      }
+    }
+
+    const canaisAgora = insCanais(P.realizados);
+    const naoManual = canaisAgora.find(c => c.key !== 'manual');
+    if (naoManual && naoManual.pct >= 25) {
+      push({ categoria: 'canal', valencia: 'neutral', sinal: 'canal_relevante',
+        peso: naoManual.pct * 0.5, confianca: insConfianca(naoManual.pct, 25), icone: ICONS.bolt,
+        titulo: `${naoManual.label} já responde por parte real das suas entradas`,
+        evidencia: `${naoManual.pct}% dos atendimentos do período vieram por ali` });
+    }
+  }
+
+  return insSelecionarTop3(cand, 'peso', true);
+}
+
+// ══════════════════════════════════════════════════════════════
+// SUGESTÕES — "o que faz sentido considerar/fazer A PARTIR do que este
+// timeframe revelou?" R4.2: deixou de ser global. Muda de NATUREZA por
+// timeframe, não só de número — Semana é operacional/imediata, Mês é
+// tática, Ano é estratégica. Nenhuma família aparece fora do nível dela.
+// ══════════════════════════════════════════════════════════════
+function insBuildSugestoes(P) {
+  if (P.kind === 'semana') return insSugestoesSemana(P);
+  if (P.kind === 'mes') return insSugestoesMes(P);
+  return insSugestoesAno(P);
+}
+
+function insReceitaHora(P) {
+  const min = P.realizados.reduce((s, a) => s + insApptMinutes(a), 0);
+  return min > 0 ? P.receita / (min / 60) : null;
+}
+
+// SEMANA · operacional — "o que eu faço agora ou nos próximos dias?"
+// As três famílias de sempre (agenda, clientes, espaço): CTA aceitável
+// porque a ação é sobre agora, que é exatamente a pergunta da Semana.
+function insSugestoesSemana(P) {
+  const cand = [];
+  const push = c => { if (c) cand.push({ ...c, timeframe: 'semana' }); };
+  const receitaHora = insReceitaHora(P);
+
+  const prox = insProximaSemana();
+  if (prox && prox.faltam > 0 && P.ticket) {
+    const impacto = prox.faltam * P.ticket;
+    push({ categoria: 'agenda', sinal: 'semana_abaixo_da_media', impacto,
+      confianca: insConfianca(prox.faltam, 1), icone: ICONS.calendar,
+      titulo: `Abra ${prox.faltam} horário${prox.faltam === 1 ? '' : 's'} na próxima semana`,
+      evidencia: `Ela tem ${prox.marcados} atendimento${prox.marcados === 1 ? '' : 's'} · sua média é ${prox.media}`,
+      impactoTexto: `Potencial estimado: +${formatCurrency(impacto)}`,
+      acao: 'Abrir agenda', destino: { tipo: 'agenda', data: prox.inicio } });
+  }
+
+  const atrasadas = insClientesAtrasadas();
+  if (atrasadas.length) {
+    const top = atrasadas.slice(0, 2);
+    const nomes = top.map(c => c.nome.split(' ')[0]).join(' e ');
+    const impacto = atrasadas.slice(0, 4).reduce((s, c) => s + (P.ticket || 0), 0);
+    const titulo = atrasadas.length <= 2 ? `Ligue para ${nomes}` : `Ligue para ${atrasadas.length} clientes que não voltaram`;
+    push({ categoria: 'clientes', sinal: 'clientes_atrasadas_agora', impacto,
+      confianca: insConfianca(atrasadas.length, 1), icone: ICONS.phone, titulo,
+      evidencia: `Passaram mais tempo que o padrão delas sem voltar — ${top[0].semanas} semanas, contra as ${top[0].intervaloSemanas} habituais`,
+      impactoTexto: P.ticket ? `Potencial estimado: +${formatCurrency(impacto)}` : '',
+      acao: 'Ver clientes',
+      destino: { tipo: 'clientes', ids: atrasadas.map(c => c.id), label: `${atrasadas.length} cliente${atrasadas.length === 1 ? '' : 's'} que ${atrasadas.length === 1 ? 'passou' : 'passaram'} do intervalo habitual` } });
+  }
+
+  const melhor = insSugestaoEspaco(P);
+  if (melhor && melhor.livre >= INS_MIN_HORAS_LIVRES && P.suficiente) {
+    const nomeFaixa = melhor.faixaNome.toLowerCase();
+    const nomeDia = INS_DIA_NOME[melhor.dia];
+    const impacto = receitaHora ? melhor.livre * receitaHora : 0;
+    push({ categoria: 'espaco', sinal: 'vazio_proximos_dias', impacto,
+      confianca: insConfianca(melhor.livre, INS_MIN_HORAS_LIVRES), icone: ICONS.clock,
+      titulo: `Ofereça ${nomeFaixa === 'manhã' ? 'a manhã' : 'o ' + nomeFaixa} de ${nomeDia}`,
+      evidencia: `É o seu maior vazio nos próximos dias — ${melhor.livre}h livres`,
+      impactoTexto: impacto ? `Potencial estimado: +${formatCurrency(impacto)}` : '',
+      acao: 'Abrir agenda', destino: { tipo: 'agenda', data: melhor.data } });
+  }
+
+  return insSelecionarTop3(cand, 'impacto', false);
+}
+
+// MÊS · tático — "o que os padrões deste mês sugerem que eu deveria
+// ajustar?" Nunca reutiliza os cards da Semana. Sem CTA — são hipóteses
+// operacionais/táticas, não têm destino no produto, e não fingimos que têm.
+function insSugestoesMes(P) {
+  const cand = [];
+  const push = c => { if (c) cand.push({ ...c, timeframe: 'mes' }); };
+  if (!P.suficiente) return [];
+
+  const servicos = insServicos(P.realizados).filter(s => s.qtd >= INS_MIN_SERVICO && s.hora);
+
+  // A · bom €/h e baixa participação — oportunidade de complemento.
+  if (servicos.length >= 2) {
+    const porHora = servicos.slice().sort((a, b) => b.hora - a.hora);
+    const campeaoHora = porHora[0];
+    const maisVendido = servicos.slice().sort((a, b) => b.qtd - a.qtd)[0];
+    const participacao = campeaoHora.qtd / P.realizados.length;
+    if (campeaoHora.nome !== maisVendido.nome && participacao <= 0.15 && campeaoHora.hora >= maisVendido.hora * 1.3) {
+      push({ categoria: 'servico_' + campeaoHora.nome, sinal: 'servico_oportunidade', impacto: campeaoHora.hora * 3,
+        confianca: insConfianca(campeaoHora.hora / maisVendido.hora, 1.3), icone: ICONS.drop,
+        titulo: `Teste ${campeaoHora.nome} como complemento`,
+        evidencia: `Rende ${formatCurrency(campeaoHora.hora)}/h, mas aparece em ${Math.round(participacao * 100)}% dos atendimentos`,
+        impactoTexto: `Pode funcionar bem junto de ${maisVendido.nome}.`,
+        acao: '', destino: null });
+    }
+  }
+
+  // B · dia da semana concentrando muita ocupação — proteger.
+  const porDia = {};
+  P.realizados.forEach(a => {
+    const d = new Date(a.starts_at).getDay();
+    porDia[d] = (porDia[d] || 0) + insApptMinutes(a);
+  });
+  const minutosTotal = Object.values(porDia).reduce((a, b) => a + b, 0);
+  if (minutosTotal > 0) {
+    let diaTop = null;
+    Object.entries(porDia).forEach(([d, min]) => { if (!diaTop || min > diaTop.min) diaTop = { dia: Number(d), min }; });
+    const pct = Math.round((diaTop.min / minutosTotal) * 100);
+    if (pct >= 30) {
+      push({ categoria: 'dia_' + diaTop.dia, sinal: 'concentracao_dia_mes', impacto: pct * (P.ticket || 20),
+        confianca: insConfianca(pct, 30), icone: ICONS.calendar,
+        titulo: `Proteja suas ${INS_DIA_NOME[diaTop.dia]}s`,
+        evidencia: `Concentraram ${pct}% da ocupação do mês`,
+        impactoTexto: 'Evite cancelamentos ou remarcações nesse dia — é onde seu mês mais rende.',
+        acao: '', destino: null });
+    }
+  }
+
+  // C · serviço em queda mas valioso — vale entender antes de deixar cair.
+  const antesMes = insServicos(P.antRealizados);
+  const emQueda = insServicos(P.realizados).find(s => {
+    const ant = antesMes.find(a => a.nome === s.nome);
+    return ant && ant.qtd >= insMinQuedaServico('mes') && s.hora && ((s.qtd - ant.qtd) / ant.qtd) <= -0.25;
+  });
+  if (emQueda) {
+    const ant = antesMes.find(a => a.nome === emQueda.nome);
+    const queda = Math.round(((ant.qtd - emQueda.qtd) / ant.qtd) * 100);
+    push({ categoria: 'servico_' + emQueda.nome, sinal: 'servico_queda_valiosa', impacto: emQueda.hora * emQueda.qtd,
+      confianca: insConfianca(queda, 25), icone: ICONS.flask,
+      titulo: `Trabalhe a procura de ${emQueda.nome}`,
+      evidencia: `Demanda caiu ${queda}% neste mês, apesar de render ${formatCurrency(emQueda.hora)}/h`,
+      impactoTexto: 'Vale entender o porquê antes de assumir que é só sazonal.',
+      acao: '', destino: null });
+  }
+
+  return insSelecionarTop3(cand, 'impacto', false);
+}
+
+// ANO · estratégico — "o que os dados acumulados sugerem como decisão
+// estrutural?" Proibido aqui: tarefa de amanhã, buraco específico de um
+// dia, fotografia atual de clientes atrasadas. Hipótese, nunca promessa.
+function insSugestoesAno(P) {
+  const cand = [];
+  const push = c => { if (c) cand.push({ ...c, timeframe: 'ano' }); };
+  if (!P.suficiente) return [];
+
+  const servicos = insServicos(P.realizados).filter(s => s.qtd >= INS_MIN_SERVICO && s.hora);
+
+  // A · o líder de receita não é o líder de €/h — revisar o papel dele no mix.
+  if (servicos.length >= 2) {
+    const liderReceita = servicos.slice().sort((a, b) => b.receita - a.receita)[0];
+    const liderHora = servicos.slice().sort((a, b) => b.hora - a.hora)[0];
+    if (liderReceita.nome !== liderHora.nome && liderHora.hora >= liderReceita.hora * 1.3) {
+      const participacao = Math.round((liderReceita.qtd / P.realizados.length) * 100);
+      push({ categoria: 'servico_' + liderReceita.nome, sinal: 'mix_servico_vs_valor', impacto: liderReceita.receita * 0.08,
+        confianca: insConfianca(liderHora.hora / liderReceita.hora, 1.3), icone: ICONS.tag,
+        titulo: `Revise o papel de ${liderReceita.nome} no seu mix`,
+        evidencia: `${participacao}% dos atendimentos e ${formatCurrency(liderReceita.receita)} de receita, mas ${formatCurrency(liderReceita.hora)}/h contra ${formatCurrency(liderHora.hora)}/h de ${liderHora.nome}`,
+        impactoTexto: 'Não é sobre subir ou baixar preço — é sobre o que esse número já diz.',
+        acao: '', destino: null });
+    }
+  }
+
+  // B · canal de aquisição já relevante — decisão estrutural, não acidente.
+  const canais = insCanais(P.realizados);
+  const naoManual = canais.find(c => c.key !== 'manual' && c.pct >= 25);
+  if (naoManual) {
+    push({ categoria: 'canal', sinal: 'canal_estrutural', impacto: (P.receita * naoManual.pct / 100) * 0.05,
+      confianca: insConfianca(naoManual.pct, 25), icone: ICONS.bolt,
+      titulo: `${naoManual.label} já é parte estrutural da sua aquisição`,
+      evidencia: `${naoManual.pct}% dos atendimentos do ano vieram por ali · ${naoManual.n} no total`,
+      impactoTexto: 'Vale decidir se isso merece investimento deliberado, não só acontecer.',
+      acao: '', destino: null });
+  }
+
+  // C · ritmo de retorno das recorrentes — piso mais brando que o da
+  // Consideração equivalente (15% aqui, 25% lá): uma sugestão pode ser
+  // mais especulativa que uma afirmação declarada.
+  const ritmo = insRitmoRetornoAno(P);
+  if (ritmo && ritmo.pct >= 15) {
+    push({ categoria: 'retencao', sinal: 'retencao_estrutural', impacto: ritmo.pct * (P.ticket || 20) * 0.5,
+      confianca: insConfianca(ritmo.pct, 15), icone: ICONS.users,
+      titulo: 'Fortaleça o relacionamento com quem já é cliente',
+      evidencia: `${ritmo.pct}% das clientes recorrentes espaçaram mais as visitas este ano · ${ritmo.total} analisadas`,
+      impactoTexto: 'Reter custa menos que conquistar, e composta mais no longo prazo.',
+      acao: '', destino: null });
+  }
+
+  return insSelecionarTop3(cand, 'impacto', false);
+}
+
+// ── Canais ────────────────────────────────────────────────────
+// Só os canais que o banco REALMENTE grava. `appointments.source` tem
+// um CHECK constraint que hoje libera 'online' | 'manual' | 'ai' |
+// 'whatsapp' — auditado em 08/2026 (ver docs, item de atribuição do R4).
+// 'whatsapp' passou a ser capturado de verdade pelo agendar.html;
+// Instagram, Google e Website ainda não têm valor liberado no schema —
+// entram em 'online' até a constraint mudar (não é inferência, é o
+// mesmo "online" que a página já representava antes de existir tracker).
+// Não são inferidos nem inventados. Ver "gaps de dados" na entrega.
+const INS_CANAIS = [
+  { key: 'online', label: 'Direto', cor: 'var(--color-accent-600)' },
+  { key: 'whatsapp', label: 'WhatsApp', cor: 'var(--color-success)' },
+  { key: 'manual', label: 'Marcados por você', cor: 'var(--color-neutral-300)' },
+];
+function insCanais(list) {
+  const cont = {};
+  list.forEach(a => {
+    const k = a.source === 'whatsapp' ? 'whatsapp' : (a.source === 'online' ? 'online' : 'manual');
+    cont[k] = (cont[k] || 0) + 1;
+  });
+  const total = list.length;
+  return INS_CANAIS.map(c => ({ ...c, n: cont[c.key] || 0, pct: total ? Math.round((cont[c.key] || 0) / total * 100) : 0 }))
+    .filter(c => c.n > 0);
+}
+// Conversão da página: visitas e agendamentos contados na MESMA janela.
+// Um total histórico contra um período parcial daria uma taxa falsa.
+function insConversao(P) {
+  const naJanela = iso => { const d = new Date(iso); return d >= P.atual.start && d < P.atual.cut; };
+  const visitas = (state.bookingVisits || []).filter(v => naJanela(v.created_at)).length;
+  // Conta o que foi MARCADO na janela, não o que aconteceu nela: uma visita
+  // de hoje que gera um atendimento pra semana que vem é conversão de hoje.
+  // Por isso este número pode divergir do "N pela página" da barra acima,
+  // que é sobre atendimentos realizados — e a frase diz qual é qual.
+  const agendamentos = state.appointments.filter(a =>
+    (a.source === 'online' || a.source === 'whatsapp') && a.created_at && naJanela(a.created_at)).length;
+  if (visitas < 10) return null; // amostra pequena demais pra virar taxa
+  return { visitas, agendamentos, pct: Math.round((agendamentos / visitas) * 100) };
+}
+
+// ══════════════════════════════════════════════════════════════
+// A TELA
+// ══════════════════════════════════════════════════════════════
+function insCardHtml(item, i) {
+  const temAcao = !!(item.acao && item.destino);
+  return `
+    <${temAcao ? 'button' : 'div'} class="ins-card${temAcao ? ' is-actionable' : ''}"
+      ${temAcao ? `type="button" data-sug="${i}"` : ''}>
+      <span class="ins-card-ic" aria-hidden="true">${item.icone}</span>
+      <span class="ins-card-body">
+        <span class="ins-card-head">${esc(item.titulo)}</span>
+        <span class="ins-card-sub">${esc(item.evidencia)}</span>
+        ${item.impactoTexto ? `<span class="ins-card-impact">${esc(item.impactoTexto)}</span>` : ''}
+      </span>
+      ${temAcao ? `<span class="ins-card-go">${esc(item.acao)} ${ICONS.chevron}</span>` : ''}
+    </${temAcao ? 'button' : 'div'}>`;
+}
+
+// renderInsights() é a entrada de aba: monta a barra de período (com a
+// cápsula persistente) uma única vez e delega o miolo a insContentHtml().
+// A troca Semana/Mês/Ano NÃO passa mais por aqui — ver insTransitionContent.
+function renderInsights() {
+  document.getElementById('greeting').textContent = 'Insights';
+  const P = insComputePeriod(state.insightsPeriod);
+  document.getElementById('greetingSub').textContent = P.labels.header;
+
+  app.innerHTML = `
+    <div class="ins-period" role="group" aria-label="Período" id="insPeriod">
+      <span class="ins-period-pill" id="insPeriodPill" aria-hidden="true"></span>
+      ${INSIGHTS_PERIODS.map(p => `<button type="button" data-period="${p.key}"
+        aria-pressed="${state.insightsPeriod === p.key}">${p.label}</button>`).join('')}
+    </div>
+    <div id="insContent">${insContentHtml(P)}</div>
+  `;
+
+  insPositionPill(state.insightsPeriod, false);
+  insBindPeriod();
+  insRenderContentExtras(P);
+}
+
+// HTML de tudo que muda quando o período muda (Hero até Canais). Isolado
+// pra poder ser trocado sozinho, sem recriar a barra de período por
+// baixo — é o que dá continuidade física à cápsula.
+function insContentHtml(P) {
+  const atencao = insBuildAtencao(P);
+  const sugestoes = insBuildSugestoes(P);
+  const serie = insTrendSeries(P.kind);
+  const temSerie = serie.some(p => p.total > 0);
+  const servicos = insServicos(P.realizados);
+  const maxRec = Math.max(1, ...servicos.map(s => s.receita));
+  const espaco = insSpaceBlock(P);
+  const canais = insCanais(P.realizados);
+  const conv = insConversao(P);
+  const totalCanal = canais.reduce((s, c) => s + c.n, 0);
+
+  const dReceita = insDelta(P.receita, P.antReceita, 'pct');
+  const kpis = [
+    { l: 'Atendimentos', v: String(P.realizados.length), d: insDelta(P.realizados.length, P.antRealizados.length, 'abs') },
+    { l: 'Gasto médio', v: P.ticket === null ? '—' : formatCurrency(P.ticket), d: insDelta(P.ticket, P.antTicket, 'pct'),
+      help: 'Valor médio faturado por atendimento no período selecionado.' },
+    { l: 'Ocupação', v: P.ocup === null ? '—' : `${P.ocup}%`, d: insDelta(P.ocup, P.antOcup, 'pp'),
+      help: 'Percentual das horas disponíveis da agenda que foram ocupadas por atendimentos.' },
+    { l: 'Clientes novas', v: P.novas === null ? '—' : String(P.novas), d: insDelta(P.novas, P.antNovas, 'abs') },
+  ];
 
   return `
-    <svg viewBox="0 0 ${TREND_W} ${TREND_H}" preserveAspectRatio="none">
-      <path id="trendAreaPath" d="${areaD}" fill="var(--color-accent-100)" opacity="0.6" stroke="none"/>
-      <path id="trendLinePath" d="${lineD.trim()}" fill="none" stroke="var(--color-accent-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      ${labelsHtml}
-      ${dotsHtml}
-    </svg>
-  `;
-}
-
-// Aplica o "recorte" (stroke-dasharray/dashoffset) que ancora a linha no
-// modo de repouso atual, sem trocar nada visualmente.
-function settleTrendPath(pathEl, visibleMonths) {
-  if (!pathEl) return;
-  const totalLen = pathEl.getTotalLength();
-  const revealFraction = (visibleMonths - 1) / (TREND_FULL_MONTHS - 1);
-  pathEl.style.transition = 'none';
-  pathEl.style.strokeDasharray = `${totalLen}`;
-  pathEl.style.strokeDashoffset = `${totalLen * (1 - revealFraction)}`;
-}
-
-// ── Indicadores: formatação/animação por tipo, e recálculo Mês/Semana ──
-function formatIndicatorValue(type, raw) {
-  if (raw === null || raw === undefined || !isFinite(raw)) return '--';
-  switch (type) {
-    case 'currency': return formatCurrency(raw);
-    case 'percent': return `${Math.round(raw)}%`;
-    case 'hours': return `${raw.toFixed(1)}h`;
-    default: return String(Math.round(raw));
-  }
-}
-
-// Anima um indicador "descendo" até zero e depois "subindo" até o novo valor —
-// dá a sensação de recálculo, sem precisar recarregar a seção inteira.
-function animateIndicatorValue(el, type, fromRaw, toRaw) {
-  if (toRaw === null || toRaw === undefined || !isFinite(toRaw)) { el.textContent = '--'; return; }
-  const from = (fromRaw === null || fromRaw === undefined || !isFinite(fromRaw)) ? 0 : fromRaw;
-  if (from === toRaw) { el.textContent = formatIndicatorValue(type, toRaw); return; }
-  if (prefersReducedMotion()) { el.textContent = formatIndicatorValue(type, toRaw); return; }
-  const downMs = 240, upMs = 420;
-  const downStart = performance.now();
-  function tickDown(now) {
-    const p = Math.min(1, (now - downStart) / downMs);
-    const eased = 1 - Math.pow(1 - p, 2);
-    el.textContent = formatIndicatorValue(type, from * (1 - eased));
-    if (p < 1) requestAnimationFrame(tickDown);
-    else requestAnimationFrame(tickUpStart);
-  }
-  function tickUpStart(now0) {
-    const upStart = now0;
-    function tickUp(now) {
-      const p = Math.min(1, (now - upStart) / upMs);
-      const eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = formatIndicatorValue(type, toRaw * eased);
-      if (p < 1) requestAnimationFrame(tickUp);
-      else el.textContent = formatIndicatorValue(type, toRaw);
-    }
-    requestAnimationFrame(tickUp);
-  }
-  requestAnimationFrame(tickDown);
-}
-
-// Explicações curtas pra alguns indicadores — acessíveis pelo ícone "?" no card.
-const INDICATOR_HELP = {
-  'Horas agendadas': 'Soma a duração de todos os serviços marcados no período (mês ou semana), convertida em horas. Mostra o volume de trabalho agendado pra equipe.',
-  'Taxa de ocupação': 'Compara quanto tempo já está ocupado com atendimentos contra o tempo total disponível da equipe no período. Quanto mais perto de 100%, mais cheia está a agenda.',
-  'Ticket médio': 'Receita total do período dividida pela quantidade de agendamentos. Mostra quanto, em média, cada atendimento rende.',
-};
-
-function showIndicatorHelp(label) {
-  const text = INDICATOR_HELP[label];
-  if (!text) return;
-  modalContainer.innerHTML = `
-    <div class="help-popup-overlay" id="helpPopupOverlay">
-      <div class="help-popup-card">
-        <button class="help-popup-close" id="helpPopupClose">✕</button>
-        <div class="hp-title">${label}</div>
-        <div class="hp-text">${text}</div>
+    <section class="ins-answer" aria-label="Receita realizada">
+      <p class="ins-eyebrow">${esc(P.labels.eyebrow)}</p>
+      <div class="ins-answer-row">
+        <span class="ins-answer-value">${formatCurrency(P.receita)}</span>
+        <span class="ins-answer-word">realizados</span>
+        ${dReceita ? `<span class="ins-delta is-${dReceita.dir}">${dReceita.dir === 'up' ? '↑' : '↓'} ${dReceita.text}</span>` : ''}
       </div>
-    </div>
+      ${dReceita ? `<p class="ins-answer-vs">${formatCurrency(P.antReceita)} ${esc(P.labels.vs)}</p>` : ''}
+      ${P.agendado > 0 ? `
+        <div class="ins-answer-ahead">
+          <span class="ins-ahead-ic" aria-hidden="true">${ICONS.calendar}</span>
+          <span><strong>${formatCurrency(P.agendado)}</strong> já agendados ${esc(P.labels.restante)}</span>
+        </div>` : ''}
+    </section>
+
+    ${atencao.length ? `
+    <section class="ins-floor">
+      <h2 class="ins-title">Considerações</h2>
+      <div class="ins-stack">${atencao.map(a => `
+        <div class="ins-alert">
+          <span class="ins-alert-ic" aria-hidden="true">${a.icone}</span>
+          <span class="ins-alert-body">
+            <span class="ins-alert-head">${esc(a.titulo)}</span>
+            <span class="ins-alert-sub">${esc(a.evidencia)}</span>
+          </span>
+        </div>`).join('')}
+      </div>
+    </section>` : ''}
+
+    ${sugestoes.length ? `
+    <section class="ins-floor">
+      <h2 class="ins-title">Sugestões</h2>
+      <div class="ins-rail-wrap">
+        <div class="ins-rail" id="insRail">${sugestoes.map(insCardHtml).join('')}</div>
+        ${sugestoes.length > 1 ? `<span class="ins-rail-hint" id="insRailHint" aria-hidden="true">${ICONS.chevron}</span>` : ''}
+      </div>
+      ${sugestoes.length > 1 ? `<div class="ins-dots" id="insDots" aria-hidden="true">${sugestoes.map((_, i) => `<i class="${i ? '' : 'is-on'}"></i>`).join('')}</div>` : ''}
+    </section>` : ''}
+
+    <section class="ins-floor">
+      <h2 class="ins-title">Indicadores</h2>
+      <div class="ins-kpis">
+        ${kpis.map((k, i) => `
+          <div class="ins-kpi">
+            <div class="ins-kpi-lbl">${k.l}${k.help ? ` <button type="button" class="ins-kpi-help" data-help-label="${esc(k.l)}" data-help-text="${esc(k.help)}" aria-label="O que é ${esc(k.l)}">?</button>` : ''}</div>
+            <div class="ins-kpi-row">
+              <span class="ins-kpi-val">${k.v}</span>
+              ${insDeltaHtml(k.d, 'ins-kpi-delta')}
+            </div>
+          </div>`).join('')}
+      </div>
+    </section>
+
+    <section class="ins-floor">
+      <h2 class="ins-title">Tendência</h2>
+      ${temSerie ? `
+        <div class="ins-chart-card">
+          <div id="insChartWrap">${insTrendSvg(serie)}</div>
+          <p class="ins-chart-foot">
+            ${esc(insEmCursoLabel(P.kind))} está em curso — <strong>${formatCurrency(P.receita)}</strong> até aqui
+          </p>
+        </div>` : emptyStateHtml({
+          icon: ICONS.bars, compact: true,
+          title: 'Sem histórico suficiente para comparar.',
+          caption: 'A tendência aparece quando houver períodos fechados com atendimento.',
+        })}
+    </section>
+
+    <section class="ins-floor">
+      <h2 class="ins-title">Onde há espaço</h2>
+      ${espaco.temEspaco ? `
+        <p class="ins-read">${espaco.leitura}</p>
+        ${espaco.html}
+      ` : emptyStateHtml({
+          icon: ICONS.clock, compact: true,
+          title: 'Não há dias de atendimento neste período.',
+          caption: 'O mapa volta a aparecer no período seguinte.',
+        })}
+    </section>
+
+    <section class="ins-floor">
+      <h2 class="ins-title">Onde está o dinheiro</h2>
+      ${servicos.length ? `
+        ${insServicosLeitura(servicos)}
+        ${servicos.map(s => `
+          <div class="ins-svc">
+            <div class="ins-svc-body">
+              <div class="ins-svc-name">${esc(s.nome)}</div>
+              <span class="ins-svc-track"><span class="ins-svc-fill" data-target-width="${Math.round(s.receita / maxRec * 100)}"></span></span>
+              <div class="ins-svc-meta">${s.qtd} atendimento${s.qtd === 1 ? '' : 's'}</div>
+            </div>
+            <div class="ins-svc-right">
+              <div class="ins-svc-rev">${formatCurrency(s.receita)}</div>
+              ${s.hora !== null ? `<span class="ins-svc-hour">${formatCurrency(s.hora)}/h</span>` : ''}
+            </div>
+          </div>`).join('')}
+      ` : emptyStateHtml({
+          icon: ICONS.money, compact: true,
+          title: 'Nenhum atendimento neste período.',
+          caption: 'A receita por serviço aparece com o primeiro atendimento.',
+        })}
+    </section>
+
+    <section class="ins-floor">
+      <h2 class="ins-title">Como as clientes chegam</h2>
+      ${totalCanal ? `
+        <div class="ins-ch-bar">
+          ${canais.map(c => `<span style="width:${Math.round(c.n / totalCanal * 100)}%;background:${c.cor}"></span>`).join('')}
+        </div>
+        <div class="ins-ch-keys">
+          ${canais.map(c => `<span><i style="background:${c.cor}"></i>${c.n} ${esc(c.label.toLowerCase())}</span>`).join('')}
+        </div>
+        ${conv ? `<p class="ins-ch-conv"><strong>${conv.pct}%</strong> de conversão · ${conv.visitas} visitas à página geraram ${conv.agendamentos} agendamento${conv.agendamentos === 1 ? '' : 's'} no período</p>` : ''}
+      ` : emptyStateHtml({
+          icon: ICONS.users, compact: true,
+          title: 'Nenhum atendimento neste período.',
+          caption: 'A origem aparece com o primeiro atendimento do período.',
+        })}
+    </section>
   `;
-  document.getElementById('helpPopupClose').onclick = closeModal;
-  document.getElementById('helpPopupOverlay').onclick = (e) => { if (e.target.id === 'helpPopupOverlay') closeModal(); };
 }
 
-function computeIndicatorsData() {
-  const monthAppts = currentMonthAppointments();
-  const monthRevenue = monthAppts.reduce((sum, a) => sum + appointmentRevenue(a), 0);
-  const monthMinutes = monthAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
-  const monthHours = monthMinutes / 60;
-  const newClients = newClientsThisMonth();
-  const occPct = monthOccupancyPct(monthAppts);
-  const avgTicket = monthAppts.length ? monthRevenue / monthAppts.length : null;
+function insEmCursoLabel(kind) {
+  if (kind === 'semana') return 'Esta semana';
+  if (kind === 'mes') return 'Este mês';
+  return 'Este ano';
+}
+const WEEKDAY_LABELS_3 = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-  const weekAppts = currentWeekAppointments();
-  const weekRevenue = weekAppts.reduce((sum, a) => sum + appointmentRevenue(a), 0);
-  const weekMinutes = weekAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
-  const weekHours = weekMinutes / 60;
-  const weekNewClients = newClientsThisWeek();
-  const weekOccPctVal = weekOccupancyPct(weekAppts, startOfWeekMonday(new Date()));
-  const weekAvgTicket = weekAppts.length ? weekRevenue / weekAppts.length : null;
-
-  return {
-    month: {
-      label: currentMonthLabel(),
-      items: [
-        { icon: ICONS.calendar, type: 'count', raw: monthAppts.length, label: 'Agendamentos' },
-        { icon: ICONS.money, type: 'currency', raw: monthRevenue, label: 'Receita' },
-        { icon: ICONS.userPlus, type: 'count', raw: newClients, label: 'Novos clientes' },
-        { icon: ICONS.clock, type: 'hours', raw: monthHours, label: 'Horas agendadas' },
-        { icon: ICONS.target, type: 'percent', raw: occPct, label: 'Taxa de ocupação' },
-        { icon: ICONS.tag, type: 'currency', raw: avgTicket, label: 'Ticket médio' },
-      ],
-    },
-    week: {
-      label: weekRangeLabel(),
-      items: [
-        { icon: ICONS.calendar, type: 'count', raw: weekAppts.length, label: 'Agendamentos' },
-        { icon: ICONS.money, type: 'currency', raw: weekRevenue, label: 'Receita' },
-        { icon: ICONS.userPlus, type: 'count', raw: weekNewClients, label: 'Novos clientes' },
-        { icon: ICONS.clock, type: 'hours', raw: weekHours, label: 'Horas agendadas' },
-        { icon: ICONS.target, type: 'percent', raw: weekOccPctVal, label: 'Taxa de ocupação' },
-        { icon: ICONS.tag, type: 'currency', raw: weekAvgTicket, label: 'Ticket médio' },
-      ],
-    },
-  };
+function insServicosLeitura(servicos) {
+  const comHora = servicos.filter(s => s.hora !== null && s.qtd >= INS_MIN_SERVICO);
+  if (comHora.length < 2) return '';
+  const porHora = comHora.slice().sort((a, b) => b.hora - a.hora);
+  const campeao = porHora[0], maisVendido = comHora[0];
+  if (campeao.nome === maisVendido.nome) return '';
+  return `<p class="ins-read"><em>${esc(campeao.nome)}</em> rende ${formatCurrency(campeao.hora)} por hora de cadeira — ${esc(maisVendido.nome.toLowerCase())} rende ${formatCurrency(maisVendido.hora)}.</p>`;
 }
 
-// Recalcula SÓ a seção "Indicadores" (legenda + grid), sem tocar no resto da tela.
-function renderIndicatorsSection() {
-  const captionEl = document.getElementById('indicatorsCaption');
-  const gridEl = document.getElementById('indicatorsGrid');
-  if (!gridEl) return;
-  const active = computeIndicatorsData()[state.insightsIndicatorPeriod];
-  if (captionEl) captionEl.textContent = active.label;
-  const cards = gridEl.querySelectorAll('.insight-card');
-  active.items.forEach((item, i) => {
-    const card = cards[i];
-    if (!card) return;
-    const valEl = card.querySelector('.ic-val');
-    const fromRaw = valEl.dataset.raw === '' ? null : Number(valEl.dataset.raw);
-    animateIndicatorValue(valEl, item.type, fromRaw, item.raw);
-    valEl.dataset.raw = (item.raw === null || item.raw === undefined) ? '' : item.raw;
+// ── Ajuda dos indicadores ───────────────────────────────────────
+// R4.1: o ConfirmationDialog (.o-dialog-*) é uma FOLHA que sobe do rodapé
+// em largura cheia — pesado demais pra uma frase. Reconstruído aqui como
+// micro-diálogo centralizado, no mesmo espírito do `.month-cal-card` que
+// já existe na Agenda (mesmo raio, mesma sombra — `--elevation-overlay`
+// é literalmente o valor que aquele componente já usava, só que agora
+// como token). Continua reutilizando `orenziUI.trapFocus` — é o único
+// pedaço genuinamente compartilhável entre os dois padrões de diálogo.
+// "?" de 18px sem foco/Esc/área de toque nunca volta: alvo do fechar é
+// 44px via largura/altura reais (não extensão invisível, cabe folgado).
+function insShowHelp(titulo, texto, trigger) {
+  const overlay = document.createElement('div');
+  overlay.className = 'ins-help-overlay';
+  overlay.innerHTML = `
+    <div class="ins-help-card" role="dialog" aria-modal="true" aria-labelledby="insHelpTitle" aria-describedby="insHelpMsg">
+      <button type="button" class="ins-help-close" aria-label="Fechar">${ICONS.close}</button>
+      <p class="ins-help-title" id="insHelpTitle">${esc(titulo)}</p>
+      <p class="ins-help-text" id="insHelpMsg">${esc(texto)}</p>
+    </div>`;
+  document.body.appendChild(overlay);
+  const card = overlay.querySelector('.ins-help-card');
+  const closeBtn = overlay.querySelector('.ins-help-close');
+  const release = orenziUI.trapFocus(card);
+
+  let fechado = false;
+  function fechar() {
+    if (fechado) return;
+    fechado = true;
+    overlay.classList.remove('is-open');
+    overlay.classList.add('is-closing');
+    release();
+    document.removeEventListener('keydown', onKey);
+    let removido = false;
+    const remove = () => {
+      if (removido) return;
+      removido = true;
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      if (trigger && document.contains(trigger)) trigger.focus();
+    };
+    overlay.addEventListener('transitionend', e => { if (e.target === overlay) remove(); });
+    // Rede de segurança: aba em segundo plano nunca compõe frames, e o
+    // transitionend correspondente não dispara — mesmo padrão do resto do app.
+    setTimeout(remove, 260);
+  }
+  function onKey(e) { if (e.key === 'Escape') fechar(); }
+  document.addEventListener('keydown', onKey);
+  overlay.onclick = e => { if (e.target === overlay) fechar(); };
+  closeBtn.onclick = fechar;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('is-open')));
+  closeBtn.focus();
+}
+
+// ── Ligações do conteúdo (Sugestões, gráfico, help) ─────────────
+// Chamada tanto pela entrada de aba quanto pela troca de período —
+// tudo aqui opera dentro de #insContent, nunca na barra de período.
+function insRenderContentExtras(P) {
+  animateFills(document.getElementById('insContent') || app);
+  insBindRail(insBuildSugestoes(P));
+  insBindHelp();
+  insAnimateChart();
+}
+
+function insBindHelp() {
+  document.querySelectorAll('.ins-kpi-help').forEach(btn => {
+    btn.onclick = () => insShowHelp(btn.dataset.helpLabel, btn.dataset.helpText, btn);
   });
 }
 
-// Constrói o gráfico de evolução no modo atual (state.insightsTrendMonths).
-// Roda a cada visita à aba Insights — a linha só é DESENHADA (entrada
-// animada) na primeíssima vez da sessão (state.insightsChartEntered); nas
-// visitas seguintes assenta direto no estado final, senão a "estreia" se
-// repetiria toda vez que a Juliane tocasse a aba.
-function renderTrendChartSection() {
-  const wrap = document.getElementById('trendChartWrap');
-  if (!wrap) return;
-  const fullHistory = monthlyRevenueHistory(TREND_FULL_MONTHS);
-  trendFullHistoryCache = fullHistory;
-  const visibleMonths = state.insightsTrendMonths;
-  wrap.innerHTML = buildTrendChartMarkup(fullHistory, visibleMonths);
-  wrap.dataset.months = visibleMonths;
-  const pathEl = wrap.querySelector('#trendLinePath');
-  if (!state.insightsChartEntered && !prefersReducedMotion()) {
-    state.insightsChartEntered = true;
-    animateTrendChartEntrance(pathEl, visibleMonths);
+// ── Ligações ──────────────────────────────────────────────────
+// A barra de período é montada só na entrada de aba (renderInsights) —
+// os botões e a cápsula persistem como os MESMOS nós entre trocas de
+// período, o que é o que permite a cápsula deslizar em vez de reaparecer.
+function insBindPeriod() {
+  document.querySelectorAll('#insPeriod button').forEach(b => {
+    b.onclick = () => {
+      const novo = b.dataset.period;
+      if (novo === state.insightsPeriod) return;
+      document.querySelectorAll('#insPeriod button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      insPositionPill(novo, true);
+      insTransitionContent(novo);
+    };
+  });
+}
+
+// Posiciona a cápsula do segmented control. `animar=false` é usado só na
+// entrada de aba (não pode animar a partir do nada) — no resto do tempo
+// a transição CSS já cuida do deslize.
+function insPositionPill(kind, animar) {
+  const pill = document.getElementById('insPeriodPill');
+  if (!pill) return;
+  const i = INSIGHTS_PERIODS.findIndex(p => p.key === kind);
+  if (!animar || prefersReducedMotion()) {
+    pill.style.transition = 'none';
+    pill.style.transform = `translateX(${i * 100}%)`;
+    void pill.offsetHeight; // aplica antes de qualquer repaint, sem deixar a transição "vazar"
+    pill.style.transition = '';
   } else {
-    settleTrendPath(pathEl, visibleMonths);
+    pill.style.transform = `translateX(${i * 100}%)`;
   }
 }
 
-// Desenha a linha da esquerda pra direita uma única vez (ver comentário
-// acima). stroke-dashoffset, mesma técnica de settleTrendPath — só anima
-// uma propriedade, sem custo de layout.
-function animateTrendChartEntrance(pathEl, visibleMonths) {
-  if (!pathEl) return;
-  const totalLen = pathEl.getTotalLength();
-  const revealFraction = (visibleMonths - 1) / (TREND_FULL_MONTHS - 1);
-  pathEl.style.transition = 'none';
-  pathEl.style.strokeDasharray = `${totalLen}`;
-  pathEl.style.strokeDashoffset = `${totalLen}`;
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      pathEl.style.transition = 'stroke-dashoffset .45s var(--ease-out)';
-      pathEl.style.strokeDashoffset = `${totalLen * (1 - revealFraction)}`;
-    });
-  });
-}
+// Troca de conteúdo sem blink: sai com fade+deslocamento mínimo, troca o
+// HTML já pronto (o cálculo é local e síncrono — não há "carregando" pra
+// esconder), entra do lado oposto. Direção segue a ordem Semana·Mês·Ano.
+function insTransitionContent(novoPeriodo) {
+  const idxAtual = INSIGHTS_PERIODS.findIndex(p => p.key === state.insightsPeriod);
+  const idxNovo = INSIGHTS_PERIODS.findIndex(p => p.key === novoPeriodo);
+  const dir = idxNovo > idxAtual ? 1 : -1;
+  state.insightsPeriod = novoPeriodo;
 
-// Anima a transição 6 ⇄ 12 meses no MESMO gráfico: os 6 meses recentes
-// deslizam de posição, a linha se desenha/retrai a partir da âncora (o mês
-// atual, à direita) e os meses extras entram/saem em cascata.
-function animateTrendTransition(targetMonths) {
-  const wrap = document.getElementById('trendChartWrap');
-  if (!wrap) return;
-  const prevMonths = Number(wrap.dataset.months) || targetMonths;
-  if (prevMonths === targetMonths) return;
+  const P = insComputePeriod(novoPeriodo);
+  document.getElementById('greetingSub').textContent = P.labels.header;
+  const content = document.getElementById('insContent');
 
-  // O loop de rAF abaixo não é CSS — a cascata global de reduced-motion não
-  // alcança ele. Vai direto pro estado final, mesmo padrão de slidePane().
-  if (prefersReducedMotion()) {
-    const fh = trendFullHistoryCache || monthlyRevenueHistory(TREND_FULL_MONTHS);
-    wrap.innerHTML = buildTrendChartMarkup(fh, targetMonths);
-    wrap.dataset.months = targetMonths;
-    settleTrendPath(wrap.querySelector('#trendLinePath'), targetMonths);
+  if (!content || prefersReducedMotion()) {
+    if (content) content.innerHTML = insContentHtml(P);
+    insRenderContentExtras(P);
     return;
   }
 
-  const fullHistory = trendFullHistoryCache || monthlyRevenueHistory(TREND_FULL_MONTHS);
-  const fullCount = fullHistory.length;
-  const addedCount = fullCount - TREND_SHORT_MONTHS;
-  const expanding = targetMonths > prevMonths;
-
-  const pathEl = wrap.querySelector('#trendLinePath');
-  const areaEl = wrap.querySelector('#trendAreaPath');
-  if (!pathEl) { renderTrendChartSection(); return; }
-
-  const dotEls = Array.from({ length: fullCount }, (_, idx) => wrap.querySelector(`#trendDot-${idx}`));
-  const labelEls = Array.from({ length: fullCount }, (_, idx) => wrap.querySelector(`#trendLabel-${idx}`));
-
-  const fromMax = Math.max(1, ...fullHistory.slice(fullCount - prevMonths).map(m => m.total));
-  const toMax = Math.max(1, ...fullHistory.slice(fullCount - targetMonths).map(m => m.total));
-  const revealFrom = (prevMonths - 1) / (fullCount - 1);
-  const revealTo = (targetMonths - 1) / (fullCount - 1);
-
-  // Esconde o preenchimento durante a transição (a área só volta, com fade,
-  // quando o traçado final estiver correto — evita uma geometria "errada" no meio do caminho).
-  if (areaEl) { areaEl.style.transition = 'none'; areaEl.style.opacity = 0; }
-
-  // Dispara o pop/fade dos meses "extras", em cascata e na ordem certa:
-  // ao expandir, entram do mês mais próximo do presente pro mais antigo;
-  // ao encolher, saem do mais antigo pro mais próximo do presente.
-  for (let idx = 0; idx < addedCount; idx++) {
-    const order = expanding ? (addedCount - 1 - idx) : idx;
-    const delay = 60 + order * 55;
-    if (dotEls[idx]) dotEls[idx].style.transitionDelay = `${delay}ms`;
-    if (labelEls[idx]) labelEls[idx].style.transitionDelay = `${delay}ms`;
-  }
-  requestAnimationFrame(() => {
-    for (let idx = 0; idx < addedCount; idx++) {
-      if (dotEls[idx]) dotEls[idx].classList.toggle('is-hidden', !expanding);
-      if (labelEls[idx]) labelEls[idx].classList.toggle('is-hidden', !expanding);
-    }
-  });
-
-  const duration = 620;
-  const start = performance.now();
-
-  function frame(now) {
-    const t = Math.min(1, (now - start) / duration);
-    const te = easeInOutCubic(t);
-    const currentMax = fromMax + (toMax - fromMax) * te;
-
-    const positions = new Array(fullCount);
-    for (let idx = 0; idx < fullCount; idx++) {
-      let x;
-      if (idx < addedCount) {
-        x = trendXAt(fullCount, idx); // meses extras: x fixo, só entram/saem de opacidade
-      } else {
-        const xFrom = trendXAt(prevMonths, idx - (fullCount - prevMonths));
-        const xTo = trendXAt(targetMonths, idx - (fullCount - targetMonths));
-        x = xFrom + (xTo - xFrom) * te;
-      }
-      const y = trendYAt(fullHistory[idx].total, currentMax);
-      positions[idx] = { x, y };
-      if (dotEls[idx]) { dotEls[idx].setAttribute('cx', x.toFixed(1)); dotEls[idx].setAttribute('cy', y.toFixed(1)); }
-      if (labelEls[idx]) { labelEls[idx].setAttribute('x', x.toFixed(1)); labelEls[idx].setAttribute('y', Math.max(9, y - 9).toFixed(1)); }
-    }
-
-    let d = '';
-    for (let idx = fullCount - 1; idx >= 0; idx--) {
-      const p = positions[idx];
-      d += `${idx === fullCount - 1 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)} `;
-    }
-    pathEl.setAttribute('d', d.trim());
-    const totalLen = pathEl.getTotalLength();
-    const revealFraction = revealFrom + (revealTo - revealFrom) * te;
-    pathEl.style.strokeDasharray = `${totalLen}`;
-    pathEl.style.strokeDashoffset = `${totalLen * (1 - revealFraction)}`;
-
-    if (t < 1) {
-      requestAnimationFrame(frame);
-    } else {
-      // Reconstrói a marcação "limpa" pro estado final — mesma geometria da
-      // última frame, então não há salto visual, só garante precisão/hover.
-      wrap.innerHTML = buildTrendChartMarkup(fullHistory, targetMonths);
-      wrap.dataset.months = targetMonths;
-      settleTrendPath(wrap.querySelector('#trendLinePath'), targetMonths);
-      const finalArea = wrap.querySelector('#trendAreaPath');
-      if (finalArea) {
-        finalArea.style.opacity = 0;
-        requestAnimationFrame(() => {
-          finalArea.style.transition = 'opacity .35s ease';
-          requestAnimationFrame(() => { finalArea.style.opacity = 0.6; });
-        });
-      }
-    }
-  }
-  requestAnimationFrame(frame);
-}
-
-function bookingConversionThisMonth() {
-  const now = new Date();
-  const isThisMonth = (iso) => {
-    const d = new Date(iso);
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  const AMPL = 8; // px — mínima, não é slide de apresentação
+  let trocado = false;
+  const trocar = () => {
+    if (trocado) return;
+    trocado = true;
+    content.removeEventListener('transitionend', trocar);
+    content.innerHTML = insContentHtml(P);
+    content.style.transition = 'none';
+    content.style.opacity = '0';
+    content.style.transform = `translateX(${dir * AMPL}px)`;
+    void content.offsetHeight;
+    requestAnimationFrame(() => {
+      content.style.transition = `opacity var(--motion-standard) var(--ease-standard), transform var(--motion-standard) var(--ease-standard)`;
+      content.style.opacity = '1';
+      content.style.transform = 'translateX(0)';
+    });
+    insRenderContentExtras(P);
   };
-  const visits = (state.bookingVisits || []).filter(v => isThisMonth(v.created_at)).length;
-  const conversions = state.appointments.filter(a => a.source === 'online' && a.created_at && isThisMonth(a.created_at)).length;
-  const pct = visits > 0 ? Math.round((conversions / visits) * 100) : null;
-  return { visits, conversions, pct };
+  content.style.transition = `opacity var(--motion-standard) var(--ease-standard), transform var(--motion-standard) var(--ease-standard)`;
+  content.style.opacity = '0';
+  content.style.transform = `translateX(${-dir * AMPL}px)`;
+  content.addEventListener('transitionend', trocar);
+  // Rede de segurança: aba em segundo plano nunca compõe frames, e o
+  // transitionend correspondente não dispara — mesmo padrão do resto do app.
+  setTimeout(trocar, 260);
 }
 
-function renderInsights() {
-  document.getElementById('greeting').textContent = 'Insights';
-  document.getElementById('greetingSub').textContent = 'Desempenho do negócio';
+// Carrossel: um card centralizado por vez.
+//
+// R4.1 — causa raiz do chevron ficar aceso pra sempre: duas falhas
+// empilhadas.
+//   1) O índice do card visível vinha de `scrollWidth / children.length`,
+//      que ignora o `gap` entre cards — como o ÚLTIMO card não tem gap à
+//      direita, essa média fica maior que o passo real entre pontos de
+//      snap, e o arredondamento às vezes nunca alcançava "é o último".
+//      Corrigido medindo o passo de verdade: largura do primeiro card + gap.
+//   2) Mesmo com o índice certo, o código só escondia a ANIMAÇÃO (a classe
+//      `is-teaching`) depois da primeira interação — a VISIBILIDADE
+//      continuava sendo recalculada pela posição a cada scroll, pra
+//      sempre. Ou seja, o chevron nunca se aposentava: ele podia voltar a
+//      aparecer (parado) toda vez que a pessoa voltasse pro primeiro
+//      card. O pedido aprovado é que ele seja uma pista de DESCOBERTA,
+//      não um indicador permanente de "tem mais" — essa função já existe
+//      e é dos pontinhos. Agora `state.insightsSugestoesEnsinado` aposenta
+//      o chevron de vez (visibilidade incluída) assim que a animação
+//      termina sozinha OU a pessoa interage (scroll ou toque no carrossel).
+function insBindRail(sugestoes) {
+  const rail = document.getElementById('insRail');
+  const dots = document.getElementById('insDots');
+  const hint = document.getElementById('insRailHint');
+  if (rail) {
+    rail.querySelectorAll('[data-sug]').forEach(btn => {
+      btn.onclick = () => insDrill(sugestoes[Number(btn.dataset.sug)].destino);
+    });
+  }
+  if (!rail) return;
 
-  const today = todayAppointments();
-  const revenueToday = today.reduce((sum, a) => sum + appointmentRevenue(a), 0);
+  // Passo real entre pontos de snap: largura de um card + gap. Não usar
+  // scrollWidth/children.length — o último card não tem gap à direita e
+  // isso puxa a média pra cima, atrasando o índice calculado.
+  function passo() {
+    const primeiro = rail.children[0];
+    if (!primeiro) return rail.clientWidth || 1;
+    const cs = getComputedStyle(rail);
+    const gap = parseFloat(cs.columnGap || cs.gap || '0') || 0;
+    return primeiro.getBoundingClientRect().width + gap;
+  }
+  function indiceAtual() {
+    const p = passo();
+    return p ? Math.round(rail.scrollLeft / p) : 0;
+  }
+  function atualizarDots() {
+    if (!dots) return;
+    const i = indiceAtual();
+    Array.from(dots.children).forEach((d, k) => d.classList.toggle('is-on', k === i));
+  }
+  // Visível só enquanto NÃO foi ensinado (independente de posição, uma vez
+  // aposentado nunca mais volta) E existe próximo card a partir daqui.
+  function atualizarHint() {
+    if (!hint) return;
+    if (state.insightsSugestoesEnsinado) { hint.classList.remove('is-visible', 'is-teaching'); return; }
+    hint.classList.toggle('is-visible', indiceAtual() < rail.children.length - 1);
+  }
+  function ensinar() {
+    if (state.insightsSugestoesEnsinado) return;
+    state.insightsSugestoesEnsinado = true;
+    if (hint) hint.classList.remove('is-visible', 'is-teaching');
+  }
 
-  const { days: weekDays, values: weekValues } = currentWeekRevenue();
-  const weekTotal = weekValues.reduce((a, b) => a + b, 0);
-  const weekAverage = weekTotal / 7;
+  atualizarDots();
+  atualizarHint();
 
-  const monthHistory = monthlyRevenueHistory(6);
-  const monthAppts = currentMonthAppointments();
-  const monthRevenue = monthAppts.reduce((sum, a) => sum + appointmentRevenue(a), 0);
-  const monthMinutes = monthAppts.reduce((sum, a) => sum + serviceDurationMinutes(a.service?.id), 0);
-  const monthHours = monthMinutes / 60;
-  const newClients = newClientsThisMonth();
-  const occPct = monthOccupancyPct(monthAppts);
-  const avgTicket = monthAppts.length ? monthRevenue / monthAppts.length : null;
+  // R4.2 — causa raiz da regressão (chevron nunca aparecia): os listeners
+  // de scroll/toque eram anexados no MESMO tick da criação do DOM. Com
+  // `scroll-snap-type: x mandatory`, o navegador pode disparar um evento
+  // de "scroll" sintético assim que o carrossel entra em layout — ele
+  // reassenta a posição de snap sem nenhum toque da pessoa. Esse scroll
+  // fantasma caía no listener e chamava `ensinar()` antes da primeira
+  // pintura, aposentando o chevron antes de qualquer usuária real vê-lo.
+  // Correção: só passar a OUVIR interação depois que o layout inicial
+  // assentou (dois quadros de folga — mesmo padrão de "espera o navegador
+  // pintar" já usado em insAnimateChart/insShowHelp). O estado visual
+  // inicial (atualizarDots/atualizarHint acima) continua síncrono — só a
+  // ESCUTA de interação é adiada.
+  const semReducaoDeMovimento = !prefersReducedMotion();
+  if (hint && sugestoes.length > 1 && !state.insightsSugestoesEnsinado && indiceAtual() < rail.children.length - 1 && semReducaoDeMovimento) {
+    hint.classList.add('is-teaching');
+    hint.addEventListener('animationend', ensinar, { once: true });
+  }
 
-  const activeIndicators = computeIndicatorsData()[state.insightsIndicatorPeriod];
-
-  const topServices = topServicesThisMonth(monthAppts);
-  const demand = demandProfileThisMonth(monthAppts);
-  const history = recentBookingHistory(6);
-  const comparisons = periodComparisons();
-  const conversion = bookingConversionThisMonth();
-
-  app.innerHTML = `
-    <div class="home-block" style="animation-delay:0ms;margin-top:4px;">
-      <div class="home-hero is-triple">
-        <div class="home-hero-card is-appts">
-          <div class="hh-icon">${ICONS.money}</div>
-          <div><div class="hh-num">${formatCurrency(revenueToday)}</div><div class="hh-label">Receita hoje</div></div>
-        </div>
-        <div class="home-hero-card is-revenue">
-          <div class="hh-icon">${ICONS.money}</div>
-          <div><div class="hh-num">${formatCurrency(weekTotal)}</div><div class="hh-label">Receita semana</div></div>
-        </div>
-        <div class="home-hero-card is-revenue">
-          <div class="hh-icon">${ICONS.money}</div>
-          <div><div class="hh-num">${formatCurrency(monthRevenue)}</div><div class="hh-label">Receita mês</div></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="home-block home-section" style="animation-delay:40ms">
-      <div class="home-section-head"><h2>Receita da semana</h2></div>
-      <div class="perf-card">
-        <div class="perf-top">
-          <div>
-            <div class="perf-top-label">Total da semana</div>
-            <div class="perf-top-num">${formatCurrency(weekTotal)}</div>
-          </div>
-          <div class="perf-top-badge">Média ${formatCurrency(weekAverage)}/dia</div>
-        </div>
-        <div class="week-chart-wrap">${weekChartSvg(weekValues, weekDays)}</div>
-      </div>
-    </div>
-
-    <div class="home-block home-section" style="animation-delay:80ms">
-      <div class="home-section-head">
-        <h2>Evolução da receita</h2>
-        <div class="seg-toggle" id="trendRangeToggle">
-          <button data-months="6" class="${state.insightsTrendMonths === 6 ? 'active' : ''}">6M</button>
-          <button data-months="12" class="${state.insightsTrendMonths === 12 ? 'active' : ''}">12M</button>
-        </div>
-      </div>
-      <div class="perf-card"><div class="trend-chart-wrap" id="trendChartWrap"></div></div>
-    </div>
-
-    <div class="home-block home-section" style="animation-delay:120ms">
-      <div class="home-section-head"><h2>Faturamento mensal</h2></div>
-      <div class="history-card">
-        ${distributionBarsHtml(monthHistory.map(m => ({ label: m.label, value: m.total, highlight: m.isCurrent })), { formatValue: formatCurrency })}
-        <button class="btn-see-more" id="historySeeMore">Ver mais</button>
-      </div>
-    </div>
-
-    <div class="home-block home-section" style="animation-delay:160ms">
-      <div class="home-section-head">
-        <h2>Indicadores</h2>
-        <div class="seg-toggle" id="indicatorsToggle">
-          <button data-period="month" class="${state.insightsIndicatorPeriod === 'month' ? 'active' : ''}">Mês</button>
-          <button data-period="week" class="${state.insightsIndicatorPeriod === 'week' ? 'active' : ''}">Semana</button>
-        </div>
-      </div>
-      <div class="home-section-caption" id="indicatorsCaption">${activeIndicators.label}</div>
-      <div class="insights-grid" id="indicatorsGrid">
-        ${activeIndicators.items.map(i => `
-          <div class="insight-card">
-            ${INDICATOR_HELP[i.label] ? `<button class="ic-help-btn" data-help-label="${i.label}" aria-label="O que é ${i.label}">?</button>` : ''}
-            <div class="ic-icon">${i.icon}</div>
-            <div class="ic-val" data-raw="${i.raw === null || i.raw === undefined ? '' : i.raw}" data-type="${i.type}">${formatIndicatorValue(i.type, i.raw)}</div>
-            <div class="ic-lbl">${i.label}</div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-
-    <div class="home-block home-section" style="animation-delay:180ms">
-      <div class="panorama-card">
-        <div class="pc-head"><div class="pc-title">Conversão de visitantes</div></div>
-        ${conversion.visits > 0 ? `
-          <div class="opportunity-grid">
-            <div class="opp-item">
-              <div class="opp-lbl">Taxa de conversão</div>
-              <div class="opp-val">${conversion.pct}%</div>
-              <div class="opp-sub">${conversion.conversions} agendamento${conversion.conversions === 1 ? '' : 's'} · ${currentMonthLabel()}</div>
-            </div>
-            <div class="opp-divider"></div>
-            <div class="opp-item">
-              <div class="opp-lbl">Visitas ao agendar</div>
-              <div class="opp-val">${conversion.visits}</div>
-              <div class="opp-sub">${currentMonthLabel()}</div>
-            </div>
-          </div>
-        ` : `
-          <div class="opportunity-grid">
-            <div class="opp-item">
-              <div class="opp-val">--</div>
-              <div class="opp-sub">Ainda sem visitas registradas este mês na tela de agendar.</div>
-            </div>
-          </div>
-        `}
-      </div>
-    </div>
-
-    <div class="home-block home-section" style="animation-delay:200ms">
-      <div class="home-section-head"><h2>Perfil de demanda</h2></div>
-      <div class="home-section-caption">Horários mais procurados · ${currentMonthLabel()}</div>
-      <div class="history-card">
-        ${demand.some(d => d.value > 0) ? distributionBarsHtml(demand) : emptyStateHtml({
-          icon: ICONS.clock,
-          compact: true,
-          title: 'Seus números ainda estão se formando.',
-          caption: 'Eles ficam mais precisos conforme sua agenda for enchendo.',
-        })}
-      </div>
-    </div>
-
-    <div class="home-block home-section" style="animation-delay:220ms">
-      <div class="home-section-head"><h2>Serviços mais procurados</h2></div>
-      <div class="home-section-caption">${currentMonthLabel()}</div>
-      <div class="history-card">
-        ${topServices.length ? distributionBarsHtml(topServices) : '<div class="empty">Sem agendamentos este mês.</div>'}
-      </div>
-    </div>
-
-    <div class="home-block home-section" style="animation-delay:240ms">
-      <div class="home-section-head"><h2>Histórico de reservas</h2></div>
-      <div class="history-card">
-        ${history.length ? history.map(a => `
-          <div class="history-row">
-            <div>
-              <div class="service">${a.service?.name || 'Serviço'}</div>
-              <div class="meta">${a.client?.name || 'Cliente'} · ${fmtDate(a.starts_at)}</div>
-            </div>
-            <div class="price">${formatCurrency(appointmentRevenue(a))}</div>
-          </div>
-        `).join('') : '<div class="empty">Nenhuma reserva anterior.</div>'}
-        <button class="btn-see-more" id="bookingHistorySeeMore">Ver mais</button>
-      </div>
-    </div>
-
-    <div class="home-block home-section" style="animation-delay:280ms">
-      <div class="home-section-head"><h2>Comparativos por período</h2></div>
-      <div class="history-card">
-        ${comparisons.map(p => {
-          const d = deltaInfo(p.cur, p.prev);
-          return `
-            <div class="comparison-row">
-              <div style="flex:1">
-                <div class="cr-label">${p.label}</div>
-                <div class="cr-values">${formatCurrency(p.cur)} vs ${formatCurrency(p.prev)}</div>
-              </div>
-              <div class="cr-delta ${d.cls}">${d.text}</div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    </div>
-  `;
-
-  requestAnimationFrame(() => {
-    app.querySelectorAll('.home-block').forEach(el => el.classList.add('in'));
-    animateFills(app);
-  });
-  renderTrendChartSection();
-
-  const seeMoreBtn = document.getElementById('historySeeMore');
-  if (seeMoreBtn) seeMoreBtn.onclick = () => showToast('Em breve: histórico completo de faturamento');
-  const bookingSeeMoreBtn = document.getElementById('bookingHistorySeeMore');
-  if (bookingSeeMoreBtn) bookingSeeMoreBtn.onclick = () => showToast('Em breve: histórico completo de reservas');
-
-  const trendToggle = document.getElementById('trendRangeToggle');
-  if (trendToggle) trendToggle.querySelectorAll('button').forEach(btn => {
-    btn.onclick = () => {
-      const months = Number(btn.dataset.months);
-      if (months === state.insightsTrendMonths) return;
-      state.insightsTrendMonths = months;
-      trendToggle.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
-      animateTrendTransition(months);
-    };
-  });
-  const indicatorsToggle = document.getElementById('indicatorsToggle');
-  if (indicatorsToggle) indicatorsToggle.querySelectorAll('button').forEach(btn => {
-    btn.onclick = () => {
-      const period = btn.dataset.period;
-      if (period === state.insightsIndicatorPeriod) return;
-      state.insightsIndicatorPeriod = period;
-      indicatorsToggle.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
-      renderIndicatorsSection();
-    };
-  });
-  const indicatorsGridEl = document.getElementById('indicatorsGrid');
-  if (indicatorsGridEl) indicatorsGridEl.querySelectorAll('.ic-help-btn').forEach(btn => {
-    btn.onclick = (e) => { e.stopPropagation(); showIndicatorHelp(btn.dataset.helpLabel); };
-  });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    rail.addEventListener('scroll', () => { atualizarDots(); atualizarHint(); ensinar(); }, { passive: true });
+    // Tocar num card também conta como interação, mesmo sem arrastar.
+    if (hint) rail.addEventListener('pointerdown', ensinar, { once: true, passive: true });
+  }));
 }
 
-// ── gráfico semanal (SVG minimalista, usado em Insights) ──────
-function weekChartSvg(values, days) {
-  const w = 320, chartH = 84, labelH = 22, h = chartH + labelH;
-  const max = Math.max(1, ...values);
-  const gap = 10;
-  const barW = (w - gap * (values.length - 1)) / values.length;
-  const today = new Date();
-  const bars = values.map((v, i) => {
-    const barH = Math.max(3, Math.round((v / max) * (chartH - 6)));
-    const x = i * (barW + gap);
-    const y = chartH - barH;
-    const isToday = sameDay(days[i], today);
-    const fill = isToday ? 'var(--color-accent-700)' : 'var(--color-accent-100)';
-    return `
-      <rect class="week-bar" x="${x}" y="${y}" width="${barW}" height="${barH}" rx="${Math.min(6, barW / 2.4)}" fill="${fill}">
-        <title>${WEEKDAY_FULL_LABELS[i]} · ${formatCurrency(v)}</title>
-      </rect>
-      <text x="${x + barW / 2}" y="${chartH + 16}" text-anchor="middle" font-size="10" font-weight="700"
-        fill="${isToday ? 'var(--color-accent-700)' : 'var(--color-neutral-600)'}"
-        font-family="Jost, system-ui, sans-serif">${WEEKDAY_FULL_LABELS[i]}</text>
-    `;
-  }).join('');
-  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${bars}</svg>`;
+// Drill-through: reutiliza os caminhos que a própria Agenda e Clientes já
+// usam. Nenhuma arquitetura de navegação nova.
+function insDrill(destino) {
+  if (!destino) return;
+  if (destino.tipo === 'agenda') {
+    state.agendaDate = new Date(destino.data);
+    state.tab = 'agenda';
+  } else if (destino.tipo === 'clientes') {
+    // Filtro contextual e transitório: só existe em memória, nasce aqui e
+    // morre ao trocar de aba pelo rodapé ou recarregar a sessão — nunca
+    // sobrescreve o clientFilter salvo da aba.
+    state.clientContext = { ids: destino.ids, label: destino.label };
+    state.selectedClientId = null;
+    state.tab = 'clients';
+  } else {
+    return;
+  }
+  render();
+  window.scrollTo(0, 0);
 }
 
-// A grade da timeline vai das 8h às 19h de propósito: dá uma hora de respiro
-// antes e depois do expediente, pro encaixe e pro atendimento que atrasou
-// aparecerem na tela em vez de ficarem cortados fora dela.
-// Janela ampliada (5h–21h) só pra dar folga visual na rolagem — não é o
-// expediente (OPEN_HOUR/CLOSE_HOUR, 9h–18h), que é o que manda nas contas
-// de ocupação e nos horários oferecidos. HOUR_HEIGHT: 68 → 56 → 60 — o
-// refinamento visual (respiro/premium) pediu mais espaço negativo de volta,
-// sem repetir o aperto de 68 que existia antes da janela dobrar de tamanho.
+// Entrada única por sessão: a linha se desenha na primeira visita e
+// assenta direto nas seguintes. Verificação de movimento reduzido em
+// JS, porque a sequência é orquestrada aqui e o @media não a alcança.
+function insAnimateChart() {
+  const path = document.getElementById('insTrendLine');
+  if (!path) return;
+  if (state.insightsChartEntered || prefersReducedMotion()) return;
+  state.insightsChartEntered = true;
+  const len = path.getTotalLength();
+  path.style.transition = 'none';
+  path.style.strokeDasharray = String(len);
+  path.style.strokeDashoffset = String(len);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    path.style.transition = 'stroke-dashoffset var(--motion-route) var(--ease-out)';
+    path.style.strokeDashoffset = '0';
+  }));
+}
+
 const AGENDA_START_HOUR = 5;
 const AGENDA_END_HOUR = 22;
 const HOUR_HEIGHT = 60;
@@ -4253,6 +5276,14 @@ function renderClients() {
       <button class="o-icon-btn o-icon-btn-solid o-icon-btn-squircle" id="clientSortBtn" aria-label="Ordenar lista de clientes">${ICONS.sliders}</button>
     </div>
 
+    ${state.clientContext ? `
+      <div class="cli-context-banner">
+        <span class="cli-context-ic" aria-hidden="true">${ICONS.bolt}</span>
+        <span class="cli-context-label">${esc(state.clientContext.label)}</span>
+        <button type="button" class="cli-context-clear" id="cliContextClear">Ver todas</button>
+      </div>
+    ` : ''}
+
     <div class="o-chip-group-scroll" id="clientFilterChips" role="group" aria-label="Filtrar clientes">
       ${CLIENT_FILTERS.map(f => `
         <button class="o-chip" aria-pressed="${state.clientFilter === f.key}" data-filter="${f.key}">
@@ -4444,6 +5475,9 @@ function clearClientSearch() {
 }
 
 function bindClientsToolbar() {
+  const cliContextClear = document.getElementById('cliContextClear');
+  if (cliContextClear) cliContextClear.onclick = () => { state.clientContext = null; renderClients(); };
+
   const field = document.getElementById('searchField');
   const input = document.getElementById('clientSearchInput');
   const clear = document.getElementById('clientSearchClear');
@@ -6397,6 +7431,7 @@ document.querySelectorAll('nav button').forEach(btn => {
     state.selectedClientId = null;
     state.selectedApptId = null;
     state.viewQuestionnaire = null;
+    state.clientContext = null;
     state.quiz = { step: 0, clientId: null, answers: {} };
     // Tocar na aba é entrada nova: começa do topo. O scroll guardado serve
     // pro caminho de volta do perfil, não pra troca de aba.

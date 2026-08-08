@@ -309,6 +309,56 @@ function salonToday() {
 
 const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
+// ── Origem do agendamento (attribution tracking, R4 08/2026) ─────────
+// Links rastreáveis (?src=instagram, ?src=whatsapp…) levam à MESMA página
+// — o parâmetro só marca de onde a cliente veio. Conceito neutro de
+// propósito ("acquisition source"), sem nome de canal ou de cliente
+// específico embutido no código — outro salão usando este mesmo produto
+// no futuro só troca a whitelist abaixo, nada mais.
+//
+// AUDITORIA (feita antes de implementar, sem alterar banco):
+// `appointments.source` é `text` com um CHECK constraint que hoje só
+// aceita 'online' | 'manual' | 'ai' | 'whatsapp'. Instagram, Website e
+// Google NÃO estão liberados — inserir qualquer um deles quebraria a
+// constraint e derrubaria o agendamento de uma cliente real. Por isso:
+// todo `src` reconhecido é CAPTURADO e normalizado (pronto pro dia em
+// que a constraint mudar), mas só 'whatsapp' é PERSISTIDO como valor
+// distinto hoje — o resto cai em 'online', o mesmo valor que a página
+// sempre gravou antes de existir tracker (nenhuma regressão).
+//
+// Migration mínima identificada, NÃO executada — reportada e aguardando
+// aprovação do dono do produto:
+//   ALTER TABLE appointments DROP CONSTRAINT appointments_source_allowed;
+//   ALTER TABLE appointments ADD CONSTRAINT appointments_source_allowed
+//     CHECK (source IS NOT NULL AND source = ANY (ARRAY[
+//       'online','manual','ai','whatsapp','instagram','website','google'
+//     ]));
+// Quando ela existir, ACQUISITION_PERSISTABLE ganha as novas chaves e
+// nenhum outro código muda.
+const ACQUISITION_SOURCES = {
+  instagram: 'Instagram',
+  website: 'Website',
+  google: 'Google',
+  whatsapp: 'WhatsApp',
+  direct: 'Direto',
+};
+// Só os valores que o schema aceita hoje viram `source` de verdade.
+const ACQUISITION_PERSISTABLE = { whatsapp: 'whatsapp' };
+
+// Lida uma vez, no carregamento — nunca em storage persistente (não pode
+// contaminar a próxima cliente no mesmo aparelho). Sobrevive à troca de
+// etapa porque vive em `state`, não porque foi salva em disco.
+function captureAcquisitionSource() {
+  const raw = (new URLSearchParams(location.search).get('src') || '').trim().toLowerCase();
+  return ACQUISITION_SOURCES[raw] ? raw : 'direct'; // desconhecido → fallback seguro
+}
+// O que efetivamente grava em `appointments.source`. Canais ainda não
+// liberados pela constraint (ver auditoria acima) caem em 'online' — é
+// o mesmo valor que a página já gravava, não uma perda de informação.
+function persistableSource(acquisition) {
+  return ACQUISITION_PERSISTABLE[acquisition] || 'online';
+}
+
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const state = {
@@ -333,6 +383,7 @@ const state = {
   loading: true,
   error: null,
   done: false,
+  acquisitionSource: captureAcquisitionSource(),
 };
 
 const app = document.getElementById('app');
@@ -573,7 +624,7 @@ async function confirmBooking() {
       starts_at: state.selectedSlot.start.toISOString(),
       ends_at: state.selectedSlot.end.toISOString(),
       status: 'confirmed',
-      source: 'online',
+      source: persistableSource(state.acquisitionSource),
     });
     if (apptErr) throw apptErr;
 
