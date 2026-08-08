@@ -311,30 +311,20 @@ const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho'
 
 // ── Origem do agendamento (attribution tracking, R4 08/2026) ─────────
 // Links rastreáveis (?src=instagram, ?src=whatsapp…) levam à MESMA página
-// — o parâmetro só marca de onde a cliente veio. Conceito neutro de
-// propósito ("acquisition source"), sem nome de canal ou de cliente
-// específico embutido no código — outro salão usando este mesmo produto
-// no futuro só troca a whitelist abaixo, nada mais.
+// — o parâmetro só marca de onde a cliente veio. Capturado em memória para
+// eventual uso futuro, mas NUNCA grava em `appointments.source`: esse campo
+// é operacional (como o agendamento foi feito — online/manual/ai/whatsapp
+// atendido por humano), não é acquisition attribution, e misturar os dois
+// conceitos foi a causa de um bug real (08/08/2026): a RLS pública exige
+// `source = 'online'` para todo INSERT deste fluxo, e o valor 'whatsapp' —
+// mesmo aceito pelo CHECK constraint — era recusado pela RLS. Quem chegasse
+// por um link `?src=whatsapp` via a confirmação falhar sem conseguir
+// contornar.
 //
-// AUDITORIA (feita antes de implementar, sem alterar banco):
-// `appointments.source` é `text` com um CHECK constraint que hoje só
-// aceita 'online' | 'manual' | 'ai' | 'whatsapp'. Instagram, Website e
-// Google NÃO estão liberados — inserir qualquer um deles quebraria a
-// constraint e derrubaria o agendamento de uma cliente real. Por isso:
-// todo `src` reconhecido é CAPTURADO e normalizado (pronto pro dia em
-// que a constraint mudar), mas só 'whatsapp' é PERSISTIDO como valor
-// distinto hoje — o resto cai em 'online', o mesmo valor que a página
-// sempre gravou antes de existir tracker (nenhuma regressão).
-//
-// Migration mínima identificada, NÃO executada — reportada e aguardando
-// aprovação do dono do produto:
-//   ALTER TABLE appointments DROP CONSTRAINT appointments_source_allowed;
-//   ALTER TABLE appointments ADD CONSTRAINT appointments_source_allowed
-//     CHECK (source IS NOT NULL AND source = ANY (ARRAY[
-//       'online','manual','ai','whatsapp','instagram','website','google'
-//     ]));
-// Quando ela existir, ACQUISITION_PERSISTABLE ganha as novas chaves e
-// nenhum outro código muda.
+// Decisão (08/08/2026): todo booking feito por este fluxo grava sempre
+// `source: 'online'`, independente do canal de origem. Se attribution
+// precisar virar dado persistido, é coluna própria (ex.:
+// `appointments.acquisition_source`) — nunca reaproveitar `source`.
 const ACQUISITION_SOURCES = {
   instagram: 'Instagram',
   website: 'Website',
@@ -342,21 +332,15 @@ const ACQUISITION_SOURCES = {
   whatsapp: 'WhatsApp',
   direct: 'Direto',
 };
-// Só os valores que o schema aceita hoje viram `source` de verdade.
-const ACQUISITION_PERSISTABLE = { whatsapp: 'whatsapp' };
 
 // Lida uma vez, no carregamento — nunca em storage persistente (não pode
 // contaminar a próxima cliente no mesmo aparelho). Sobrevive à troca de
-// etapa porque vive em `state`, não porque foi salva em disco.
+// etapa porque vive em `state`, não porque foi salva em disco. Hoje não
+// alimenta nenhuma escrita no banco — existe pronta para o dia em que
+// attribution ganhar um destino próprio.
 function captureAcquisitionSource() {
   const raw = (new URLSearchParams(location.search).get('src') || '').trim().toLowerCase();
   return ACQUISITION_SOURCES[raw] ? raw : 'direct'; // desconhecido → fallback seguro
-}
-// O que efetivamente grava em `appointments.source`. Canais ainda não
-// liberados pela constraint (ver auditoria acima) caem em 'online' — é
-// o mesmo valor que a página já gravava, não uma perda de informação.
-function persistableSource(acquisition) {
-  return ACQUISITION_PERSISTABLE[acquisition] || 'online';
 }
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -624,7 +608,9 @@ async function confirmBooking() {
       starts_at: state.selectedSlot.start.toISOString(),
       ends_at: state.selectedSlot.end.toISOString(),
       status: 'confirmed',
-      source: persistableSource(state.acquisitionSource),
+      // Sempre 'online' — attribution (state.acquisitionSource) não é
+      // persistida hoje, ver comentário acima de captureAcquisitionSource().
+      source: 'online',
     });
     if (apptErr) throw apptErr;
 

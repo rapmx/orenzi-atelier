@@ -607,15 +607,30 @@ mensagem/stack pra virar achado de verdade.
 
 ## Dívida conhecida
 
-**Resolvido (06/08/2026):** `OPEN_HOUR`/`CLOSE_HOUR`/`SLOT_MINUTES`/`CLOSED_WEEKDAYS`
+**Resolvido no front (06/08/2026), mas não é mais fonte única sozinha —
+ver aviso abaixo.** `OPEN_HOUR`/`CLOSE_HOUR`/`SLOT_MINUTES`/`CLOSED_WEEKDAYS`
 (e `SALON_TZ`, usado só pelo `agendar.html`) vivem em `shared/salon.js`
 (`window.OrenziSalon`), carregado por `<script src>` antes do `<script>` inline
-das três páginas e desestruturado no topo de cada uma. Mudou expediente? Mexe só
-lá. Antes disso cada arquivo tinha a própria cópia com os mesmos valores — o
-projeto já tinha passado por essa duplicação uma vez (o `shared/salon.js`
-original, mais completo, foi removido em 02/08 por estar órfão; este é uma
-versão enxuta, só a config, sem a lógica de segmentos/conflito que ele também
-carregava).
+das três páginas e desestruturado no topo de cada uma. Antes disso cada arquivo
+tinha a própria cópia com os mesmos valores — o projeto já tinha passado por
+essa duplicação uma vez (o `shared/salon.js` original, mais completo, foi
+removido em 02/08 por estar órfão; este é uma versão enxuta, só a config, sem
+a lógica de segmentos/conflito que ele também carregava).
+
+**⚠ Expediente duplicado de novo, agora entre JS e SQL (desde 08/08/2026).**
+A migration `harden_public_appointment_insert` acrescentou `is_public_booking_window()`
+como proteção server-side do INSERT anônimo em `appointments` — a RLS exige que
+essa função retorne `true`. Ela tem sua **própria cópia hardcoded** do
+expediente (`Europe/Dublin`, 9h–18h, fecha domingo/segunda). `shared/salon.js`
+é a configuração que a **UI** usa para desenhar calendário e grade de horário;
+`is_public_booking_window` é quem **decide de verdade** se o banco aceita o
+INSERT. **Mudar expediente exige revisar as duas** — mudar só `shared/salon.js`
+faz a UI oferecer horário que a RLS recusa (a cliente vê "não foi possível
+confirmar" sem entender por quê); mudar só a função SQL faz o banco aceitar
+horário que a UI nunca oferece. Isso é dívida técnica **aceita conscientemente**
+enquanto o Orenzi opera como produto single-establishment — a centralização
+definitiva (config lida do banco por ambos os lados) fica para quando o
+produto virar multi-estabelecimento, com expedientes diferentes por salão.
 
 A pausa voltou a valer no `agendar.html` em 02/08/2026: `loadAvailableSlots()`
 usa `get_busy_slots`, que devolve só os blocos de trabalho, então o encaixe
