@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Orenzi — Agendar horário</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -15,12 +15,18 @@
 <link rel="stylesheet" href="ds/orenzi-base.css">
 <link rel="stylesheet" href="ds/orenzi-components.css">
 <style>
+  /* ══════════════════════════════════════════════════════════════
+     BOOKING EXPERIENCE V2 — FASE 1 (shell + seleção de serviços)
+     Transporte fiel de preview/booking-v2.html. Tokens locais
+     espelham docs/03_DESIGN_SYSTEM.md; nenhum token global alterado.
+     ══════════════════════════════════════════════════════════════ */
   :root {
     --color-bg: #f3ede4;
     --color-surface: #f7f1e8;
     --color-text: #2b2420;
     --color-accent: #b6784a;
     --color-accent-2: #b23a3a;
+    --color-accent-2-700: #8a2a2a;
     --color-divider: rgba(43,36,32,0.14);
     --color-neutral-100: #f7f1e8;
     --color-neutral-200: #e8ddce;
@@ -32,244 +38,555 @@
     --color-accent-700: #8a5a34;
     --font-heading: "Poppins", "Jost", system-ui, sans-serif;
     --font-body: "Jost", system-ui, sans-serif;
-    --radius-sm: 8px;
-    --radius-md: 16px;
-    --radius-lg: 28px;
-    --shadow-sm: 0 1px 2px rgba(43,36,32,0.12);
-    --shadow-md: 0 3px 10px rgba(43,36,32,0.16);
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--color-bg);
-    color: var(--color-text);
-    font-family: var(--font-body);
-    display: flex;
-    justify-content: center;
-    padding: 32px 16px 48px;
-  }
-  body.has-advance-bar { padding-bottom: 112px; }
-  .wrap { width: 100%; max-width: 480px; }
-  .app-viewport { position: relative; overflow: hidden; }
-  .app-pane { position: absolute; top: 0; left: 0; width: 100%; will-change: transform; }
-  .back-arrow {
-    display: none; align-items: center; justify-content: center;
-    position: fixed; top: 20px; left: 16px; width: 38px; height: 38px; z-index: 60;
-    background: var(--color-neutral-100); border: none; border-radius: 50%;
-    color: var(--color-accent-700); font-size: 18px; line-height: 1; cursor: pointer;
-    box-shadow: var(--shadow-sm); transition: background-color .15s ease;
-  }
-  .back-arrow.visible { display: flex; }
-  .back-arrow:hover { background: var(--color-accent-100); }
-  .bottom-bar {
-    display: none; justify-content: center;
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 55;
-    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
-    background: linear-gradient(to top, var(--color-bg) 60%, rgba(243,237,228,0));
-  }
-  .bottom-bar.visible { display: flex; }
-  .bottom-bar .btn { width: 100%; max-width: 480px; margin-top: 0; }
-  .brand {
-    text-align: center; font-family: var(--font-body); font-weight: 600; font-size: 12px;
-    letter-spacing: 0.32em; text-transform: uppercase; color: var(--color-accent-700);
-    margin-bottom: 24px;
-  }
-  .steps { display: flex; gap: 5px; margin-bottom: 10px; }
-  .steps .dot { flex: 1; height: 2px; background: var(--color-neutral-300); }
-  .steps .dot.active { background: var(--color-accent-700); }
-  .step-caption {
-    font-family: var(--font-body); font-weight: 600; font-size: 10.5px; letter-spacing: 0.16em;
-    text-transform: uppercase; color: var(--color-neutral-600); margin-bottom: 18px; min-height: 13px;
-  }
-  h2 {
-    font-family: var(--font-heading); font-weight: 600; font-size: 28px;
-    line-height: 1.15; margin: 0 0 22px; color: var(--color-text);
-  }
-  h2 em { font-style: normal; color: var(--color-accent-700); }
 
-  .row-list { display: flex; flex-direction: column; gap: 10px; }
-  .row-item {
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
-    padding: 16px; border-radius: 16px; background: var(--color-neutral-100);
-    border: 1.5px solid transparent; cursor: pointer;
-    position: relative; transition: background-color .15s ease, border-color .15s ease;
+    --space-1: 4px; --space-2: 8px; --space-2-5: 10px; --space-3: 12px;
+    --space-3-5: 14px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px;
+
+    --radius-sm: 12px; --radius-md: 16px; --radius-lg: 20px;
+    --radius-full: 999px; --radius-circle: 50%;
+
+    --elevation-raised: 0 3px 10px rgba(43,36,32,0.16);
+    --elevation-overlay: 0 20px 60px rgba(43,36,32,0.18);
+    --focus-ring: 0 0 0 3px var(--color-accent-100);
+
+    --motion-instant: 80ms; --motion-fast: 160ms; --motion-standard: 200ms;
+    --motion-emphasized: 240ms; --motion-route: 280ms;
+    --ease-standard: cubic-bezier(.4,0,.2,1);
+    --ease-out: cubic-bezier(0,0,.2,1);
   }
-  .row-item:hover { background: var(--color-accent-100); }
-  .row-item.selected { border-color: var(--color-accent-700); }
-  .row-item .name { font-family: var(--font-heading); font-weight: 600; font-size: 17px; color: var(--color-text); }
-  .row-item .meta {
-    font-family: var(--font-body); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--color-neutral-600); margin-top: 8px; font-weight: 600;
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--color-bg); color: var(--color-text);
+    font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+    -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
+    display: flex; justify-content: center;
   }
-  .row-item .price {
-    font-family: var(--font-heading); font-weight: 600; font-size: 14px; color: var(--color-accent-2);
-    text-align: right; max-width: 130px; padding-top: 2px;
+  button { font-family: inherit; color: inherit; }
+  h1, p { margin: 0; }
+  svg { display: block; }
+  :focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+
+  /* Só para leitor de tela — o progresso precisa ser anunciado sem
+     poluir a interface (docs/07_ACCESSIBILITY.md). */
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
-  .row-item.selected .name { color: var(--color-accent-700); }
-  .category-label {
-    display: flex; align-items: center; gap: 10px;
-    font-family: var(--font-body); font-weight: 700; font-size: 11px; letter-spacing: 0.16em;
-    text-transform: uppercase; color: var(--color-accent-700); margin: 26px 0 10px;
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important; scroll-behavior: auto !important;
+    }
   }
-  .category-label::before {
-    content: ''; display: inline-block; width: 20px; height: 1px; background: currentColor; opacity: 0.6; flex-shrink: 0;
+
+  /* ── App: mobile-first; no desktop fica centralizado e estreito,
+       nunca esticado na viewport inteira (Orenzi UI contract, item 5). ── */
+  .bk-app {
+    width: 100%; max-width: 430px; height: 100dvh;
+    display: flex; flex-direction: column; position: relative;
+    background: var(--color-bg); overflow: hidden;
   }
-  h2 + .category-label { margin-top: 0; }
+  @media (min-width: 520px) {
+    body { background: #e9e1d2; }
+    .bk-app { border-left: 1px solid var(--color-divider); border-right: 1px solid var(--color-divider); }
+  }
+
+  /* ── Shell: topbar ─────────────────────────────────────────────── */
+  .bk-topbar {
+    flex-shrink: 0; display: flex; align-items: center; gap: var(--space-2);
+    height: 52px; padding: 0 var(--space-3) 0 var(--space-2);
+    background: var(--color-bg); position: relative; z-index: 20;
+  }
+  .bk-back {
+    width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+    background: none; border: none; border-radius: var(--radius-circle); cursor: pointer;
+    color: var(--color-text); flex-shrink: 0;
+    transition: transform var(--motion-instant) var(--ease-standard);
+  }
+  .bk-back:active { transform: scale(.9); }
+  .bk-back svg { width: 20px; height: 20px; }
+  .bk-back.is-hidden { visibility: hidden; }
+  .bk-progress-track {
+    flex: 1; height: 3px; border-radius: var(--radius-full); background: var(--color-divider);
+    margin: 0 var(--space-2); overflow: hidden;
+  }
+  .bk-progress-fill {
+    height: 100%; border-radius: var(--radius-full); background: var(--color-accent-600);
+    transition: width var(--motion-route) var(--ease-standard);
+  }
+  .bk-mark { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .bk-mark-dot {
+    width: 22px; height: 22px; border-radius: var(--radius-circle); background: var(--color-accent-700);
+    color: var(--color-bg); font-family: var(--font-heading); font-weight: 600; font-size: 11px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  /* ── Shell: área rolável ───────────────────────────────────────── */
+  .bk-main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #steps { padding: var(--space-2) var(--space-5) 28px; min-height: 100%; }
+  .bk-title {
+    font-family: var(--font-heading); font-weight: 600; font-size: 23px;
+    letter-spacing: -.01em; margin-bottom: var(--space-1); line-height: 1.2;
+  }
+  .bk-title-note { font-size: 12px; color: var(--color-neutral-600); margin-bottom: var(--space-5); }
+
+  @keyframes bk-step-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .bk-step-enter { animation: bk-step-in var(--motion-standard) var(--ease-out); }
+
+  /* ── Chips de categoria ────────────────────────────────────────── */
+  .bk-chip-rail {
+    display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none;
+    margin: var(--space-4) calc(var(--space-5) * -1) var(--space-5); padding: 2px var(--space-5);
+    -webkit-overflow-scrolling: touch;
+  }
+  .bk-chip-rail::-webkit-scrollbar { display: none; }
+  .bk-chip {
+    flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 var(--space-3-5); border-radius: var(--radius-full);
+    background: var(--color-surface); border: 1px solid var(--color-divider);
+    font-size: 13px; font-weight: 600; color: var(--color-text); cursor: pointer;
+    position: relative;
+    transition: background var(--motion-fast) var(--ease-standard),
+                border-color var(--motion-fast) var(--ease-standard),
+                color var(--motion-fast) var(--ease-standard),
+                transform var(--motion-instant) var(--ease-standard);
+  }
+  /* Alvo de toque de 44px sem engordar a pílula (docs/07_ACCESSIBILITY.md). */
+  .bk-chip::after { content: ''; position: absolute; inset: -5px; }
+  .bk-chip:active { transform: scale(.96); }
+  .bk-chip[aria-pressed="true"] {
+    background: var(--color-accent-100); border-color: var(--color-accent-600); color: var(--color-accent-700);
+  }
+
+  /* ── Cartões de serviço ────────────────────────────────────────── */
+  .bk-svc-list { display: flex; flex-direction: column; gap: var(--space-3); }
+  .bk-svc-card {
+    width: 100%; text-align: left; font: inherit; color: inherit;
+    background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-left: 3px solid var(--cat-color, var(--color-divider));
+    border-radius: var(--radius-md); padding: var(--space-3-5) var(--space-4);
+    cursor: pointer; display: block;
+    transition: background var(--motion-fast) var(--ease-standard),
+                border-color var(--motion-fast) var(--ease-standard),
+                transform var(--motion-instant) var(--ease-standard);
+  }
+  .bk-svc-card:active { transform: scale(.99); }
+  .bk-svc-card[aria-pressed="true"] { background: var(--color-accent-100); border-color: var(--color-accent-600); }
+  .svc-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+  .svc-card-name { font-size: 16px; font-weight: 600; font-family: var(--font-heading); }
+  .svc-card-duration { font-size: 12px; color: var(--color-neutral-600); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .svc-card-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: var(--space-3); }
+  .svc-card-price { font-family: var(--font-heading); font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums; }
+  /* Marcador visual do estado: o botão real é o cartão inteiro, então este
+     círculo é decorativo (aria-hidden) — quem anuncia é o aria-pressed. */
+  .svc-select-mark {
+    width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--color-divider);
+    background: var(--color-surface); color: var(--color-accent-700);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: background var(--motion-fast) var(--ease-standard),
+                border-color var(--motion-fast) var(--ease-standard),
+                color var(--motion-fast) var(--ease-standard);
+  }
+  .svc-select-mark svg { width: 16px; height: 16px; }
+  .bk-svc-card[aria-pressed="true"] .svc-select-mark {
+    background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-bg);
+  }
   .price-disclaimer {
     font-family: var(--font-body); font-size: 11px; color: var(--color-neutral-600);
-    margin-top: 18px; line-height: 1.5;
+    margin-top: var(--space-4); line-height: 1.5;
   }
 
-  .staff-row {
-    display: flex; align-items: center; gap: 14px; padding: 14px 10px; margin: 0 -10px;
-    border-radius: 10px; border-bottom: 1px solid var(--color-divider); cursor: pointer;
-    transition: background-color .15s ease;
+  /* ── Skeleton / erro / vazio ───────────────────────────────────── */
+  @keyframes bk-pulse { 0%,100% { opacity: 1 } 50% { opacity: .55 } }
+  .bk-skel-line { height: 14px; border-radius: var(--radius-sm); background: var(--color-neutral-200); animation: bk-pulse 1.2s var(--ease-standard) infinite; }
+  .bk-skel-card { height: 104px; border-radius: var(--radius-md); background: var(--color-neutral-200); animation: bk-pulse 1.2s var(--ease-standard) infinite; }
+  .bk-skel-chip { height: 34px; width: 92px; border-radius: var(--radius-full); background: var(--color-neutral-200); flex-shrink: 0; animation: bk-pulse 1.2s var(--ease-standard) infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .bk-skel-line, .bk-skel-card, .bk-skel-chip { animation: none; opacity: .75; }
   }
-  .staff-row:last-of-type { border-bottom: none; }
-  .staff-row:hover { background: var(--color-accent-100); }
-  .staff-avatar {
-    width: 44px; height: 44px; border-radius: 50%; background: var(--color-accent-100);
-    color: var(--color-accent-700); display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-heading); font-weight: 600; font-size: 15px; flex-shrink: 0;
+  .bk-state {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: var(--space-8) var(--space-4); gap: var(--space-2);
   }
-  .staff-row .name { font-family: var(--font-heading); font-weight: 600; font-size: 16px; color: var(--color-text); }
-  .staff-row .sub { font-family: var(--font-body); font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
-  .staff-row.selected .name { color: var(--color-accent-700); }
+  .bk-state svg { width: 30px; height: 30px; color: var(--color-neutral-600); margin-bottom: var(--space-1); }
+  .bk-state-title { font-family: var(--font-heading); font-weight: 600; font-size: 16px; }
+  .bk-state-text { font-size: 13px; color: var(--color-neutral-600); line-height: 1.5; max-width: 30ch; }
+  .bk-state-action {
+    margin-top: var(--space-3); background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: var(--radius-full); padding: 10px var(--space-5); font-size: 13px; font-weight: 600;
+    cursor: pointer; min-height: 40px;
+    transition: transform var(--motion-instant) var(--ease-standard);
+  }
+  .bk-state-action:active { transform: scale(.97); }
 
-  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .cal-month { font-family: var(--font-heading); font-weight: 600; font-size: 16px; color: var(--color-text); }
-  .cal-nav {
-    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-    color: var(--color-neutral-700); font-size: 17px; cursor: pointer; border-radius: 50%;
-    user-select: none;
+  /* ── CTA fixo ──────────────────────────────────────────────────── */
+  .bk-cta-wrap {
+    flex-shrink: 0;
+    padding: var(--space-3) var(--space-5) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, var(--color-bg) 60%, rgba(243,237,228,0));
   }
-  .cal-nav:hover { background: var(--color-neutral-200); }
-  .cal-nav.disabled { opacity: .25; cursor: default; pointer-events: none; }
-  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 22px; }
-  .cal-dow {
-    text-align: center; font-size: 10px; color: var(--color-neutral-600); font-weight: 600;
-    letter-spacing: 0.03em; padding-bottom: 6px;
+  .bk-cta {
+    width: 100%; height: 52px; border-radius: var(--radius-full); border: none; cursor: pointer;
+    background: var(--color-accent-700); color: var(--color-bg); font-size: 15px; font-weight: 600;
+    box-shadow: var(--elevation-raised);
+    transition: background var(--motion-fast) var(--ease-standard),
+                transform var(--motion-instant) var(--ease-standard);
   }
-  .cal-day {
-    aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 50%;
-    font-family: var(--font-body); font-size: 13px; color: var(--color-text); font-weight: 500; cursor: pointer;
+  .bk-cta:active:not(:disabled) { transform: scale(.98); }
+  .bk-cta:disabled { background: var(--color-neutral-300); color: var(--color-neutral-600); cursor: default; box-shadow: none; }
+  .bk-cta-context { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+  .bk-cta-context .cc-text { line-height: 1.25; min-width: 0; }
+  .bk-cta-context .cc-price {
+    display: block; font-family: var(--font-heading); font-weight: 600; font-size: 18px;
+    font-variant-numeric: tabular-nums;
   }
-  .cal-day.muted, .cal-day.past, .cal-day.closed { color: var(--color-neutral-300); cursor: default; pointer-events: none; }
-  .cal-day.today { border: 1px solid var(--color-accent-700); color: var(--color-accent-700); font-weight: 700; }
-  .cal-day.selected { background: var(--color-accent-700); color: var(--color-bg); font-weight: 700; border-color: transparent; }
-  .cal-day:not(.muted):not(.past):not(.selected):hover { background: var(--color-neutral-200); }
+  .bk-cta-context .cc-sub { display: block; font-size: 12px; color: var(--color-neutral-600); }
+  .bk-cta-context .bk-cta { width: auto; padding: 0 var(--space-5); flex-shrink: 0; }
+  /* Em 320px o par "contexto + botão" não pode espremer o rótulo. */
+  @media (max-width: 340px) {
+    .bk-cta-context { gap: var(--space-2); }
+    .bk-cta-context .bk-cta { padding: 0 var(--space-4); font-size: 14px; }
+    .bk-cta-context .cc-price { font-size: 17px; }
+  }
 
-  .avail-label {
-    font-family: var(--font-body); font-weight: 700; font-size: 10.5px; letter-spacing: 0.16em;
-    text-transform: uppercase; color: var(--color-neutral-600); margin-bottom: 12px;
+  /* ── Subview full-screen (calendário) ──────────────────────────── */
+  .bk-topbar.sub-mode .bk-progress-track { display: none; }
+  .bk-sub-title {
+    flex: 1; font-family: var(--font-heading); font-weight: 600; font-size: 15px;
+    text-align: center; margin-right: 44px;
   }
-  .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 8px; }
-  .time-item {
-    text-align: center; font-family: var(--font-body); font-size: 13px; font-weight: 500;
-    color: var(--color-text); padding-bottom: 5px; border-bottom: 1px solid transparent; cursor: pointer;
-  }
-  .time-item:hover { color: var(--color-accent-700); }
-  .time-item.selected { color: var(--color-accent-700); font-weight: 700; border-bottom-color: var(--color-accent-700); }
-  .time-item.disabled { color: var(--color-neutral-300); text-decoration: line-through; cursor: not-allowed; pointer-events: none; }
 
-  input[type=date], input[type=text], input[type=tel], input[type=email] {
-    width: 100%; padding: 8px 2px 10px; border: none; border-bottom: 1px solid var(--color-divider);
-    border-radius: 0; background: transparent; font-family: var(--font-body); font-size: 15px;
-    margin-bottom: 18px; color: var(--color-text);
+  /* ── Cartões de profissional ───────────────────────────────────── */
+  .bk-staff-list { display: flex; flex-direction: column; gap: var(--space-3); }
+  .bk-staff-card {
+    width: 100%; text-align: left; font: inherit; color: inherit;
+    display: flex; align-items: center; gap: var(--space-3);
+    background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: var(--radius-md); padding: var(--space-3-5) var(--space-4); cursor: pointer;
+    transition: background var(--motion-fast) var(--ease-standard),
+                border-color var(--motion-fast) var(--ease-standard),
+                transform var(--motion-instant) var(--ease-standard);
   }
-  input[type=date]:focus, input[type=text]:focus, input[type=tel]:focus, input[type=email]:focus {
-    outline: none; border-bottom-color: var(--color-accent-700);
+  .bk-staff-card:active { transform: scale(.99); }
+  .bk-staff-card[aria-pressed="true"] { background: var(--color-accent-100); border-color: var(--color-accent-600); }
+  .bk-staff-card .stf-avatar {
+    width: 46px; height: 46px; border-radius: 50%; background: var(--color-accent-100); color: var(--color-accent-700);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-family: var(--font-heading); font-weight: 600; font-size: 15px;
   }
-  label {
-    font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--color-neutral-600); display: block; margin: 0 0 6px 2px;
+  .bk-staff-card .stf-avatar.any { background: var(--color-neutral-200); color: var(--color-neutral-700); font-size: 18px; }
+  .bk-staff-card[aria-pressed="true"] .stf-avatar { background: var(--color-accent-700); color: var(--color-bg); }
+  .bk-staff-card .stf-body { flex: 1; min-width: 0; }
+  .bk-staff-card .stf-name { font-size: 15px; font-weight: 600; font-family: var(--font-heading); display: block; }
+  .bk-staff-card .stf-sub { font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; display: block; }
+  .bk-staff-card .stf-select {
+    width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--color-divider);
+    background: var(--color-surface); color: var(--color-accent-700); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
   }
-  .btn {
-    width: 100%; padding: 15px; border-radius: 999px; border: none; cursor: pointer;
-    font-family: var(--font-body); font-weight: 700; font-size: 13px; letter-spacing: 0.08em;
-    text-transform: uppercase; margin-top: 8px;
-  }
-  .btn-primary { background: var(--color-accent-700); color: var(--color-neutral-100); }
-  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
-  .btn-ghost-link {
-    display: block; width: 100%; background: none; border: none; text-align: center;
-    font-family: var(--font-body); font-size: 12px; color: var(--color-neutral-600); margin-top: 16px;
-    text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 6px 0;
-  }
-  .empty { font-size: 13px; color: var(--color-neutral-600); padding: 12px 0; }
+  .bk-staff-card .stf-select svg { width: 13px; height: 13px; }
+  .bk-staff-card[aria-pressed="true"] .stf-select { background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-bg); }
 
-  .confirm-check {
-    width: 56px; height: 56px; border-radius: 50%; background: var(--color-accent-700);
-    display: flex; align-items: center; justify-content: center; margin: 4px auto 20px;
+  /* ── Linha de contexto (profissional escolhida) ────────────────── */
+  .bk-context-line {
+    display: flex; align-items: center; gap: var(--space-2); font: inherit; color: var(--color-neutral-700);
+    background: none; border: none; padding: 0 0 var(--space-4); cursor: pointer; font-size: 13px;
   }
-  .confirm-heading {
-    text-align: center; font-family: var(--font-heading); font-weight: 600;
-    font-size: 26px; color: var(--color-text); margin-bottom: 8px; line-height: 1.2;
+  .bk-context-line:disabled { cursor: default; }
+  .bk-context-line .cl-avatar {
+    width: 24px; height: 24px; border-radius: 50%; background: var(--color-accent-100); color: var(--color-accent-700);
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0;
   }
-  .confirm-sub {
-    text-align: center; font-family: var(--font-body); font-size: 13px; color: var(--color-neutral-600);
-    margin-bottom: 24px; line-height: 1.5;
+  .bk-context-line .cl-avatar.any { background: var(--color-neutral-200); color: var(--color-neutral-700); }
+  .bk-context-line svg { width: 13px; height: 13px; color: var(--color-neutral-600); }
+
+  /* ── Faixa de datas (estados explícitos) ───────────────────────── */
+  .bk-date-rail { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; margin: 0 0 var(--space-6); padding: 2px 0 4px; }
+  .bk-date-rail::-webkit-scrollbar { display: none; }
+  .bk-day {
+    flex-shrink: 0; width: 52px; height: 68px; border-radius: var(--radius-sm);
+    background: var(--color-surface); border: 1px solid var(--color-divider); cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    position: relative; font: inherit; color: inherit;
+    transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard);
   }
-  .confirm-card {
-    display: flex; align-items: center; gap: 14px; padding: 16px 0;
-    border-top: 1px solid var(--color-divider); border-bottom: 1px solid var(--color-divider);
-    margin-bottom: 14px;
+  .bk-day .d-dow { font-size: 10px; font-weight: 700; color: var(--color-neutral-600); text-transform: uppercase; letter-spacing: .02em; }
+  .bk-day .d-num { font-family: var(--font-heading); font-weight: 600; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .bk-day .d-mon { font-size: 10px; color: var(--color-neutral-600); text-transform: uppercase; letter-spacing: .02em; }
+  .bk-day .d-today-mark { position: absolute; top: 6px; width: 4px; height: 4px; border-radius: 50%; background: var(--color-accent-600); }
+  /* O rótulo textual é o que garante que o estado não dependa só de cor. */
+  .bk-day .d-status-label { position: absolute; bottom: 5px; font-size: 6.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; }
+  .bk-day.st-full .d-mon, .bk-day.st-closed .d-mon, .bk-day.st-unavailable .d-mon { visibility: hidden; }
+  .bk-day[aria-pressed="true"] { background: var(--color-accent-700); border-color: var(--color-accent-700); }
+  .bk-day[aria-pressed="true"] .d-dow, .bk-day[aria-pressed="true"] .d-mon { color: rgba(247,241,232,.75); }
+  .bk-day[aria-pressed="true"] .d-num { color: var(--color-bg); }
+  .bk-day[aria-pressed="true"] .d-today-mark { background: var(--color-bg); }
+  .bk-day:active:not(:disabled) { transform: scale(.95); }
+  .bk-day:disabled { cursor: default; }
+  .bk-day.st-full { background: transparent; }
+  .bk-day.st-full .d-num { color: var(--color-neutral-600); }
+  .bk-day.st-full .d-status-label { color: var(--color-accent-2-700); }
+  .bk-day.st-closed { background: transparent; border-color: transparent; }
+  .bk-day.st-closed .d-num, .bk-day.st-closed .d-dow, .bk-day.st-closed .d-mon { color: var(--color-neutral-300); }
+  .bk-day.st-closed .d-status-label { color: var(--color-neutral-300); }
+  .bk-day.st-unavailable { background: transparent; }
+  .bk-day.st-unavailable .d-num { color: var(--color-neutral-600); }
+  .bk-day.st-unavailable .d-status-label { color: var(--color-neutral-700); }
+
+  .bk-cal-link {
+    background: none; border: none; color: var(--color-accent-700); font-size: 12px; font-weight: 700;
+    cursor: pointer; padding: 4px 0; display: inline-flex; align-items: center; gap: 4px;
+    position: relative; margin-bottom: var(--space-3);
   }
-  .confirm-card .name { font-family: var(--font-heading); font-weight: 600; font-size: 16px; color: var(--color-text); }
-  .confirm-card .sub { font-family: var(--font-body); font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
-  .confirm-row {
-    display: flex; justify-content: space-between; align-items: center; padding: 6px 0;
-    font-family: var(--font-body); font-size: 13.5px; color: var(--color-neutral-700);
+  .bk-cal-link::after { content: ''; position: absolute; inset: -10px -2px; }
+  .bk-cal-link svg { width: 13px; height: 13px; }
+  .bk-eyebrow {
+    font-size: 12px; font-weight: 700; color: var(--color-neutral-600);
+    margin: 0 0 var(--space-3); text-transform: uppercase; letter-spacing: .03em; display: block;
   }
-  .confirm-total {
-    display: flex; justify-content: space-between; align-items: baseline; padding-top: 14px;
-    margin-top: 8px; border-top: 1px solid var(--color-divider);
+
+  /* ── Grade de horários ─────────────────────────────────────────── */
+  .bk-time-group { margin-bottom: var(--space-5); }
+  .bk-time-group-label { font-size: 12px; font-weight: 700; color: var(--color-neutral-600); margin-bottom: var(--space-2-5); text-transform: uppercase; letter-spacing: .03em; }
+  .bk-time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .bk-time-chip {
+    height: 44px; border-radius: var(--radius-sm); background: var(--color-surface); border: 1px solid var(--color-divider);
+    font-size: 14px; font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; font-family: inherit; color: inherit;
+    transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
   }
-  .confirm-total .label {
-    font-family: var(--font-body); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--color-neutral-600);
+  .bk-time-chip:active { transform: scale(.96); }
+  .bk-time-chip[aria-pressed="true"] { background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-bg); }
+
+  /* ── Blocos de estado (vazio / erro) ───────────────────────────── */
+  .bk-state-block { padding: var(--space-6) var(--space-3) var(--space-5); text-align: center; }
+  .bk-state-block .sb-icon {
+    width: 44px; height: 44px; border-radius: 50%; background: var(--color-neutral-200); color: var(--color-neutral-600);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-4);
   }
-  .confirm-total .amount { font-family: var(--font-heading); font-weight: 600; font-size: 22px; color: var(--color-accent-2); }
-  .confirm-total .amount.price-note { font-size: 15px; }
-  .confirm-footer {
-    text-align: center; font-family: var(--font-body); font-size: 13px;
-    color: var(--color-neutral-600); margin-top: 22px;
+  .bk-state-block .sb-icon svg { width: 22px; height: 22px; }
+  .bk-state-block.is-error .sb-icon { background: var(--color-accent-2-100, #f7e7e7); color: var(--color-accent-2-700); }
+  .bk-state-block p { font-size: 14px; color: var(--color-neutral-700); max-width: 260px; margin: 0 auto; line-height: 1.5; }
+  .bk-state-block .sb-retry {
+    margin-top: var(--space-4); height: 40px; padding: 0 var(--space-4); border-radius: var(--radius-full);
+    background: var(--color-surface); border: 1px solid var(--color-divider); font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; color: inherit;
   }
+  .bk-next-avail {
+    margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--color-divider);
+    font-size: 13px; color: var(--color-neutral-700);
+  }
+  .bk-next-avail strong { display: block; font-family: var(--font-heading); font-weight: 600; font-size: 15px; color: var(--color-text); margin-bottom: var(--space-2); }
+  .bk-next-avail button {
+    margin-top: 4px; height: 38px; padding: 0 var(--space-3-5); border-radius: var(--radius-full);
+    background: var(--color-accent-100); color: var(--color-accent-700); border: none;
+    font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .bk-skel-day { width: 52px; height: 68px; border-radius: var(--radius-sm); background: var(--color-neutral-200); flex-shrink: 0; animation: bk-pulse 1.2s var(--ease-standard) infinite; }
+  .bk-skel-slot { height: 44px; border-radius: var(--radius-sm); background: var(--color-neutral-200); animation: bk-pulse 1.2s var(--ease-standard) infinite; }
+  @media (prefers-reduced-motion: reduce) { .bk-skel-day, .bk-skel-slot { animation: none; opacity: .75; } }
+
+  /* ── Calendário mensal (subview full-screen) ───────────────────── */
+  .bk-cal-legend {
+    display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4); margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-divider);
+  }
+  .bk-cal-legend .lg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--color-neutral-700); }
+  .bk-cal-legend .lg-swatch { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; flex-shrink: 0; }
+  .bk-cal-legend .lg-swatch.avail { background: var(--color-accent-100); color: var(--color-accent-700); }
+  .bk-cal-legend .lg-swatch.full { background: var(--color-accent-2-100, #f7e7e7); color: var(--color-accent-2-700); }
+  .bk-cal-legend .lg-swatch.closed { background: var(--color-neutral-200); color: var(--color-neutral-600); }
+  .bk-cal-legend .lg-swatch.unavail { background: var(--color-neutral-200); color: var(--color-neutral-700); }
+  .bk-month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+  .bk-month-nav .mn-label { font-family: var(--font-heading); font-weight: 600; font-size: 15px; }
+  .bk-month-nav button {
+    width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--color-divider);
+    background: var(--color-surface); cursor: pointer; display: flex; align-items: center; justify-content: center; color: inherit;
+  }
+  .bk-month-nav button:disabled { opacity: .35; cursor: default; }
+  .bk-month-nav button svg { width: 15px; height: 15px; }
+  .bk-month-nav button:active:not(:disabled) { transform: scale(.92); }
+  .bk-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .bk-month-grid .mg-dow { text-align: center; font-size: 10px; font-weight: 700; color: var(--color-neutral-600); padding-bottom: 6px; text-transform: uppercase; }
+  .bk-month-grid button.mg-day {
+    aspect-ratio: 1; border-radius: 50%; border: none; background: none; cursor: pointer; position: relative;
+    font-size: 13px; font-weight: 600; color: var(--color-text); font-variant-numeric: tabular-nums; font-family: inherit;
+    transition: background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard);
+  }
+  .bk-month-grid button.mg-day.is-empty { visibility: hidden; cursor: default; }
+  .bk-month-grid button.mg-day.is-today { box-shadow: inset 0 0 0 1.5px var(--color-accent-600); }
+  .bk-month-grid button.mg-day.is-selected { background: var(--color-accent-700); color: var(--color-bg); }
+  .bk-month-grid button.mg-day:active { transform: scale(.9); }
+  .bk-month-grid button.mg-day.st-full { color: var(--color-neutral-600); }
+  .bk-month-grid button.mg-day.st-closed { color: var(--color-neutral-300); }
+  .bk-month-grid button.mg-day.st-unavailable { color: var(--color-neutral-600); }
+  /* Marcador textual (L/F/I): o estado nunca é comunicado só por cor. */
+  .bk-month-grid button.mg-day .mg-mark {
+    position: absolute; top: -2px; right: 0; width: 12px; height: 12px; border-radius: 50%;
+    font-size: 7px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .bk-month-grid button.mg-day.st-full .mg-mark { background: var(--color-accent-2-100, #f7e7e7); color: var(--color-accent-2-700); }
+  .bk-month-grid button.mg-day.st-closed .mg-mark { background: var(--color-neutral-200); color: var(--color-neutral-600); }
+  .bk-month-grid button.mg-day.st-unavailable .mg-mark { background: var(--color-neutral-200); color: var(--color-neutral-700); }
+  .bk-cal-feedback {
+    min-height: 34px; margin-top: var(--space-3); padding: var(--space-2-5) var(--space-3);
+    font-size: 12px; color: var(--color-neutral-700); background: var(--color-surface); border-radius: var(--radius-sm);
+    display: none;
+  }
+  .bk-cal-feedback.is-visible { display: block; }
+
+  /* ── Formulário ────────────────────────────────────────────────── */
+  .bk-field { margin-bottom: var(--space-4); }
+  .bk-field label { display: block; font-size: 12px; font-weight: 600; color: var(--color-neutral-700); margin-bottom: 6px; }
+  .bk-field input, .bk-field textarea {
+    width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--color-divider);
+    background: var(--color-surface); padding: var(--space-3) var(--space-3-5);
+    font-size: 15px; color: var(--color-text); font-family: inherit;
+    transition: border-color var(--motion-fast) var(--ease-standard);
+  }
+  .bk-field input { height: 48px; }
+  .bk-field textarea { min-height: 84px; resize: none; line-height: 1.4; }
+  .bk-field input:focus, .bk-field textarea:focus { border-color: var(--color-accent-600); outline: none; box-shadow: var(--focus-ring); }
+  .bk-field.has-error input { border-color: var(--color-accent-2); }
+  .bk-field.has-error input:focus { box-shadow: 0 0 0 3px var(--color-accent-2-100, #f7e7e7); }
+  .bk-field .bk-error-msg { display: none; font-size: 12px; color: var(--color-accent-2-700); margin-top: 6px; }
+  .bk-field.has-error .bk-error-msg { display: block; }
+  .bk-field-optional-tag { color: var(--color-neutral-600); font-weight: 400; }
+
+  /* ── Resumo (revisão / sucesso) ────────────────────────────────── */
+  .bk-summary { border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: var(--color-surface); padding: var(--space-4); margin-bottom: var(--space-5); }
+  .bk-summary-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2-5) 0; border-top: 1px solid var(--color-divider); }
+  .bk-summary-row:first-child { border-top: none; padding-top: 0; }
+  .bk-summary-row .sr-label { font-size: 12px; color: var(--color-neutral-600); flex-shrink: 0; }
+  .bk-summary-row .sr-value { font-size: 14px; font-weight: 600; text-align: right; flex: 1; margin: 0 var(--space-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bk-summary-row .sr-alter {
+    flex-shrink: 0; background: none; border: none; color: var(--color-accent-700);
+    font-size: 12px; font-weight: 700; cursor: pointer; padding: 4px 0; position: relative; font-family: inherit;
+  }
+  .bk-summary-row .sr-alter::after { content: ''; position: absolute; inset: -10px -2px; }
+  .bk-summary-row.total { border-top: 1.5px solid var(--color-divider); margin-top: 2px; padding-top: var(--space-3); }
+  .bk-summary-row.total .sr-value { font-family: var(--font-heading); font-size: 17px; }
+  .bk-svc-review-list { padding: 2px 0 var(--space-2-5) var(--space-2); display: flex; flex-direction: column; gap: 5px; }
+  .bk-svc-review-item { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--color-neutral-700); }
+  .bk-svc-review-item .sri-name::before { content: '· '; color: var(--color-neutral-600); }
+  .bk-svc-review-item .sri-price { font-variant-numeric: tabular-nums; flex-shrink: 0; margin-left: var(--space-2); }
+
+  /* ── Bloco de política + consentimento ─────────────────────────── */
+  .bk-block { border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: var(--color-surface); padding: var(--space-4); margin-bottom: var(--space-5); }
+  .bk-block-title { font-family: var(--font-heading); font-weight: 600; font-size: 15px; margin-bottom: var(--space-2); }
+  .bk-block-text { font-size: 13px; color: var(--color-neutral-700); line-height: 1.55; }
+  .bk-block-text p { margin-bottom: 14px; }
+  .bk-block-text p:last-child { margin-bottom: 0; }
+  .bk-block-link { background: none; border: none; color: var(--color-accent-700); font-size: 12px; font-weight: 700; cursor: pointer; padding: var(--space-2) 0 0; font-family: inherit; }
+  .bk-consent-row { display: flex; align-items: flex-start; gap: var(--space-2-5); margin-top: var(--space-4); cursor: pointer; }
+  .bk-consent-row input[type="checkbox"] {
+    appearance: none; width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--color-divider);
+    background: var(--color-surface); flex-shrink: 0; margin: 1px 0 0; cursor: pointer; position: relative;
+    transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard);
+  }
+  .bk-consent-row input[type="checkbox"]:checked { background: var(--color-accent-700); border-color: var(--color-accent-700); }
+  .bk-consent-row input[type="checkbox"]:checked::after {
+    content: ''; position: absolute; left: 6px; top: 2px; width: 5px; height: 9px;
+    border: solid var(--color-bg); border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  .bk-consent-row span { font-size: 13px; color: var(--color-text); line-height: 1.4; }
+  .bk-consent-row.has-error input[type="checkbox"] { border-color: var(--color-accent-2); }
+  .bk-consent-row.has-error span { color: var(--color-accent-2-700); }
+
+  /* ── Recuperação de conflito ───────────────────────────────────── */
+  .bk-conflict { margin-bottom: var(--space-5); }
+  .bk-conflict-icon {
+    width: 44px; height: 44px; border-radius: 50%; background: var(--color-accent-2-100, #f7e7e7); color: var(--color-accent-2-700);
+    display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-3);
+  }
+  .bk-conflict-icon svg { width: 21px; height: 21px; }
+  .bk-conflict-title { font-family: var(--font-heading); font-weight: 600; font-size: 17px; margin-bottom: 6px; }
+  .bk-conflict-sub { font-size: 13px; color: var(--color-neutral-600); margin-bottom: var(--space-4); line-height: 1.5; }
+  .bk-alt-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-4); }
+  .bk-alt-row {
+    display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-3-5);
+    border-radius: var(--radius-sm); border: 1px solid var(--color-divider); background: var(--color-bg);
+    cursor: pointer; width: 100%; text-align: left; font-family: inherit; color: inherit;
+  }
+  .bk-alt-row:active { transform: scale(.98); }
+  .bk-alt-row .alt-time { font-family: var(--font-heading); font-weight: 600; font-size: 15px; font-variant-numeric: tabular-nums; display: block; }
+  .bk-alt-row .alt-day { font-size: 12px; color: var(--color-neutral-600); margin-top: 1px; display: block; }
+  .bk-alt-row .alt-go { font-size: 12px; font-weight: 700; color: var(--color-accent-700); flex-shrink: 0; }
+  .bk-conflict-more {
+    width: 100%; height: 44px; border-radius: var(--radius-full); border: 1px solid var(--color-divider);
+    background: none; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--color-neutral-700); font-family: inherit;
+  }
+
+  /* ── Sucesso ───────────────────────────────────────────────────── */
+  .bk-success-wrap { padding: var(--space-6) 0 0; text-align: center; }
+  .bk-success-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--color-success-100, #e7f0e9); color: var(--color-success-700, #3b6744);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-4);
+  }
+  .bk-success-icon svg { width: 30px; height: 30px; }
+  .bk-success-title { font-family: var(--font-heading); font-weight: 600; font-size: 22px; margin-bottom: var(--space-2); }
+  .bk-success-email-note { font-size: 13px; color: var(--color-neutral-600); margin-bottom: var(--space-6); line-height: 1.4; }
+  .bk-success-card { border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: var(--color-surface); padding: var(--space-4); text-align: left; margin-bottom: var(--space-5); }
+  .bk-success-actions { display: flex; flex-direction: column; gap: 10px; }
+  .bk-btn-secondary {
+    height: 48px; border-radius: var(--radius-full); border: 1px solid var(--color-divider); background: var(--color-surface);
+    font-size: 14px; font-weight: 600; cursor: pointer; color: var(--color-text); font-family: inherit;
+  }
+  .bk-btn-secondary:active { transform: scale(.98); }
+  .bk-btn-ghost {
+    height: 40px; border-radius: var(--radius-full); border: none; background: none;
+    font-size: 13px; font-weight: 600; cursor: pointer; color: var(--color-neutral-700); font-family: inherit;
+  }
+  .bk-btn-ghost:active { transform: scale(.98); }
+  .bk-booking-ref { text-align: center; font-size: 11px; color: var(--color-neutral-600); margin-top: var(--space-4); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+  .bk-commit-error {
+    margin-bottom: var(--space-4); padding: var(--space-3) var(--space-3-5); border-radius: var(--radius-sm);
+    background: var(--color-accent-2-100, #f7e7e7); color: var(--color-accent-2-700); font-size: 13px; line-height: 1.45;
+  }
+
+  /* ── Placeholder da fase seguinte (não é produto final) ────────── */
+  .bk-phase-note {
+    border: 1px dashed var(--color-neutral-300); border-radius: var(--radius-md);
+    padding: var(--space-5); text-align: center; color: var(--color-neutral-600); font-size: 13px;
+  }
+  .bk-phase-recap {
+    margin-top: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: var(--radius-md); padding: var(--space-4);
+  }
+  .bk-phase-recap li { font-size: 13px; }
+  .bk-phase-recap ul { margin: 0; padding-left: 18px; }
 </style>
 </head>
 <body>
-<button class="back-arrow" id="backArrow" aria-label="Voltar">←</button>
-<div class="wrap">
-  <div class="brand">Orenzi</div>
-  <!-- Os pontinhos são montados pelo setStep(): quantos aparecem depende de o
-       passo da profissional entrar no fluxo ou não. -->
-  <div class="steps" id="steps"></div>
-  <div class="step-caption" id="stepCaption"></div>
-  <div id="errorBanner"></div>
-  <div class="app-viewport" id="appViewport">
-    <div id="app"></div>
+
+<div class="bk-app">
+  <div class="bk-topbar" id="topbar"></div>
+  <div class="bk-main" id="main">
+    <div id="steps"></div>
   </div>
-</div>
-<div class="bottom-bar" id="bottomBar">
-  <button class="btn btn-primary" id="advanceBtn" disabled>Avançar</button>
+  <div class="bk-cta-wrap" id="ctaWrap"></div>
 </div>
 
 <script>
 // ── CONFIGURAÇÃO ─────────────────────────────────────────────
-// Troque pelos valores do seu projeto: Settings → API no Supabase
 const SUPABASE_URL = 'https://gsagtsxkhqlpxuvrijgw.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 // Expediente do salão — fonte única em shared/salon.js (painel e booking
-// público carregam o mesmo arquivo). Mudou expediente? Mexe só lá.
+// público carregam o mesmo arquivo). Mudou expediente? Mexe lá E na função
+// SQL is_public_booking_window (ver "Dívida conhecida" em app/CLAUDE.md).
 const { SALON_TZ, OPEN_HOUR, CLOSE_HOUR, SLOT_MINUTES, CLOSED_WEEKDAYS } = window.OrenziSalon;
 
 // ── RELÓGIO DO SALÃO ─────────────────────────────────────────
 // O expediente é no fuso do SALÃO, não no do aparelho de quem está agendando.
 // Sem isso, `new Date('2026-08-15T00:00:00')` vira meia-noite no fuso do celular
 // da cliente: quem marcasse "9h" com o telefone no horário do Brasil gravava 13h
-// em Dublin, e o erro é silencioso — a tela, o e-mail e o painel mostram valores
-// diferentes e ninguém percebe até o dia do atendimento.
+// em Dublin, e o erro é silencioso — tela, e-mail e painel divergem sem erro.
+// MANTIDO INTEGRALMENTE DO V1: a Fase 3 (data/horário) depende destas funções.
 
 // Quantos minutos o fuso do salão está à frente do UTC naquele instante
 // (cobre o horário de verão irlandês automaticamente).
@@ -313,18 +630,10 @@ const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho'
 // Links rastreáveis (?src=instagram, ?src=whatsapp…) levam à MESMA página
 // — o parâmetro só marca de onde a cliente veio. Capturado em memória para
 // eventual uso futuro, mas NUNCA grava em `appointments.source`: esse campo
-// é operacional (como o agendamento foi feito — online/manual/ai/whatsapp
-// atendido por humano), não é acquisition attribution, e misturar os dois
-// conceitos foi a causa de um bug real (08/08/2026): a RLS pública exige
-// `source = 'online'` para todo INSERT deste fluxo, e o valor 'whatsapp' —
-// mesmo aceito pelo CHECK constraint — era recusado pela RLS. Quem chegasse
-// por um link `?src=whatsapp` via a confirmação falhar sem conseguir
-// contornar.
-//
-// Decisão (08/08/2026): todo booking feito por este fluxo grava sempre
-// `source: 'online'`, independente do canal de origem. Se attribution
-// precisar virar dado persistido, é coluna própria (ex.:
-// `appointments.acquisition_source`) — nunca reaproveitar `source`.
+// é operacional (como o agendamento foi feito), não é acquisition attribution,
+// e misturar os dois foi a causa de um bug real (08/08/2026) — a RLS pública
+// exige `source = 'online'` e recusava 'whatsapp'. Se attribution precisar
+// virar dado persistido, é coluna própria, nunca reaproveitar `source`.
 const ACQUISITION_SOURCES = {
   instagram: 'Instagram',
   website: 'Website',
@@ -334,10 +643,7 @@ const ACQUISITION_SOURCES = {
 };
 
 // Lida uma vez, no carregamento — nunca em storage persistente (não pode
-// contaminar a próxima cliente no mesmo aparelho). Sobrevive à troca de
-// etapa porque vive em `state`, não porque foi salva em disco. Hoje não
-// alimenta nenhuma escrita no banco — existe pronta para o dia em que
-// attribution ganhar um destino próprio.
+// contaminar a próxima cliente no mesmo aparelho).
 function captureAcquisitionSource() {
   const raw = (new URLSearchParams(location.search).get('src') || '').trim().toLowerCase();
   return ACQUISITION_SOURCES[raw] ? raw : 'direct'; // desconhecido → fallback seguro
@@ -345,112 +651,118 @@ function captureAcquisitionSource() {
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = {
-  step: 1,
-  // Com uma profissional só atendendo não existe escolha a fazer, e o passo 2
-  // sai do fluxo: a cliente vai do serviço direto pra data. Começa true porque
-  // hoje só a Juliane atende; o init confere no banco e corrige se outra voltar
-  // a ficar ativa, e o advanceFromStep1() confirma pelo serviço escolhido.
-  pulaEscolhaStaff: true,
-  services: [],
-  staff: [],
-  selectedService: null,
-  selectedStaff: null,
-  selectedDate: '',
-  calViewYear: null,
-  calViewMonth: null,
-  slots: [],
-  selectedSlot: null,
-  clientName: '',
-  clientPhone: '',
-  clientEmail: '',
-  loading: true,
-  error: null,
-  done: false,
-  acquisitionSource: captureAcquisitionSource(),
+const ICONS = {
+  chevronLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+  chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  chevronDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16.2" r="0.6" fill="currentColor" stroke="none"/></svg>',
+  offline: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16M8.5 8.5A10 10 0 0122 9M5 12.5a10 10 0 013-2.3M8.8 16.2a5.5 5.5 0 016.4 0M12 20h.01"/></svg>',
+  empty: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17M8.5 14.5h7"/></svg>',
 };
 
-const app = document.getElementById('app');
-const appViewport = document.getElementById('appViewport');
-const backArrow = document.getElementById('backArrow');
-const bottomBar = document.getElementById('bottomBar');
-const advanceBtn = document.getElementById('advanceBtn');
-let hasRenderedOnce = false;
-
-function renderTransition(direction) {
-  // Mesmo padrão de slidePane() em painel.html: checagem explícita no topo,
-  // antes de clonar/medir qualquer coisa — não dá pra confiar só na cascata
-  // do CSS global aqui, porque a coreografia (clone, RAF duplo, listener de
-  // transitionend, setTimeout de limpeza) rodaria do mesmo jeito, só que sem
-  // movimento visível.
-  if (window.orenziUI && orenziUI.prefersReducedMotion()) { render(); return; }
-  const oldHeight = app.offsetHeight;
-  const clone = app.cloneNode(true);
-  clone.removeAttribute('id');
-  clone.classList.add('app-pane');
-  appViewport.appendChild(clone);
-
-  render();
-  const newHeight = app.offsetHeight;
-  appViewport.style.minHeight = Math.max(oldHeight, newHeight) + 'px';
-
-  const enterFrom = direction === 'back' ? '-100%' : '100%';
-  const exitTo = direction === 'back' ? '100%' : '-100%';
-
-  app.classList.add('app-pane');
-  app.style.transition = 'none';
-  app.style.transform = `translateX(${enterFrom})`;
-  clone.style.transform = 'translateX(0)';
-
-  void app.offsetWidth;
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      app.style.transition = 'transform .32s cubic-bezier(.22,.61,.36,1)';
-      clone.style.transition = 'transform .32s cubic-bezier(.22,.61,.36,1)';
-      app.style.transform = 'translateX(0)';
-      clone.style.transform = `translateX(${exitTo})`;
-    });
-  });
-
-  let cleaned = false;
-  function cleanup() {
-    if (cleaned) return;
-    cleaned = true;
-    app.removeEventListener('transitionend', onTransitionEnd);
-    app.classList.remove('app-pane');
-    app.style.transition = '';
-    app.style.transform = '';
-    appViewport.style.minHeight = '';
-    clone.remove();
-  }
-  function onTransitionEnd(e) {
-    if (e.target === app && e.propertyName === 'transform') cleanup();
-  }
-  app.addEventListener('transitionend', onTransitionEnd);
-  setTimeout(cleanup, 500);
+// Cor da faixa lateral por categoria. Só tokens do Design System — nenhuma cor
+// crua nova (Orenzi UI contract, item 3). Categoria desconhecida cai num hash
+// estável, pra não repetir cor à toa nem quebrar quando surgir categoria nova.
+const CATEGORY_ACCENTS = {
+  'Corte':       'var(--color-accent-600)',
+  'Coloração':   'var(--color-accent-700)',
+  'Tratamentos': 'var(--color-neutral-700)',
+  'Alisamento':  'var(--color-accent)',
+  'Outros':      'var(--color-neutral-600)',
+};
+const CATEGORY_ACCENT_FALLBACK = Object.values(CATEGORY_ACCENTS);
+function accentForCategory(cat) {
+  if (cat && CATEGORY_ACCENTS[cat]) return CATEGORY_ACCENTS[cat];
+  let h = 0;
+  for (const ch of String(cat || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return CATEGORY_ACCENT_FALLBACK[h % CATEGORY_ACCENT_FALLBACK.length];
 }
 
-function setBackArrow(visible, handler) {
-  backArrow.classList.toggle('visible', visible);
-  backArrow.onclick = visible ? handler : null;
+// ── ESTADO ───────────────────────────────────────────────────
+// Jornada completa do V2.2 aprovado. A Fase 1 implementa só 'service';
+// 'professional' é ocupado por um placeholder até a Fase 2. As chaves ficam
+// todas aqui desde já para o progresso do topo refletir a jornada real, e não
+// uma barra que "encolhe" quando as etapas seguintes entrarem.
+const STEP_KEYS = ['service', 'professional', 'datetime', 'data', 'review'];
+
+const state = {
+  step: 'service',
+  services: [],
+  categories: [],
+  categoryFilter: 'all',
+  // Ordem de seleção é significativa: define sort_order em appointment_services
+  // e a ordem de execução no bloco contínuo. Nunca reordenar por catálogo.
+  selectedServiceIds: [],
+  loading: true,
+  error: null,
+  servicesScrollTop: 0,
+  acquisitionSource: captureAcquisitionSource(),
+
+  // ── Profissional / data / horário (Fase 2) ──
+  staff: [],                 // todas as ativas, com created_at para desempate
+  staffServices: [],         // pares (staff_id, service_id) para a interseção
+  staffLoaded: false,
+  staffPref: null,           // 'any' | staff_id
+  resolvedStaffId: null,     // previsão de UX; o servidor é a autoridade final
+  selectedDateIso: null,
+  selectedTime: null,
+
+  // Cache de disponibilidade — chaveado por serviços + preferência + janela.
+  availability: { key: null, loading: false, error: null, days: null },
+
+  // Subview full-screen (calendário / política)
+  subview: null,
+  calendarMonth: null,
+  calFeedback: '',
+  calReturnFocusId: null,
+
+  // ── Dados da cliente / política / commit (Fase 3) ──
+  // Só em memória: nada de PII em sessionStorage/localStorage nesta fase.
+  form: { name: '', phone: '', email: '', notes: '' },
+  formTouched: {},
+  formValidated: false,
+  policy: null,              // versão corrente lida do banco
+  policyAccepted: false,
+  policyTouched: false,
+  committing: false,
+  commitError: null,         // { code, message } — nunca mostra código à cliente
+  conflict: null,            // { alternatives: [{iso, time}] }
+  booking: null,             // resposta do servidor (autoridade do recibo)
+  createRequestKey: null,    // idempotência da OPERAÇÃO — uma por tentativa lógica
+  manageToken: null,         // só em memória; nunca localStorage/sessionStorage/log
+  emailSuccess: null,        // true|false|null — null quando o e-mail nem foi tentado (replay)
+};
+
+// Trocar os serviços muda a duração total E o conjunto de profissionais
+// elegíveis, então toda escolha posterior deixa de ser válida. Chamada em TODO
+// toggle de serviço e em toda troca de profissional (parcialmente).
+function invalidateDownstreamSelections() {
+  state.staffPref = null;
+  state.resolvedStaffId = null;
+  state.selectedDateIso = null;
+  state.selectedTime = null;
+  invalidateAvailability();
 }
 
-function setBottomBar(visible, opts) {
-  bottomBar.classList.toggle('visible', visible);
-  document.body.classList.toggle('has-advance-bar', visible);
-  if (visible && opts) {
-    advanceBtn.disabled = !opts.enabled;
-    advanceBtn.textContent = opts.label || 'Avançar';
-    advanceBtn.onclick = opts.onClick;
-  }
+// Disponibilidade depende de (serviços × duração total × profissional), então
+// qualquer um dos três mudar torna o cache inválido. Slot restaurado nunca é
+// garantido — é exatamente por isso que o cache morre em vez de ser remendado.
+function invalidateAvailability() {
+  state.availability = { key: null, loading: false, error: null, days: null };
 }
 
-function pad2(n) { return String(n).padStart(2, '0'); }
-
-function initials(name) {
-  return (name || '').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-}
+// ── DERIVADOS (apresentação apenas) ──────────────────────────
+// ATENÇÃO: estes totais servem só para a UX. Na criação real, quem calcula
+// preço e duração é o servidor, dentro de create_public_booking, a partir dos
+// service_ids — o browser nunca é autoridade sobre valor nem sobre duração.
+function serviceById(id) { return state.services.find(s => s.id === id); }
+function selectedServices() { return state.selectedServiceIds.map(serviceById).filter(Boolean); }
+function totalDurationMinutes() { return selectedServices().reduce((sum, s) => sum + (s.duration_minutes || 0), 0); }
+function totalPrice() { return selectedServices().reduce((sum, s) => sum + Number(s.price || 0), 0); }
+function anySelectedPriceVaries() { return selectedServices().some(s => s.price_varies); }
 
 function formatMoney(n) {
   const num = Number(n);
@@ -462,455 +774,377 @@ function formatPrice(service) {
   return service.price_varies ? `${base}*` : base;
 }
 
-function groupByCategory(services) {
-  const groups = [];
-  let current = null;
-  services.forEach(s => {
-    if (!current || current.category !== s.category) {
-      current = { category: s.category, items: [] };
-      groups.push(current);
-    }
-    current.items.push(s);
-  });
-  return groups;
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// Os passos que a cliente realmente vê. O número interno continua o mesmo
-// (1 serviço · 2 profissional · 3 data/hora · 4 dados) — o que muda é a
-// contagem exibida, senão o fluxo curto anunciaria "Passo 3 de 4" na tela 2.
-function etapasVisiveis() {
-  return state.pulaEscolhaStaff ? [1, 3, 4] : [1, 2, 3, 4];
-}
-
-function setStep(n) {
-  const direction = n >= state.step ? 'forward' : 'back';
-  state.step = n;
-  const etapas = etapasVisiveis();
-  const pos = etapas.indexOf(n) + 1;
-  document.getElementById('steps').innerHTML = etapas
-    .map((_, i) => `<div class="dot${i < pos ? ' active' : ''}"></div>`).join('');
-  document.getElementById('stepCaption').textContent =
-    (state.done || pos < 1) ? '' : `Passo ${pos} de ${etapas.length}`;
-  if (!hasRenderedOnce) { hasRenderedOnce = true; render(); }
-  else { renderTransition(direction); }
-}
-
+// ── CARREGAMENTO REAL ────────────────────────────────────────
 async function loadServices() {
+  state.loading = true;
+  state.error = null;
+  renderStepBody();
+  renderCTA();
+
   const { data, error } = await sb.from('services').select('*').order('sort_order');
-  if (error) { state.error = error.message; return; }
-  state.services = data;
-}
+  state.loading = false;
 
-async function loadStaffForService(serviceId) {
-  const { data, error } = await sb
-    .from('staff_services')
-    .select('staff:staff_id(id, name, role, active)')
-    .eq('service_id', serviceId);
-  if (error) { state.error = error.message; return; }
-  // Só quem atende de verdade. As inativas continuam no banco por causa do
-  // histórico de agendamentos, e todas estão ligadas a todos os serviços — sem
-  // este filtro a cliente escolhia entre cinco pessoas, quatro delas fora do
-  // salão, inclusive a recepção.
-  state.staff = data.map(row => row.staff).filter(s => s && s.active !== false);
-}
-
-// Quantas atendem hoje, independente de serviço. Serve só pra saber, já no
-// primeiro passo, se o fluxo tem 3 ou 4 telas.
-async function loadActiveStaffCount() {
-  const { count, error } = await sb
-    .from('staff')
-    .select('id', { count: 'exact', head: true })
-    .eq('active', true);
-  if (error) return;   // no erro, mantém o padrão de uma profissional só
-  state.pulaEscolhaStaff = count === 1;
-}
-
-// Calcula horários livres pro profissional escolhido, na data escolhida,
-// considerando a duração do serviço.
-async function loadAvailableSlots() {
-  const { selectedStaff, selectedDate, selectedService } = state;
-
-  const weekday = new Date(`${selectedDate}T00:00:00`).getDay();
-  if (CLOSED_WEEKDAYS.includes(weekday)) {
-    state.slots = [];
+  if (error) {
+    console.error('agendar.loadServices', error);
+    state.error = error.message;
+    renderStepBody();
+    renderCTA();
     return;
   }
 
-  // A janela do dia também é a do salão: como strings soltas, o Postgres as lia
-  // no fuso da sessão dele e a busca por conflitos pegava algumas horas erradas.
-  const dayStart = salonTimeToInstant(selectedDate, 0).toISOString();
-  const dayEnd = salonTimeToInstant(selectedDate, 24 * 60 - 1).toISOString();
-
-  // Pela RPC, nunca por `.from('appointments')`: esta página usa a chave anônima
-  // e a RLS de appointments só libera SELECT autenticado. A leitura direta não
-  // dava erro — devolvia lista vazia — e com isso TODO horário aparecia livre,
-  // inclusive os já ocupados. get_busy_slots é SECURITY DEFINER e devolve só os
-  // blocos de trabalho: a pausa (tinta agindo) fica de fora de propósito,
-  // porque durante ela a profissional está livre pra atender outra cliente.
-  const { data: busy, error } = await sb.rpc('get_busy_slots', {
-    p_staff_id: selectedStaff.id,
-    p_from: dayStart,
-    p_to: dayEnd,
-  });
-
-  if (error) { state.error = error.message; return; }
-
-  const duration = selectedService.duration_minutes;
-  const slots = [];
-  for (let m = OPEN_HOUR * 60; m + duration <= CLOSE_HOUR * 60; m += SLOT_MINUTES) {
-    // m é minutos desde a meia-noite EM DUBLIN, não no relógio do aparelho.
-    const slotStart = salonTimeToInstant(selectedDate, m);
-    const slotEnd = new Date(slotStart.getTime() + duration * 60000);
-
-    const overlaps = (busy || []).some(b => {
-      const bStart = new Date(b.busy_start);
-      const bEnd = new Date(b.busy_end);
-      return slotStart < bEnd && slotEnd > bStart;
-    });
-
-    slots.push({
-      label: salonClock(slotStart),
-      start: slotStart,
-      end: slotEnd,
-      available: !overlaps,
-    });
-  }
-  state.slots = slots;
+  state.services = data || [];
+  // Categorias saem dos dados reais, na ordem de sort_order — nada de lista
+  // fixa: categoria nova no painel aparece aqui sozinha, e chip fixo viraria
+  // filtro que nunca acha nada (mesma decisão já tomada no Estoque).
+  state.categories = [...new Set(state.services.map(s => s.category).filter(Boolean))];
+  // Seleção que aponte para serviço que sumiu do catálogo não pode sobreviver.
+  state.selectedServiceIds = state.selectedServiceIds.filter(serviceById);
+  renderStepBody();
+  renderCTA();
 }
 
-// Remove tudo que não for dígito, pra "01234567", "+353 1234567" e "(0123) 456-7"
-// serem tratados como o mesmo número na hora de identificar o cliente.
-function normalizePhone(phone) {
-  return (phone || '').replace(/[^\d]/g, '');
+// Profissionais ativas + os vínculos serviço↔profissional. Duas leituras
+// públicas (policies "public read staff"/"public read staff_services"), feitas
+// UMA vez no init — a interseção por serviço é calculada em memória depois,
+// sem ida ao banco a cada toggle.
+async function loadStaffCatalog() {
+  const [staffRes, linkRes] = await Promise.all([
+    sb.from('staff').select('id, name, role, active, created_at').eq('active', true).order('created_at'),
+    sb.from('staff_services').select('staff_id, service_id'),
+  ]);
+  if (staffRes.error || linkRes.error) {
+    console.error('agendar.loadStaffCatalog', staffRes.error || linkRes.error);
+    return false;
+  }
+  state.staff = staffRes.data || [];
+  state.staffServices = linkRes.data || [];
+  state.staffLoaded = true;
+  return true;
 }
 
-async function confirmBooking() {
-  state.error = null;
-  const btn = document.getElementById('confirm');
-  orenziUI.setButtonBusy(btn, 'Confirmando…');
-  try {
-    // Acha cliente existente pelo telefone (normalizado) ou cria um novo — via função
-    // do banco com permissão controlada (a tabela clients não é legível publicamente).
-    const normalizedPhone = normalizePhone(state.clientPhone);
-    const { data: clientId, error: clientErr } = await sb.rpc('find_or_create_client', {
-      p_name: state.clientName,
-      p_phone: normalizedPhone,
-      p_email: state.clientEmail || null,
-      p_birthdate: state.clientBirthdate || null,
-      p_instagram: state.clientInstagram || null,
-    });
-    if (clientErr) throw clientErr;
+function staffById(id) { return state.staff.find(s => s.id === id); }
 
-    const { error: apptErr } = await sb.from('appointments').insert({
-      client_id: clientId,
-      staff_id: state.selectedStaff.id,
-      service_id: state.selectedService.id,
-      starts_at: state.selectedSlot.start.toISOString(),
-      ends_at: state.selectedSlot.end.toISOString(),
-      status: 'confirmed',
-      // Sempre 'online' — attribution (state.acquisitionSource) não é
-      // persistida hoje, ver comentário acima de captureAcquisitionSource().
-      source: 'online',
-    });
-    if (apptErr) throw apptErr;
-
-    await orenziUI.setButtonSuccess(btn, 'Confirmado');
-    state.done = true;
-    document.getElementById('stepCaption').textContent = '';
-    renderTransition('forward');
-  } catch (e) {
-    console.error('agendar.confirmBooking', e);
-    state.error = 'Não foi possível confirmar o agendamento. Tente de novo.';
-    render();
-  }
+// Profissional elegível atende TODOS os serviços escolhidos. Só ativas entram:
+// as quatro inativas continuam ligadas a todos os 15 serviços em
+// staff_services por causa do histórico, e sem esse filtro a cliente escolheria
+// entre pessoas que não estão mais no salão (armadilha já documentada no V1).
+//
+// Isto é DESCOBERTA/UX. O servidor revalida a mesma interseção dentro de
+// create_public_booking e é ele quem decide — o browser nunca é autoridade.
+function eligibleStaff() {
+  const ids = state.selectedServiceIds;
+  if (!ids.length) return [];
+  return state.staff.filter(st =>
+    ids.every(svcId => state.staffServices.some(l => l.staff_id === st.id && l.service_id === svcId))
+  );
 }
 
-function buildCalendarGrid(year, month) {
-  const first = new Date(year, month, 1);
-  const startWeekday = first.getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const prevDaysInMonth = new Date(year, month, 0).getDate();
-  const todayStr = salonToday();
-  const cells = [];
+// ── DISPONIBILIDADE ──────────────────────────────────────────
+const AVAILABILITY_DAYS = 60;   // horizonte da janela, conforme feasibility
+// Tolerância idêntica à do servidor: is_public_booking_window aceita
+// `p_starts_at >= now() - 5 minutes`. Espelhar o número evita oferecer um
+// horário que a RLS recusaria — e evita esconder um que ela aceitaria.
+const PAST_TOLERANCE_MS = 5 * 60 * 1000;
 
-  for (let i = 0; i < startWeekday; i++) {
-    cells.push(`<div class="cal-day muted">${prevDaysInMonth - startWeekday + 1 + i}</div>`);
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${pad2(month + 1)}-${pad2(d)}`;
-    const weekday = new Date(year, month, d).getDay();
-    if (CLOSED_WEEKDAYS.includes(weekday)) {
-      cells.push(`<div class="cal-day closed">${d}</div>`);
+function addDaysIso(iso, n) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return dt.toISOString().slice(0, 10);
+}
+function isoWeekday(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+function availabilityKey() {
+  return `${[...state.selectedServiceIds].join(',')}|${state.staffPref}|${totalDurationMinutes()}`;
+}
+
+// Uma chamada MULTI-DIA por profissional elegível — nunca uma por dia.
+// Com a Juliane sozinha isso é 1 request para os 60 dias inteiros.
+// Pela RPC, nunca por `.from('appointments')`: esta página usa a chave anônima
+// e a RLS só libera SELECT autenticado — a leitura direta devolveria lista
+// vazia SEM erro e todo horário apareceria livre.
+async function fetchBusyByStaff(staffIds, fromIso, toIso) {
+  const from = salonTimeToInstant(fromIso, 0).toISOString();
+  const to = salonTimeToInstant(toIso, 24 * 60).toISOString();
+  const results = await Promise.all(staffIds.map(id =>
+    sb.rpc('get_busy_slots', { p_staff_id: id, p_from: from, p_to: to })
+      .then(({ data, error }) => ({ id, data, error }))
+  ));
+  const failed = results.find(r => r.error);
+  if (failed) throw failed.error;
+  const map = new Map();
+  results.forEach(r => map.set(r.id, (r.data || []).map(b => ({
+    start: new Date(b.busy_start).getTime(),
+    end: new Date(b.busy_end).getTime(),
+  }))));
+  return map;
+}
+
+// Estados de dia (mesma semântica no rail e no calendário):
+//   closed      — salão não opera (domingo/segunda, ou data passada)
+//   unavailable — salão opera, mas a profissional escolhida não atende no dia
+//   full        — opera e a profissional atende, mas nenhum bloco compatível cabe
+//   available   — há ao menos um slot
+const DAY_STATUS_LABEL = { available: 'Disponível', full: 'Lotado', closed: 'Fechado', unavailable: 'Indisp.' };
+const DAY_STATUS_MARK = { full: 'L', closed: 'F', unavailable: 'I' };
+
+// Constrói o mapa de dias/slots para a janela inteira.
+// Cada slot guarda candidateStaffIds[] — sem isso, escolher um horário em
+// "Qualquer profissional" não teria como virar uma profissional concreta.
+function buildAvailability(staffIds, busyByStaff, fromIso, days, durationMin) {
+  const out = new Map();
+  const nowMs = Date.now() - PAST_TOLERANCE_MS;
+
+  for (let i = 0; i < days; i++) {
+    const iso = addDaysIso(fromIso, i);
+
+    if (CLOSED_WEEKDAYS.includes(isoWeekday(iso))) {
+      out.set(iso, { status: 'closed', slots: [] });
       continue;
     }
-    let cls = 'cal-day';
-    if (dateStr < todayStr) cls += ' past';
-    else if (dateStr === todayStr) cls += ' today';
-    if (dateStr === state.selectedDate) cls += ' selected';
-    cells.push(`<div class="${cls}" data-date="${dateStr}">${d}</div>`);
-  }
-  const trailing = (7 - (cells.length % 7)) % 7;
-  for (let i = 1; i <= trailing; i++) {
-    cells.push(`<div class="cal-day muted">${i}</div>`);
-  }
-  return cells.join('');
-}
+    // Sem tabela de escala por profissional, "não atende neste dia" não tem
+    // origem de dado real hoje — o estado existe no modelo e é renderizado,
+    // mas só passa a ocorrer quando/se existir uma escala por profissional.
+    const worksToday = staffIds.filter(() => true);
+    if (!worksToday.length) {
+      out.set(iso, { status: 'unavailable', slots: [] });
+      continue;
+    }
 
-function renderStep3() {
-  if (state.calViewYear == null) {
-    const t = new Date();
-    state.calViewYear = t.getFullYear();
-    state.calViewMonth = t.getMonth();
-  }
-  const t = new Date();
-  const monthsFromToday = (state.calViewYear - t.getFullYear()) * 12 + (state.calViewMonth - t.getMonth());
-  const prevDisabled = monthsFromToday <= 0;
-  const nextDisabled = monthsFromToday >= 5;
+    const slots = [];
+    for (let m = OPEN_HOUR * 60; m + durationMin <= CLOSE_HOUR * 60; m += SLOT_MINUTES) {
+      // m é minutos desde a meia-noite EM DUBLIN, nunca no relógio do aparelho.
+      const start = salonTimeToInstant(iso, m);
+      const startMs = start.getTime();
+      if (startMs < nowMs) continue;              // nada no passado
+      const endMs = startMs + durationMin * 60000;
 
-  app.innerHTML = `
-    <h2>Data &amp; <em>horário</em></h2>
-    <div class="cal-head">
-      <div class="cal-nav ${prevDisabled ? 'disabled' : ''}" id="calPrev">‹</div>
-      <div class="cal-month">${MONTHS_PT[state.calViewMonth]} ${state.calViewYear}</div>
-      <div class="cal-nav ${nextDisabled ? 'disabled' : ''}" id="calNext">›</div>
-    </div>
-    <div class="cal-grid">
-      <div class="cal-dow">D</div><div class="cal-dow">S</div><div class="cal-dow">T</div>
-      <div class="cal-dow">Q</div><div class="cal-dow">Q</div><div class="cal-dow">S</div><div class="cal-dow">S</div>
-      ${buildCalendarGrid(state.calViewYear, state.calViewMonth)}
-    </div>
-    <div id="slotsWrap"></div>
-  `;
-
-  // Sem o passo da profissional, a seta volta pro serviço.
-  setBackArrow(true, () => setStep(state.pulaEscolhaStaff ? 1 : 2));
-
-  document.getElementById('calPrev').onclick = () => {
-    state.calViewMonth--;
-    if (state.calViewMonth < 0) { state.calViewMonth = 11; state.calViewYear--; }
-    renderStep3();
-  };
-  document.getElementById('calNext').onclick = () => {
-    state.calViewMonth++;
-    if (state.calViewMonth > 11) { state.calViewMonth = 0; state.calViewYear++; }
-    renderStep3();
-  };
-  app.querySelectorAll('.cal-day[data-date]').forEach(el => {
-    el.onclick = () => {
-      state.selectedDate = el.dataset.date;
-      state.selectedSlot = null;
-      renderStep3();
-      refreshSlots();
-    };
-  });
-
-  updateStep3Bar();
-  if (state.selectedDate) refreshSlots();
-}
-
-function updateStep3Bar() {
-  setBottomBar(true, {
-    enabled: !!(state.selectedDate && state.selectedSlot),
-    onClick: () => setStep(4),
-  });
-}
-
-async function refreshSlots() {
-  const slotsWrap = document.getElementById('slotsWrap');
-  if (!slotsWrap || !state.selectedDate) return;
-  slotsWrap.innerHTML = `<div class="avail-label">Horários disponíveis</div><div class="empty">Carregando horários…</div>`;
-  await loadAvailableSlots();
-  const isClosedDay = CLOSED_WEEKDAYS.includes(new Date(`${state.selectedDate}T00:00:00`).getDay());
-  const anyOpen = state.slots.some(s => s.available);
-  slotsWrap.innerHTML = `<div class="avail-label">Horários disponíveis</div>` + (anyOpen ? `
-    <div class="time-grid">${state.slots.map(s => `
-      <div class="time-item ${s.available ? '' : 'disabled'}${state.selectedSlot && state.selectedSlot.label === s.label ? ' selected' : ''}" data-label="${s.label}">${s.label}</div>
-    `).join('')}</div>
-  ` : `<div class="empty">${isClosedDay ? 'O salão não abre nesse dia.' : 'Sem horários livres nesse dia.'}</div>`);
-
-  slotsWrap.querySelectorAll('.time-item:not(.disabled)').forEach(el => {
-    el.onclick = () => {
-      state.selectedSlot = state.slots.find(s => s.label === el.dataset.label);
-      slotsWrap.querySelectorAll('.time-item.selected').forEach(x => x.classList.remove('selected'));
-      el.classList.add('selected');
-      updateStep3Bar();
-    };
-  });
-  updateStep3Bar();
-}
-
-async function advanceFromStep1() {
-  if (!state.selectedService) return;
-  advanceBtn.disabled = true;
-  advanceBtn.textContent = 'Carregando…';
-  await loadStaffForService(state.selectedService.id);
-  // Uma só atendendo: o agendamento já sai no nome dela e a cliente vai direto
-  // pra data. Zero é outra história — cai no passo 2, que tem o aviso de que
-  // ninguém atende esse serviço.
-  state.pulaEscolhaStaff = state.staff.length === 1;
-  if (state.pulaEscolhaStaff) {
-    state.selectedStaff = state.staff[0];
-    setStep(3);
-  } else {
-    setStep(2);
-  }
-}
-
-function render() {
-  document.getElementById('errorBanner').innerHTML = state.error
-    ? `<div class="empty" style="color:var(--color-accent-2)">Erro: ${state.error}</div>`
-    : '';
-
-  if (state.done) {
-    setBackArrow(false);
-    setBottomBar(false);
-    const dateLabel = state.selectedSlot.start.toLocaleDateString('pt-BR', { timeZone: SALON_TZ, weekday: 'long', day: 'numeric', month: 'long' });
-    app.innerHTML = `
-      <div class="confirm-check">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--color-neutral-100)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-      <div class="confirm-heading">Você está<br>agendada.</div>
-      <div class="confirm-sub">Reservamos seu horário. A confirmação já está a caminho do seu e-mail.</div>
-      <div class="confirm-card">
-        <div class="staff-avatar">${initials(state.selectedStaff.name)}</div>
-        <div>
-          <div class="name">${state.selectedStaff.name}</div>
-          <div class="sub">${state.selectedService.name}</div>
-        </div>
-      </div>
-      <div class="confirm-row"><span>${dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)}</span><span>${state.selectedSlot.label}</span></div>
-      <div class="confirm-total">
-        <span class="label">Total</span>
-        <span class="amount${state.selectedService.price_label ? ' price-note' : ''}">${formatPrice(state.selectedService)}</span>
-      </div>
-      ${state.selectedService.price_varies ? '<div class="price-disclaimer" style="text-align:center">*valor varia de acordo com o cabelo e é confirmado após avaliação presencial</div>' : ''}
-      <div class="confirm-footer">Te esperamos no Orenzi.</div>
-    `;
-    return;
-  }
-
-  if (state.step === 1) {
-    const groups = groupByCategory(state.services);
-    const hasVarying = state.services.some(s => s.price_varies);
-    app.innerHTML = `
-      <h2>Escolha o <em>serviço</em></h2>
-      ${groups.map(g => `
-        <div class="category-label">${g.category}</div>
-        <div class="row-list">
-          ${g.items.map(s => `
-            <div class="row-item${state.selectedService && state.selectedService.id === s.id ? ' selected' : ''}" data-id="${s.id}">
-              <div class="info">
-                <div class="name">${s.name}</div>
-                <div class="meta">${s.duration_minutes} min</div>
-              </div>
-              <div class="price">${formatPrice(s)}</div>
-            </div>
-          `).join('')}
-        </div>
-      `).join('')}
-      ${hasVarying ? '<div class="price-disclaimer">*valor varia de acordo com o cabelo e é confirmado após avaliação presencial</div>' : ''}
-    `;
-    app.querySelectorAll('.row-item').forEach(el => {
-      el.onclick = () => {
-        const chosen = state.services.find(s => s.id === el.dataset.id);
-        if (!state.selectedService || state.selectedService.id !== chosen.id) {
-          state.selectedStaff = null;
-          state.selectedDate = '';
-          state.selectedSlot = null;
-        }
-        state.selectedService = chosen;
-        app.querySelectorAll('.row-item.selected').forEach(x => x.classList.remove('selected'));
-        el.classList.add('selected');
-        setBottomBar(true, { enabled: true, onClick: advanceFromStep1 });
-      };
-    });
-    setBackArrow(false);
-    setBottomBar(true, { enabled: !!state.selectedService, onClick: advanceFromStep1 });
-    return;
-  }
-
-  if (state.step === 2) {
-    app.innerHTML = `
-      <h2>Escolha a <em>profissional</em></h2>
-      ${state.staff.length ? `<div class="row-list">${state.staff.map(s => `
-        <div class="staff-row${state.selectedStaff && state.selectedStaff.id === s.id ? ' selected' : ''}" data-id="${s.id}">
-          <div class="staff-avatar">${initials(s.name)}</div>
-          <div>
-            <div class="name">${s.name}</div>
-            <div class="sub">${s.role || ''}</div>
-          </div>
-        </div>
-      `).join('')}</div>` : '<div class="empty">Nenhum profissional disponível para esse serviço.</div>'}
-    `;
-    app.querySelectorAll('.staff-row').forEach(el => {
-      el.onclick = () => {
-        const chosen = state.staff.find(s => s.id === el.dataset.id);
-        if (!state.selectedStaff || state.selectedStaff.id !== chosen.id) {
-          state.selectedSlot = null;
-        }
-        state.selectedStaff = chosen;
-        app.querySelectorAll('.staff-row.selected').forEach(x => x.classList.remove('selected'));
-        el.classList.add('selected');
-        setBottomBar(true, { enabled: true, onClick: () => setStep(3) });
-      };
-    });
-    setBackArrow(true, () => setStep(1));
-    setBottomBar(true, { enabled: !!state.selectedStaff, onClick: () => setStep(3) });
-    return;
-  }
-
-  if (state.step === 3) {
-    renderStep3();
-    return;
-  }
-
-  if (state.step === 4) {
-    app.innerHTML = `
-      <h2>Seus <em>dados</em></h2>
-      <div style="display:flex; gap:14px;">
-        <div style="flex:1">
-          <label>Primeiro nome</label>
-          <input type="text" id="firstName" placeholder="Primeiro nome" value="${state.clientFirstName || ''}">
-        </div>
-        <div style="flex:1">
-          <label>Último nome</label>
-          <input type="text" id="lastName" placeholder="Último nome" value="${state.clientLastName || ''}">
-        </div>
-      </div>
-      <label>Data de nascimento</label>
-      <input type="date" id="birthdate" value="${state.clientBirthdate || ''}">
-      <label>Telefone</label>
-      <input type="tel" id="phone" placeholder="+353 ..." value="${state.clientPhone}">
-      <label>E-mail</label>
-      <input type="email" id="email" placeholder="voce@email.com" value="${state.clientEmail}">
-      <label>Instagram</label>
-      <input type="text" id="instagram" placeholder="opcional" value="${state.clientInstagram || ''}">
-      <button class="btn btn-primary" id="confirm">Confirmar agendamento</button>
-    `;
-    setBackArrow(true, () => setStep(3));
-    setBottomBar(false);
-    document.getElementById('confirm').onclick = () => {
-      state.clientFirstName = document.getElementById('firstName').value.trim();
-      state.clientLastName = document.getElementById('lastName').value.trim();
-      state.clientName = `${state.clientFirstName} ${state.clientLastName}`.trim();
-      state.clientBirthdate = document.getElementById('birthdate').value;
-      state.clientPhone = document.getElementById('phone').value.trim();
-      state.clientEmail = document.getElementById('email').value.trim();
-      state.clientInstagram = document.getElementById('instagram').value.trim();
-      if (!state.clientFirstName || !state.clientLastName || !state.clientPhone) {
-        state.error = 'Preencha nome, sobrenome e telefone.';
-        render();
-        return;
+      // O bloco multi-serviço é SÓLIDO E CONTÍNUO: a duração agregada inteira
+      // precisa caber livre. Não se tenta encaixar nada em pausa interna nesta
+      // fase (decisão congelada do V2).
+      const candidates = worksToday.filter(id =>
+        !(busyByStaff.get(id) || []).some(b => startMs < b.end && endMs > b.start)
+      );
+      if (candidates.length) {
+        slots.push({ label: salonClock(start), minutes: m, start, candidateStaffIds: candidates });
       }
-      if (!state.clientEmail || !state.clientEmail.includes('@')) {
-        state.error = 'Digite um e-mail válido — é por ele que enviamos a confirmação.';
-        render();
-        return;
-      }
-      confirmBooking();
-    };
+    }
+    out.set(iso, { status: slots.length ? 'available' : 'full', slots });
+  }
+  return out;
+}
+
+async function ensureAvailability(force) {
+  const key = availabilityKey();
+  if (!force && state.availability.key === key && state.availability.days) return;
+
+  const pool = eligibleStaff();
+  const staffIds = state.staffPref && state.staffPref !== 'any'
+    ? [state.staffPref]
+    : pool.map(s => s.id);
+  if (!staffIds.length) return;
+
+  state.availability = { key, loading: true, error: null, days: null };
+  renderStepBody(); renderCTA();
+
+  const fromIso = salonToday();
+  const toIso = addDaysIso(fromIso, AVAILABILITY_DAYS - 1);
+  try {
+    const busy = await fetchBusyByStaff(staffIds, fromIso, toIso);
+    // Chave mudou enquanto a rede respondia (a cliente mexeu nos serviços):
+    // descarta em silêncio, senão a tela mostraria dados de outra seleção.
+    if (availabilityKey() !== key) return;
+    const days = buildAvailability(staffIds, busy, fromIso, AVAILABILITY_DAYS, totalDurationMinutes());
+    state.availability = { key, loading: false, error: null, days };
+  } catch (e) {
+    console.error('agendar.ensureAvailability', e);
+    // Falha de disponibilidade NÃO derruba o shell nem apaga serviço/
+    // profissional já escolhidos — só esta seção entra em estado de erro.
+    state.availability = { key, loading: false, error: e.message || 'erro', days: null };
+  }
+  renderStepBody(); renderCTA();
+}
+
+function dayInfo(iso) {
+  const days = state.availability.days;
+  if (!days) return { status: 'closed', slots: [] };
+  return days.get(iso) || { status: 'closed', slots: [] };
+}
+function slotAt(iso, label) {
+  return dayInfo(iso).slots.find(s => s.label === label) || null;
+}
+// Primeira data com pelo menos um horário dentro da janela carregada.
+function nextAvailableIso(afterIso) {
+  const days = state.availability.days;
+  if (!days) return null;
+  for (const [iso, info] of days) {
+    if (info.status === 'available' && (!afterIso || iso > afterIso)) return iso;
+  }
+  return null;
+}
+
+// Resolução de "Qualquer profissional" -> profissional concreta.
+// Regra idêntica à do servidor (ORDER BY created_at, id entre as disponíveis),
+// justamente para que a previsão da tela e a decisão do banco coincidam.
+// AINDA ASSIM é só previsão: na Fase 3, o retorno de create_public_booking
+// substitui isto. Review/Sucesso nunca mostram "Qualquer profissional".
+function resolveStaffForSlot(slot) {
+  if (!slot) return null;
+  if (state.staffPref && state.staffPref !== 'any') return state.staffPref;
+  const ordered = state.staff
+    .filter(s => slot.candidateStaffIds.includes(s.id))
+    .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || '') || a.id.localeCompare(b.id));
+  return ordered.length ? ordered[0].id : null;
+}
+
+// ── POLÍTICA DE CANCELAMENTO ─────────────────────────────────
+// A versão corrente vem do banco (tabela cancellation_policies, leitura
+// pública só de is_current). O texto NÃO vive no frontend: o mesmo registro
+// que a cliente lê é o que fica apontado no agendamento, então o que foi
+// aceito é reconstituível depois mesmo que a política mude.
+async function loadPolicy() {
+  const { data, error } = await sb
+    .from('cancellation_policies')
+    .select('id, version, summary, body')
+    .eq('is_current', true)
+    .maybeSingle();
+  if (error) { console.error('agendar.loadPolicy', error); return; }
+  state.policy = data || null;
+}
+
+// ── COMMIT ───────────────────────────────────────────────────
+// Mensagens por código semântico. A cliente nunca vê o código; e cada erro
+// recuperável aponta a etapa onde ela consegue resolver.
+const COMMIT_ERRORS = {
+  invalid_service:            { step: 'service',  msg: 'Um dos serviços escolhidos não está mais disponível. Escolha novamente.' },
+  no_staff_available:         { step: 'service',  msg: 'Nenhum profissional atende essa combinação de serviços. Ajuste os serviços para continuar.' },
+  invalid_staff_for_services: { step: 'professional', msg: 'A profissional escolhida não atende todos esses serviços. Escolha outra.' },
+  outside_booking_window:     { step: 'datetime', msg: 'Esse horário não está mais dentro do expediente. Escolha outro horário.' },
+  invalid_client_data:        { step: 'data',     msg: 'Confira seus dados: precisamos de nome, telefone e um e-mail válido.' },
+  policy_not_accepted:        { step: 'review',   msg: 'É preciso aceitar a política de cancelamento para concluir.' },
+  internal_error:             { step: null,       msg: 'Não foi possível concluir agora. Tente de novo em instantes.' },
+};
+
+// Alternativas REAIS para o conflito: recalculadas da disponibilidade fresca,
+// nunca inventadas a partir do horário pedido.
+function buildAlternatives() {
+  const alts = [];
+  const iso = state.selectedDateIso;
+  const chosen = state.selectedTime;
+  const sameDay = dayInfo(iso).slots.filter(s => s.label !== chosen);
+  // Prioriza o mesmo dia, do horário mais próximo do que ela queria.
+  const toMin = t => Number(t.split(':')[0]) * 60 + Number(t.split(':')[1]);
+  sameDay.sort((a, b) => Math.abs(a.minutes - toMin(chosen)) - Math.abs(b.minutes - toMin(chosen)));
+  sameDay.slice(0, 2).forEach(s => alts.push({ iso, time: s.label }));
+  // Completa com o primeiro horário do próximo dia disponível.
+  if (alts.length < 3) {
+    const nextIso = nextAvailableIso(iso);
+    const first = nextIso && dayInfo(nextIso).slots[0];
+    if (first) alts.push({ iso: nextIso, time: first.label });
+  }
+  return alts.slice(0, 3);
+}
+
+// request_key: uma por TENTATIVA lógica de confirmar (não uma por clique) —
+// reaproveitada em qualquer retry automático dessa mesma tentativa, pra que
+// a Edge Function/RPC do lado do banco possa deduplicar de verdade. Só nasce
+// de novo se a cliente reiniciar o fluxo (resetFlow) ou trocar algo essencial.
+function ensureRequestKey() {
+  if (!state.createRequestKey) state.createRequestKey = crypto.randomUUID();
+  return state.createRequestKey;
+}
+
+async function commitBooking() {
+  // Guarda de duplo submit no próprio estado: não basta desabilitar o botão,
+  // porque Enter/duplo toque podem disparar antes do re-render.
+  if (state.committing) return;
+  state.committing = true;
+  state.commitError = null;
+  state.conflict = null;
+  renderStepBody(); renderCTA();
+
+  const slot = slotAt(state.selectedDateIso, state.selectedTime);
+  if (!slot) {
+    state.committing = false;
+    state.commitError = { code: 'outside_booking_window', ...COMMIT_ERRORS.outside_booking_window };
+    renderStepBody(); renderCTA();
     return;
   }
+
+  // Só o que o contrato permite. Preço, duração, nome do serviço, ends_at,
+  // source, referência, token e a profissional final são derivados no
+  // servidor — enviar qualquer um deles seria tratar o browser como autoridade.
+  // Browser = UX; a Edge Function orquestra (RPC + e-mail); a RPC é a
+  // autoridade de negócio. O browser nunca chama a RPC direto neste fluxo.
+  const payload = {
+    service_ids: [...state.selectedServiceIds],
+    staff_pref: (!state.staffPref || state.staffPref === 'any') ? null : state.staffPref,
+    starts_at: slot.start.toISOString(),
+    name: state.form.name.trim(),
+    phone: state.form.phone.trim(),
+    email: state.form.email.trim(),
+    notes: state.form.notes.trim() || null,
+    policy_accepted: state.policyAccepted === true,
+  };
+
+  let res, body;
+  try {
+    res = await sb.functions.invoke('booking-orchestrator', {
+      body: { event_type: 'created', request_key: ensureRequestKey(), payload },
+    });
+    body = res.data;
+    if (res.error) throw res.error;
+  } catch (e) {
+    state.committing = false;
+    state.commitError = { code: 'internal_error', ...COMMIT_ERRORS.internal_error };
+    console.error('agendar.commitBooking', e && e.message);   // nunca o token, nunca PII
+    renderStepBody(); renderCTA();
+    return;
+  }
+  state.committing = false;
+
+  if (!body || !body.operation_success) {
+    const code = (body && body.code) || 'internal_error';
+    if (code === 'slot_conflict') {
+      // Recuperação contextual: dados preservados, alternativas reais. A
+      // request_key NÃO é trocada — é a mesma tentativa lógica até concluir.
+      await ensureAvailability(true);
+      state.conflict = { alternatives: buildAlternatives() };
+      renderStepBody(); renderCTA();
+      return;
+    }
+    const known = COMMIT_ERRORS[code] || COMMIT_ERRORS.internal_error;
+    state.commitError = { code, ...known };
+    console.error('agendar.commitBooking', code);
+    if (known.step && known.step !== 'review') {
+      if (known.step === 'data') state.formValidated = true;
+      if (known.step === 'service') invalidateDownstreamSelections();
+      goTo(known.step);
+      return;
+    }
+    renderStepBody(); renderCTA();
+    return;
+  }
+
+  // A resposta do servidor passa a ser a autoridade do recibo: profissional
+  // realmente atribuída, totais calculados no banco, referência e horários.
+  // manage_token só vem preenchido na conclusão fresca — num replay depois de
+  // resposta perdida, vem null, e isso é aceitável: o booking não duplicou,
+  // só esta resposta específica não pode reconstituir o segredo (nunca se
+  // busca o token por booking_reference, isso enfraqueceria o hash-only).
+  state.booking = body.booking;
+  state.emailSuccess = body.email_success;
+  state.manageToken = body.manage_token || null;
+  state.resolvedStaffId = body.booking.staff && body.booking.staff.id ? body.booking.staff.id : state.resolvedStaffId;
+  state.step = 'success';
+  renderAll();
+  document.getElementById('main').scrollTop = 0;
 }
 
 // Registra uma visita à tela de agendar — só um contador simples (sem dados
@@ -922,10 +1156,1094 @@ function logBookingVisit() {
   });
 }
 
+// ══════════════════════════════════════════════════════════════
+// FASE 2/3 — funções preservadas do V1, ainda NÃO chamadas.
+// Continuam aqui porque a lógica é validada e a armadilha que elas evitam
+// é real (ver app/CLAUDE.md). Foram parametrizadas para não depender do
+// formato antigo de `state`, então não há acoplamento com o que foi removido.
+// ══════════════════════════════════════════════════════════════
+
+// Profissionais que atendem um serviço. FILTRA POR `active`: todas as cinco
+// estão ligadas a todos os 15 serviços em staff_services, então sem esse filtro
+// a cliente escolheria entre cinco pessoas — quatro fora do salão, incluindo a
+// recepcionista — e poderia agendar com quem não atende.
+async function loadStaffForService(serviceId) {
+  const { data, error } = await sb
+    .from('staff_services')
+    .select('staff:staff_id(id, name, role, active)')
+    .eq('service_id', serviceId);
+  if (error) { console.error('agendar.loadStaffForService', error); return []; }
+  return data.map(row => row.staff).filter(s => s && s.active !== false);
+}
+
+// Horários livres de uma profissional num dia, para uma duração.
+// Pela RPC, NUNCA por `.from('appointments')`: esta página usa a chave anônima
+// e a RLS de appointments só libera SELECT autenticado. A leitura direta não dá
+// erro — devolve lista vazia — e com isso TODO horário aparece livre, inclusive
+// os ocupados. get_busy_slots é SECURITY DEFINER e devolve só os blocos de
+// trabalho: a pausa (tinta agindo) fica de fora de propósito, porque durante
+// ela a profissional está livre pra atender outra cliente.
+async function loadAvailableSlots(staffId, dateStr, durationMinutes) {
+  const weekday = new Date(`${dateStr}T00:00:00`).getDay();
+  if (CLOSED_WEEKDAYS.includes(weekday)) return [];
+
+  // A janela do dia também é a do salão: como strings soltas, o Postgres as lia
+  // no fuso da sessão dele e a busca por conflitos pegava horas erradas.
+  const dayStart = salonTimeToInstant(dateStr, 0).toISOString();
+  const dayEnd = salonTimeToInstant(dateStr, 24 * 60 - 1).toISOString();
+
+  const { data: busy, error } = await sb.rpc('get_busy_slots', {
+    p_staff_id: staffId,
+    p_from: dayStart,
+    p_to: dayEnd,
+  });
+  if (error) { console.error('agendar.loadAvailableSlots', error); return []; }
+
+  const slots = [];
+  for (let m = OPEN_HOUR * 60; m + durationMinutes <= CLOSE_HOUR * 60; m += SLOT_MINUTES) {
+    // m é minutos desde a meia-noite EM DUBLIN, não no relógio do aparelho.
+    const slotStart = salonTimeToInstant(dateStr, m);
+    const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60000);
+    const overlaps = (busy || []).some(b =>
+      slotStart < new Date(b.busy_end) && slotEnd > new Date(b.busy_start));
+    slots.push({ label: salonClock(slotStart), start: slotStart, end: slotEnd, available: !overlaps });
+  }
+  return slots;
+}
+
+// Remove tudo que não for dígito, pra "01234567", "+353 1234567" e "(0123) 456-7"
+// serem tratados como o mesmo número. A dedup de verdade acontece no banco
+// (normalize_ie_phone dentro de find_or_create_client); isto é só o preparo.
+function normalizePhone(phone) {
+  return (phone || '').replace(/[^\d]/g, '');
+}
+
+// ── SHELL ────────────────────────────────────────────────────
+// O passo de profissional só sai do fluxo quando há EXATAMENTE uma elegível —
+// aí não existe escolha a fazer e a cliente vai do serviço direto para a data
+// (mesmo princípio do `pulaEscolhaStaff` do V1, agora derivado da interseção
+// multi-serviço).
+//
+// Zero elegíveis NÃO é caso de pular: é o estado de "nenhum profissional
+// atende esta combinação", que precisa de tela própria para explicar e oferecer
+// "Alterar serviços". Um `> 1` aqui tornava esse estado inalcançável e jogava o
+// fluxo direto em Data/Horário sem profissional nenhuma.
+function visibleStepKeys() {
+  return eligibleStaff().length === 1 ? STEP_KEYS.filter(k => k !== 'professional') : STEP_KEYS;
+}
+function stepIndex() { return visibleStepKeys().indexOf(state.step); }
+
+function renderShell() {
+  const topbar = document.getElementById('topbar');
+
+  // Subviews full-screen: sem barra de progresso, título no centro.
+  if (state.subview) {
+    const isPolicy = state.subview === 'policy';
+    topbar.className = 'bk-topbar sub-mode';
+    topbar.innerHTML = `
+      <button class="bk-back" id="backBtn" aria-label="${isPolicy ? 'Voltar para a revisão' : 'Fechar calendário'}">${ICONS.chevronLeft}</button>
+      <span class="bk-sub-title">${isPolicy ? 'Política de cancelamento' : 'Escolha uma data'}</span>`;
+    document.getElementById('backBtn').addEventListener('click', isPolicy ? closePolicy : closeCalendar);
+    return;
+  }
+
+  // Sucesso encerra o fluxo: sem voltar (o agendamento já existe) e sem progresso.
+  if (state.step === 'success') {
+    topbar.className = 'bk-topbar';
+    topbar.innerHTML = `<div class="bk-mark" style="margin:0 auto"><span class="bk-mark-dot" aria-hidden="true">O</span></div>`;
+    return;
+  }
+
+  const keys = visibleStepKeys();
+  const idx = Math.max(0, keys.indexOf(state.step));
+  const pct = Math.max(6, Math.round(((idx + 1) / keys.length) * 100));
+  const first = idx <= 0;
+
+  topbar.className = 'bk-topbar';
+  topbar.innerHTML = `
+    <button class="bk-back${first ? ' is-hidden' : ''}" id="backBtn" aria-label="Voltar"
+      ${first ? 'tabindex="-1"' : ''}>${ICONS.chevronLeft}</button>
+    <div class="bk-progress-track" role="progressbar"
+      aria-valuemin="1" aria-valuemax="${keys.length}" aria-valuenow="${idx + 1}"
+      aria-label="Progresso do agendamento: passo ${idx + 1} de ${keys.length}">
+      <div class="bk-progress-fill" style="width:${pct}%"></div>
+    </div>
+    <div class="bk-mark"><span class="bk-mark-dot" aria-hidden="true">O</span></div>
+  `;
+  const backBtn = document.getElementById('backBtn');
+  if (backBtn && !first) backBtn.addEventListener('click', goBack);
+}
+
+function goTo(stepKey) {
+  if (state.step === 'service') {
+    // Guardado para restaurar ao voltar — a cliente não deve perder o ponto da
+    // lista onde estava só porque foi olhar a etapa seguinte.
+    state.servicesScrollTop = document.getElementById('main').scrollTop;
+  }
+  state.step = stepKey;
+
+  // Uma só elegível: já entra escolhida, sem passar por tela nenhuma. Vale
+  // inclusive quando a preferência anterior era 'any' — com uma única
+  // profissional possível, "qualquer" É ela, e mostrar "Qualquer profissional"
+  // num fluxo de uma pessoa só seria impreciso. Preferência concreta que
+  // continue elegível nunca é sobrescrita.
+  if (stepKey === 'datetime') {
+    const pool = eligibleStaff();
+    const prefValida = state.staffPref && state.staffPref !== 'any'
+      && pool.some(s => s.id === state.staffPref);
+    if (pool.length === 1 && !prefValida) state.staffPref = pool[0].id;
+    else if (!state.staffPref && pool.length > 1) state.staffPref = 'any';
+  }
+
+  renderAll();
+  document.getElementById('main').scrollTop = (stepKey === 'service') ? state.servicesScrollTop : 0;
+  if (stepKey === 'datetime') ensureAvailability();
+}
+
+function goBack() {
+  const keys = visibleStepKeys();
+  const idx = keys.indexOf(state.step);
+  if (idx <= 0) return;
+  const prev = keys[idx - 1];
+  // Voltar de Data/Horário para Profissional PRESERVA a preferência escolhida
+  // (a tela reabre já mostrando quem estava selecionada), mas descarta
+  // data/horário: eles foram escolhidos contra uma agenda específica e não
+  // podem ser dados como válidos se a profissional mudar. O cache em si só cai
+  // se a preferência realmente mudar — quem faz isso é bindStepProfessional.
+  if (state.step === 'datetime' && prev === 'professional') {
+    state.selectedDateIso = null;
+    state.selectedTime = null;
+    state.resolvedStaffId = null;
+  }
+  goTo(prev);
+}
+
+function renderAll() {
+  renderShell();
+  renderStepBody();
+  renderCTA();
+}
+
+// ── STEP 1: SERVIÇOS ─────────────────────────────────────────
+function servicesSkeletonHtml() {
+  return `
+    <h1 class="bk-title">Escolha o serviço</h1>
+    <div class="bk-title-note">Você pode escolher mais de um.</div>
+    <div class="bk-chip-rail" aria-hidden="true">
+      ${Array.from({ length: 4 }).map(() => '<div class="bk-skel-chip"></div>').join('')}
+    </div>
+    <div class="bk-svc-list" aria-hidden="true">
+      ${Array.from({ length: 5 }).map(() => '<div class="bk-skel-card"></div>').join('')}
+    </div>
+    <p class="sr-only" role="status">Carregando serviços…</p>
+  `;
+}
+
+function servicesErrorHtml() {
+  return `
+    <h1 class="bk-title">Escolha o serviço</h1>
+    <div class="bk-state" role="alert">
+      ${ICONS.warn}
+      <div class="bk-state-title">Não foi possível carregar</div>
+      <p class="bk-state-text">Verifique sua conexão e tente de novo. Nada do que você escolheu foi perdido.</p>
+      <button class="bk-state-action" id="retryBtn">Tentar de novo</button>
+    </div>
+  `;
+}
+
+function servicesEmptyHtml() {
+  return `
+    <h1 class="bk-title">Escolha o serviço</h1>
+    <div class="bk-state">
+      ${ICONS.empty}
+      <div class="bk-state-title">Nenhum serviço disponível</div>
+      <p class="bk-state-text">A agenda online está sem serviços publicados no momento. Fale com o salão para marcar seu horário.</p>
+    </div>
+  `;
+}
+
+function serviceCardHtml(s) {
+  const selected = state.selectedServiceIds.includes(s.id);
+  const duration = `${s.duration_minutes} min`;
+  const price = formatPrice(s);
+  // O cartão inteiro É o botão (não há <div onclick>, e não há botão dentro de
+  // botão): o círculo +/✓ é decorativo e o estado é anunciado por aria-pressed.
+  return `
+    <button type="button" class="bk-svc-card" data-svc="${esc(s.id)}"
+      style="--cat-color:${accentForCategory(s.category)}"
+      aria-pressed="${selected}"
+      aria-label="${esc(s.name)}, ${duration}, ${esc(price)}">
+      <span class="svc-card-top">
+        <span class="svc-card-name">${esc(s.name)}</span>
+        <span class="svc-card-duration">${duration}</span>
+      </span>
+      <span class="svc-card-bottom">
+        <span class="svc-card-price">${esc(price)}</span>
+        <span class="svc-select-mark" aria-hidden="true">${selected ? ICONS.check : ICONS.plus}</span>
+      </span>
+    </button>`;
+}
+
+function renderStepServices() {
+  if (state.loading) return servicesSkeletonHtml();
+  if (state.error) return servicesErrorHtml();
+  if (!state.services.length) return servicesEmptyHtml();
+
+  const filtered = state.categoryFilter === 'all'
+    ? state.services
+    : state.services.filter(s => s.category === state.categoryFilter);
+
+  const hasVarying = filtered.some(s => s.price_varies);
+
+  return `
+    <h1 class="bk-title">Escolha o serviço</h1>
+    <div class="bk-title-note">Você pode escolher mais de um.</div>
+
+    <div class="bk-chip-rail" id="catRail" role="group" aria-label="Filtrar por categoria">
+      <button type="button" class="bk-chip" data-cat="all"
+        aria-pressed="${state.categoryFilter === 'all'}">Todos</button>
+      ${state.categories.map(c => `
+        <button type="button" class="bk-chip" data-cat="${esc(c)}"
+          aria-pressed="${state.categoryFilter === c}">${esc(c)}</button>`).join('')}
+    </div>
+
+    <div class="bk-svc-list" id="svcList">
+      ${filtered.map(serviceCardHtml).join('')}
+    </div>
+    ${hasVarying ? '<p class="price-disclaimer">*valor varia de acordo com o cabelo e é confirmado após avaliação presencial</p>' : ''}
+  `;
+}
+
+function toggleService(id) {
+  if (!serviceById(id)) return;
+  const idx = state.selectedServiceIds.indexOf(id);
+  // O próprio índice impede duplicata: já selecionado sai, ausente entra no fim
+  // (preservando a ordem de escolha).
+  if (idx === -1) state.selectedServiceIds.push(id);
+  else state.selectedServiceIds.splice(idx, 1);
+
+  invalidateDownstreamSelections();
+
+  // Repinta só o cartão tocado e o CTA — re-renderizar a lista inteira
+  // destruiria o botão que está sob o dedo e mataria o foco do teclado.
+  // Mesma armadilha já documentada na busca de Clientes e no Estoque.
+  const card = document.querySelector(`.bk-svc-card[data-svc="${CSS.escape(id)}"]`);
+  if (card) {
+    const nowSelected = state.selectedServiceIds.includes(id);
+    card.setAttribute('aria-pressed', String(nowSelected));
+    card.querySelector('.svc-select-mark').innerHTML = nowSelected ? ICONS.check : ICONS.plus;
+  }
+  renderCTA();
+}
+
+function bindStepServices() {
+  const retry = document.getElementById('retryBtn');
+  if (retry) { retry.addEventListener('click', loadServices); return; }
+
+  const rail = document.getElementById('catRail');
+  if (rail) {
+    rail.querySelectorAll('.bk-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Trocar de categoria é só filtro de exibição: NÃO mexe na seleção.
+        state.categoryFilter = btn.dataset.cat;
+        renderStepBody();
+        renderCTA();
+      });
+    });
+  }
+  const list = document.getElementById('svcList');
+  if (list) {
+    list.querySelectorAll('.bk-svc-card').forEach(card => {
+      card.addEventListener('click', () => toggleService(card.dataset.svc));
+    });
+  }
+}
+
+// ── STEP 2: PROFISSIONAL ─────────────────────────────────────
+function initials(name) {
+  return (name || '').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+}
+
+function renderStepProfessional() {
+  const pool = eligibleStaff();
+
+  // Nenhuma profissional atende a combinação escolhida: não há caminho adiante,
+  // e o único movimento útil é voltar e mexer nos serviços.
+  if (!pool.length) {
+    return `
+      <h1 class="bk-title">Escolha o profissional</h1>
+      <div class="bk-state-block">
+        <div class="sb-icon">${ICONS.warn}</div>
+        <p>Nenhum profissional disponível para esta combinação de serviços.</p>
+        <button class="sb-retry" id="changeSvcBtn">Alterar serviços</button>
+      </div>`;
+  }
+
+  const card = (id, avatar, name, sub, isAny) => {
+    const sel = state.staffPref === id;
+    return `
+      <button type="button" class="bk-staff-card" data-staff="${esc(id)}" aria-pressed="${sel}">
+        <span class="stf-avatar${isAny ? ' any' : ''}" aria-hidden="true">${avatar}</span>
+        <span class="stf-body">
+          <span class="stf-name">${esc(name)}</span>
+          <span class="stf-sub">${esc(sub)}</span>
+        </span>
+        <span class="stf-select" aria-hidden="true">${sel ? ICONS.check : ''}</span>
+      </button>`;
+  };
+
+  return `
+    <h1 class="bk-title">Escolha o profissional</h1>
+    <div class="bk-title-note">${esc(selectedServices().map(s => s.name).join(' · '))}</div>
+    <div class="bk-staff-list" id="staffList">
+      ${card('any', '∗', 'Qualquer profissional', 'Maior disponibilidade de horários', true)}
+      ${pool.map(s => card(s.id, initials(s.name), s.name, s.role || 'Profissional', false)).join('')}
+    </div>`;
+}
+
+function bindStepProfessional() {
+  const change = document.getElementById('changeSvcBtn');
+  if (change) { change.addEventListener('click', () => goTo('service')); return; }
+  document.getElementById('staffList').querySelectorAll('[data-staff]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (state.staffPref !== btn.dataset.staff) {
+        state.staffPref = btn.dataset.staff;
+        // Trocar de profissional muda a agenda: data/horário e cache caem.
+        state.selectedDateIso = null;
+        state.selectedTime = null;
+        state.resolvedStaffId = null;
+        invalidateAvailability();
+      }
+      renderStepBody();
+      renderCTA();
+    });
+  });
+}
+
+// ── STEP 3: DATA E HORÁRIO ───────────────────────────────────
+const DOW_SHORT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+const RAIL_DAYS = 14;   // período curto próximo; o resto vive no calendário
+
+function fmtDayFull(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-').map(Number);
+  const dow = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'][isoWeekday(iso)];
+  return `${dow}, ${d} de ${MONTHS_PT[m - 1].toLowerCase()}`;
+}
+function fmtDayShort(iso) {
+  if (!iso) return '—';
+  const [, m, d] = iso.split('-').map(Number);
+  return `${DOW_SHORT[isoWeekday(iso)]}, ${d} ${MONTHS_PT[m - 1].slice(0, 3).toLowerCase()}`;
+}
+
+function contextStaffLine() {
+  const pool = eligibleStaff();
+  const editable = pool.length > 1;   // sem escolha real, não há o que editar
+  const isAny = !state.staffPref || state.staffPref === 'any';
+  const st = isAny ? null : staffById(state.staffPref);
+  const name = isAny ? 'Qualquer profissional' : (st ? st.name : '—');
+  return `
+    <button type="button" class="bk-context-line" id="staffContextBtn" ${editable ? '' : 'disabled'}
+      ${editable ? 'aria-label="Profissional: ' + esc(name) + '. Tocar para alterar"' : ''}>
+      <span class="cl-avatar${isAny ? ' any' : ''}" aria-hidden="true">${isAny ? '∗' : esc(initials(name))}</span>
+      <span>${esc(name)}</span>
+      ${editable ? ICONS.chevronDown : ''}
+    </button>`;
+}
+
+function datetimeSkeleton() {
+  return `
+    <span class="bk-eyebrow">Escolha uma data</span>
+    <div class="bk-date-rail" aria-hidden="true">
+      ${Array.from({ length: 6 }).map(() => '<div class="bk-skel-day"></div>').join('')}
+    </div>
+    <span class="bk-eyebrow">Escolha um horário</span>
+    <div class="bk-time-grid" aria-hidden="true">
+      ${Array.from({ length: 6 }).map(() => '<div class="bk-skel-slot"></div>').join('')}
+    </div>
+    <p class="sr-only" role="status">Carregando horários…</p>`;
+}
+
+function dateRailHtml() {
+  const from = salonToday();
+  return `
+    <div class="bk-date-rail" id="dateRail" role="group" aria-label="Escolha um dia">
+      ${Array.from({ length: RAIL_DAYS }).map((_, i) => {
+        const iso = addDaysIso(from, i);
+        const info = dayInfo(iso);
+        const st = info.status;
+        const notAvail = st !== 'available';
+        const selected = state.selectedDateIso === iso;
+        const [, m, d] = iso.split('-').map(Number);
+        return `
+          <button type="button" class="bk-day${notAvail ? ' st-' + st : ''}" data-date="${iso}"
+            aria-pressed="${selected}" ${notAvail ? 'disabled' : ''}
+            aria-label="${fmtDayFull(iso)}${notAvail ? ', ' + DAY_STATUS_LABEL[st] : ''}">
+            <span class="d-dow">${DOW_SHORT[isoWeekday(iso)]}</span>
+            <span class="d-num">${d}</span>
+            <span class="d-mon">${MONTHS_PT[m - 1].slice(0, 3).toLowerCase()}</span>
+            ${i === 0 && !notAvail ? '<span class="d-today-mark" aria-hidden="true"></span>' : ''}
+            ${notAvail ? `<span class="d-status-label">${DAY_STATUS_LABEL[st]}</span>` : ''}
+          </button>`;
+      }).join('')}
+    </div>`;
+}
+
+// Manhã < 12h · Tarde 12–17h · Noite ≥ 18h. Com CLOSE_HOUR = 18 e o
+// atendimento tendo que TERMINAR até lá, "Noite" não chega a existir hoje —
+// o grupo só aparece se algum dia houver slot noturno de verdade.
+const TIME_GROUPS = [
+  { label: 'Manhã', test: m => m < 12 * 60 },
+  { label: 'Tarde', test: m => m >= 12 * 60 && m < 18 * 60 },
+  { label: 'Noite', test: m => m >= 18 * 60 },
+];
+
+function timeGridHtml() {
+  const iso = state.selectedDateIso;
+  if (!iso) return `<p class="bk-state-text" style="color:var(--color-neutral-600);font-size:13px">Escolha uma data para ver os horários.</p>`;
+
+  const info = dayInfo(iso);
+  if (!info.slots.length) {
+    const next = nextAvailableIso(iso);
+    return `
+      <div class="bk-state-block">
+        <div class="sb-icon">${ICONS.empty}</div>
+        <p><strong style="color:var(--color-text)">Nenhum horário disponível</strong><br>em ${esc(fmtDayShort(iso))}.</p>
+        ${next ? `
+          <div class="bk-next-avail">
+            <strong>Próximo horário disponível em ${esc(fmtDayShort(next))}</strong>
+            <button type="button" id="nextAvailBtn">Ver essa data</button>
+          </div>` : `
+          <div class="bk-next-avail">
+            <strong>Sem horários nos próximos ${AVAILABILITY_DAYS} dias</strong>
+            <button type="button" id="openCalBtn2">Ver calendário</button>
+          </div>`}
+      </div>`;
+  }
+
+  return TIME_GROUPS.map(g => {
+    const slots = info.slots.filter(s => g.test(s.minutes));
+    if (!slots.length) return '';
+    return `
+      <div class="bk-time-group">
+        <div class="bk-time-group-label">${g.label}</div>
+        <div class="bk-time-grid">
+          ${slots.map(s => `
+            <button type="button" class="bk-time-chip" data-time="${s.label}"
+              aria-pressed="${state.selectedTime === s.label}">${s.label}</button>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderStepDatetime() {
+  const head = `
+    <h1 class="bk-title">Escolha a data e o horário</h1>
+    <div class="bk-title-note">${totalDurationMinutes()} min no total</div>
+    ${commitErrorBanner('datetime')}
+    ${contextStaffLine()}`;
+
+  const av = state.availability;
+  if (av.loading) return head + datetimeSkeleton();
+  if (av.error) {
+    return head + `
+      <div class="bk-state-block is-error" role="alert">
+        <div class="sb-icon">${ICONS.offline}</div>
+        <p>Não foi possível carregar os horários.<br>Verifique sua conexão e tente novamente.</p>
+        <button class="sb-retry" id="availRetryBtn">Tentar de novo</button>
+      </div>`;
+  }
+
+  // A data escolhida pelo calendário pode cair FORA dos dias do rail; sem
+  // nomeá-la aqui, a grade mostraria horários de um dia que não aparece em
+  // lugar nenhum da tela.
+  const dayLabel = state.selectedDateIso ? ` · ${esc(fmtDayShort(state.selectedDateIso))}` : '';
+  return head + `
+    <span class="bk-eyebrow">Escolha uma data</span>
+    <button type="button" class="bk-cal-link" id="openCalBtn">${ICONS.calendar} Ver calendário</button>
+    ${dateRailHtml()}
+    <span class="bk-eyebrow">Escolha um horário${dayLabel}</span>
+    ${timeGridHtml()}`;
+}
+
+function selectDate(iso) {
+  state.selectedDateIso = iso;
+  state.selectedTime = null;      // slot nunca sobrevive à troca de dia
+  state.resolvedStaffId = null;
+  renderStepBody(); renderCTA();
+}
+
+function bindStepDatetime() {
+  const ctx = document.getElementById('staffContextBtn');
+  if (ctx && !ctx.disabled) ctx.addEventListener('click', () => goBack());
+
+  const retry = document.getElementById('availRetryBtn');
+  if (retry) { retry.addEventListener('click', () => ensureAvailability(true)); return; }
+
+  const openCal = document.getElementById('openCalBtn');
+  if (openCal) openCal.addEventListener('click', () => openCalendar('openCalBtn'));
+  const openCal2 = document.getElementById('openCalBtn2');
+  if (openCal2) openCal2.addEventListener('click', () => openCalendar('openCalBtn2'));
+
+  const next = document.getElementById('nextAvailBtn');
+  if (next) next.addEventListener('click', () => selectDate(nextAvailableIso(state.selectedDateIso)));
+
+  const rail = document.getElementById('dateRail');
+  if (rail) rail.querySelectorAll('[data-date]').forEach(btn => {
+    btn.addEventListener('click', () => selectDate(btn.dataset.date));
+  });
+
+  document.querySelectorAll('.bk-time-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.selectedTime = btn.dataset.time;
+      const slot = slotAt(state.selectedDateIso, state.selectedTime);
+      state.resolvedStaffId = resolveStaffForSlot(slot);
+      renderStepBody(); renderCTA();
+    });
+  });
+}
+
+// ── CALENDÁRIO (subview full-screen, não BottomSheet) ────────
+function openCalendar(returnFocusId) {
+  state.calReturnFocusId = returnFocusId || null;
+  state.calFeedback = '';
+  const base = state.selectedDateIso || salonToday();
+  const [y, m] = base.split('-').map(Number);
+  state.calendarMonth = { y, m: m - 1 };
+  state.subview = 'calendar';
+  renderAll();
+}
+
+function closeCalendar() {
+  state.subview = null;
+  renderAll();
+  // Foco volta para o controle que abriu o calendário — sem isso o teclado
+  // reinicia no topo do documento a cada abertura/fechamento.
+  const back = state.calReturnFocusId && document.getElementById(state.calReturnFocusId);
+  if (back) back.focus();
+  state.calReturnFocusId = null;
+}
+
+function calendarBounds() {
+  const from = salonToday();
+  return { from, to: addDaysIso(from, AVAILABILITY_DAYS - 1) };
+}
+
+function renderCalendar() {
+  const { y, m } = state.calendarMonth;
+  const { from, to } = calendarBounds();
+  const startDow = new Date(Date.UTC(y, m, 1)).getUTCDay();
+  const daysInMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+
+  let cells = '';
+  for (let i = 0; i < startDow; i++) cells += '<button class="mg-day is-empty" disabled aria-hidden="true"></button>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    // Fora da janela carregada não se inventa estado: dia anterior a hoje é
+    // fechado; depois do horizonte fica desabilitado sem rótulo enganoso.
+    let status;
+    if (iso < from) status = 'closed';
+    else if (iso > to) status = 'closed';
+    else status = dayInfo(iso).status;
+    const notAvail = status !== 'available';
+    const isToday = iso === from;
+    const isSel = iso === state.selectedDateIso;
+    cells += `
+      <button type="button" class="mg-day${notAvail ? ' st-' + status : ''}${isToday ? ' is-today' : ''}${isSel ? ' is-selected' : ''}"
+        data-cal-day="${iso}" data-cal-status="${status}"
+        aria-label="${fmtDayFull(iso)}${notAvail ? ', ' + DAY_STATUS_LABEL[status] : ', disponível'}"
+        ${isSel ? 'aria-current="date"' : ''}>${d}${notAvail ? `<span class="mg-mark" aria-hidden="true">${DAY_STATUS_MARK[status]}</span>` : ''}</button>`;
+  }
+
+  // Navegação limitada ao horizonte já carregado — nada de puxar 12 meses.
+  const prevDisabled = `${y}-${String(m + 1).padStart(2, '0')}-01` <= from.slice(0, 7) + '-01';
+  const nextDisabled = `${y}-${String(m + 1).padStart(2, '0')}` >= to.slice(0, 7);
+
+  return `
+    <div class="bk-cal-legend">
+      <span class="lg-item"><span class="lg-swatch avail" aria-hidden="true">●</span>Disponível</span>
+      <span class="lg-item"><span class="lg-swatch full" aria-hidden="true">L</span>Lotado</span>
+      <span class="lg-item"><span class="lg-swatch closed" aria-hidden="true">F</span>Fechado</span>
+      <span class="lg-item"><span class="lg-swatch unavail" aria-hidden="true">I</span>Indisponível</span>
+    </div>
+    <div class="bk-month-nav">
+      <button type="button" id="calPrevBtn" aria-label="Mês anterior" ${prevDisabled ? 'disabled' : ''}>${ICONS.chevronLeft}</button>
+      <span class="mn-label">${MONTHS_PT[m]} de ${y}</span>
+      <button type="button" id="calNextBtn" aria-label="Próximo mês" ${nextDisabled ? 'disabled' : ''}>${ICONS.chevronRight}</button>
+    </div>
+    <div class="bk-month-grid">
+      ${DOW_SHORT.map(d => `<div class="mg-dow" aria-hidden="true">${d}</div>`).join('')}
+      ${cells}
+    </div>
+    <div class="bk-cal-feedback${state.calFeedback ? ' is-visible' : ''}" role="status">${esc(state.calFeedback)}</div>`;
+}
+
+function dayFeedbackText(status, iso) {
+  if (status === 'full') return `Sem horários disponíveis em ${fmtDayShort(iso)}.`;
+  if (status === 'closed') return 'O salão não abre neste dia.';
+  if (status === 'unavailable') return 'A profissional escolhida não atende neste dia.';
+  return '';
+}
+
+function bindCalendar() {
+  const prev = document.getElementById('calPrevBtn');
+  const next = document.getElementById('calNextBtn');
+  if (prev && !prev.disabled) prev.addEventListener('click', () => stepMonth(-1));
+  if (next && !next.disabled) next.addEventListener('click', () => stepMonth(1));
+  document.querySelectorAll('[data-cal-day]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const st = btn.dataset.calStatus;
+      const iso = btn.dataset.calDay;
+      if (st !== 'available') {
+        // Dia indisponível dá retorno contextual em vez de simplesmente
+        // não responder ao toque.
+        state.calFeedback = dayFeedbackText(st, iso);
+        renderStepBody();
+        return;
+      }
+      selectDate(iso);
+      closeCalendar();
+    });
+  });
+}
+
+function stepMonth(delta) {
+  let { y, m } = state.calendarMonth;
+  m += delta;
+  if (m < 0) { m = 11; y--; } else if (m > 11) { m = 0; y++; }
+  state.calendarMonth = { y, m };
+  state.calFeedback = '';
+  renderStepBody();
+}
+
+// ── STEP 4: SEUS DADOS ───────────────────────────────────────
+function escAttr(s) { return String(s ?? '').replace(/"/g, '&quot;'); }
+
+// O erro do commit acompanha a cliente até a etapa onde ela pode resolvê-lo.
+function commitErrorBanner(forStep) {
+  if (!state.commitError || state.commitError.step !== forStep) return '';
+  return `<div class="bk-commit-error" role="alert">${esc(state.commitError.msg)}</div>`;
+}
+
+// Copy voltada à cliente ("Digite seu nome."), nunca à operação do salão.
+function validateForm() {
+  const e = {};
+  if (!state.form.name || state.form.name.trim().length < 2) e.name = 'Digite seu nome.';
+  if ((state.form.phone || '').replace(/\D/g, '').length < 9) e.phone = 'Digite um telefone válido.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.form.email || '')) e.email = 'Digite um e-mail válido.';
+  return e;
+}
+function formIsValid() { return Object.keys(validateForm()).length === 0; }
+
+function renderStepData() {
+  const errors = validateForm();
+  // Erro só aparece depois que a cliente saiu do campo ou tentou avançar —
+  // não se acusa erro em campo que ela ainda nem terminou de preencher.
+  const show = f => state.formValidated || state.formTouched[f];
+  const field = (id, key, label, type, autocomplete, placeholder, extra) => `
+    <div class="bk-field${errors[key] && show(key) ? ' has-error' : ''}">
+      <label for="${id}">${label}</label>
+      <input id="${id}" type="${type}" autocomplete="${autocomplete}" placeholder="${placeholder}"
+        value="${escAttr(state.form[key])}" ${extra || ''}
+        ${errors[key] && show(key) ? `aria-invalid="true" aria-describedby="${id}Err"` : ''}>
+      <div class="bk-error-msg" id="${id}Err">${errors[key] || ''}</div>
+    </div>`;
+
+  return `
+    <h1 class="bk-title">Seus dados</h1>
+    <div class="bk-title-note">Pra confirmar o agendamento com você</div>
+    ${commitErrorBanner('data')}
+    ${field('fName', 'name', 'Nome', 'text', 'name', 'Seu nome')}
+    ${field('fPhone', 'phone', 'Telefone', 'tel', 'tel', '+353 87 123 4567', 'inputmode="tel"')}
+    ${field('fEmail', 'email', 'E-mail', 'email', 'email', 'seu@email.com', 'inputmode="email"')}
+    <div class="bk-field">
+      <label for="fNotes">Observações <span class="bk-field-optional-tag">(opcional)</span></label>
+      <textarea id="fNotes" placeholder="Algo que gostaria que o salão soubesse?">${esc(state.form.notes)}</textarea>
+    </div>`;
+}
+
+function bindStepData() {
+  const map = { fName: 'name', fPhone: 'phone', fEmail: 'email', fNotes: 'notes' };
+  Object.keys(map).forEach(id => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    // Digitação NÃO re-renderiza: reescrever o innerHTML a cada tecla mataria o
+    // foco e a posição do cursor (mesma armadilha da busca de Clientes).
+    input.addEventListener('input', () => { state.form[map[id]] = input.value; renderCTA(); });
+    input.addEventListener('blur', () => {
+      if (map[id] !== 'notes') { state.formTouched[map[id]] = true; renderStepBody(); }
+    });
+  });
+}
+
+// ── STEP 5: REVISÃO ──────────────────────────────────────────
+function serviceRowsHtml(withAlter) {
+  const svcs = selectedServices();
+  const n = svcs.length;
+  const label = n > 1 ? `${n} serviços` : (svcs[0] ? svcs[0].name : '—');
+  let html = `
+    <div class="bk-summary-row">
+      <span class="sr-label">Serviço${n > 1 ? 's' : ''}</span>
+      <span class="sr-value">${esc(label)}</span>
+      ${withAlter ? '<button type="button" class="sr-alter" data-alter="service">Alterar</button>' : ''}
+    </div>`;
+  if (n > 1) {
+    html += `<div class="bk-svc-review-list">${svcs.map(s => `
+      <div class="bk-svc-review-item"><span class="sri-name">${esc(s.name)}</span><span class="sri-price">${esc(formatPrice(s))}</span></div>`).join('')}</div>`;
+  }
+  return html;
+}
+
+function renderConflictBlock() {
+  const alts = state.conflict.alternatives;
+  return `
+    <div class="bk-conflict" role="alert">
+      <div class="bk-conflict-icon">${ICONS.warn}</div>
+      <div class="bk-conflict-title">Esse horário acabou de ser reservado.</div>
+      <div class="bk-conflict-sub">Seus dados foram mantidos. Escolha outro horário para concluir o agendamento.</div>
+      ${alts.length ? `<div class="bk-alt-list">${alts.map(a => `
+        <button type="button" class="bk-alt-row" data-alt-date="${a.iso}" data-alt-time="${a.time}">
+          <span><span class="alt-time">${a.time}</span><span class="alt-day">${esc(fmtDayShort(a.iso))}</span></span>
+          <span class="alt-go">Usar horário</span>
+        </button>`).join('')}</div>` : `
+        <p class="bk-conflict-sub">Não encontramos outro horário próximo automaticamente.</p>`}
+      <button type="button" class="bk-conflict-more" id="conflictMoreBtn">Ver mais horários</button>
+    </div>`;
+}
+
+function renderStepReview() {
+  // Sem data/horário não há o que revisar. Só acontece se um erro de commit
+  // tiver invalidado a escolha; melhor devolver a cliente ao passo que resolve
+  // do que renderizar um resumo pela metade.
+  if (!state.selectedDateIso || !state.selectedTime) {
+    setTimeout(() => goTo('datetime'), 0);
+    return `<h1 class="bk-title">Revise seu agendamento</h1><p class="bk-block-text">Escolha um horário para continuar.</p>`;
+  }
+  const st = state.resolvedStaffId ? staffById(state.resolvedStaffId) : null;
+  const showPolicyErr = state.policyTouched && !state.policyAccepted;
+  const varies = anySelectedPriceVaries();
+
+  // Conflito substitui o resumo: a cliente precisa resolver o horário antes de
+  // qualquer outra coisa, e o botão de confirmar deixa de fazer sentido.
+  if (state.conflict) {
+    return `<h1 class="bk-title">Revise seu agendamento</h1>${renderConflictBlock()}`;
+  }
+
+  return `
+    <h1 class="bk-title">Revise seu agendamento</h1>
+    <div class="bk-title-note">Confira antes de confirmar</div>
+    ${state.commitError ? `<div class="bk-commit-error" role="alert">${esc(state.commitError.msg)}</div>` : ''}
+    <div class="bk-summary">
+      ${serviceRowsHtml(true)}
+      <div class="bk-summary-row"><span class="sr-label">Profissional</span>
+        <span class="sr-value">${st ? esc(st.name) : '—'}</span>
+        ${eligibleStaff().length > 1 ? '<button type="button" class="sr-alter" data-alter="professional">Alterar</button>' : ''}</div>
+      <div class="bk-summary-row"><span class="sr-label">Data</span>
+        <span class="sr-value">${esc(fmtDayShort(state.selectedDateIso))}</span>
+        <button type="button" class="sr-alter" data-alter="datetime">Alterar</button></div>
+      <div class="bk-summary-row"><span class="sr-label">Horário</span>
+        <span class="sr-value">${esc(state.selectedTime)}</span>
+        <button type="button" class="sr-alter" data-alter="datetime">Alterar</button></div>
+      <div class="bk-summary-row"><span class="sr-label">Duração</span>
+        <span class="sr-value">${totalDurationMinutes()} min</span></div>
+      <div class="bk-summary-row total"><span class="sr-label">Total</span>
+        <span class="sr-value">${esc(formatMoney(totalPrice()))}${varies ? '*' : ''}</span></div>
+    </div>
+    ${varies ? '<p class="price-disclaimer" style="margin-top:-8px">*valor varia de acordo com o cabelo e é confirmado após avaliação presencial</p>' : ''}
+
+    <div class="bk-block">
+      <div class="bk-block-title">Política de cancelamento</div>
+      <div class="bk-block-text">${esc(state.policy ? state.policy.summary : '')}</div>
+      <button type="button" class="bk-block-link" id="policyLinkBtn">Ver política completa</button>
+      <label class="bk-consent-row${showPolicyErr ? ' has-error' : ''}">
+        <input type="checkbox" id="policyCheck" ${state.policyAccepted ? 'checked' : ''}
+          ${showPolicyErr ? 'aria-invalid="true"' : ''}>
+        <span>Li e concordo com a política de cancelamento.</span>
+      </label>
+    </div>`;
+}
+
+function bindStepReview() {
+  if (state.conflict) {
+    document.querySelectorAll('[data-alt-date]').forEach(row => {
+      row.addEventListener('click', () => {
+        state.selectedDateIso = row.dataset.altDate;
+        state.selectedTime = row.dataset.altTime;
+        // "Qualquer profissional" é resolvida de novo contra o slot NOVO.
+        state.resolvedStaffId = resolveStaffForSlot(slotAt(state.selectedDateIso, state.selectedTime));
+        state.conflict = null;
+        renderStepBody(); renderCTA();
+      });
+    });
+    document.getElementById('conflictMoreBtn').addEventListener('click', () => goTo('datetime'));
+    return;
+  }
+  document.querySelectorAll('[data-alter]').forEach(btn => {
+    btn.addEventListener('click', () => goTo(btn.dataset.alter));
+  });
+  document.getElementById('policyLinkBtn').addEventListener('click', () => openPolicy());
+  const chk = document.getElementById('policyCheck');
+  chk.addEventListener('change', () => {
+    state.policyAccepted = chk.checked;
+    state.policyTouched = true;
+    renderStepBody(); renderCTA();
+  });
+}
+
+// ── POLÍTICA COMPLETA (subview full-screen, não BottomSheet) ─
+function openPolicy() {
+  state.calReturnFocusId = 'policyLinkBtn';
+  state.subview = 'policy';
+  renderAll();
+}
+function closePolicy() {
+  state.subview = null;
+  renderAll();
+  const back = document.getElementById(state.calReturnFocusId);
+  if (back) back.focus();
+  state.calReturnFocusId = null;
+}
+function renderPolicyFull() {
+  const body = state.policy ? state.policy.body : '';
+  return `<div class="bk-block-text">${body.split(/\n{2,}/).map(p => `<p>${esc(p)}</p>`).join('')}</div>`;
+}
+
+// ── SUCESSO ──────────────────────────────────────────────────
+// Tudo aqui vem da RESPOSTA DO SERVIDOR, não do estado do browser: totais,
+// profissional efetivamente atribuída, horários e referência.
+function renderSuccess() {
+  const b = state.booking || {};
+  const svcs = b.services || [];
+  const staffName = b.staff && b.staff.name ? b.staff.name : '—';
+  const startsIso = b.starts_at ? b.starts_at.slice(0, 10) : state.selectedDateIso;
+  const hora = b.starts_at ? salonClock(new Date(b.starts_at)) : (state.selectedTime || '—');
+
+  // Copy do e-mail é condicionada ao que REALMENTE aconteceu — nunca prometer
+  // envio que não se sabe se saiu. email_success=null (replay que não reenviou)
+  // é tratado como "não sei", mesma copy de fallback que false.
+  const emailNote = state.emailSuccess === true
+    ? 'Você receberá os detalhes deste agendamento por e-mail.'
+    : `Guarde esta referência: <strong>${esc(b.booking_reference || '')}</strong>.`;
+
+  // "Gerenciar agendamento" só funciona se este payload específico trouxe o
+  // token — num replay excepcional (resposta original perdida) ele vem null,
+  // e não existe forma segura de reconstruí-lo (booking_reference não é auth).
+  const manageAction = state.manageToken
+    ? `<button type="button" class="bk-btn-ghost" id="manageBtn">Gerenciar agendamento</button>`
+    : (state.emailSuccess
+        ? `<p class="bk-state-text" style="text-align:center;color:var(--color-neutral-600);font-size:12px">Use o link enviado por e-mail para gerenciar este agendamento.</p>`
+        : '');
+
+  return `
+    <div class="bk-success-wrap">
+      <div class="bk-success-icon">${ICONS.check}</div>
+      <h1 class="bk-success-title">Agendamento confirmado</h1>
+      <div class="bk-success-email-note">${emailNote}</div>
+      <div class="bk-success-card">
+        <div class="bk-summary-row">
+          <span class="sr-label">Serviço${svcs.length > 1 ? 's' : ''}</span>
+          <span class="sr-value">${svcs.length > 1 ? svcs.length + ' serviços' : esc((svcs[0] || {}).name || '—')}</span>
+        </div>
+        ${svcs.length > 1 ? `<div class="bk-svc-review-list">${svcs.map(s => `
+          <div class="bk-svc-review-item"><span class="sri-name">${esc(s.name)}</span><span class="sri-price">${esc(formatMoney(s.price))}</span></div>`).join('')}</div>` : ''}
+        <div class="bk-summary-row"><span class="sr-label">Profissional</span><span class="sr-value">${esc(staffName)}</span></div>
+        <div class="bk-summary-row"><span class="sr-label">Data</span><span class="sr-value">${esc(fmtDayShort(startsIso))}</span></div>
+        <div class="bk-summary-row"><span class="sr-label">Horário</span><span class="sr-value">${esc(hora)}</span></div>
+        <div class="bk-summary-row"><span class="sr-label">Duração</span><span class="sr-value">${b.total_duration_minutes || 0} min</span></div>
+        <div class="bk-summary-row total"><span class="sr-label">Total</span><span class="sr-value">${esc(formatMoney(b.total_price || 0))}</span></div>
+      </div>
+      <div class="bk-success-actions">
+        <button type="button" class="bk-btn-secondary" id="addCalBtn">Adicionar ao calendário</button>
+        ${manageAction}
+        <button type="button" class="bk-btn-ghost" id="backHomeBtn">Voltar ao início</button>
+      </div>
+      <div class="bk-booking-ref">Agendamento ${esc(b.booking_reference || '')}</div>
+    </div>`;
+}
+
+// .ics gerado no cliente a partir da resposta do servidor. Sem rede, sem
+// dependência nova e sem token: o arquivo só carrega o que a cliente já vê.
+function downloadIcs() {
+  const b = state.booking;
+  if (!b) return;
+  const stamp = d => new Date(d).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const nomes = (b.services || []).map(s => s.name).join(' + ');
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Orenzi Atelier//Booking//PT',
+    'BEGIN:VEVENT',
+    `UID:${b.booking_reference}@orenzi`,
+    `DTSTAMP:${stamp(Date.now())}`,
+    `DTSTART:${stamp(b.starts_at)}`,
+    `DTEND:${stamp(b.ends_at)}`,
+    `SUMMARY:Orenzi Ateliê — ${nomes}`,
+    `DESCRIPTION:Agendamento ${b.booking_reference} com ${b.staff ? b.staff.name : ''}`,
+    'END:VEVENT', 'END:VCALENDAR',
+  ];
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `orenzi-${b.booking_reference}.ics`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+function bindSuccess() {
+  document.getElementById('addCalBtn').addEventListener('click', downloadIcs);
+  const manageBtn = document.getElementById('manageBtn');
+  if (manageBtn) {
+    manageBtn.addEventListener('click', () => {
+      // Token bruto só existe em memória (state.manageToken) até este ponto —
+      // nunca gravado em storage nem logado. Vai codificado na querystring
+      // porque é assim que o magic link precisa carregá-lo até gerenciar.html.
+      location.href = 'gerenciar.html?t=' + encodeURIComponent(state.manageToken);
+    });
+  }
+  document.getElementById('backHomeBtn').addEventListener('click', resetFlow);
+}
+
+// Reinício limpo: nada da cliente anterior pode vazar para a próxima pessoa
+// que abrir a página no mesmo aparelho.
+function resetFlow() {
+  state.step = 'service';
+  state.selectedServiceIds = [];
+  state.categoryFilter = 'all';
+  state.servicesScrollTop = 0;
+  state.form = { name: '', phone: '', email: '', notes: '' };
+  state.formTouched = {}; state.formValidated = false;
+  state.policyAccepted = false; state.policyTouched = false;
+  state.commitError = null; state.conflict = null; state.booking = null;
+  state.createRequestKey = null; state.manageToken = null; state.emailSuccess = null;
+  state.subview = null;
+  invalidateDownstreamSelections();
+  renderAll();
+  document.getElementById('main').scrollTop = 0;
+}
+
+function renderStepBody() {
+  const steps = document.getElementById('steps');
+  if (state.subview === 'calendar') { steps.innerHTML = renderCalendar(); bindCalendar(); return; }
+  if (state.subview === 'policy') { steps.innerHTML = renderPolicyFull(); return; }
+
+  if (state.step === 'service') steps.innerHTML = renderStepServices();
+  else if (state.step === 'professional') steps.innerHTML = renderStepProfessional();
+  else if (state.step === 'datetime') steps.innerHTML = renderStepDatetime();
+  else if (state.step === 'data') steps.innerHTML = renderStepData();
+  else if (state.step === 'review') steps.innerHTML = renderStepReview();
+  else if (state.step === 'success') steps.innerHTML = renderSuccess();
+
+  steps.classList.remove('bk-step-enter');
+  void steps.offsetWidth;   // reflow síncrono: elemento novo não anima sozinho
+  steps.classList.add('bk-step-enter');
+
+  if (state.step === 'service') bindStepServices();
+  else if (state.step === 'professional') bindStepProfessional();
+  else if (state.step === 'datetime') bindStepDatetime();
+  else if (state.step === 'data') bindStepData();
+  else if (state.step === 'review') bindStepReview();
+  else if (state.step === 'success') bindSuccess();
+}
+
+// ── CTA ──────────────────────────────────────────────────────
+function renderCTA() {
+  const wrap = document.getElementById('ctaWrap');
+
+  // No calendário quem conclui é o toque no dia; sem CTA competindo.
+  if (state.subview === 'calendar') { wrap.innerHTML = ''; return; }
+
+  if (state.subview === 'policy') {
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn">Voltar para a revisão</button>`;
+    document.getElementById('ctaBtn').addEventListener('click', closePolicy);
+    return;
+  }
+
+  // Sucesso: as ações vivem no corpo da tela, não no CTA fixo.
+  if (state.step === 'success') { wrap.innerHTML = ''; return; }
+
+  if (state.step === 'data') {
+    const ok = formIsValid();
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn" ${ok ? '' : 'disabled'}>Continuar</button>`;
+    if (ok) document.getElementById('ctaBtn').addEventListener('click', () => goTo('review'));
+    return;
+  }
+
+  if (state.step === 'review') {
+    if (state.conflict) {
+      // Em conflito não há o que confirmar: a escolha volta a ser o horário.
+      wrap.innerHTML = '';
+      return;
+    }
+    const pronto = state.policyAccepted && formIsValid() && !!state.selectedTime;
+    const label = state.committing ? 'Confirmando…' : 'Confirmar agendamento';
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn"
+      ${(!pronto || state.committing) ? 'disabled' : ''} ${state.committing ? 'aria-busy="true"' : ''}>${label}</button>`;
+    if (pronto && !state.committing) {
+      document.getElementById('ctaBtn').addEventListener('click', () => {
+        state.policyTouched = true;
+        if (!state.policyAccepted) { renderStepBody(); renderCTA(); return; }
+        commitBooking();
+      });
+    }
+    return;
+  }
+
+  if (state.step === 'professional') {
+    const pool = eligibleStaff();
+    const disabled = !pool.length || !state.staffPref;
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn" ${disabled ? 'disabled' : ''}>${
+      !pool.length ? 'Nenhum profissional disponível' : 'Continuar'}</button>`;
+    if (!disabled) document.getElementById('ctaBtn').addEventListener('click', () => goTo('datetime'));
+    return;
+  }
+
+  if (state.step === 'datetime') {
+    const av = state.availability;
+    const ready = !av.loading && !av.error && !!state.selectedDateIso && !!state.selectedTime;
+    const label = av.loading ? 'Carregando horários…' : (ready ? 'Continuar' : 'Escolha um horário');
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn" ${ready ? '' : 'disabled'}>${label}</button>`;
+    if (ready) document.getElementById('ctaBtn').addEventListener('click', () => goTo('data'));
+    return;
+  }
+
+
+  if (state.loading || state.error || !state.services.length) {
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn" disabled>Escolha um serviço</button>`;
+    return;
+  }
+
+  const n = state.selectedServiceIds.length;
+  if (n === 0) {
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn" disabled>Escolha um serviço</button>`;
+    return;
+  }
+
+  // Rótulo agregado: nunca "Continuar com <serviço>", porque agora pode haver
+  // mais de um. O total é só apresentação — o servidor recalcula na criação.
+  const price = `${formatMoney(totalPrice())}${anySelectedPriceVaries() ? '*' : ''}`;
+  const sub = `${totalDurationMinutes()} min${n > 1 ? ` · ${n} serviços` : ''}`;
+  wrap.innerHTML = `
+    <div class="bk-cta-context">
+      <span class="cc-text">
+        <span class="cc-price">${price}</span>
+        <span class="cc-sub">${sub}</span>
+      </span>
+      <button type="button" class="bk-cta" id="ctaBtn">Continuar</button>
+    </div>`;
+  // Só pula para data/horário quando há exatamente uma elegível. Com zero, o
+  // destino é a tela de profissional — que nesse caso mostra o estado de
+  // "nenhum profissional para esta combinação" em vez de deixar seguir.
+  document.getElementById('ctaBtn').addEventListener('click', () =>
+    goTo(eligibleStaff().length === 1 ? 'datetime' : 'professional'));
+}
+
+// ── INIT ─────────────────────────────────────────────────────
 (async function init() {
   logBookingVisit();
-  await Promise.all([loadServices(), loadActiveStaffCount()]);
-  setStep(1);
+  renderAll();
+  // Serviços, catálogo de profissionais e política corrente em paralelo: a
+  // interseção de elegibilidade precisa dos dois primeiros, e a política tem
+  // que estar carregada antes da Revisão.
+  await Promise.all([loadServices(), loadStaffCatalog(), loadPolicy()]);
+  renderAll();
 })();
 </script>
 </body>

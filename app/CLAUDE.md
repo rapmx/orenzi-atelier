@@ -605,6 +605,36 @@ mensagem/stack pra virar achado de verdade.
   entrar nos dois**. O que difere é só o stub de `window.supabase` no topo do
   demo (leitura vem de `mockData(table)`, escrita devolve sucesso sem persistir).
 
+## Segurança de objetos novos no Supabase (09/08/2026)
+
+Convenção **para alterações novas** — não é pedido de refactor do que já existe.
+Nasceu da fundação da Booking V2: dois furos passaram pela revisão estática e só
+apareceram quando a superfície real foi testada pelo PostgREST com a chave anônima.
+
+- **RLS não substitui privilege.** São camadas diferentes. Tabela com RLS ligada
+  e sem policy nega toda linha, mas se o papel tem `SELECT` na tabela ela
+  continua exposta na API (responde `200 []` em vez de `401`) — e no dia em que
+  alguém criar uma policy permissiva, o dado passa a fluir. `appointments` dá
+  `401` porque `anon` não tem grant nenhum; foi esse o alvo a imitar.
+- **`REVOKE ... FROM PUBLIC` não remove os grants de `anon`/`authenticated`.**
+  O Supabase concede `EXECUTE`/`SELECT` a esses papéis por *default privileges*,
+  com grant próprio, que sobrevive à revogação de `PUBLIC`. Medido: mesmo depois
+  de `REVOKE ... FROM PUBLIC`, `anon` executou `generate_booking_reference()`
+  (HTTP 200) e `lock_staff_for_booking()` (HTTP 204, **adquiriu o lock**).
+  Revogar sempre **de `anon` e `authenticated` explicitamente**.
+- **Helper interno não é API.** Função criada só para ser chamada de dentro de
+  outra função `SECURITY DEFINER` não deve ser executável por `anon`/`authenticated`
+  — a definer roda como owner e não precisa desses grants para chamar as irmãs.
+- **Tabela interna: exposição mínima.** Se só as RPCs devem tocá-la, revogar
+  também de `authenticated`. Quando o painel precisar ler, entra policy + grant
+  explícitos na migration correspondente, em vez de herdar privilégio default.
+- **`SECURITY DEFINER` pública só quando for deliberadamente uma RPC pública**,
+  e com toda validação de confiança feita dentro (preço, duração, elegibilidade,
+  disponibilidade — nunca aceitos do browser).
+- **Testar a superfície REAL depois da migration**, com `curl` no PostgREST e a
+  chave anônima. O SQL Editor roda como owner e passa em tudo — ele não é capaz
+  de revelar esta classe de problema. Vale para o caminho feliz e para o negado.
+
 ## Dívida conhecida
 
 **Resolvido no front (06/08/2026), mas não é mais fonte única sozinha —

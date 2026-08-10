@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orenzi — Gerenciar agendamento</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="shared/salon.js"></script>
+<link rel="stylesheet" href="ds/orenzi-tokens.css">
+<link rel="stylesheet" href="ds/orenzi-base.css">
+<link rel="stylesheet" href="ds/orenzi-components.css">
+<style>
+  /* ══════════════════════════════════════════════════════════════
+     GERENCIAR AGENDAMENTO — Fase 4. Mesmo shell/tokens de agendar.html
+     (preview/booking-v2.html é a fonte). Acesso exclusivamente por token —
+     nunca por booking_reference/appointment_id/client_id.
+     ══════════════════════════════════════════════════════════════ */
+  :root {
+    --color-bg: #f3ede4; --color-surface: #f7f1e8; --color-text: #2b2420;
+    --color-accent: #b6784a; --color-accent-2: #b23a3a; --color-accent-2-700: #8a2a2a;
+    --color-accent-2-100: #f7e7e7;
+    --color-divider: rgba(43,36,32,0.14);
+    --color-neutral-100: #f7f1e8; --color-neutral-200: #e8ddce; --color-neutral-300: #ddcfba;
+    --color-neutral-600: #6b6053; --color-neutral-700: #5c4f42;
+    --color-accent-100: #ecdcc9; --color-accent-600: #a1683f; --color-accent-700: #8a5a34;
+    --font-heading: "Poppins", "Jost", system-ui, sans-serif;
+    --font-body: "Jost", system-ui, sans-serif;
+    --space-1: 4px; --space-2: 8px; --space-2-5: 10px; --space-3: 12px;
+    --space-3-5: 14px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px;
+    --radius-sm: 12px; --radius-md: 16px; --radius-lg: 20px; --radius-full: 999px; --radius-circle: 50%;
+    --elevation-raised: 0 3px 10px rgba(43,36,32,0.16);
+    --focus-ring: 0 0 0 3px var(--color-accent-100);
+    --motion-instant: 80ms; --motion-fast: 160ms; --motion-standard: 200ms; --motion-route: 280ms;
+    --ease-standard: cubic-bezier(.4,0,.2,1); --ease-out: cubic-bezier(0,0,.2,1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--color-bg); color: var(--color-text); font-family: var(--font-body);
+    font-size: 15px; line-height: 1.45; -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased; display: flex; justify-content: center;
+  }
+  button { font-family: inherit; color: inherit; }
+  h1, p { margin: 0; }
+  svg { display: block; }
+  :focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+  }
+
+  .bk-app { width: 100%; max-width: 430px; height: 100dvh; display: flex; flex-direction: column; position: relative; background: var(--color-bg); overflow: hidden; }
+  @media (min-width: 520px) { body { background: #e9e1d2; } .bk-app { border-left: 1px solid var(--color-divider); border-right: 1px solid var(--color-divider); } }
+
+  .bk-topbar { flex-shrink: 0; display: flex; align-items: center; gap: var(--space-2); height: 52px; padding: 0 var(--space-3) 0 var(--space-2); background: var(--color-bg); }
+  .bk-back { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: none; border: none; border-radius: var(--radius-circle); cursor: pointer; color: var(--color-text); flex-shrink: 0; }
+  .bk-back:active { transform: scale(.9); }
+  .bk-back svg { width: 20px; height: 20px; }
+  .bk-back.is-hidden { visibility: hidden; }
+  .bk-sub-title { flex: 1; font-family: var(--font-heading); font-weight: 600; font-size: 15px; text-align: center; margin-right: 44px; }
+  .bk-mark-dot { width: 22px; height: 22px; border-radius: var(--radius-circle); background: var(--color-accent-700); color: var(--color-bg); font-family: var(--font-heading); font-weight: 600; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+
+  .bk-main { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #steps { padding: var(--space-2) var(--space-5) 28px; min-height: 100%; }
+  .bk-title { font-family: var(--font-heading); font-weight: 600; font-size: 23px; letter-spacing: -.01em; margin-bottom: var(--space-1); line-height: 1.2; }
+  .bk-title-note { font-size: 12px; color: var(--color-neutral-600); margin-bottom: var(--space-5); }
+  @keyframes bk-step-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .bk-step-enter { animation: bk-step-in var(--motion-standard) var(--ease-out); }
+  .bk-eyebrow { font-size: 12px; font-weight: 700; color: var(--color-neutral-600); margin: 0 0 var(--space-3); text-transform: uppercase; letter-spacing: .03em; display: block; }
+
+  /* Status — SEMPRE neutro, nunca vermelho/verde moral */
+  .bk-status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: var(--radius-full); background: var(--color-accent-100); color: var(--color-accent-700); font-size: 12px; font-weight: 700; margin-bottom: var(--space-4); }
+  .bk-status-pill.is-muted { background: var(--color-neutral-200); color: var(--color-neutral-700); }
+
+  .bk-hero { margin-bottom: var(--space-5); }
+  .bk-hero-date { font-family: var(--font-heading); font-weight: 600; font-size: 23px; line-height: 1.2; }
+  .bk-hero-time { font-family: var(--font-heading); font-weight: 600; font-size: 17px; color: var(--color-accent-700); margin-top: 2px; }
+  .bk-hero-sub { font-size: 13px; color: var(--color-neutral-600); margin-top: var(--space-2); }
+
+  .bk-summary { border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: var(--color-surface); padding: var(--space-4); margin-bottom: var(--space-5); }
+  .bk-summary-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2-5) 0; border-top: 1px solid var(--color-divider); }
+  .bk-summary-row:first-child { border-top: none; padding-top: 0; }
+  .bk-summary-row .sr-label { font-size: 12px; color: var(--color-neutral-600); flex-shrink: 0; }
+  .bk-summary-row .sr-value { font-size: 14px; font-weight: 600; text-align: right; flex: 1; margin: 0 var(--space-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bk-summary-row.total { border-top: 1.5px solid var(--color-divider); margin-top: 2px; padding-top: var(--space-3); }
+  .bk-summary-row.total .sr-value { font-family: var(--font-heading); font-size: 17px; }
+  .bk-svc-review-list { padding: 2px 0 var(--space-2-5) var(--space-2); display: flex; flex-direction: column; gap: 5px; }
+  .bk-svc-review-item { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--color-neutral-700); }
+  .bk-svc-review-item .sri-name::before { content: '· '; color: var(--color-neutral-600); }
+  .bk-svc-review-item .sri-price { font-variant-numeric: tabular-nums; flex-shrink: 0; margin-left: var(--space-2); }
+
+  .bk-block { border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: var(--color-surface); padding: var(--space-4); margin-bottom: var(--space-5); }
+  .bk-block-title { font-family: var(--font-heading); font-weight: 600; font-size: 15px; margin-bottom: var(--space-2); }
+  .bk-block-text { font-size: 13px; color: var(--color-neutral-700); line-height: 1.55; }
+  .bk-block-text p { margin-bottom: 14px; }
+  .bk-block-text p:last-child { margin-bottom: 0; }
+  .bk-block-link { background: none; border: none; color: var(--color-accent-700); font-size: 12px; font-weight: 700; cursor: pointer; padding: var(--space-2) 0 0; font-family: inherit; }
+
+  .bk-cta-wrap { flex-shrink: 0; padding: var(--space-3) var(--space-5) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, var(--color-bg) 60%, rgba(243,237,228,0)); display: flex; flex-direction: column; gap: var(--space-2); }
+  .bk-cta { width: 100%; height: 52px; border-radius: var(--radius-full); border: none; cursor: pointer; background: var(--color-accent-700); color: var(--color-bg); font-size: 15px; font-weight: 600; box-shadow: var(--elevation-raised); font-family: inherit; }
+  .bk-cta:active:not(:disabled) { transform: scale(.98); }
+  .bk-cta:disabled { background: var(--color-neutral-300); color: var(--color-neutral-600); cursor: default; box-shadow: none; }
+  .bk-cta.secondary { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-divider); box-shadow: none; }
+
+  .bk-state-block { padding: var(--space-6) var(--space-3) var(--space-5); text-align: center; }
+  .bk-state-block .sb-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--color-neutral-200); color: var(--color-neutral-600); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-4); }
+  .bk-state-block .sb-icon svg { width: 22px; height: 22px; }
+  .bk-state-block.is-error .sb-icon { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
+  .bk-state-block p { font-size: 14px; color: var(--color-neutral-700); max-width: 280px; margin: 0 auto; line-height: 1.5; }
+  .bk-state-block .sb-retry { margin-top: var(--space-4); height: 40px; padding: 0 var(--space-4); border-radius: var(--radius-full); background: var(--color-surface); border: 1px solid var(--color-divider); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+  .bk-date-rail { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; margin: 0 0 var(--space-6); padding: 2px 0 4px; }
+  .bk-date-rail::-webkit-scrollbar { display: none; }
+  .bk-day { flex-shrink: 0; width: 52px; height: 68px; border-radius: var(--radius-sm); background: var(--color-surface); border: 1px solid var(--color-divider); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; position: relative; font: inherit; color: inherit; }
+  .bk-day .d-dow { font-size: 10px; font-weight: 700; color: var(--color-neutral-600); text-transform: uppercase; }
+  .bk-day .d-num { font-family: var(--font-heading); font-weight: 600; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .bk-day .d-mon { font-size: 10px; color: var(--color-neutral-600); text-transform: uppercase; }
+  .bk-day .d-status-label { position: absolute; bottom: 5px; font-size: 6.5px; font-weight: 700; text-transform: uppercase; }
+  .bk-day.st-full .d-mon, .bk-day.st-closed .d-mon, .bk-day.st-unavailable .d-mon { visibility: hidden; }
+  .bk-day[aria-pressed="true"] { background: var(--color-accent-700); border-color: var(--color-accent-700); }
+  .bk-day[aria-pressed="true"] .d-dow, .bk-day[aria-pressed="true"] .d-mon { color: rgba(247,241,232,.75); }
+  .bk-day[aria-pressed="true"] .d-num { color: var(--color-bg); }
+  .bk-day:active:not(:disabled) { transform: scale(.95); }
+  .bk-day:disabled { cursor: default; }
+  .bk-day.st-full { background: transparent; } .bk-day.st-full .d-num { color: var(--color-neutral-600); } .bk-day.st-full .d-status-label { color: var(--color-accent-2-700); }
+  .bk-day.st-closed { background: transparent; border-color: transparent; } .bk-day.st-closed .d-num, .bk-day.st-closed .d-dow, .bk-day.st-closed .d-mon { color: var(--color-neutral-300); } .bk-day.st-closed .d-status-label { color: var(--color-neutral-300); }
+
+  .bk-time-group { margin-bottom: var(--space-5); }
+  .bk-time-group-label { font-size: 12px; font-weight: 700; color: var(--color-neutral-600); margin-bottom: var(--space-2-5); text-transform: uppercase; }
+  .bk-time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .bk-time-chip { height: 44px; border-radius: var(--radius-sm); background: var(--color-surface); border: 1px solid var(--color-divider); font-size: 14px; font-weight: 600; cursor: pointer; font-variant-numeric: tabular-nums; font-family: inherit; color: inherit; }
+  .bk-time-chip:active { transform: scale(.96); }
+  .bk-time-chip[aria-pressed="true"] { background: var(--color-accent-700); border-color: var(--color-accent-700); color: var(--color-bg); }
+  .bk-skel-day { width: 52px; height: 68px; border-radius: var(--radius-sm); background: var(--color-neutral-200); flex-shrink: 0; animation: bk-pulse 1.2s var(--ease-standard) infinite; }
+  .bk-skel-slot { height: 44px; border-radius: var(--radius-sm); background: var(--color-neutral-200); animation: bk-pulse 1.2s var(--ease-standard) infinite; }
+  @keyframes bk-pulse { 0%,100% { opacity: 1 } 50% { opacity: .55 } }
+  @media (prefers-reduced-motion: reduce) { .bk-skel-day, .bk-skel-slot { animation: none; opacity: .75; } }
+
+  .bk-cal-legend { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4); margin-bottom: var(--space-4); padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-divider); }
+  .bk-cal-legend .lg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--color-neutral-700); }
+  .bk-cal-legend .lg-swatch { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; flex-shrink: 0; }
+  .bk-cal-legend .lg-swatch.avail { background: var(--color-accent-100); color: var(--color-accent-700); }
+  .bk-cal-legend .lg-swatch.full { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
+  .bk-cal-legend .lg-swatch.closed { background: var(--color-neutral-200); color: var(--color-neutral-600); }
+  .bk-month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+  .bk-month-nav .mn-label { font-family: var(--font-heading); font-weight: 600; font-size: 15px; }
+  .bk-month-nav button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--color-divider); background: var(--color-surface); cursor: pointer; display: flex; align-items: center; justify-content: center; color: inherit; }
+  .bk-month-nav button:disabled { opacity: .35; cursor: default; }
+  .bk-month-nav button svg { width: 15px; height: 15px; }
+  .bk-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .bk-month-grid .mg-dow { text-align: center; font-size: 10px; font-weight: 700; color: var(--color-neutral-600); padding-bottom: 6px; text-transform: uppercase; }
+  .bk-month-grid button.mg-day { aspect-ratio: 1; border-radius: 50%; border: none; background: none; cursor: pointer; position: relative; font-size: 13px; font-weight: 600; color: var(--color-text); font-variant-numeric: tabular-nums; font-family: inherit; }
+  .bk-month-grid button.mg-day.is-empty { visibility: hidden; cursor: default; }
+  .bk-month-grid button.mg-day.is-today { box-shadow: inset 0 0 0 1.5px var(--color-accent-600); }
+  .bk-month-grid button.mg-day.is-selected { background: var(--color-accent-700); color: var(--color-bg); }
+  .bk-month-grid button.mg-day.st-full { color: var(--color-neutral-600); }
+  .bk-month-grid button.mg-day.st-closed { color: var(--color-neutral-300); }
+  .bk-month-grid button.mg-day .mg-mark { position: absolute; top: -2px; right: 0; width: 12px; height: 12px; border-radius: 50%; font-size: 7px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .bk-month-grid button.mg-day.st-full .mg-mark { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
+  .bk-month-grid button.mg-day.st-closed .mg-mark { background: var(--color-neutral-200); color: var(--color-neutral-600); }
+  .bk-cal-feedback { min-height: 34px; margin-top: var(--space-3); padding: var(--space-2-5) var(--space-3); font-size: 12px; color: var(--color-neutral-700); background: var(--color-surface); border-radius: var(--radius-sm); display: none; }
+  .bk-cal-feedback.is-visible { display: block; }
+  .bk-cal-link { background: none; border: none; color: var(--color-accent-700); font-size: 12px; font-weight: 700; cursor: pointer; padding: 4px 0; display: inline-flex; align-items: center; gap: 4px; margin-bottom: var(--space-3); font-family: inherit; }
+  .bk-cal-link svg { width: 13px; height: 13px; }
+
+  .bk-success-wrap { padding: var(--space-6) 0 0; text-align: center; }
+  .bk-success-icon { width: 64px; height: 64px; border-radius: 50%; background: var(--color-neutral-200); color: var(--color-neutral-700); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-4); }
+  .bk-success-icon svg { width: 30px; height: 30px; }
+  .bk-success-title { font-family: var(--font-heading); font-weight: 600; font-size: 22px; margin-bottom: var(--space-2); }
+  .bk-success-email-note { font-size: 13px; color: var(--color-neutral-600); margin-bottom: var(--space-6); line-height: 1.4; }
+  .bk-commit-error { margin-bottom: var(--space-4); padding: var(--space-3) var(--space-3-5); border-radius: var(--radius-sm); background: var(--color-accent-2-100); color: var(--color-accent-2-700); font-size: 13px; line-height: 1.45; }
+  .bk-booking-ref { text-align: center; font-size: 11px; color: var(--color-neutral-600); margin-top: var(--space-4); font-variant-numeric: tabular-nums; }
+
+  .bk-conflict-sub { font-size: 13px; color: var(--color-neutral-600); margin-bottom: var(--space-4); line-height: 1.5; }
+  .bk-alt-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-4); }
+  .bk-alt-row { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-3-5); border-radius: var(--radius-sm); border: 1px solid var(--color-divider); background: var(--color-bg); cursor: pointer; width: 100%; text-align: left; font-family: inherit; color: inherit; }
+  .bk-alt-row .alt-time { font-family: var(--font-heading); font-weight: 600; font-size: 15px; display: block; }
+  .bk-alt-row .alt-day { font-size: 12px; color: var(--color-neutral-600); display: block; }
+  .bk-alt-row .alt-go { font-size: 12px; font-weight: 700; color: var(--color-accent-700); }
+</style>
+</head>
+<body>
+
+<div class="bk-app">
+  <div class="bk-topbar" id="topbar"></div>
+  <div class="bk-main" id="main"><div id="steps"></div></div>
+  <div class="bk-cta-wrap" id="ctaWrap"></div>
+</div>
+
+<script>
+// ── CONFIGURAÇÃO ─────────────────────────────────────────────
+const SUPABASE_URL = 'https://gsagtsxkhqlpxuvrijgw.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
+const { SALON_TZ, OPEN_HOUR, CLOSE_HOUR, SLOT_MINUTES, CLOSED_WEEKDAYS } = window.OrenziSalon;
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const SALON_ADDRESS = '54 Middle Abbey St, North City, Dublin 1, D01 E2X4';
+const SALON_MAPS_URL = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(SALON_ADDRESS);
+const SALON_WHATSAPP_URL = 'https://wa.me/353833287560';
+
+// ── Fuso do salão — idêntico a agendar.html ───────────────────
+function salonOffsetMinutes(date) {
+  const dtf = new Intl.DateTimeFormat('en-US', { timeZone: SALON_TZ, hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const p = {}; for (const part of dtf.formatToParts(date)) p[part.type] = part.value;
+  const asUTC = Date.UTC(+p.year, p.month - 1, +p.day, (+p.hour) % 24, +p.minute, +p.second);
+  return (asUTC - Math.floor(date.getTime() / 1000) * 1000) / 60000;
+}
+function salonTimeToInstant(dateStr, minutesFromMidnight) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const naive = Date.UTC(y, m - 1, d, 0, 0, 0) + minutesFromMidnight * 60000;
+  const off1 = salonOffsetMinutes(new Date(naive));
+  let inst = new Date(naive - off1 * 60000);
+  const off2 = salonOffsetMinutes(inst);
+  if (off2 !== off1) inst = new Date(naive - off2 * 60000);
+  return inst;
+}
+function salonClock(date) { return date.toLocaleTimeString('pt-BR', { timeZone: SALON_TZ, hour: '2-digit', minute: '2-digit' }); }
+function salonToday() { return new Intl.DateTimeFormat('en-CA', { timeZone: SALON_TZ }).format(new Date()); }
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DOW_SHORT = ['dom','seg','ter','qua','qui','sex','sáb'];
+function addDaysIso(iso, n) { const [y,m,d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m-1, d+n)).toISOString().slice(0,10); }
+function isoWeekday(iso) { const [y,m,d] = iso.split('-').map(Number); return new Date(Date.UTC(y,m-1,d)).getUTCDay(); }
+function fmtDayFull(iso) { if (!iso) return '—'; const [y,m,d] = iso.split('-').map(Number); const dow = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'][isoWeekday(iso)]; return `${dow}, ${d} de ${MONTHS_PT[m-1].toLowerCase()}`; }
+function fmtDayShort(iso) { if (!iso) return '—'; const [,m,d] = iso.split('-').map(Number); return `${DOW_SHORT[isoWeekday(iso)]}, ${d} ${MONTHS_PT[m-1].slice(0,3).toLowerCase()}`; }
+function formatMoney(n) { const num = Number(n); return num % 1 === 0 ? `€${num}` : `€${num.toFixed(2)}`; }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+const ICONS = {
+  chevronLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>',
+  chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16.2" r="0.6" fill="currentColor" stroke="none"/></svg>',
+  offline: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16M8.5 8.5A10 10 0 0122 9M5 12.5a10 10 0 013-2.3M8.8 16.2a5.5 5.5 0 016.4 0M12 20h.01"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>',
+};
+
+// ── TOKEN — só de leitura da querystring, nunca gravado em storage/log ──
+// gerenciar.html?t=<token>. Não usar booking_reference/appointment_id/client_id
+// como autorização — é sempre o token, ponto.
+const MANAGE_TOKEN = new URLSearchParams(location.search).get('t');
+
+const state = {
+  loading: true,
+  loadError: null,        // 'invalid_token' | 'expired_token' | 'other'
+  booking: null,           // resposta de get_booking_by_token
+  step: 'manage',           // manage | reschedule-intro | reschedule-picker | reschedule-review | reschedule-success | cancel-intro | cancel-success
+  subview: null,            // 'calendar' | 'policy'
+
+  // reagendamento — profissional e serviços são FIXOS (V2.2 congelado)
+  availability: { key: null, loading: false, error: null, days: null },
+  selectedDateIso: null,
+  selectedTime: null,
+  calendarMonth: null,
+  calFeedback: '',
+  conflict: null,
+
+  committing: false,
+  commitError: null,
+  rescheduleRequestKey: null,
+  cancelRequestKey: null,
+  rescheduleResult: null,
+  cancelResult: null,
+};
+
+const AVAILABILITY_DAYS = 60;
+const PAST_TOLERANCE_MS = 5 * 60 * 1000;
+
+// ── CARREGAMENTO ─────────────────────────────────────────────
+async function loadBooking() {
+  if (!MANAGE_TOKEN) { state.loading = false; state.loadError = 'invalid_token'; renderAll(); return; }
+  state.loading = true; renderAll();
+  const { data, error } = await sb.rpc('get_booking_by_token', { p_token: MANAGE_TOKEN });
+  state.loading = false;
+  if (error) {
+    const code = (error.message || '').trim();
+    state.loadError = (code === 'invalid_token' || code === 'expired_token') ? code : 'other';
+    renderAll();
+    return;
+  }
+  state.booking = data;
+  renderAll();
+}
+
+// ── DISPONIBILIDADE (reagendar) — profissional e duração FIXAS ───────────
+// Mesma get_busy_slots pública que agendar.html usa (nunca staff_work_blocks,
+// que não é anon-executável). staff_id agora vem de get_booking_by_token.
+async function fetchBusySlots(staffId, fromIso, toIso) {
+  const from = salonTimeToInstant(fromIso, 0).toISOString();
+  const to = salonTimeToInstant(toIso, 24 * 60).toISOString();
+  const { data, error } = await sb.rpc('get_busy_slots', { p_staff_id: staffId, p_from: from, p_to: to });
+  if (error) throw error;
+  return (data || []).map(b => ({ start: new Date(b.busy_start).getTime(), end: new Date(b.busy_end).getTime() }));
+}
+
+const DAY_STATUS_LABEL = { available: 'Disponível', full: 'Lotado', closed: 'Fechado' };
+const DAY_STATUS_MARK = { full: 'L', closed: 'F' };
+
+// get_busy_slots público não exclui o próprio agendamento (só staff_work_blocks
+// aceita p_exclude_id, e ela não é anon-executable). A exclusão é feita aqui,
+// no frontend, por CONTENÇÃO — não por igualdade exata — usando o próprio
+// starts_at/ends_at que get_booking_by_token já devolveu: qualquer bloco
+// ocupado que caiba inteiramente dentro da janela atual do agendamento é o
+// PRÓPRIO bloco, e é removido antes de calcular conflito. A RPC de commit
+// (reschedule_booking_by_token) continua sendo a autoridade final — isto é
+// só para a tela não mostrar o próprio horário como indisponível.
+function buildAvailability(busy, fromIso, days, durationMin, ownStartMs, ownEndMs) {
+  const filtered = busy.filter(b => !(b.start >= ownStartMs && b.end <= ownEndMs));
+  const out = new Map();
+  const nowMs = Date.now() - PAST_TOLERANCE_MS;
+  for (let i = 0; i < days; i++) {
+    const iso = addDaysIso(fromIso, i);
+    if (CLOSED_WEEKDAYS.includes(isoWeekday(iso))) { out.set(iso, { status: 'closed', slots: [] }); continue; }
+    const slots = [];
+    for (let m = OPEN_HOUR * 60; m + durationMin <= CLOSE_HOUR * 60; m += SLOT_MINUTES) {
+      const start = salonTimeToInstant(iso, m);
+      const startMs = start.getTime();
+      if (startMs < nowMs) continue;
+      const endMs = startMs + durationMin * 60000;
+      const conflict = filtered.some(b => startMs < b.end && endMs > b.start);
+      if (!conflict) slots.push({ label: salonClock(start), minutes: m, start });
+    }
+    out.set(iso, { status: slots.length ? 'available' : 'full', slots });
+  }
+  return out;
+}
+
+function availabilityKey() { return state.booking ? state.booking.staff.id + '|' + state.booking.total_duration_minutes : null; }
+
+async function ensureAvailability(force) {
+  const key = availabilityKey();
+  if (!key) return;
+  if (!force && state.availability.key === key && state.availability.days) return;
+  state.availability = { key, loading: true, error: null, days: null };
+  renderStepBody(); renderCTA();
+
+  const fromIso = salonToday();
+  const toIso = addDaysIso(fromIso, AVAILABILITY_DAYS - 1);
+  try {
+    const busy = await fetchBusySlots(state.booking.staff.id, fromIso, toIso);
+    if (availabilityKey() !== key) return;
+    const days = buildAvailability(
+      busy, fromIso, AVAILABILITY_DAYS, state.booking.total_duration_minutes,
+      new Date(state.booking.starts_at).getTime(), new Date(state.booking.ends_at).getTime()
+    );
+    state.availability = { key, loading: false, error: null, days };
+  } catch (e) {
+    console.error('gerenciar.ensureAvailability', e);
+    state.availability = { key, loading: false, error: e.message || 'erro', days: null };
+  }
+  renderStepBody(); renderCTA();
+}
+
+function dayInfo(iso) { const d = state.availability.days; if (!d) return { status: 'closed', slots: [] }; return d.get(iso) || { status: 'closed', slots: [] }; }
+function slotAt(iso, label) { return dayInfo(iso).slots.find(s => s.label === label) || null; }
+function nextAvailableIso(afterIso) {
+  const d = state.availability.days; if (!d) return null;
+  for (const [iso, info] of d) { if (info.status === 'available' && (!afterIso || iso > afterIso)) return iso; }
+  return null;
+}
+
+// ── SHELL ────────────────────────────────────────────────────
+function renderShell() {
+  const topbar = document.getElementById('topbar');
+  if (state.subview) {
+    const isPolicy = state.subview === 'policy';
+    topbar.innerHTML = `
+      <button class="bk-back" id="backBtn" aria-label="${isPolicy ? 'Voltar' : 'Fechar calendário'}">${ICONS.chevronLeft}</button>
+      <span class="bk-sub-title">${isPolicy ? 'Política de cancelamento' : 'Escolha uma data'}</span>`;
+    document.getElementById('backBtn').addEventListener('click', isPolicy ? closePolicy : closeCalendar);
+    return;
+  }
+  const showBack = ['reschedule-intro', 'reschedule-picker', 'reschedule-review', 'cancel-intro'].includes(state.step);
+  const titles = {
+    manage: '', 'reschedule-intro': 'Reagendar', 'reschedule-picker': 'Nova data e horário',
+    'reschedule-review': 'Confirmar', 'reschedule-success': '', 'cancel-intro': 'Cancelar',
+    'cancel-success': '',
+  };
+  topbar.innerHTML = `
+    <button class="bk-back${showBack ? '' : ' is-hidden'}" id="backBtn" aria-label="Voltar" ${showBack ? '' : 'tabindex="-1"'}>${ICONS.chevronLeft}</button>
+    <span class="bk-sub-title">${esc(titles[state.step] || '')}</span>`;
+  if (showBack) document.getElementById('backBtn').addEventListener('click', goBack);
+}
+
+function goBack() {
+  if (state.step === 'reschedule-picker' || state.step === 'reschedule-intro') { state.step = 'manage'; state.conflict = null; }
+  else if (state.step === 'reschedule-review') { state.step = 'reschedule-picker'; }
+  else if (state.step === 'cancel-intro') { state.step = 'manage'; }
+  renderAll();
+  document.getElementById('main').scrollTop = 0;
+}
+
+function goTo(step) {
+  state.step = step;
+  state.commitError = null;
+  renderAll();
+  document.getElementById('main').scrollTop = 0;
+  if (step === 'reschedule-picker') ensureAvailability();
+}
+
+function renderAll() { renderShell(); renderStepBody(); renderCTA(); }
+
+// ── STEP: MANAGE ─────────────────────────────────────────────
+const STATUS_META = { confirmed: 'Confirmado', rescheduled: 'Reagendado', cancelled: 'Cancelado' };
+
+function loadingHtml() {
+  return `<div class="bk-state-block" role="status"><div class="sb-icon">${ICONS.calendar}</div><p>Carregando seu agendamento…</p></div>`;
+}
+function invalidTokenHtml() {
+  return `<h1 class="bk-title">Este link não é válido.</h1>
+    <div class="bk-state-block"><div class="sb-icon">${ICONS.warn}</div>
+    <p>O link pode estar incompleto ou ter sido copiado incorretamente. Confira o e-mail de confirmação e tente novamente, ou fale com o salão.</p>
+    <a class="sb-retry" href="${SALON_WHATSAPP_URL}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Entrar em contato</a></div>`;
+}
+function expiredTokenHtml() {
+  return `<h1 class="bk-title">Este link expirou.</h1>
+    <div class="bk-state-block"><div class="sb-icon">${ICONS.warn}</div>
+    <p>Por segurança, links de gerenciamento têm validade. Fale com o salão para revisar seu agendamento.</p>
+    <a class="sb-retry" href="${SALON_WHATSAPP_URL}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Entrar em contato</a></div>`;
+}
+function otherLoadErrorHtml() {
+  return `<h1 class="bk-title">Seu agendamento</h1>
+    <div class="bk-state-block is-error" role="alert"><div class="sb-icon">${ICONS.offline}</div>
+    <p>Não foi possível carregar agora. Verifique sua conexão e tente de novo.</p>
+    <button class="sb-retry" id="retryLoadBtn">Tentar de novo</button></div>`;
+}
+
+function renderManage() {
+  const b = state.booking;
+  const svcs = b.services || [];
+  const active = b.status === 'confirmed';
+  const statusLabel = STATUS_META[b.status] || b.status;
+
+  return `
+    <span class="bk-status-pill${active ? '' : ' is-muted'}">${esc(statusLabel)}${b.was_rescheduled && active ? ' · Reagendado' : ''}</span>
+    <div class="bk-hero">
+      <div class="bk-hero-date">${esc(fmtDayFull(b.starts_at.slice(0,10)))}</div>
+      <div class="bk-hero-time">${esc(salonClock(new Date(b.starts_at)))}</div>
+      <div class="bk-hero-sub">${b.total_duration_minutes} min · ${esc(b.staff ? b.staff.name : '—')}</div>
+    </div>
+    <div class="bk-summary">
+      <div class="bk-summary-row">
+        <span class="sr-label">Serviço${svcs.length > 1 ? 's' : ''}</span>
+        <span class="sr-value">${svcs.length > 1 ? svcs.length + ' serviços' : esc((svcs[0] || {}).name || '—')}</span>
+      </div>
+      ${svcs.length > 1 ? `<div class="bk-svc-review-list">${svcs.map(s => `
+        <div class="bk-svc-review-item"><span class="sri-name">${esc(s.name)}</span><span class="sri-price">${esc(formatMoney(s.price))}</span></div>`).join('')}</div>` : ''}
+      <div class="bk-summary-row total"><span class="sr-label">Total</span><span class="sr-value">${esc(formatMoney(b.total_price))}</span></div>
+    </div>
+    ${b.policy ? `
+    <div class="bk-block">
+      <div class="bk-block-title">Política de cancelamento</div>
+      <div class="bk-block-text">${esc(b.policy.summary)}</div>
+      <button type="button" class="bk-block-link" id="policyLinkBtn">Ver política completa</button>
+    </div>` : ''}
+    <div class="bk-block">
+      <div class="bk-block-title">Local</div>
+      <div class="bk-block-text">Orenzi Ateliê<br>${esc(SALON_ADDRESS)}</div>
+      <a class="bk-block-link" href="${SALON_MAPS_URL}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Como chegar</a>
+    </div>
+    <div class="bk-booking-ref">Agendamento ${esc(b.booking_reference)}</div>`;
+}
+
+function bindManage() {
+  const policyBtn = document.getElementById('policyLinkBtn');
+  if (policyBtn) policyBtn.addEventListener('click', openPolicy);
+  const retry = document.getElementById('retryLoadBtn');
+  if (retry) retry.addEventListener('click', loadBooking);
+  const addCal = document.getElementById('addCalBtn');
+  if (addCal) addCal.addEventListener('click', downloadIcs);
+}
+
+// .ics a partir da resposta de get_booking_by_token — sem token dentro do
+// arquivo, mesmo helper conceitual do Success de agendar.html (reimplementado
+// aqui porque os dois arquivos não compartilham módulo — mesmo padrão de
+// duplicação já aceito entre painel.html/painel_demo.html neste projeto).
+function downloadIcs() {
+  const b = state.booking;
+  if (!b) return;
+  const stamp = d => new Date(d).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const nomes = (b.services || []).map(s => s.name).join(' + ');
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Orenzi Atelier//Booking//PT',
+    'BEGIN:VEVENT',
+    `UID:${b.booking_reference}@orenzi`,
+    `DTSTAMP:${stamp(Date.now())}`,
+    `DTSTART:${stamp(b.starts_at)}`,
+    `DTEND:${stamp(b.ends_at)}`,
+    `SUMMARY:Orenzi Ateliê — ${nomes}`,
+    `DESCRIPTION:Agendamento ${b.booking_reference} com ${b.staff ? b.staff.name : ''}`,
+    `LOCATION:${SALON_ADDRESS}`,
+    'END:VEVENT', 'END:VCALENDAR',
+  ];
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `orenzi-${b.booking_reference}.ics`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+
+function openPolicy() { state.subview = 'policy'; renderAll(); }
+function closePolicy() { state.subview = null; renderAll(); }
+function renderPolicyFull() {
+  const body = state.booking && state.booking.policy ? state.booking.policy.body : '';
+  return `<div class="bk-block-text">${body.split(/\n{2,}/).map(p => `<p>${esc(p)}</p>`).join('')}</div>`;
+}
+
+// ── RESCHEDULE — INTRO ────────────────────────────────────────
+function renderRescheduleIntro() {
+  const b = state.booking;
+  const svcs = b.services || [];
+  return `
+    <h1 class="bk-title">Reagendar agendamento</h1>
+    <div class="bk-title-note">Você está alterando:</div>
+    <div class="bk-summary">
+      <div class="bk-summary-row"><span class="sr-label">Serviço${svcs.length > 1 ? 's' : ''}</span>
+        <span class="sr-value">${svcs.length > 1 ? svcs.length + ' serviços' : esc((svcs[0]||{}).name || '—')}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Data</span><span class="sr-value">${esc(fmtDayShort(b.starts_at.slice(0,10)))}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Horário</span><span class="sr-value">${esc(salonClock(new Date(b.starts_at)))}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Profissional</span><span class="sr-value">${esc(b.staff ? b.staff.name : '—')}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Duração</span><span class="sr-value">${b.total_duration_minutes} min</span></div>
+    </div>
+    <p class="bk-block-text" style="color:var(--color-neutral-600)">A profissional e os serviços continuam os mesmos — só a data e o horário mudam.</p>`;
+}
+
+// ── RESCHEDULE — PICKER (mesma UX do Step Data/Horário do booking) ──
+function datetimeSkeleton() {
+  return `<span class="bk-eyebrow">Escolha uma data</span>
+    <div class="bk-date-rail" aria-hidden="true">${Array.from({length:6}).map(()=>'<div class="bk-skel-day"></div>').join('')}</div>
+    <span class="bk-eyebrow">Escolha um horário</span>
+    <div class="bk-time-grid" aria-hidden="true">${Array.from({length:6}).map(()=>'<div class="bk-skel-slot"></div>').join('')}</div>
+    <p class="sr-only" role="status">Carregando horários…</p>`;
+}
+function dateRailHtml() {
+  const from = salonToday();
+  return `<div class="bk-date-rail" id="dateRail" role="group" aria-label="Escolha um dia">
+    ${Array.from({length:14}).map((_,i) => {
+      const iso = addDaysIso(from, i);
+      const info = dayInfo(iso);
+      const notAvail = info.status !== 'available';
+      const selected = state.selectedDateIso === iso;
+      const [,m,d] = iso.split('-').map(Number);
+      return `<button type="button" class="bk-day${notAvail?' st-'+info.status:''}" data-date="${iso}"
+        aria-pressed="${selected}" ${notAvail?'disabled':''}
+        aria-label="${fmtDayFull(iso)}${notAvail?', '+DAY_STATUS_LABEL[info.status]:''}">
+        <span class="d-dow">${DOW_SHORT[isoWeekday(iso)]}</span><span class="d-num">${d}</span><span class="d-mon">${MONTHS_PT[m-1].slice(0,3).toLowerCase()}</span>
+        ${notAvail?`<span class="d-status-label">${DAY_STATUS_LABEL[info.status]}</span>`:''}</button>`;
+    }).join('')}
+  </div>`;
+}
+const TIME_GROUPS = [{label:'Manhã',test:m=>m<12*60},{label:'Tarde',test:m=>m>=12*60&&m<18*60},{label:'Noite',test:m=>m>=18*60}];
+function timeGridHtml() {
+  const iso = state.selectedDateIso;
+  if (!iso) return `<p class="bk-block-text" style="color:var(--color-neutral-600)">Escolha uma data para ver os horários.</p>`;
+  const info = dayInfo(iso);
+  if (!info.slots.length) {
+    const next = nextAvailableIso(iso);
+    return `<div class="bk-state-block"><div class="sb-icon">${ICONS.calendar}</div>
+      <p><strong style="color:var(--color-text)">Nenhum horário disponível</strong><br>em ${esc(fmtDayShort(iso))}.</p>
+      ${next ? `<button class="sb-retry" id="nextAvailBtn">Ver ${esc(fmtDayShort(next))}</button>` : ''}</div>`;
+  }
+  return TIME_GROUPS.map(g => {
+    const slots = info.slots.filter(s => g.test(s.minutes));
+    if (!slots.length) return '';
+    return `<div class="bk-time-group"><div class="bk-time-group-label">${g.label}</div>
+      <div class="bk-time-grid">${slots.map(s => `<button type="button" class="bk-time-chip" data-time="${s.label}" aria-pressed="${state.selectedTime===s.label}">${s.label}</button>`).join('')}</div></div>`;
+  }).join('');
+}
+function renderReschedulePicker() {
+  const av = state.availability;
+  const head = `<h1 class="bk-title">Escolha a nova data e o horário</h1><div class="bk-title-note">${state.booking.total_duration_minutes} min com ${esc(state.booking.staff.name)}</div>`;
+  if (av.loading) return head + datetimeSkeleton();
+  if (av.error) return head + `<div class="bk-state-block is-error" role="alert"><div class="sb-icon">${ICONS.offline}</div><p>Não foi possível carregar os horários.</p><button class="sb-retry" id="availRetryBtn">Tentar de novo</button></div>`;
+  return head + `<span class="bk-eyebrow">Escolha uma data</span><button type="button" class="bk-cal-link" id="openCalBtn">${ICONS.calendar} Ver calendário</button>${dateRailHtml()}<span class="bk-eyebrow">Escolha um horário</span>${timeGridHtml()}`;
+}
+function selectDate(iso) { state.selectedDateIso = iso; state.selectedTime = null; renderStepBody(); renderCTA(); }
+function bindReschedulePicker() {
+  const retry = document.getElementById('availRetryBtn');
+  if (retry) { retry.addEventListener('click', () => ensureAvailability(true)); return; }
+  const openCal = document.getElementById('openCalBtn');
+  if (openCal) openCal.addEventListener('click', () => openCalendar());
+  const next = document.getElementById('nextAvailBtn');
+  if (next) next.addEventListener('click', () => selectDate(nextAvailableIso(state.selectedDateIso)));
+  const rail = document.getElementById('dateRail');
+  if (rail) rail.querySelectorAll('[data-date]').forEach(b => b.addEventListener('click', () => selectDate(b.dataset.date)));
+  document.querySelectorAll('.bk-time-chip').forEach(b => b.addEventListener('click', () => { state.selectedTime = b.dataset.time; renderStepBody(); renderCTA(); }));
+}
+
+function openCalendar() { const base = state.selectedDateIso || salonToday(); const [y,m] = base.split('-').map(Number); state.calendarMonth = {y, m:m-1}; state.calFeedback=''; state.subview='calendar'; renderAll(); }
+function closeCalendar() { state.subview = null; renderAll(); }
+function renderCalendar() {
+  const {y,m} = state.calendarMonth;
+  const from = salonToday(); const to = addDaysIso(from, AVAILABILITY_DAYS-1);
+  const startDow = new Date(Date.UTC(y,m,1)).getUTCDay();
+  const daysInMonth = new Date(Date.UTC(y,m+1,0)).getUTCDate();
+  let cells = '';
+  for (let i=0;i<startDow;i++) cells += '<button class="mg-day is-empty" disabled aria-hidden="true"></button>';
+  for (let d=1; d<=daysInMonth; d++) {
+    const iso = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let status;
+    if (iso < from || iso > to) status = 'closed'; else status = dayInfo(iso).status;
+    const notAvail = status !== 'available';
+    const isToday = iso === from, isSel = iso === state.selectedDateIso;
+    cells += `<button type="button" class="mg-day${notAvail?' st-'+status:''}${isToday?' is-today':''}${isSel?' is-selected':''}" data-cal-day="${iso}" data-cal-status="${status}"
+      aria-label="${fmtDayFull(iso)}${notAvail?', '+DAY_STATUS_LABEL[status]:''}">${d}${notAvail?`<span class="mg-mark">${DAY_STATUS_MARK[status]}</span>`:''}</button>`;
+  }
+  const prevDisabled = `${y}-${String(m+1).padStart(2,'0')}-01` <= from.slice(0,7)+'-01';
+  const nextDisabled = `${y}-${String(m+1).padStart(2,'0')}` >= to.slice(0,7);
+  return `<div class="bk-cal-legend"><span class="lg-item"><span class="lg-swatch avail">●</span>Disponível</span><span class="lg-item"><span class="lg-swatch full">L</span>Lotado</span><span class="lg-item"><span class="lg-swatch closed">F</span>Fechado</span></div>
+    <div class="bk-month-nav"><button type="button" id="calPrevBtn" aria-label="Mês anterior" ${prevDisabled?'disabled':''}>${ICONS.chevronLeft}</button><span class="mn-label">${MONTHS_PT[m]} de ${y}</span><button type="button" id="calNextBtn" aria-label="Próximo mês" ${nextDisabled?'disabled':''}>${ICONS.chevronRight}</button></div>
+    <div class="bk-month-grid">${DOW_SHORT.map(d=>`<div class="mg-dow">${d}</div>`).join('')}${cells}</div>
+    <div class="bk-cal-feedback${state.calFeedback?' is-visible':''}" role="status">${esc(state.calFeedback)}</div>`;
+}
+function bindCalendar() {
+  const prev = document.getElementById('calPrevBtn'), next = document.getElementById('calNextBtn');
+  if (prev && !prev.disabled) prev.addEventListener('click', () => stepMonth(-1));
+  if (next && !next.disabled) next.addEventListener('click', () => stepMonth(1));
+  document.querySelectorAll('[data-cal-day]').forEach(b => b.addEventListener('click', () => {
+    const st = b.dataset.calStatus, iso = b.dataset.calDay;
+    if (st !== 'available') { state.calFeedback = st === 'closed' ? 'O salão não abre neste dia.' : `Sem horários disponíveis em ${fmtDayShort(iso)}.`; renderStepBody(); return; }
+    selectDate(iso); closeCalendar();
+  }));
+}
+function stepMonth(delta) { let {y,m}=state.calendarMonth; m+=delta; if(m<0){m=11;y--;}else if(m>11){m=0;y++;} state.calendarMonth={y,m}; state.calFeedback=''; renderStepBody(); }
+
+// ── RESCHEDULE — REVIEW ───────────────────────────────────────
+function renderRescheduleReview() {
+  const b = state.booking;
+  return `<h1 class="bk-title">Revise a alteração</h1>
+    ${state.commitError ? `<div class="bk-commit-error" role="alert">${esc(state.commitError)}</div>` : ''}
+    ${state.conflict ? renderConflictBlock() : `
+    <span class="bk-eyebrow">De</span>
+    <div class="bk-summary"><div class="bk-summary-row"><span class="sr-label">Data</span><span class="sr-value">${esc(fmtDayShort(b.starts_at.slice(0,10)))}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Horário</span><span class="sr-value">${esc(salonClock(new Date(b.starts_at)))}</span></div></div>
+    <span class="bk-eyebrow">Para</span>
+    <div class="bk-summary"><div class="bk-summary-row"><span class="sr-label">Data</span><span class="sr-value">${esc(fmtDayShort(state.selectedDateIso))}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Horário</span><span class="sr-value">${esc(state.selectedTime)}</span></div></div>
+    <p class="bk-block-text" style="color:var(--color-neutral-600)">Profissional: ${esc(b.staff.name)} (não muda)</p>`}`;
+}
+function renderConflictBlock() {
+  const alts = state.conflict.alternatives;
+  return `<div role="alert"><div class="sb-icon" style="background:var(--color-accent-2-100);color:var(--color-accent-2-700)">${ICONS.warn}</div>
+    <p style="font-weight:600;color:var(--color-text);margin-bottom:4px">Esse horário acabou de ser reservado.</p>
+    <p class="bk-conflict-sub">Seus dados foram mantidos. Escolha outro horário para concluir.</p>
+    ${alts.length ? `<div class="bk-alt-list">${alts.map(a => `<button type="button" class="bk-alt-row" data-alt-date="${a.iso}" data-alt-time="${a.time}">
+      <span><span class="alt-time">${a.time}</span><span class="alt-day">${esc(fmtDayShort(a.iso))}</span></span><span class="alt-go">Usar horário</span></button>`).join('')}</div>` : ''}</div>`;
+}
+function bindRescheduleReview() {
+  if (state.conflict) {
+    document.querySelectorAll('[data-alt-date]').forEach(row => row.addEventListener('click', () => {
+      state.selectedDateIso = row.dataset.altDate; state.selectedTime = row.dataset.altTime; state.conflict = null;
+      renderStepBody(); renderCTA();
+    }));
+  }
+}
+
+async function commitReschedule() {
+  if (state.committing) return;
+  state.committing = true; state.commitError = null; state.conflict = null;
+  renderStepBody(); renderCTA();
+
+  const slot = slotAt(state.selectedDateIso, state.selectedTime);
+  if (!state.rescheduleRequestKey) state.rescheduleRequestKey = crypto.randomUUID();
+
+  let res, body;
+  try {
+    res = await sb.functions.invoke('booking-orchestrator', {
+      body: { event_type: 'rescheduled', request_key: state.rescheduleRequestKey,
+        payload: { token: MANAGE_TOKEN, new_starts_at: slot.start.toISOString() } },
+    });
+    body = res.data; if (res.error) throw res.error;
+  } catch (e) {
+    state.committing = false;
+    state.commitError = 'Não foi possível concluir agora. Tente de novo em instantes.';
+    console.error('gerenciar.commitReschedule', e && e.message);
+    renderStepBody(); renderCTA();
+    return;
+  }
+  state.committing = false;
+
+  if (!body || !body.operation_success) {
+    const code = body && body.code;
+    if (code === 'slot_conflict') {
+      await ensureAvailability(true);
+      state.conflict = { alternatives: (dayInfo(state.selectedDateIso).slots || []).slice(0,3).map(s => ({ iso: state.selectedDateIso, time: s.label })) };
+      renderStepBody(); renderCTA();
+      return;
+    }
+    state.commitError = code === 'outside_booking_window'
+      ? 'Esse horário não está mais dentro do expediente. Escolha outro.'
+      : 'Não foi possível concluir agora. Tente de novo em instantes.';
+    renderStepBody(); renderCTA();
+    return;
+  }
+
+  state.rescheduleResult = { booking: body.booking, emailSuccess: body.email_success };
+  state.rescheduleRequestKey = null;
+  state.step = 'reschedule-success';
+  renderAll();
+}
+
+function renderRescheduleSuccess() {
+  const r = state.rescheduleResult;
+  const emailNote = r.emailSuccess === true
+    ? 'Você receberá os detalhes atualizados deste agendamento por e-mail.'
+    : `Guarde a referência: <strong>${esc(state.booking.booking_reference)}</strong>.`;
+  return `<div class="bk-success-wrap"><div class="bk-success-icon">${ICONS.check}</div>
+    <h1 class="bk-success-title">Agendamento reagendado</h1>
+    <div class="bk-success-email-note">${emailNote}</div>
+    <div class="bk-summary" style="text-align:left">
+      <div class="bk-summary-row"><span class="sr-label">Nova data</span><span class="sr-value">${esc(fmtDayShort(r.booking.starts_at.slice(0,10)))}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Novo horário</span><span class="sr-value">${esc(salonClock(new Date(r.booking.starts_at)))}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Profissional</span><span class="sr-value">${esc(r.booking.staff ? r.booking.staff.name : '')}</span></div>
+    </div></div>`;
+}
+
+// ── CANCEL — INTRO ─────────────────────────────────────────────
+function renderCancelIntro() {
+  const b = state.booking;
+  const svcs = b.services || [];
+  const within = b.within_free_cancellation_window;
+  return `<h1 class="bk-title">Cancelar este agendamento?</h1>
+    ${state.commitError ? `<div class="bk-commit-error" role="alert">${esc(state.commitError)}</div>` : ''}
+    <div class="bk-summary">
+      <div class="bk-summary-row"><span class="sr-label">Serviço${svcs.length>1?'s':''}</span><span class="sr-value">${svcs.length>1?svcs.length+' serviços':esc((svcs[0]||{}).name||'—')}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Data</span><span class="sr-value">${esc(fmtDayShort(b.starts_at.slice(0,10)))}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Horário</span><span class="sr-value">${esc(salonClock(new Date(b.starts_at)))}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Profissional</span><span class="sr-value">${esc(b.staff?b.staff.name:'—')}</span></div>
+    </div>
+    <div class="bk-block">
+      <div class="bk-block-title">${within ? 'Cancelamento gratuito' : 'Fora do prazo de cancelamento gratuito'}</div>
+      <div class="bk-block-text">${within
+        ? 'Você está dentro do prazo de 12 horas. Nenhuma taxa será cobrada.'
+        : 'Este cancelamento está fora do prazo gratuito definido na política aceita para este agendamento.'}</div>
+    </div>
+    <div class="bk-block">
+      <div class="bk-block-title">Mudou de ideia?</div>
+      <div class="bk-block-text">Você também pode entrar em contato diretamente com o Orenzi Ateliê.</div>
+      <a class="bk-block-link" href="${SALON_WHATSAPP_URL}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Entrar em contato</a>
+    </div>`;
+}
+
+async function commitCancel() {
+  if (state.committing) return;
+  state.committing = true; state.commitError = null;
+  renderStepBody(); renderCTA();
+  if (!state.cancelRequestKey) state.cancelRequestKey = crypto.randomUUID();
+
+  let res, body;
+  try {
+    res = await sb.functions.invoke('booking-orchestrator', {
+      body: { event_type: 'cancelled', request_key: state.cancelRequestKey, payload: { token: MANAGE_TOKEN } },
+    });
+    body = res.data; if (res.error) throw res.error;
+  } catch (e) {
+    state.committing = false;
+    state.commitError = 'Não foi possível concluir agora. Tente de novo em instantes.';
+    console.error('gerenciar.commitCancel', e && e.message);
+    renderStepBody(); renderCTA();
+    return;
+  }
+  state.committing = false;
+
+  if (!body || !body.operation_success) {
+    state.commitError = 'Não foi possível concluir agora. Tente de novo em instantes.';
+    renderStepBody(); renderCTA();
+    return;
+  }
+
+  state.cancelResult = { booking: body.booking, emailSuccess: body.email_success };
+  state.cancelRequestKey = null;
+  state.booking.status = 'cancelled';
+  state.step = 'cancel-success';
+  renderAll();
+}
+
+function renderCancelSuccess() {
+  const r = state.cancelResult;
+  const svcs = r.booking.services || [];
+  const emailNote = r.emailSuccess === true
+    ? 'Você receberá os detalhes deste cancelamento por e-mail.'
+    : `Guarde a referência: <strong>${esc(r.booking.booking_reference)}</strong>.`;
+  return `<div class="bk-success-wrap"><div class="bk-success-icon">${ICONS.check}</div>
+    <h1 class="bk-success-title">Agendamento cancelado</h1>
+    <div class="bk-success-email-note">${emailNote}</div>
+    <div class="bk-summary" style="text-align:left">
+      <div class="bk-summary-row"><span class="sr-label">Serviço${svcs.length>1?'s':''}</span><span class="sr-value">${svcs.length>1?svcs.length+' serviços':esc((svcs[0]||{}).name||'—')}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Profissional</span><span class="sr-value">${esc(r.booking.staff?r.booking.staff.name:'')}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Data</span><span class="sr-value">${esc(fmtDayShort(r.booking.starts_at.slice(0,10)))}</span></div>
+      <div class="bk-summary-row"><span class="sr-label">Horário</span><span class="sr-value">${esc(salonClock(new Date(r.booking.starts_at)))}</span></div>
+    </div>
+    <div class="bk-booking-ref">Agendamento ${esc(r.booking.booking_reference)}</div></div>`;
+}
+
+// ── ROTEAMENTO ───────────────────────────────────────────────
+function renderStepBody() {
+  const steps = document.getElementById('steps');
+  if (state.subview === 'calendar') { steps.innerHTML = renderCalendar(); bindCalendar(); return; }
+  if (state.subview === 'policy') { steps.innerHTML = renderPolicyFull(); return; }
+
+  if (state.loading) { steps.innerHTML = loadingHtml(); return; }
+  if (state.loadError === 'invalid_token') { steps.innerHTML = invalidTokenHtml(); return; }
+  if (state.loadError === 'expired_token') { steps.innerHTML = expiredTokenHtml(); return; }
+  if (state.loadError) { steps.innerHTML = otherLoadErrorHtml(); document.getElementById('retryLoadBtn').addEventListener('click', loadBooking); return; }
+
+  let html = '';
+  if (state.step === 'manage') html = renderManage();
+  else if (state.step === 'reschedule-intro') html = renderRescheduleIntro();
+  else if (state.step === 'reschedule-picker') html = renderReschedulePicker();
+  else if (state.step === 'reschedule-review') html = renderRescheduleReview();
+  else if (state.step === 'reschedule-success') html = renderRescheduleSuccess();
+  else if (state.step === 'cancel-intro') html = renderCancelIntro();
+  else if (state.step === 'cancel-success') html = renderCancelSuccess();
+  steps.innerHTML = html;
+  steps.classList.remove('bk-step-enter'); void steps.offsetWidth; steps.classList.add('bk-step-enter');
+
+  if (state.step === 'manage') bindManage();
+  else if (state.step === 'reschedule-picker') bindReschedulePicker();
+  else if (state.step === 'reschedule-review') bindRescheduleReview();
+}
+
+function renderCTA() {
+  const wrap = document.getElementById('ctaWrap');
+  if (state.subview || state.loading || state.loadError) { wrap.innerHTML = ''; return; }
+
+  if (state.step === 'manage') {
+    // Confirmado: as 3 ações. Cancelado: nenhuma (nem Add to Calendar — um
+    // compromisso que não vai mais acontecer não deveria entrar na agenda
+    // pessoal). "Agendar novamente" fica fora desta fase — pré-selecionar
+    // serviços em agendar.html sem PII/token na querystring é plumbing real,
+    // não um botão que eu deveria fingir que funciona.
+    if (state.booking.status !== 'confirmed') { wrap.innerHTML = ''; return; }
+    wrap.innerHTML = `
+      <button type="button" class="bk-cta" id="reschedBtn">Reagendar</button>
+      <button type="button" class="bk-cta secondary" id="addCalBtn">Adicionar ao calendário</button>
+      <button type="button" class="bk-cta secondary" id="cancelBtn">Cancelar agendamento</button>`;
+    document.getElementById('reschedBtn').addEventListener('click', () => goTo('reschedule-intro'));
+    document.getElementById('addCalBtn').addEventListener('click', downloadIcs);
+    document.getElementById('cancelBtn').addEventListener('click', () => goTo('cancel-intro'));
+    return;
+  }
+  if (state.step === 'reschedule-intro') {
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn">Continuar</button><button type="button" class="bk-cta secondary" id="backBtn2">Voltar</button>`;
+    document.getElementById('ctaBtn').addEventListener('click', () => goTo('reschedule-picker'));
+    document.getElementById('backBtn2').addEventListener('click', goBack);
+    return;
+  }
+  if (state.step === 'reschedule-picker') {
+    const av = state.availability;
+    const ready = !av.loading && !av.error && state.selectedDateIso && state.selectedTime;
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn" ${ready?'':'disabled'}>${av.loading ? 'Carregando…' : (ready ? 'Continuar' : 'Escolha um horário')}</button>`;
+    if (ready) document.getElementById('ctaBtn').addEventListener('click', () => goTo('reschedule-review'));
+    return;
+  }
+  if (state.step === 'reschedule-review') {
+    if (state.conflict) { wrap.innerHTML = ''; return; }
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn" ${state.committing?'disabled':''} ${state.committing?'aria-busy="true"':''}>${state.committing?'Confirmando…':'Confirmar novo horário'}</button>`;
+    if (!state.committing) document.getElementById('ctaBtn').addEventListener('click', commitReschedule);
+    return;
+  }
+  if (state.step === 'reschedule-success') {
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn">Voltar para seu agendamento</button>`;
+    document.getElementById('ctaBtn').addEventListener('click', async () => {
+      state.step = 'manage'; state.selectedDateIso = null; state.selectedTime = null;
+      state.availability = { key: null, loading: false, error: null, days: null };
+      await loadBooking();   // refetch — status/was_rescheduled vêm do servidor, não do state local
+    });
+    return;
+  }
+  if (state.step === 'cancel-intro') {
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn" ${state.committing?'disabled':''} ${state.committing?'aria-busy="true"':''}>${state.committing?'Confirmando…':'Confirmar cancelamento'}</button><button type="button" class="bk-cta secondary" id="backBtn2">Voltar</button>`;
+    if (!state.committing) document.getElementById('ctaBtn').addEventListener('click', commitCancel);
+    document.getElementById('backBtn2').addEventListener('click', goBack);
+    return;
+  }
+  wrap.innerHTML = '';
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+loadBooking();
+</script>
+</body>
+</html>
+
