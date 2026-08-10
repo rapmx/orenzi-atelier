@@ -496,6 +496,75 @@
   .bk-consent-row.has-error input[type="checkbox"] { border-color: var(--color-accent-2); }
   .bk-consent-row.has-error span { color: var(--color-accent-2-700); }
 
+  /* ── Cartão de garantia (mock visual, Stripe ainda não existe) ──── */
+  /* Tudo aqui sai dos tokens que a página já usa — nenhuma cor, raio ou
+     espaçamento novo. O bloco mora dentro de .bk-block, igual à política. */
+  .bk-card-add {
+    display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+    width: 100%; height: 48px; margin-top: var(--space-3);
+    border: 1.5px dashed var(--color-divider); border-radius: var(--radius-sm);
+    background: var(--color-bg); color: var(--color-accent-700);
+    font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: border-color var(--motion-fast) var(--ease-standard),
+      background var(--motion-fast) var(--ease-standard),
+      transform var(--motion-instant) var(--ease-out);
+  }
+  .bk-card-add:hover { border-color: var(--color-accent-600); background: var(--color-surface); }
+  .bk-card-add:active { transform: scale(.98); }
+  .bk-card-add:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .bk-card-add-icon { display: flex; }
+  .bk-card-add-icon svg { width: 16px; height: 16px; }
+  /* Cartão guardado: pílula da bandeira + máscara + "Alterar". A bandeira é
+     texto, não logo — não temos licença de marca e um Visa desenhado à mão
+     ficaria pior que o nome. */
+  .bk-card-saved {
+    display: flex; align-items: center; gap: var(--space-2-5);
+    margin-top: var(--space-3); padding: var(--space-3);
+    border: 1px solid var(--color-divider); border-radius: var(--radius-sm);
+    background: var(--color-bg);
+  }
+  .bk-card-brand {
+    flex-shrink: 0; padding: 3px 8px; border-radius: 5px;
+    background: var(--color-neutral-200); color: var(--color-neutral-700);
+    font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+  }
+  .bk-card-mask {
+    flex: 1; min-width: 0; font-size: 14px; font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: 0.04em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .bk-card-change { flex-shrink: 0; padding: 0; }
+  .bk-card-note { font-size: 12px; color: var(--color-neutral-600); margin-top: var(--space-3); }
+  /* Prévia do cartão no topo da subview — dá o "peso" de produto que um
+     formulário solto não tem. Gradiente derivado do accent da marca. */
+  .bk-card-preview {
+    display: flex; flex-direction: column; justify-content: space-between;
+    height: 168px; padding: var(--space-4); margin-bottom: var(--space-4);
+    border-radius: var(--radius-md); color: var(--color-bg);
+    background: linear-gradient(135deg, var(--color-accent-700), var(--color-accent-600));
+    box-shadow: var(--elevation-hover, 0 8px 20px rgba(43,36,32,0.16));
+  }
+  .bk-card-preview .cp-brand { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; opacity: .9; }
+  .bk-card-preview .cp-number {
+    font-size: 18px; font-weight: 600; letter-spacing: 0.08em; font-variant-numeric: tabular-nums;
+  }
+  .bk-card-preview .cp-foot {
+    display: flex; justify-content: space-between; font-size: 11px; letter-spacing: 0.06em; opacity: .85;
+  }
+  .bk-card-demo-note {
+    font-size: 12px; line-height: 1.5; color: var(--color-neutral-700);
+    background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: var(--radius-sm); padding: var(--space-3); margin-bottom: var(--space-4);
+  }
+  .bk-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+  /* Campo readonly PARECE campo, mas não recebe foco nem digitação — a
+     aparência é a do produto, o comportamento é o seguro. */
+  .bk-field input[readonly] { background: var(--color-surface); color: var(--color-neutral-700); cursor: default; }
+  @media (prefers-reduced-motion: reduce) {
+    .bk-card-add { transition: none; }
+    .bk-card-add:active { transform: none; }
+  }
+
   /* ── Recuperação de conflito ───────────────────────────────────── */
   .bk-conflict { margin-bottom: var(--space-5); }
   .bk-conflict-icon {
@@ -713,7 +782,7 @@ const state = {
   // Cache de disponibilidade — chaveado por serviços + preferência + janela.
   availability: { key: null, loading: false, error: null, days: null },
 
-  // Subview full-screen (calendário / política)
+  // Subview full-screen (calendário / política / cartão)
   subview: null,
   calendarMonth: null,
   calFeedback: '',
@@ -734,7 +803,19 @@ const state = {
   createRequestKey: null,    // idempotência da OPERAÇÃO — uma por tentativa lógica
   manageToken: null,         // só em memória; nunca localStorage/sessionStorage/log
   emailSuccess: null,        // true|false|null — null quando o e-mail nem foi tentado (replay)
+
+  // ── Cartão de garantia — MOCK VISUAL, Stripe ainda não existe ──
+  // Guarda no máximo a constante DEMO_CARD abaixo: bandeira e 4 dígitos
+  // fictícios. Nunca recebe entrada da cliente, nunca vai pro payload do
+  // commit, nunca sai da memória desta aba. Ver openCard().
+  mockCard: null,            // null | { brand, last4 }
 };
+
+// Cartão fictício da demonstração. É uma CONSTANTE, não um campo: os inputs
+// da tela de cartão são readonly justamente pra que não exista caminho em que
+// um número real entre no app. 4242… é o número de teste público do Stripe,
+// escolhido de propósito por ser reconhecidamente falso.
+const DEMO_CARD = { brand: 'Visa', last4: '4242' };
 
 // Trocar os serviços muda a duração total E o conjunto de profissionais
 // elegíveis, então toda escolha posterior deixa de ser válida. Chamada em TODO
@@ -763,6 +844,23 @@ function selectedServices() { return state.selectedServiceIds.map(serviceById).f
 function totalDurationMinutes() { return selectedServices().reduce((sum, s) => sum + (s.duration_minutes || 0), 0); }
 function totalPrice() { return selectedServices().reduce((sum, s) => sum + Number(s.price || 0), 0); }
 function anySelectedPriceVaries() { return selectedServices().some(s => s.price_varies); }
+
+// Duração para LEITURA, nunca para conta: 45 → "45min", 60 → "1h",
+// 90 → "1h30", 210 → "3h30". Tudo que calcula (disponibilidade, chave de
+// cache, starts_at/ends_at, duração agregada do multi-serviço) continua em
+// minutos inteiros — esta função só existe na borda de apresentação.
+//
+// Cópia literal de `durationLabel()` em painel.html, de propósito: os dois
+// arquivos são inline e sem módulos, e o projeto já tem a convenção de
+// duplicar helper pequeno em vez de inventar um terceiro formato. Mesmo nome
+// e mesma saída — se mudar aqui, mudar lá.
+function durationLabel(mins) {
+  const total = Math.round(mins);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m}min`;
+  return m === 0 ? `${h}h` : `${h}h${m}`;
+}
 
 function formatMoney(n) {
   const num = Number(n);
@@ -1238,12 +1336,17 @@ function renderShell() {
 
   // Subviews full-screen: sem barra de progresso, título no centro.
   if (state.subview) {
-    const isPolicy = state.subview === 'policy';
+    const SUB = {
+      policy:   { titulo: 'Política de cancelamento', voltar: 'Voltar para a revisão', fechar: closePolicy },
+      card:     { titulo: 'Cartão de garantia',       voltar: 'Voltar para a revisão', fechar: closeCard },
+      calendar: { titulo: 'Escolha uma data',         voltar: 'Fechar calendário',     fechar: closeCalendar },
+    };
+    const sub = SUB[state.subview] || SUB.calendar;
     topbar.className = 'bk-topbar sub-mode';
     topbar.innerHTML = `
-      <button class="bk-back" id="backBtn" aria-label="${isPolicy ? 'Voltar para a revisão' : 'Fechar calendário'}">${ICONS.chevronLeft}</button>
-      <span class="bk-sub-title">${isPolicy ? 'Política de cancelamento' : 'Escolha uma data'}</span>`;
-    document.getElementById('backBtn').addEventListener('click', isPolicy ? closePolicy : closeCalendar);
+      <button class="bk-back" id="backBtn" aria-label="${sub.voltar}">${ICONS.chevronLeft}</button>
+      <span class="bk-sub-title">${sub.titulo}</span>`;
+    document.getElementById('backBtn').addEventListener('click', sub.fechar);
     return;
   }
 
@@ -1364,7 +1467,7 @@ function servicesEmptyHtml() {
 
 function serviceCardHtml(s) {
   const selected = state.selectedServiceIds.includes(s.id);
-  const duration = `${s.duration_minutes} min`;
+  const duration = durationLabel(s.duration_minutes);
   const price = formatPrice(s);
   // O cartão inteiro É o botão (não há <div onclick>, e não há botão dentro de
   // botão): o círculo +/✓ é decorativo e o estado é anunciado por aria-pressed.
@@ -1639,7 +1742,7 @@ function timeGridHtml() {
 function renderStepDatetime() {
   const head = `
     <h1 class="bk-title">Escolha a data e o horário</h1>
-    <div class="bk-title-note">${totalDurationMinutes()} min no total</div>
+    <div class="bk-title-note">${durationLabel(totalDurationMinutes())} no total</div>
     ${commitErrorBanner('datetime')}
     ${contextStaffLine()}`;
 
@@ -1945,7 +2048,7 @@ function renderStepReview() {
         <span class="sr-value">${esc(state.selectedTime)}</span>
         <button type="button" class="sr-alter" data-alter="datetime">Alterar</button></div>
       <div class="bk-summary-row"><span class="sr-label">Duração</span>
-        <span class="sr-value">${totalDurationMinutes()} min</span></div>
+        <span class="sr-value">${durationLabel(totalDurationMinutes())}</span></div>
       <div class="bk-summary-row total"><span class="sr-label">Total</span>
         <span class="sr-value">${esc(formatMoney(totalPrice()))}${varies ? '*' : ''}</span></div>
     </div>
@@ -1960,6 +2063,32 @@ function renderStepReview() {
           ${showPolicyErr ? 'aria-invalid="true"' : ''}>
         <span>Li e concordo com a política de cancelamento.</span>
       </label>
+    </div>
+
+    ${guaranteeBlockHtml()}`;
+}
+
+// Bloco "Garantia do agendamento" — a experiência de cartão aprovada no V2,
+// com o Stripe ainda por vir. É opcional de propósito: sem cobrança real, um
+// cartão obrigatório barraria agendamento de verdade por causa de uma
+// demonstração. Quem continua obrigatória é a política de cancelamento.
+function guaranteeBlockHtml() {
+  const c = state.mockCard;
+  return `
+    <div class="bk-block">
+      <div class="bk-block-title">Garantia do agendamento</div>
+      <div class="bk-block-text">Um cartão guardado reserva o seu horário. ${c ? '' : 'É opcional.'}</div>
+      ${c ? `
+        <div class="bk-card-saved">
+          <span class="bk-card-brand" aria-hidden="true">${esc(c.brand)}</span>
+          <span class="bk-card-mask">•••• ${esc(c.last4)}</span>
+          <button type="button" class="bk-block-link bk-card-change" id="cardBtn">Alterar cartão</button>
+        </div>` : `
+        <button type="button" class="bk-card-add" id="cardBtn">
+          <span class="bk-card-add-icon" aria-hidden="true">${ICONS.plus}</span>
+          <span>Adicionar cartão</span>
+        </button>`}
+      <div class="bk-card-note">Nenhuma cobrança será feita agora.</div>
     </div>`;
 }
 
@@ -1982,6 +2111,8 @@ function bindStepReview() {
     btn.addEventListener('click', () => goTo(btn.dataset.alter));
   });
   document.getElementById('policyLinkBtn').addEventListener('click', () => openPolicy());
+  const cardBtn = document.getElementById('cardBtn');
+  if (cardBtn) cardBtn.addEventListener('click', () => openCard());
   const chk = document.getElementById('policyCheck');
   chk.addEventListener('change', () => {
     state.policyAccepted = chk.checked;
@@ -2006,6 +2137,61 @@ function closePolicy() {
 function renderPolicyFull() {
   const body = state.policy ? state.policy.body : '';
   return `<div class="bk-block-text">${body.split(/\n{2,}/).map(p => `<p>${esc(p)}</p>`).join('')}</div>`;
+}
+
+// ── CARTÃO DE GARANTIA (subview full-screen) — MOCK VISUAL ───
+// A integração com o Stripe não existe ainda. Esta tela existe pra segurar o
+// desenho aprovado do V2 e poder mostrá-lo, não pra receber cartão.
+//
+// Os quatro campos são `readonly` e já vêm preenchidos com o cartão de teste
+// público do Stripe. Isso é escolha de segurança, não preguiça: campo que
+// aceita digitação é campo onde alguém digita um cartão DE VERDADE, e aí a
+// promessa de "não guardamos" passa a depender de o código nunca escorregar.
+// Readonly torna a captura impossível por construção — não há valor da
+// cliente pra vazar pro payload, pro storage ou pro log, porque não há valor
+// da cliente. Quando o Stripe entrar, estes inputs dão lugar ao Elements
+// (iframe do próprio Stripe) e o número nunca chega a tocar neste código.
+function openCard() {
+  state.calReturnFocusId = 'cardBtn';
+  state.subview = 'card';
+  renderAll();
+}
+function closeCard() {
+  state.subview = null;
+  renderAll();
+  const back = document.getElementById(state.calReturnFocusId);
+  if (back) back.focus();
+  state.calReturnFocusId = null;
+}
+// Só grava a CONSTANTE de demonstração — nunca lê os inputs da tela.
+function useDemoCard() {
+  state.mockCard = { ...DEMO_CARD };
+  closeCard();
+}
+function renderCardForm() {
+  const f = (id, label, valor, extra) => `
+    <div class="bk-field">
+      <label for="${id}">${label}</label>
+      <input id="${id}" type="text" value="${escAttr(valor)}" readonly tabindex="-1"
+        autocomplete="off" aria-readonly="true" ${extra || ''}>
+    </div>`;
+  return `
+    <div class="bk-card-preview" aria-hidden="true">
+      <span class="cp-brand">${esc(DEMO_CARD.brand)}</span>
+      <span class="cp-number">•••• •••• •••• ${esc(DEMO_CARD.last4)}</span>
+      <span class="cp-foot"><span>ORENZI ATELIER</span><span>12/30</span></span>
+    </div>
+    <div class="bk-card-demo-note" role="note">
+      Demonstração: os campos vêm preenchidos e não aceitam edição. Nada é
+      enviado nem guardado.
+    </div>
+    ${f('cardNumber', 'Número do cartão', `4242 4242 4242 ${DEMO_CARD.last4}`)}
+    <div class="bk-card-grid">
+      ${f('cardExp', 'Validade', '12/30')}
+      ${f('cardCvv', 'CVV', '•••')}
+    </div>
+    ${f('cardName', 'Nome no cartão', 'ORENZI ATELIER')}
+    <p class="bk-card-note">Nenhuma cobrança será feita agora.</p>`;
 }
 
 // ── SUCESSO ──────────────────────────────────────────────────
@@ -2049,7 +2235,7 @@ function renderSuccess() {
         <div class="bk-summary-row"><span class="sr-label">Profissional</span><span class="sr-value">${esc(staffName)}</span></div>
         <div class="bk-summary-row"><span class="sr-label">Data</span><span class="sr-value">${esc(fmtDayShort(startsIso))}</span></div>
         <div class="bk-summary-row"><span class="sr-label">Horário</span><span class="sr-value">${esc(hora)}</span></div>
-        <div class="bk-summary-row"><span class="sr-label">Duração</span><span class="sr-value">${b.total_duration_minutes || 0} min</span></div>
+        <div class="bk-summary-row"><span class="sr-label">Duração</span><span class="sr-value">${durationLabel(b.total_duration_minutes || 0)}</span></div>
         <div class="bk-summary-row total"><span class="sr-label">Total</span><span class="sr-value">${esc(formatMoney(b.total_price || 0))}</span></div>
       </div>
       <div class="bk-success-actions">
@@ -2113,6 +2299,7 @@ function resetFlow() {
   state.policyAccepted = false; state.policyTouched = false;
   state.commitError = null; state.conflict = null; state.booking = null;
   state.createRequestKey = null; state.manageToken = null; state.emailSuccess = null;
+  state.mockCard = null;
   state.subview = null;
   invalidateDownstreamSelections();
   renderAll();
@@ -2123,6 +2310,7 @@ function renderStepBody() {
   const steps = document.getElementById('steps');
   if (state.subview === 'calendar') { steps.innerHTML = renderCalendar(); bindCalendar(); return; }
   if (state.subview === 'policy') { steps.innerHTML = renderPolicyFull(); return; }
+  if (state.subview === 'card') { steps.innerHTML = renderCardForm(); return; }
 
   if (state.step === 'service') steps.innerHTML = renderStepServices();
   else if (state.step === 'professional') steps.innerHTML = renderStepProfessional();
@@ -2153,6 +2341,14 @@ function renderCTA() {
   if (state.subview === 'policy') {
     wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn">Voltar para a revisão</button>`;
     document.getElementById('ctaBtn').addEventListener('click', closePolicy);
+    return;
+  }
+
+  // Rótulo honesto: o que o toque faz é usar um cartão de demonstração, não
+  // salvar o cartão de ninguém. "Salvar cartão" prometeria o que não acontece.
+  if (state.subview === 'card') {
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn">Usar cartão de demonstração</button>`;
+    document.getElementById('ctaBtn').addEventListener('click', useDemoCard);
     return;
   }
 
@@ -2219,7 +2415,7 @@ function renderCTA() {
   // Rótulo agregado: nunca "Continuar com <serviço>", porque agora pode haver
   // mais de um. O total é só apresentação — o servidor recalcula na criação.
   const price = `${formatMoney(totalPrice())}${anySelectedPriceVaries() ? '*' : ''}`;
-  const sub = `${totalDurationMinutes()} min${n > 1 ? ` · ${n} serviços` : ''}`;
+  const sub = `${durationLabel(totalDurationMinutes())}${n > 1 ? ` · ${n} serviços` : ''}`;
   wrap.innerHTML = `
     <div class="bk-cta-context">
       <span class="cc-text">

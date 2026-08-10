@@ -801,6 +801,13 @@
      cantos no raio compacto do Design System (--radius-sm) e padding nos
      tokens de espaçamento — não valores soltos. Leitura em primeiro lugar. */
   .timeline-appt {
+    /* Faixa de título reservada no topo do card (tiers ricos): nada
+       desenhado dentro do card — faixa de pausa, encaixe sobreposto —
+       pode pintar aqui. O nome da cliente é a primeira informação do
+       card e não pode ser coberto por nada. Espelha APPT_HEAD_SAFE no
+       JS: mudar um exige mudar o outro. A conta que fecha nos 44px está
+       nas line-heights de .title/.sub logo abaixo. */
+    --appt-head-h: 44px;
     position: absolute; left: 6px; right: 6px; border-radius: var(--radius-sm, 12px);
     padding: var(--space-3, 12px) var(--space-3-5, 14px); overflow: hidden;
     cursor: pointer;
@@ -809,9 +816,17 @@
     -webkit-tap-highlight-color: transparent;
   }
   .timeline-appt:active { transform: scale(0.98); opacity: 0.92; }
-  /* Cabeçalho em linha (avatar + texto) — tier standard/expanded, onde
-     sobra altura de verdade pro avatar de 22px + duas linhas de texto. */
-  .timeline-appt .appt-head { display: flex; align-items: center; gap: var(--space-2, 8px); min-width: 0; }
+  /* Cabeçalho em linha (avatar + texto + status) — tier standard/expanded,
+     onde sobra altura de verdade pro avatar de 22px + duas linhas de texto.
+     `position: relative` SEM z-index: põe o cabeçalho na mesma camada de
+     pintura da faixa de pausa (que é absoluta) e, por vir depois no DOM,
+     ele fica por cima. É ordem de documento, não empilhamento arbitrário —
+     e é só a segunda linha de defesa: a primeira é a faixa de pausa nunca
+     entrar em --appt-head-h. */
+  .timeline-appt .appt-head {
+    position: relative;
+    display: flex; align-items: center; gap: var(--space-2, 8px); min-width: 0;
+  }
   .timeline-appt .appt-body { min-width: 0; flex: 1; }
   /* Extensão proposta do Avatar (docs/04) — .o-avatar hoje só tem sm(40)/lg(72);
      a Agenda precisa de selos de identidade bem menores, em dois tamanhos
@@ -825,18 +840,19 @@
   .timeline-appt .title, .timeline-appt .sub {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .timeline-appt .title { font-weight: 700; font-size: 12.5px; letter-spacing: -0.01em; }
+  /* line-height fixa (não `normal`) nas duas linhas: é ela que faz o
+     cabeçalho caber dentro de --appt-head-h de forma determinística —
+     12px de padding + 15.6 (título) + 13.2 (subtítulo) = 40.8px, com
+     folga até os 44px reservados. Com `normal` dava 46.4px e a faixa de
+     pausa mordia a última linha. */
+  .timeline-appt .title { font-weight: 700; font-size: 12.5px; line-height: 1.25; letter-spacing: -0.01em; }
   /* Hierarquia cliente → serviço vem de peso e tamanho de fonte (title é
      700/12.5px, sub é 400/11px), não de opacidade — testado no navegador:
      com o fundo mais saturado, opacidade abaixo de 1 no .sub derrubava o
      contraste da categoria Coloração pra 4,17:1 (abaixo do mínimo AA), até
      em 0.85. Texto legível pesa mais que hierarquia por transparência. */
-  .timeline-appt .sub { font-size: 11px; }
+  .timeline-appt .sub { font-size: 11px; line-height: 1.2; }
   .timeline-appt .sub .dur { font-variant-numeric: tabular-nums; }
-  /* Reserva o espaço do selo de status (canto superior direito) pra ele nunca
-     cobrir o nome da cliente quando é comprido. */
-  .timeline-appt.is-standard .title, .timeline-appt.is-standard .sub,
-  .timeline-appt.is-expanded .title, .timeline-appt.is-expanded .sub { padding-right: 56px; }
   /* ── Tier is-micro (<30min): uma linha só, sem avatar ─────────────────
      Padding mínimo real (não é o padrão escondendo linha) — o card mais
      baixo desse tier mede ~16px, e o padrão de 12/14px sozinho já
@@ -871,29 +887,45 @@
   .compact-row .compact-dur {
     font-size: 10px; font-variant-numeric: tabular-nums; flex-shrink: 0; opacity: 0.9;
   }
-  /* Ponto de status (is-micro/is-compact) — o texto por extenso vira só
-     ponto+cor aqui; a leitura completa está no aria-label do card e no
-     detalhe. Cores idênticas ao .am-status (mesmos tokens, sem invenção). */
-  .status-dot {
-    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-    background: var(--color-accent-2-700);
-  }
-  .status-dot.st-confirmed { background: var(--color-accent-700); }
-  .status-dot.st-done { background: var(--color-neutral-600); }
-  .status-dot.st-urgent { background: var(--color-accent-2-700); }
-  /* Selo de status por extenso só aparece nos tiers ricos (60min+) —
-     reaproveita os mesmos tokens de cor do card da Home (.am-status), só
-     um pouco menor pra caber dentro do bloco da agenda. */
+  /* `.status-dot` (o ponto colorido de status em is-micro/is-compact) foi
+     REMOVIDO em 10/08/2026 junto com o selo "Confirmado". Aparecia em todo
+     card e, como statusClass() cai em 'st-confirmed' por omissão, era quase
+     sempre o mesmo ponto — cor sem legenda, sem nada que a explicasse em
+     lugar nenhum do app. A regra agora está em timelineStatusBadge(): só o
+     excepcional aparece, e sempre com texto. O ponto de status da LISTA DE
+     CLIENTES é outra coisa e continua onde estava.
+     Selo de status na agenda — reaproveita os mesmos tokens de cor do card
+     da Home (.am-status), só um pouco menor pra caber dentro do bloco.
+     Deixou de ser selo ABSOLUTO no canto: agora é o terceiro item do
+     flex do cabeçalho, com flex-shrink:0. Antes ele flutuava por cima e
+     o nome só escapava por causa de um `padding-right: 56px` chutado —
+     status mais largo que isso ("Não compareceu") passava por cima do
+     nome. Em fluxo, quem cede espaço é o nome (ellipsis), nunca o
+     contrário: o status ocupa o que precisa e o resto sobra pro nome. */
   .timeline-appt .am-status {
-    position: absolute; top: 6px; right: 8px; font-size: 9px; font-weight: 700; padding: 2px 7px;
+    flex-shrink: 0;
+    /* Teto pro selo: o nome da cliente é prioridade 1, o status é a última
+       da lista — então ele é que fica sem espaço primeiro, não o contrário.
+       Vale mesmo com um único selo possível hoje: o dia em que voltar um
+       rótulo mais comprido, o nome já está protegido. */
+    max-width: 40%; overflow: hidden; text-overflow: ellipsis;
+    font-size: 9px; font-weight: 700; padding: 2px 7px;
     border-radius: var(--radius-full, 999px); white-space: nowrap;
     background: var(--color-accent-2-100); color: var(--color-accent-2-700);
   }
-  .timeline-appt .am-status.st-confirmed { background: var(--color-accent-100); color: var(--color-accent-700); }
-  .timeline-appt .am-status.st-done { background: var(--color-neutral-200); color: var(--color-neutral-600); }
+  /* Só no tier rico o selo sobe pro alto: lá o cabeçalho tem duas linhas e
+     `center` deixaria a pílula boiando no meio delas. Em micro/compact a
+     linha é única e o padrão (center) é o certo. */
+  .timeline-appt .appt-head > .am-status { align-self: flex-start; }
+  /* Nos tiers baixos o card inteiro tem 16-26px de altura: o selo perde o
+     padding vertical e um pouco de corpo pra caber sem estourar a linha. */
+  .micro-row .am-status, .compact-row .am-status { padding: 0 5px; font-size: 8.5px; }
   /* st-urgent é redundante com o fundo base do .am-status de propósito —
-     deixa explícito que cancelado/não-compareceu usam a MESMA cor de
-     alerta do resto do app (estoque baixo, agenda lotada), não uma nova. */
+     deixa explícito que no-show usa a MESMA cor de alerta do resto do app
+     (estoque baixo, agenda lotada), não uma nova. As variantes st-confirmed
+     e st-done saíram junto com os selos "Confirmado"/"Concluído" — a Home
+     (.appt-modern-card) continua com as dela, que é outra tela e outra
+     regra. */
   .timeline-appt .am-status.st-urgent { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
   /* Toque-e-eleva antes de navegar pro detalhe (bindTimelineApptClicks) —
      dá tempo do dedo perceber que tocou ANTES da tela trocar, em vez de sumir
@@ -937,24 +969,34 @@
     font-size: 10.5px; font-weight: 600; color: var(--color-success-700, #3b6744);
   }
   @media (prefers-reduced-motion: reduce) { .agenda-free-slot { transition: none; } .agenda-free-slot:active { transform: none; } }
-  /* Pausa: a profissional está livre aqui, então o bloco fica "vazado" —
-     listrado, mais claro que o resto do bloco e com borda mais suave, pra
-     ler como tempo passivo mesmo sem ler o rótulo. O trabalho (segmento
-     sólido, sem overlay) continua igual — é o contraste entre os dois que
-     comunica onde ela está ocupada e onde está livre. */
+  /* Pausa: a profissional está livre aqui, então o bloco clareia — mesma
+     cor-base do atendimento, só com um véu branco por cima, e o véu entra
+     e sai em fade de 8px nas duas pontas. Bloco de trabalho → transição
+     suave → pausa mais clara → transição suave → bloco de trabalho.
+     Nada de listra diagonal nem borda tracejada (saíram em 10/08/2026):
+     rachurado é linguagem de "área bloqueada / indisponível", e pausa é o
+     oposto disso — é justamente o tempo em que cabe encaixar alguém.
+     Sem cor nova: o clareamento é a própria cor do card com branco por
+     cima, exatamente como o resto do app deriva tom de um mesmo token. */
   .appt-gap {
     position: absolute; left: 0; right: 0; pointer-events: none;
-    background: repeating-linear-gradient(
-      -45deg, transparent, transparent 5px,
-      rgba(255,255,255,0.65) 5px, rgba(255,255,255,0.65) 10px);
-    border-top: 1px dashed rgba(0,0,0,0.12);
-    border-bottom: 1px dashed rgba(0,0,0,0.12);
+    background: linear-gradient(
+      to bottom,
+      rgba(255,255,255,0) 0,
+      rgba(255,255,255,0.52) 8px,
+      rgba(255,255,255,0.52) calc(100% - 8px),
+      rgba(255,255,255,0) 100%);
     display: flex; align-items: center; justify-content: center;
   }
+  /* Rótulo discreto, sem pílula opaca: o fundo é o mesmo --color-bg de
+     antes, só translúcido, pra ele pousar sobre a pausa em vez de recortar
+     um buraco nela. Continua legível — o véu branco já clareou o que está
+     atrás. */
   .gap-label {
     display: flex; align-items: center; gap: 3px;
     font-size: 9.5px; font-weight: 600; letter-spacing: 0.03em;
-    color: var(--color-neutral-600); background: var(--color-bg);
+    color: var(--color-neutral-600);
+    background: color-mix(in srgb, var(--color-bg) 62%, transparent);
     padding: 1px 6px; border-radius: var(--radius-full, 999px); white-space: nowrap;
   }
   .gap-label svg { width: 9px; height: 9px; flex-shrink: 0; }
@@ -2450,6 +2492,31 @@ function statusClass(status) {
   // por no_show ou por um item cancelado que ainda esteja em memória.
   if (status === 'cancelled' || status === 'no_show') return 'st-urgent';
   return 'st-confirmed';
+}
+
+// ── Status na TIMELINE — regra própria, mais enxuta que statusLabel() ──
+// Decisão de produto de 10/08/2026: a agenda não carimba o que é normal.
+// O selo/bolinha antigos apareciam em 100% dos cards, quase sempre dizendo
+// "Confirmado" (statusLabel(null) já devolve 'Confirmado' e statusClass()
+// cai em 'st-confirmed' por omissão) — informação que não distingue nada
+// custando o canto superior direito de todo card.
+//
+//   confirmed  → nada. Estar na agenda já diz que o atendimento existe.
+//   completed  → nada. É o estado natural de um atendimento passado.
+//   pending    → nada POR ENQUANTO. O status existe no schema, mas o
+//                produto ainda não definiu quando um agendamento deveria
+//                ficar pendente; inventar um selo seria inventar o
+//                significado junto. O dado é preservado intacto.
+//   no_show    → selo de texto, e só quando marcado explicitamente. Não
+//                existe inferência por "o horário passou" — ver
+//                app/CLAUDE.md, "Client History".
+//   cancelled  → não chega aqui: some da agenda no filtro de render.
+//
+// Sempre TEXTO, nunca bolinha sozinha: cor sem rótulo obriga a decorar uma
+// legenda que não existe em lugar nenhum do app.
+const TIMELINE_STATUS_BADGES = { no_show: 'No-show' };
+function timelineStatusBadge(status) {
+  return TIMELINE_STATUS_BADGES[status] || '';
 }
 
 // ── ícones (traço fino, cor herdada) ──────────────────────────
@@ -3986,7 +4053,7 @@ function insSugestoesAno(P) {
 // mesmo "online" que a página já representava antes de existir tracker).
 // Não são inferidos nem inventados. Ver "gaps de dados" na entrega.
 const INS_CANAIS = [
-  { key: 'online', label: 'Direto', cor: 'var(--color-accent-600)' },
+  { key: 'online', label: 'Booking System', cor: 'var(--color-accent-600)' },
   { key: 'whatsapp', label: 'WhatsApp', cor: 'var(--color-success)' },
   { key: 'manual', label: 'Marcados por você', cor: 'var(--color-neutral-300)' },
 ];
@@ -4568,6 +4635,13 @@ function segmentsOf(a) {
 const NIVEL_RECUO = 18;   // px que cada camada entra pra dentro
 const NIVEL_MAX = 3;      // além disso o bloco ficaria fino demais pra ler
 
+// Altura (px) reservada pro título no topo de um card de tier rico. É a
+// regra que garante que o nome da cliente nunca fique encoberto: nada
+// desenhado por cima do card — nem a faixa de pausa dele, nem um encaixe
+// sobreposto — começa antes dessa marca. Espelha --appt-head-h no CSS;
+// mudar um exige mudar o outro.
+const APPT_HEAD_SAFE = 44;
+
 function layoutAppts(appts) {
   const itens = appts
     .map(a => ({ a, s: new Date(a.starts_at).getTime(), e: new Date(a.ends_at).getTime() }))
@@ -4577,8 +4651,11 @@ function layoutAppts(appts) {
   itens.forEach((it, i) => {
     // Quantos atendimentos já desenhados ainda estavam abertos quando este
     // começou — é o que faz o encaixe subir por cima da pausa.
-    const nivel = itens.slice(0, i).filter(o => o.s <= it.s && o.e > it.s).length;
-    it.nivel = Math.min(nivel, NIVEL_MAX);
+    const cobrindo = itens.slice(0, i).filter(o => o.s <= it.s && o.e > it.s);
+    it.nivel = Math.min(cobrindo.length, NIVEL_MAX);
+    // Card que fica logo por baixo deste (o mais recente dos que o cobrem).
+    // Serve pra medir a área de título dele e não invadir.
+    it.base = cobrindo.reduce((melhor, o) => (!melhor || o.s > melhor.s ? o : melhor), null);
   });
   return itens;
 }
@@ -4708,7 +4785,16 @@ function scrollTimelineTo(el, top, opts) {
 // só o dia muda dentro da mesma semana (renderAgendaGridTransition), sem
 // precisar refazer a faixa de dias e o cabeçalho do mês.
 function buildAgendaGrid(day) {
-  const dayAppts = state.appointments.filter(a => sameDay(new Date(a.starts_at), day));
+  // Cancelado não aparece na agenda operacional — não é trabalho a fazer, e
+  // deixar o bloco lá faz a Juliane ler ocupação que não existe. É filtro de
+  // RENDER, não de dado: nada é apagado, nada muda de status, o registro
+  // continua inteiro pro histórico da cliente (ver app/CLAUDE.md,
+  // "Client History"). No painel real ele quase nunca chega até aqui —
+  // loadAppointments() já faz .neq('status','cancelled') na leitura — mas o
+  // filtro fica na UI de propósito: é ele que segura um item cancelado que
+  // ainda esteja em memória (cancelamento na sessão, mock do demo) sem
+  // depender de como a lista foi carregada.
+  const dayAppts = state.appointments.filter(a => sameDay(new Date(a.starts_at), day) && a.status !== 'cancelled');
   const hours = [];
   for (let h = AGENDA_START_HOUR; h < AGENDA_END_HOUR; h++) hours.push(h);
   const currentTime = sameDay(day, new Date()) ? currentTimeInfo() : null;
@@ -4725,28 +4811,9 @@ function buildAgendaGrid(day) {
     const end = new Date(a.ends_at);
     const startMins = (start.getHours() - AGENDA_START_HOUR) * 60 + start.getMinutes();
     const durMins = Math.max(20, (end - start) / 60000);
-    const top = (startMins / 60) * HOUR_HEIGHT;
-    const height = (durMins / 60) * HOUR_HEIGHT - 4;
+    let top = (startMins / 60) * HOUR_HEIGHT;
+    let height = (durMins / 60) * HOUR_HEIGHT - 4;
     const c = colorForService(a.service?.id);
-
-    // Cada camada de sobreposição entra um pouco mais pra dentro; a borda
-    // direita continua alinhada, então o bloco de baixo aparece à esquerda.
-    const recuo = 6 + it.nivel * NIVEL_RECUO;
-
-    // Faixa de pausa, quando o serviço tiver uma: é ela que mostra por que
-    // cabe um encaixe no meio de um atendimento longo. Ícone de relógio
-    // reforça "tempo passivo" sem inventar o que a profissional está
-    // fazendo — só o gap.gp é dado real; "aplicação"/"finalização" seriam
-    // suposição sobre um serviço que a gente não modela por etapa.
-    const seg = segmentsOf(a);
-    let gapHtml = '';
-    if (seg.gp > 0) {
-      const gapTop = (seg.wb / 60) * HOUR_HEIGHT;
-      const gapH = (seg.gp / 60) * HOUR_HEIGHT;
-      gapHtml = `<div class="appt-gap" style="top:${gapTop}px; height:${gapH}px;">
-        ${gapH >= 22 ? `<span class="gap-label">${ICONS.clock}pausa · ${seg.gp}min</span>` : ''}
-      </div>`;
-    }
 
     // Duração real decide o tier — em minutos, não em pixels, independe de
     // HOUR_HEIGHT. Puramente visual, não muda o que está gravado no
@@ -4757,24 +4824,83 @@ function buildAgendaGrid(day) {
       : 'expanded';
     const richTier = durTier === 'standard' || durTier === 'expanded';
 
+    // Cada camada de sobreposição entra um pouco mais pra dentro; a borda
+    // direita continua alinhada, então o bloco de baixo aparece à esquerda.
+    const recuo = 6 + it.nivel * NIVEL_RECUO;
+
+    // Guarda de título do card de baixo: um encaixe nunca COMEÇA dentro da
+    // faixa de título do atendimento que ele cobre. Encurta pelo topo e o
+    // fim fica onde estava — nem a duração percebida nem o horário mudam.
+    // Na prática quase nunca dispara: encaixe válido cai dentro da pausa, e
+    // a pausa começa depois do primeiro bloco de trabalho, bem abaixo do
+    // título (um corte de 09:50 sobre uma coloração de 09:00 passa intacto).
+    //
+    // O caso extremo é um bloco tão curto que não cabe abaixo da faixa —
+    // aí ele ganha uma altura mínima e passa do próprio fim visualmente.
+    // É distorção aceita de propósito: só se alcança com trabalho em cima
+    // de trabalho, que as regras de conflito já proíbem, e entre distorcer
+    // um bloco inválido ou cobrir o nome de uma cliente, o nome ganha.
+    const base = it.base;
+    if (base) {
+      const baseDur = (base.e - base.s) / 60000;
+      if (baseDur >= AGENDA_APPT_COMPACT_MAX_MINUTES) {
+        const bs = new Date(base.s);
+        const baseTop = (((bs.getHours() - AGENDA_START_HOUR) * 60 + bs.getMinutes()) / 60) * HOUR_HEIGHT;
+        const limite = baseTop + APPT_HEAD_SAFE;
+        if (top < limite) {
+          const fim = top + height;
+          top = limite;
+          height = Math.max(14, fim - top);
+        }
+      }
+    }
+
+    // Faixa de pausa, quando o serviço tiver uma: é ela que mostra por que
+    // cabe um encaixe no meio de um atendimento longo. Ícone de relógio
+    // reforça "tempo passivo" sem inventar o que a profissional está
+    // fazendo — só o gap.gp é dado real; "aplicação"/"finalização" seriam
+    // suposição sobre um serviço que a gente não modela por etapa.
+    const seg = segmentsOf(a);
+    let gapHtml = '';
+    if (seg.gp > 0) {
+      const gapTopReal = (seg.wb / 60) * HOUR_HEIGHT;
+      const gapFim = gapTopReal + (seg.gp / 60) * HOUR_HEIGHT;
+      // Só o TOPO da faixa é aparado pela área de título; o fim continua no
+      // instante real — é ele que mostra até onde cabe um encaixe, e mexer
+      // nisso mentiria sobre a janela disponível. Com o fade de 8px do CSS
+      // o corte não aparece: o que some é a parte mais transparente.
+      const gapTop = richTier ? Math.min(Math.max(gapTopReal, APPT_HEAD_SAFE), gapFim) : gapTopReal;
+      const gapH = gapFim - gapTop;
+      gapHtml = `<div class="appt-gap" style="top:${gapTop}px; height:${gapH}px;">
+        ${gapH >= 22 ? `<span class="gap-label">${ICONS.clock}pausa · ${seg.gp}min</span>` : ''}
+      </div>`;
+    }
+
     const clientName = a.client?.name || 'Cliente';
     const firstName = clientName.trim().split(/\s+/)[0];
     const serviceName = a.service?.name || '';
-    const staffName = a.staff?.name || '';
     const durLabel = durationLabel(durMins);
-    const statusTxt = statusLabel(a.status);
-    const stClass = statusClass(a.status);
+    // Só o que foge do esperado vira selo — ver timelineStatusBadge().
+    const badgeTxt = timelineStatusBadge(a.status);
+    const badgeHtml = badgeTxt ? `<span class="am-status st-urgent">${badgeTxt}</span>` : '';
     // Rótulo acessível completo em todo tier — é o que garante que um card
-    // reduzido a "Maria · 20min ●" não perca informação nenhuma pra quem
-    // usa leitor de tela; o ponto de status é aria-hidden de propósito.
-    const ariaLabel = `${clientName}, ${serviceName || 'serviço não definido'}, ${fmtTime(a.starts_at)}, ${durLabel}, ${statusTxt}`;
+    // reduzido a "Maria · 20min" não perca informação nenhuma pra quem usa
+    // leitor de tela. O status entra aqui pela MESMA regra do visual: quando
+    // não há selo é porque não há nada a dizer, e anunciar "Confirmado" em
+    // todo card seria ruído extra justamente pra quem já navega mais devagar.
+    const ariaLabel = `${clientName}, ${serviceName || 'serviço não definido'}, ${fmtTime(a.starts_at)}, ${durLabel}${badgeTxt ? ', ' + badgeTxt : ''}`;
 
+    // Sem o nome da profissional (10/08/2026): só a Juliane atende, então
+    // repetir "Juliane Orenzi" em todo card era ruído puro e roubava a
+    // largura de que o serviço e a duração precisam. A arquitetura
+    // multi-profissional continua inteira por baixo (staff_id,
+    // profissionaisAtivos(), disponibilidade) — isto é só a UI resumida do
+    // card. Se uma segunda profissional voltar a atender, este é o ponto
+    // pra trazer o nome de volta, provavelmente condicionado à mesma regra
+    // que já esconde o campo no modal.
     const subLabel = richTier
-      ? `${esc(serviceName)} · ${esc(staffName)} · <span class="dur">${durLabel}</span>`
-      : `${esc(serviceName)} · ${esc(staffName)}`;
-    const statusPillHtml = richTier
-      ? `<span class="am-status ${stClass}">${statusTxt}</span>`
-      : '';
+      ? `${esc(serviceName)} · <span class="dur">${durLabel}</span>`
+      : esc(serviceName);
     const classes = ['timeline-appt', `is-${durTier}`, enteringId === a.id ? 'is-entering' : ''].filter(Boolean).join(' ');
 
     // Fundo mais saturado que o tom pastel original — misturado com a própria
@@ -4789,27 +4915,29 @@ function buildAgendaGrid(day) {
 
     let headHtml;
     if (durTier === 'micro') {
-      // <30min: só o essencial — primeiro nome, duração (nunca some) e um
-      // ponto de status. Nome completo, serviço e profissional ficam só
-      // no detalhe (aberto ao tocar o card, que continua clicável inteiro).
+      // <30min: só o essencial — primeiro nome e duração (nunca some).
+      // Nome completo e serviço ficam só no detalhe (aberto ao tocar o
+      // card, que continua clicável inteiro). O selo só aparece no caso
+      // excepcional (no-show), e aí ele vale mais que o nome completo:
+      // quem trunca é o nome, que já era só o primeiro.
       headHtml = `
         <div class="micro-row" style="color:${textStrong}">
           <span class="micro-name">${esc(firstName)}</span>
+          ${badgeHtml}
           <span class="micro-dur">${durLabel}</span>
-          <span class="status-dot ${stClass}" aria-hidden="true"></span>
         </div>
       `;
     } else if (durTier === 'compact') {
-      // 30-59min: nome + serviço + duração + status numa linha só — o
-      // card mais baixo desse tier (30min) mede ~26px, sem sobra pra uma
-      // segunda linha. Avatar reduzido (o-avatar-2xs, 16px) em vez de
-      // sumir — ainda dá pra reconhecer de relance.
+      // 30-59min: nome + serviço + duração numa linha só — o card mais
+      // baixo desse tier (30min) mede ~26px, sem sobra pra uma segunda
+      // linha. Avatar reduzido (o-avatar-2xs, 16px) em vez de sumir —
+      // ainda dá pra reconhecer de relance.
       headHtml = `
         <div class="compact-row" style="color:${textStrong}">
           <span class="o-avatar o-avatar-2xs" style="--avatar-bg:${c.border};--avatar-color:${c.bg}" aria-hidden="true">${initials(clientName)}</span>
           <span class="compact-info"><b>${esc(clientName)}</b> · ${esc(serviceName)}</span>
+          ${badgeHtml}
           <span class="compact-dur">${durLabel}</span>
-          <span class="status-dot ${stClass}" aria-hidden="true"></span>
         </div>
       `;
     } else {
@@ -4823,14 +4951,18 @@ function buildAgendaGrid(day) {
             <div class="title" style="color:${textStrong}">${esc(clientName)}</div>
             <div class="sub" style="color:${textStrong}">${subLabel}</div>
           </div>
+          ${badgeHtml}
         </div>
       `;
     }
 
+    // O cabeçalho vem DEPOIS da faixa de pausa no DOM de propósito: os dois
+    // pintam na mesma camada e a ordem de documento é que põe o título por
+    // cima, sem precisar de z-index. O selo (quando existe) vive dentro do
+    // cabeçalho, não solto por cima do card.
     return `
       <div class="${classes}" data-appt-id="${a.id}" data-tier="${durTier}" aria-label="${esc(ariaLabel)}" style="top:${top}px; height:${height}px; left:${recuo}px; width:calc(100% - ${recuo + 6}px); right:auto; z-index:${10 + it.nivel}; background:${bgStrong}; border-left:3px solid ${c.border};">
         ${gapHtml}
-        ${statusPillHtml}
         ${headHtml}
       </div>
     `;

@@ -86,12 +86,74 @@ configuração, tudo vira trabalho inicial (comportamento antigo).
 Os valores podem ser gravados no próprio agendamento e sobrescrevem o padrão do
 serviço. Leitura sempre `a.campo ?? s.campo ?? default`.
 
-Na timeline a pausa aparece como faixa listrada dentro do bloco, e o encaixe
-entra por cima recuado à esquerda (`layoutAppts()` empilha por nível, estilo
-calendário do iPhone). Dividir em colunas espremia os dois e escondia a pausa.
+Na timeline a pausa aparece como faixa **mais clara** dentro do bloco (véu
+branco sobre a própria cor do card, com fade de 8px nas duas pontas), e o
+encaixe entra por cima recuado à esquerda (`layoutAppts()` empilha por nível,
+estilo calendário do iPhone). Dividir em colunas espremia os dois e escondia a
+pausa. A listra diagonal saiu em 10/08/2026: rachurado lê como "área
+bloqueada", e pausa é o contrário disso — é o tempo em que cabe encaixar
+alguém.
+
+**Faixa de título reservada (`APPT_HEAD_SAFE` = 44px, espelhado em
+`--appt-head-h` no CSS).** Nada desenhado por cima de um card de tier rico
+começa antes dessa marca: a faixa de pausa é aparada pelo topo (o fim fica no
+instante real) e um encaixe sobreposto é empurrado para baixo dela. O selo de
+status deixou de ser absoluto e virou item do flex do cabeçalho — assim o nome
+da cliente trunca com ellipsis em vez de ser coberto quando o status é largo.
+Prioridade do card, nessa ordem: **nome da cliente → serviço → duração →
+status**. Mudar 44 num lado exige mudar no outro.
 
 **Conflito** só existe quando um *bloco de trabalho* encosta em outro. Pausa
 sobreposta a pausa, ou trabalho dentro de pausa alheia, é permitido.
+
+### Status na timeline (10/08/2026)
+
+A agenda **não carimba o que é normal**. `timelineStatusBadge()` (logo abaixo
+de `statusClass()`) é a única fonte da regra:
+
+| status | timeline |
+|---|---|
+| `confirmed` | nada — estar na agenda já diz que o atendimento existe |
+| `completed` | nada — é o estado natural de um atendimento passado |
+| `pending` | **nada, por enquanto.** O status existe no schema mas o produto não definiu quando um agendamento deveria ficar pendente; um selo inventaria o significado junto. Dado preservado |
+| `no_show` | selo de texto `No-show`, e **só** quando marcado explicitamente |
+| `cancelled` | **não renderiza** — filtrado no topo de `buildAgendaGrid()` |
+
+O que saiu: o selo `Confirmado` e a **bolinha** `.status-dot` dos tiers
+micro/compact. A bolinha era status (`statusClass(a.status)`), não source nem
+categoria — mas como `statusLabel(null)` devolve `'Confirmado'` e
+`statusClass()` cai em `st-confirmed` por omissão, ela aparecia em 100% dos
+cards quase sempre na mesma cor: legenda que não existia em lugar nenhum,
+ocupando o canto de todo card. **Nada de dot sem rótulo** — se voltar a
+existir sinal de status na agenda, tem que ser texto.
+
+O filtro de `cancelled` é de **render, não de dado**: nada é apagado, nada
+muda de status. No painel real `loadAppointments()` já faz
+`.neq('status','cancelled')` na leitura; o filtro na UI é o que segura um
+item cancelado que ainda esteja em memória, sem depender de como a lista foi
+carregada.
+
+A Home (`.appt-modern-card`) tem regra própria e continua mostrando o selo —
+é outra tela, e o pedido foi sobre a timeline.
+
+**Não existe inferência automática de no-show.** "O horário passou" nunca vira
+`no_show`; ele só existe se alguém gravar. O fluxo para marcar ainda será
+definido — ver "Client History" abaixo.
+
+### Client History — regra futura, NÃO implementada
+
+Anotado em 10/08/2026 para não se perder junto com a limpeza acima:
+
+- `cancelled` permanece no banco e deve aparecer no histórico da cliente,
+  com indicação `Cancelado` — só não aparece na agenda operacional;
+- `no_show` permanece registrado quando marcado explicitamente;
+- no-show **automático** não foi aprovado e não deve ser implementado por
+  conta própria;
+- o fluxo para marcar no-show (quem marca, de onde, com que confirmação)
+  ainda será definido.
+
+Nada disso está implementado. Ver também "Appointment Detail Audit" no fim
+deste arquivo — as duas frentes se tocam.
 
 **Fuso.** O expediente é `Europe/Dublin`, não o do aparelho de quem agenda.
 `agendar.html` tem `salonTimeToInstant(data, minutos)` — converte "data + minutos
@@ -708,3 +770,34 @@ Também saíram nessa limpeza:
 
 Medido no navegador depois da mudança: a grade começa a **~21% da altura
 da tela** (era ~39%). Em 430px, 19%.
+
+## Appointment Detail Audit — PENDING
+
+Achado em 10/08/2026 ao testar o cenário de encaixe no `painel_demo.html`: a
+tela de detalhe do atendimento (`renderApptDetail()`) é visualmente fraca
+perto do resto do app e aparentemente não mostra informação suficiente da
+cliente — abre direto num formulário de "Atendimento" (data, serviço, fotos,
+técnica, produto, fórmula, observações), sem nome da cliente, sem contato,
+sem contexto.
+
+**Isto é uma lista de auditoria, não uma especificação congelada.** O objetivo
+agora é só não deixar esse trabalho ser esquecido — o escopo real se decide
+quando a frente for aberta.
+
+Auditar futuramente:
+
+- identidade da cliente;
+- telefone;
+- email;
+- notas;
+- serviços;
+- profissional;
+- horário;
+- duração;
+- preço;
+- origem/source;
+- status;
+- histórico relevante;
+- ações disponíveis;
+- hierarquia visual;
+- UX/UI geral.
