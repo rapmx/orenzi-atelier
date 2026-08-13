@@ -1312,17 +1312,23 @@
      app/ds/orenzi-components.css (.o-btn, .o-card, .o-search-field,
      .o-chip, .o-avatar, .o-divider, .o-field, .o-badge) — o que segue é só
      a anatomia própria do wizard. */
+  /* Full-screen desde 13/08/2026 (era `min(92vh, 800px)` com raio no topo,
+     que no celular lia como cartão alto encostado no rodapé). A anatomia
+     interna — head, dots, body rolável, footer fixo — não mudou; só o
+     container passou a ir até o topo da viewport, no mesmo padrão de
+     .o-fullsheet que o menu do + e o bloqueio usam. Ver o comentário do
+     FullScreenSheet abaixo pro porquê de `100dvh` e da ausência de raio. */
   .o-wizard-sheet {
     display: flex; flex-direction: column;
-    background: var(--color-bg); border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    width: 100%; max-width: var(--canvas-max-width);
-    height: min(92vh, 800px);
+    background: var(--color-bg);
+    width: 100%; max-width: var(--canvas-max-width); margin: 0 auto;
+    height: 100vh; height: 100dvh;
     overflow: hidden;
-    animation: modalSheetIn .3s cubic-bezier(.34,1.56,.64,1);
+    animation: fullSheetIn var(--motion-emphasized) var(--ease-out);
   }
   .o-wizard-head {
     display: flex; align-items: center; gap: var(--space-2);
-    padding: var(--space-4) var(--space-4) 0; flex-shrink: 0;
+    padding: calc(var(--space-3) + var(--safe-top)) var(--space-4) 0; flex-shrink: 0;
   }
   .o-wizard-back svg { transform: rotate(180deg); }
   .o-wizard-titles { flex: 1; min-width: 0; padding: 0 var(--space-1); }
@@ -1362,6 +1368,203 @@
   @media (prefers-reduced-motion: reduce) {
     .o-wizard-sheet, .o-wizard-step { animation: none; }
   }
+
+  /* ── FullScreenSheet (13/08/2026) ──────────────────────────────────────
+     Extensão do BottomSheet para o que docs/04 §BottomSheet já mandava não
+     ser folha parcial: "não usar para fluxo de várias etapas — é tela".
+     Os três níveis da Agenda (menu do +, novo agendamento, bloquear
+     horário) passam a subir do rodapé até o topo da viewport, em vez de
+     pararem em 88vh como um cartão no pé da tela.
+
+     Anatomia idêntica em todos: head (voltar/fechar + títulos) → body
+     rolável → footer fixo com o CTA. É essa repetição que faz os três
+     níveis parecerem o mesmo produto.
+
+     `100dvh` (não `100vh`) porque no Safari do iPhone `100vh` conta a
+     barra de endereço que some ao rolar — a folha ficaria mais alta que a
+     tela e o CTA do rodapé cairia atrás do chrome do navegador. O `100vh`
+     antes dele é o fallback pra quem não tem dvh.
+
+     A folha não tem raio no topo de propósito: raio superior é o sinal de
+     "ainda há tela atrás de mim", e aqui não há — ela É a tela. */
+  .modal-overlay.is-fullsheet { align-items: stretch; }
+  .o-fullsheet {
+    display: flex; flex-direction: column;
+    background: var(--color-bg);
+    width: 100%; max-width: var(--canvas-max-width); margin: 0 auto;
+    height: 100vh; height: 100dvh;
+    overflow: hidden;
+    animation: fullSheetIn var(--motion-emphasized) var(--ease-out);
+  }
+  @keyframes fullSheetIn {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .o-fullsheet-head {
+    flex-shrink: 0; display: flex; align-items: center; gap: var(--space-2);
+    padding: calc(var(--space-3) + var(--safe-top)) var(--space-4) var(--space-3);
+  }
+  .o-fullsheet-titles { flex: 1; min-width: 0; padding: 0 var(--space-1); }
+  .o-fullsheet-title {
+    font-family: var(--font-heading); font-size: var(--text-title-3-size);
+    font-weight: var(--text-title-3-weight); color: var(--color-text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .o-fullsheet-subtitle {
+    font-size: var(--text-caption-size); color: var(--color-neutral-600); margin-top: 1px;
+  }
+  .o-fullsheet-body { flex: 1 1 auto; overflow-y: auto; padding: 0 var(--space-5) var(--space-4); }
+  .o-fullsheet-footer {
+    flex-shrink: 0; display: flex; flex-direction: column; gap: var(--space-2);
+    padding: var(--space-3) var(--space-5) calc(var(--space-4) + var(--safe-bottom));
+  }
+  @media (prefers-reduced-motion: reduce) { .o-fullsheet { animation: none; } }
+
+  /* ── Menu do + da Agenda ───────────────────────────────────────────────
+     Duas ações grandes, não uma lista de linhas: são os dois caminhos que
+     saem da Agenda e merecem peso igual. Ícone + título + uma linha de
+     apoio dizendo o que cada um faz — sem isso "Bloquear horário" é
+     ambíguo pra quem abre pela primeira vez. */
+  .agenda-menu-actions { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-2); }
+  .agenda-menu-action {
+    display: flex; align-items: center; gap: var(--space-4); width: 100%; text-align: left;
+    padding: var(--space-5); border-radius: var(--radius-lg);
+    background: var(--color-surface); border: var(--border-width) solid var(--color-divider);
+    cursor: pointer; font-family: var(--font-body);
+    transition: transform var(--motion-instant) var(--ease-out),
+                background-color var(--motion-fast) var(--ease-standard);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .agenda-menu-action:active { transform: scale(0.98); background: var(--color-neutral-100); }
+  .agenda-menu-action:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .ama-icon {
+    width: 46px; height: 46px; border-radius: var(--radius-md); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--color-accent-100); color: var(--color-accent-700);
+  }
+  .ama-icon svg { width: 22px; height: 22px; }
+  /* Bloqueio é o caminho neutro (a profissional se retirando da agenda),
+     não uma ação de destaque como criar atendimento — daí o ícone em tom
+     neutro em vez do accent da marca. Nunca --color-accent-2: essa é a cor
+     de alerta do sistema, e bloquear não é um problema. */
+  .ama-icon.is-neutral { background: var(--color-neutral-200); color: var(--color-neutral-700); }
+  .ama-body { flex: 1; min-width: 0; }
+  .ama-title {
+    font-size: var(--text-body-strong-size); font-weight: var(--text-body-strong-weight);
+    color: var(--color-text);
+  }
+  .ama-desc { font-size: var(--text-caption-size); color: var(--color-neutral-600); margin-top: 2px; }
+  .ama-chevron { color: var(--color-neutral-600); flex-shrink: 0; }
+  .ama-chevron svg { width: 18px; height: 18px; }
+
+  /* ── Bloquear horário — repaginação (13/08/2026) ───────────────────────
+     Os campos deixaram de ser <input> soltos empilhados e viraram linhas
+     de cartão com rótulo à esquerda e valor à direita, no mesmo padrão de
+     .o-card do resto do painel. O <input type="date"/"time"> nativo
+     CONTINUA sendo o controle — só perdeu a moldura e ganhou o tamanho de
+     um alvo de toque de verdade. Trocar por um picker próprio seria
+     reescrever comportamento que o sistema operacional já faz melhor (e
+     mudaria a lógica, que aqui está fora de escopo). */
+  .blk-group { margin-top: var(--space-5); }
+  .blk-group-label {
+    font-size: var(--text-caption-size); font-weight: var(--text-body-strong-weight);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--color-neutral-600); margin-bottom: var(--space-2);
+  }
+  .blk-row {
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: var(--space-3-5) var(--space-4); min-height: 58px;
+    background: var(--color-surface); border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--radius-md);
+  }
+  .blk-row-icon { color: var(--color-neutral-600); flex-shrink: 0; display: flex; }
+  .blk-row-icon svg { width: 19px; height: 19px; }
+  .blk-row-label { font-size: var(--text-body-size); color: var(--color-text); flex-shrink: 0; }
+  /* O input nativo encosta na direita e é o alvo de toque: `width:auto` +
+     `margin-left:auto` deixam o picker abrir do valor, que é onde o dedo
+     naturalmente vai. `min-height` herda o 58px da linha inteira. */
+  .blk-row input[type="date"], .blk-row input[type="time"] {
+    margin-left: auto; width: auto; border: none; background: transparent;
+    padding: var(--space-2) 0; color: var(--color-text);
+    font-family: var(--font-body); font-size: var(--text-body-strong-size);
+    font-weight: var(--text-body-strong-weight); font-variant-numeric: tabular-nums;
+    cursor: pointer; -webkit-appearance: none; appearance: none; min-width: 0;
+  }
+  .blk-row input:focus { outline: none; }
+  .blk-row input:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-xs, 8px); }
+  .blk-row input::-webkit-calendar-picker-indicator { opacity: 0.55; cursor: pointer; }
+
+  /* Início e Fim lado a lado: são um par (um intervalo), e empilhados
+     pareceriam dois campos independentes. */
+  .blk-time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+  .blk-time-card {
+    display: flex; flex-direction: column; gap: 2px;
+    padding: var(--space-3) var(--space-4); min-height: 68px; justify-content: center;
+    background: var(--color-surface); border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--radius-md);
+  }
+  .blk-time-card .btc-label {
+    font-size: var(--text-caption-size); color: var(--color-neutral-600);
+  }
+  .blk-time-card input[type="time"] {
+    width: 100%; border: none; background: transparent; padding: 0; color: var(--color-text);
+    font-family: var(--font-body); font-size: var(--text-title-3-size); font-weight: 600;
+    font-variant-numeric: tabular-nums; cursor: pointer; -webkit-appearance: none; appearance: none;
+  }
+  .blk-time-card input:focus { outline: none; }
+  .blk-time-card input:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-xs, 8px); }
+  .blk-time-card input::-webkit-calendar-picker-indicator { display: none; }
+
+  /* Segmented control: trilho único com o indicador deslizando por baixo
+     do rótulo — o estado selecionado é sólido e o outro é texto puro, sem
+     meio-termo. `.toggle-row` (o par de pílulas antigo) não foi tocado:
+     ele continua servindo as outras telas. */
+  .blk-seg {
+    display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-1);
+    padding: var(--space-1); border-radius: var(--radius-full);
+    background: var(--color-neutral-200);
+  }
+  .blk-seg button {
+    padding: var(--space-2-5) var(--space-2); border: none; border-radius: var(--radius-full);
+    background: transparent; color: var(--color-neutral-700); cursor: pointer;
+    font-family: var(--font-body); font-size: var(--text-body-size); font-weight: 600;
+    transition: background-color var(--motion-fast) var(--ease-standard),
+                color var(--motion-fast) var(--ease-standard);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .blk-seg button.is-active {
+    background: var(--color-surface); color: var(--color-text);
+    font-weight: var(--text-body-strong-weight); box-shadow: var(--shadow-sm, 0 1px 3px rgba(43,36,32,0.12));
+  }
+  .blk-seg button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  @media (prefers-reduced-motion: reduce) {
+    .blk-seg button, .agenda-menu-action { transition: none; }
+    .agenda-menu-action:active { transform: none; }
+  }
+
+  .blk-reason-input {
+    width: 100%; min-height: 58px; padding: var(--space-3-5) var(--space-4);
+    background: var(--color-surface); border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--radius-md); color: var(--color-text);
+    font-family: var(--font-body); font-size: var(--text-body-size);
+    transition: border-color var(--motion-fast) var(--ease-standard),
+                box-shadow var(--motion-fast) var(--ease-standard);
+  }
+  .blk-reason-input::placeholder { color: var(--color-neutral-600); }
+  .blk-reason-input:focus { outline: none; }
+  .blk-reason-input:focus-visible {
+    outline: none; border-color: var(--color-accent-600); box-shadow: var(--focus-ring);
+  }
+  .blk-error {
+    margin-top: var(--space-4); padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md); font-size: var(--text-caption-size);
+    background: var(--color-accent-2-100); color: var(--color-accent-2-700);
+  }
+  /* O detalhe do bloqueio CONTINUA folha parcial de propósito: é leitura
+     curta com duas ações, não fluxo de várias etapas — exatamente o caso
+     que docs/04 §BottomSheet manda manter como folha. Só a linguagem dos
+     botões passou pro vocabulário .o-btn, pra bater com o resto. */
+  .blk-detail-actions { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4); }
 
   /* Etapa 1 · lista de clientes */
   .o-wizard-list { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
@@ -7799,12 +8002,35 @@ function newWizState(prefillDate, prefillTime, freeSlot) {
 // muda em nada.
 function openAgendaAddMenu() {
   modalContainer.innerHTML = `
-    <div class="modal-overlay" id="modalOverlay">
-      <div class="modal-sheet">
-        <h2>Agenda</h2>
-        <button class="sheet-option" data-acao="agendamento"><span>Novo agendamento</span></button>
-        <button class="sheet-option" data-acao="bloqueio"><span>Bloquear horário</span></button>
-        <button class="btn btn-ghost" id="modalClose">Cancelar</button>
+    <div class="modal-overlay is-fullsheet" id="modalOverlay">
+      <div class="o-fullsheet" role="dialog" aria-modal="true" aria-label="Adicionar na agenda">
+        <div class="o-fullsheet-head">
+          <div class="o-fullsheet-titles">
+            <div class="o-fullsheet-title">Agenda</div>
+            <div class="o-fullsheet-subtitle">O que você quer adicionar?</div>
+          </div>
+          <button class="o-icon-btn" id="modalClose" aria-label="Fechar">${ICONS.close}</button>
+        </div>
+        <div class="o-fullsheet-body">
+          <div class="agenda-menu-actions">
+            <button class="agenda-menu-action" data-acao="agendamento">
+              <span class="ama-icon">${ICONS.calendar}</span>
+              <span class="ama-body">
+                <span class="ama-title">Novo agendamento</span>
+                <span class="ama-desc">Marcar um atendimento para uma cliente</span>
+              </span>
+              <span class="ama-chevron">${ICONS.chevron}</span>
+            </button>
+            <button class="agenda-menu-action" data-acao="bloqueio">
+              <span class="ama-icon is-neutral">${ICONS.block}</span>
+              <span class="ama-body">
+                <span class="ama-title">Bloquear horário</span>
+                <span class="ama-desc">Marcar um período como indisponível</span>
+              </span>
+              <span class="ama-chevron">${ICONS.chevron}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -7847,43 +8073,81 @@ function openBlockModal(existing) {
 function renderBlockModal() {
   const ativos = profissionaisAtivos();
   const f = blockForm;
+  // O CTA nomeia o que vai acontecer — "Bloquear dia" quando é dia inteiro,
+  // "Bloquear horário" quando é um intervalo (docs/06: o botão diz a ação,
+  // não "Confirmar"). Em edição vira "Salvar alterações" nos dois casos.
+  const ctaLabel = f.id ? 'Salvar alterações' : (f.allDay ? 'Bloquear dia' : 'Bloquear horário');
   modalContainer.innerHTML = `
-    <div class="modal-overlay" id="modalOverlay">
-      <div class="modal-sheet">
-        <h2>${f.id ? 'Editar bloqueio' : 'Bloquear horário'}</h2>
-        <div class="modal-section">
-          <div class="modal-field-label">Data</div>
-          <input type="date" id="blkDate" value="${f.date}">
+    <div class="modal-overlay is-fullsheet" id="modalOverlay">
+      <div class="o-fullsheet" role="dialog" aria-modal="true" aria-label="${f.id ? 'Editar bloqueio' : 'Bloquear horário'}">
+        <div class="o-fullsheet-head">
+          <div class="o-fullsheet-titles">
+            <div class="o-fullsheet-title">${f.id ? 'Editar bloqueio' : 'Bloquear horário'}</div>
+            <div class="o-fullsheet-subtitle">Defina um período indisponível na agenda</div>
+          </div>
+          <button class="o-icon-btn" id="modalClose" aria-label="Fechar">${ICONS.close}</button>
+        </div>
+
+        <div class="o-fullsheet-body">
+          <div class="blk-group">
+            <div class="blk-group-label" id="blkDateLabel">Data</div>
+            <div class="blk-row">
+              <span class="blk-row-icon">${ICONS.calendar}</span>
+              <span class="blk-row-label">Dia</span>
+              <input type="date" id="blkDate" value="${f.date}" aria-labelledby="blkDateLabel">
+            </div>
+          </div>
 
           ${ativos.length > 1 ? `
-          <div class="modal-field-label">Profissional</div>
-          <select id="blkStaff">
-            ${ativos.map(s => `<option value="${s.id}" ${s.id === f.staffId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
-          </select>` : ''}
+          <div class="blk-group">
+            <div class="blk-group-label" id="blkStaffLabel">Profissional</div>
+            <select class="o-select" id="blkStaff" aria-labelledby="blkStaffLabel">
+              ${ativos.map(s => `<option value="${s.id}" ${s.id === f.staffId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
+            </select>
+          </div>` : ''}
 
-          <div class="modal-field-label">Período</div>
-          <div class="toggle-row" id="blkAllDayToggle">
-            <button type="button" data-val="0" class="${!f.allDay ? 'active' : ''}">Horário</button>
-            <button type="button" data-val="1" class="${f.allDay ? 'active' : ''}">Dia inteiro</button>
+          <div class="blk-group">
+            <div class="blk-group-label" id="blkTipoLabel">Tipo de bloqueio</div>
+            <div class="blk-seg" id="blkAllDayToggle" role="group" aria-labelledby="blkTipoLabel">
+              <button type="button" data-val="0" class="${!f.allDay ? 'is-active' : ''}" aria-pressed="${!f.allDay}">Horário específico</button>
+              <button type="button" data-val="1" class="${f.allDay ? 'is-active' : ''}" aria-pressed="${f.allDay}">Dia inteiro</button>
+            </div>
           </div>
 
-          <div id="blkTimeFields" style="${f.allDay ? 'display:none' : ''}">
-            <div class="modal-field-label">Início</div>
-            <input type="time" id="blkStart" value="${f.startTime}" step="1800">
-            <div class="modal-field-label">Fim</div>
-            <input type="time" id="blkEnd" value="${f.endTime}" step="1800">
+          ${f.allDay ? '' : `
+          <div class="blk-group" id="blkTimeFields">
+            <div class="blk-group-label">Horários</div>
+            <div class="blk-time-grid">
+              <label class="blk-time-card">
+                <span class="btc-label">Início</span>
+                <input type="time" id="blkStart" value="${f.startTime}" step="1800">
+              </label>
+              <label class="blk-time-card">
+                <span class="btc-label">Fim</span>
+                <input type="time" id="blkEnd" value="${f.endTime}" step="1800">
+              </label>
+            </div>
+          </div>`}
+
+          <div class="blk-group">
+            <div class="blk-group-label" id="blkReasonLabel">Motivo (opcional)</div>
+            <input type="text" class="blk-reason-input" id="blkReason" value="${esc(f.reason)}"
+              placeholder="Ex.: compromisso pessoal, salão fechado, pausa, viagem"
+              autocomplete="off" aria-labelledby="blkReasonLabel">
           </div>
 
-          <div class="modal-field-label">Motivo (opcional)</div>
-          <input type="text" id="blkReason" value="${esc(f.reason)}" placeholder="Ex.: Pessoal, Compromisso, Salão fechado" autocomplete="off">
+          ${f.error ? `<div class="blk-error" role="alert">${esc(f.error)}</div>` : ''}
         </div>
-        ${f.error ? `<div class="login-error" style="margin-top:var(--space-3)">${esc(f.error)}</div>` : ''}
-        <button class="btn btn-primary" id="blkSave">${f.id ? 'Salvar alterações' : 'Bloquear horário'}</button>
-        ${f.id ? `<button class="btn btn-ghost" id="blkDelete" style="color:var(--color-accent-2-700)">Remover bloqueio</button>` : ''}
-        <button class="btn btn-ghost" id="modalClose">Cancelar</button>
+
+        <div class="o-fullsheet-footer">
+          <button class="o-btn o-btn-primary" id="blkSave">${ctaLabel}</button>
+          ${f.id ? `<button class="o-btn o-btn-destructive" id="blkDelete">Remover bloqueio</button>` : ''}
+          <button class="o-btn o-btn-ghost" id="blkCancel">Cancelar</button>
+        </div>
       </div>
     </div>
   `;
+  document.getElementById('blkCancel').onclick = closeModal;
   document.getElementById('modalClose').onclick = closeModal;
   document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
   document.getElementById('blkDate').onchange = (e) => { f.date = e.target.value; };
@@ -7996,9 +8260,11 @@ function openBlockDetailSheet(blockId) {
           <div class="block-detail-row">${ICONS.clock}<span>${esc(timeLabel)}</span></div>
           ${b.reason ? `<div class="block-detail-row">${ICONS.tag}<span>${esc(b.reason)}</span></div>` : ''}
         </div>
-        <button class="btn btn-primary" id="blkEditBtn">Editar</button>
-        <button class="btn btn-ghost" id="blkRemoveBtn" style="color:var(--color-accent-2-700)">Remover bloqueio</button>
-        <button class="btn btn-ghost" id="modalClose">Fechar</button>
+        <div class="blk-detail-actions">
+          <button class="o-btn o-btn-primary" id="blkEditBtn">Editar</button>
+          <button class="o-btn o-btn-destructive" id="blkRemoveBtn">Remover bloqueio</button>
+          <button class="o-btn o-btn-ghost" id="modalClose">Fechar</button>
+        </div>
       </div>
     </div>
   `;
@@ -8186,7 +8452,7 @@ function wizContextBannerHtml() {
 function renderWizard() {
   const total = wizTotalSteps();
   modalContainer.innerHTML = `
-    <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-overlay is-fullsheet" id="modalOverlay">
       <div class="o-wizard-sheet" role="dialog" aria-modal="true" aria-label="Novo agendamento">
         <div class="o-wizard-head">
           <button class="o-icon-btn o-wizard-back" id="wizBack" aria-label="Voltar"

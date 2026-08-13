@@ -42,6 +42,7 @@ edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
 | Insights, gráfico de tendência | `renderInsights()`, `computeIndicatorsData()` |
 | Agenda, sobreposição, pausa | `renderAgenda()`, `layoutAppts()`, `segmentsOf()` |
 | Bloqueio manual de agenda | `openAgendaAddMenu()`, `openBlockModal()`, `saveScheduleBlock()`, `openBlockDetailSheet()`, `confirmDeleteScheduleBlock()`, `busyBlocksForStaffOnDate()` |
+| Folha de tela cheia (os 3 sheets da Agenda) | `.o-fullsheet` / `.o-wizard-sheet` no `<style>`, `.modal-overlay.is-fullsheet` |
 | Estoque | `// ── ESTOQUE`, `renderStock()`, `renderStockList()`, `renderStockInsights()`, `openProductModal()` |
 | Clientes, fotos, detalhe | `renderClients()`, `renderClientDetail()`, `renderApptDetail()` |
 | Login | `checkSession()`, `renderLogin()` |
@@ -175,6 +176,19 @@ opcional que **nunca** chega ao Booking público (`get_busy_slots` só devolve
   semântico, "cabe encaixar alguém"). Toque no bloqueio (card ou faixa) abre
   `openBlockDetailSheet()` — **não** a tela de Appointment Detail, é outra
   entidade. Botão de remoção sempre "Remover bloqueio", nunca "Cancelar".
+- **Os três sheets da Agenda são de tela cheia** (13/08/2026): o menu do `+`,
+  o wizard de novo agendamento e o formulário de bloqueio sobem do rodapé até
+  o topo da viewport (`.o-fullsheet`, e `.o-wizard-sheet` que virou a mesma
+  coisa), com a anatomia head → body rolável → footer fixo repetida nos três.
+  Antes eram folhas parciais que paravam em 88–92vh e liam como cartão
+  encostado no rodapé. **`BottomSheet` parcial não foi aposentado** — segue
+  correto (e em uso) para escolha curta: ordenação, filtros, folha do FAB do
+  Estoque e o **detalhe do bloqueio**. A regra que separa os dois é a do
+  próprio Design System: fluxo de várias etapas ou formulário longo é tela;
+  escolher entre duas opções é folha. Componente documentado em
+  `docs/04_COMPONENT_LIBRARY.md §FullScreenSheet`. **Altura é `100dvh`, nunca
+  `100vh`**: no Safari do iPhone o `100vh` conta a barra de endereço que some
+  ao rolar, e o CTA do rodapé cairia atrás do chrome do navegador.
 - **`painel_demo.html`**: mesmo mock genérico de escrita do resto do arquivo
   (`insert`/`update`/`delete` sempre "sucedem" sem persistir; `saveScheduleBlock()`
   monta o registro local a partir do payload enviado, não do retorno cru do

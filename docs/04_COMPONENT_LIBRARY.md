@@ -913,6 +913,44 @@ interna. Respeita a área segura inferior.
 **Converge:** `.modal-sheet` / `.sheet-option`, a folha do FAB do estoque e a de
 ordenação de clientes.
 
+## FullScreenSheet
+
+**Objetivo.** Fluxo ou formulário que precisa da tela inteira, sem virar uma
+aba de primeiro nível.
+**Usar em** fluxo de várias etapas (novo agendamento), formulário com mais de
+três blocos (bloquear horário), e menu de entrada que abre esses dois.
+**Não usar** para escolha curta ou confirmação — aí é `BottomSheet`, que
+continua sendo o padrão. Uma folha de tela cheia para escolher entre duas
+opções de ordenação seria peso demais para a decisão.
+**Anatomia.** Fundo escurecido → folha subindo do rodapé até o topo da
+viewport → **head** (voltar e/ou fechar + título + subtítulo opcional) →
+**body** rolável → **footer** fixo com o CTA. A repetição dessa anatomia entre
+níveis é o que faz eles parecerem o mesmo produto.
+**Variantes.** `menu` (ações grandes) · `formulário` · `wizard` (com
+indicador de etapas entre head e body).
+**Estados.** `entering` · `open` · `exiting` · `loading` · `error`.
+**Hierarquia.** Uma folha por vez. Um nível pode substituir o outro (menu →
+formulário), nunca empilhar.
+**Toque.** Fecha pelo `X` da head e pelo fundo escurecido nas laterais (só
+existe no desktop). Fecha com `Esc`. **Não** fecha por arraste: o gesto
+conflita com a rolagem do corpo, que aqui é a interação principal.
+**Movimento.** `translateY(100%) → 0` em `--motion-emphasized` + `--ease-out`
+— mesma receita de folha inferior ([05 §14](05_MOTION_SYSTEM.md)); muda o
+destino, não a curva. Respeita `prefers-reduced-motion`.
+**Acessibilidade.** `role="dialog"`, `aria-modal="true"`, rótulo na folha.
+⚠ Herda de `BottomSheet` a pendência de **captura e restauração de foco** e
+de tornar o fundo inerte — **P0** ([07 §8](07_ACCESSIBILITY.md)).
+**Responsividade.** Altura `100dvh` (não `100vh`: no Safari do iPhone o `100vh`
+conta a barra de endereço que some ao rolar, e o CTA do rodapé cairia atrás do
+chrome do navegador). Largura até `--canvas-max-width`, centralizada — no
+desktop **não estica**. `--safe-top` na head, `--safe-bottom` no footer.
+**Tokens.** `--canvas-max-width`, `--elevation-overlay`, `--motion-emphasized`,
+`--ease-out`, `--safe-top`, `--safe-bottom`.
+**Erros comuns.** Raio nos cantos superiores — raio superior é o sinal de "há
+tela atrás de mim", e aqui a folha **é** a tela. CTA rolando junto com o corpo
+em vez de ficar fixo no rodapé. Usar para uma escolha de dois itens.
+**Converge:** `.o-fullsheet` e `.o-wizard-sheet` (Agenda).
+
 ## ConfirmationDialog
 
 **Objetivo.** Confirmar uma ação irreversível.

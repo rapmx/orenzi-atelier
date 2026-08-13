@@ -465,6 +465,51 @@ Antes de aprovar qualquer mudança:
 
 # Changelog
 
+## [1.2.0] — 2026-08-13
+
+Extensão do sistema pedida pelo dono do produto ao repaginar os sheets da
+Agenda. Registrada aqui por causa da regra 8 do contrato de UI: o Design
+System não cobria folha de tela cheia, então a lacuna vira componente
+documentado em vez de exceção local silenciosa.
+
+### Adicionado
+- **`FullScreenSheet`** ([04](04_COMPONENT_LIBRARY.md#fullscreensheet)) —
+  variante de tela cheia do `BottomSheet`, para o caso que o próprio
+  `BottomSheet` já mandava não ser folha parcial: *"não usar para fluxo de
+  várias etapas — é tela"*. Anatomia fixa: head (voltar/fechar + títulos) →
+  body rolável → footer com o CTA.
+- **Motion:** entrada `translateY(100%) → 0` em `--motion-emphasized` +
+  `--ease-out`, a mesma receita de folha inferior de
+  [05 §14](05_MOTION_SYSTEM.md) — o que muda é o destino, não a curva.
+
+### Alterado
+- **Os três níveis da Agenda** (menu do `+`, novo agendamento, bloquear
+  horário) passam de folha parcial a `FullScreenSheet`. O wizard de novo
+  agendamento era `min(92vh, 800px)` com raio no topo, o que no celular lia
+  como cartão alto encostado no rodapé; o fluxo, os passos e o conteúdo não
+  mudaram — só o container.
+- **`Bloquear horário`** foi repaginado: campos soltos viraram linhas de
+  cartão (`.blk-row`), o par Início/Fim virou dois cartões lado a lado, e o
+  toggle de período virou segmented control. O `<input type="date"/"time">`
+  nativo continua sendo o controle — perdeu a moldura, ganhou alvo de toque.
+- **CTA nomeia a ação:** "Bloquear dia" quando é dia inteiro, "Bloquear
+  horário" quando é intervalo ([06 §11](06_CONTENT_GUIDELINES.md)).
+
+### Não alterado, de propósito
+- **`BottomSheet` parcial continua existindo e correto** para escolha curta:
+  ordenação, filtros, folha do FAB do Estoque, e o **detalhe do bloqueio** —
+  leitura curta com duas ações não é fluxo de várias etapas. Só a linguagem
+  dos botões do detalhe convergiu para `.o-btn`.
+- `.toggle-row` (o par de pílulas antigo) segue servindo as outras telas.
+
+### Medido no navegador
+- Três níveis a `top: 0` com altura igual à viewport, em 320px, 375px e no
+  desktop (480px centralizado, sem esticar — regra 5 do contrato).
+- Contraste dos elementos novos: menor valor 5,02:1 (CTA primário) — todos
+  aprovam AA.
+- Alvos de toque: ação do menu 88px, linha de data 79px, cartão de hora 73px,
+  segmented 50px, CTA 44px.
+
 ## [1.1.0] — 2026-08-03
 
 Decisões oficiais do dono do produto sobre as pendências abertas na v1.0.
