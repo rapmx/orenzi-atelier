@@ -308,6 +308,35 @@ function demoSalao() {
 
   appts.sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
 
+  // ── Bloqueio manual de agenda — exemplo de demonstração ──────────
+  // Dias diferentes do encaixe Camila/Marina (diaEncaixe, acima), pra não
+  // competir visualmente com aquele cenário. Cobre os dois tratamentos de
+  // UI que a feature tem: card parcial na timeline e faixa de dia inteiro.
+  const diasFechadosDemo = [0, 1]; // domingo, segunda — mesmo critério de FECHADO_DEMO acima
+  let diaBloqueioParcial = new Date(hoje);
+  diaBloqueioParcial.setDate(diaBloqueioParcial.getDate() + 3);
+  while (diasFechadosDemo.includes(diaBloqueioParcial.getDay())) diaBloqueioParcial.setDate(diaBloqueioParcial.getDate() + 1);
+  const inicioBloqueioParcial = new Date(diaBloqueioParcial); inicioBloqueioParcial.setHours(14, 0, 0, 0);
+  const fimBloqueioParcial = new Date(diaBloqueioParcial); fimBloqueioParcial.setHours(16, 0, 0, 0);
+
+  let diaBloqueioTotal = new Date(hoje);
+  diaBloqueioTotal.setDate(diaBloqueioTotal.getDate() + 6);
+  while (diasFechadosDemo.includes(diaBloqueioTotal.getDay())) diaBloqueioTotal.setDate(diaBloqueioTotal.getDate() + 1);
+
+  const blocos = [
+    {
+      id: 'demo-block-parcial', staff_id: juliane.id,
+      starts_at: inicioBloqueioParcial.toISOString(), ends_at: fimBloqueioParcial.toISOString(),
+      all_day: false, reason: 'Compromisso',
+    },
+    {
+      id: 'demo-block-dia-inteiro', staff_id: juliane.id,
+      starts_at: diaBloqueioTotal.toISOString(),
+      ends_at: new Date(diaBloqueioTotal.getTime() + 86400000).toISOString(),
+      all_day: true, reason: 'Salão fechado',
+    },
+  ];
+
   // ── Visitas à página de agendamento ─────────────────────────────
   // Só a partir do dia em que a página entrou no ar, e sempre mais
   // visitas que agendamentos — conversão realista, não inventada.
@@ -332,6 +361,7 @@ function demoSalao() {
     })),
     appts,
     visitas,
+    blocos,
   };
   return _demoCache;
 }
@@ -402,6 +432,7 @@ function mockData(table){
   if (table === 'clients') return demoSalao().clientes.map(x => ({ ...x }));
   if (table === 'appointments') return demoSalao().appts.map(x => ({ ...x }));
   if (table === 'booking_visits') return demoSalao().visitas.map(x => ({ ...x }));
+  if (table === 'schedule_blocks') return demoSalao().blocos.map(x => ({ ...x }));
 
   return [];
 }
@@ -1490,6 +1521,52 @@ window.supabase = {
     padding: 1px 6px; border-radius: var(--radius-full, 999px); white-space: nowrap;
   }
   .gap-label svg { width: 9px; height: 9px; flex-shrink: 0; }
+
+  /* Bloqueio manual de agenda — entidade própria, não appointment. Rachurado
+     é a linguagem certa aqui, ao contrário da pausa (que fica clara, sem
+     listra, de propósito — ver comentário em cima de .appt-gap): pausa
+     significa "cabe encaixar alguém", bloqueio significa o oposto exato.
+     Neutro, nunca --color-accent-2 — essa é a cor de "isso precisa de
+     atenção" (estoque baixo, agenda lotada); um bloqueio é uma decisão da
+     própria profissional, não um alerta do sistema. */
+  .timeline-block {
+    position: absolute; left: 6px; right: 6px; border-radius: var(--radius-sm, 12px);
+    padding: var(--space-2, 8px) var(--space-3, 12px);
+    background: repeating-linear-gradient(
+      135deg,
+      var(--color-neutral-200) 0px, var(--color-neutral-200) 7px,
+      var(--color-neutral-100) 7px, var(--color-neutral-100) 14px
+    );
+    border: 1.5px solid var(--color-divider);
+    color: var(--color-neutral-700);
+    cursor: pointer; overflow: hidden; z-index: 4;
+    transition: transform var(--motion-instant, 80ms) var(--ease-out, ease-out), opacity var(--motion-fast, 160ms) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .timeline-block:active { transform: scale(0.98); opacity: 0.9; }
+  .timeline-block .tb-row { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11.5px; }
+  .timeline-block .tb-row svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .timeline-block .tb-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .timeline-block .tb-time { display: block; font-size: 10px; margin-top: 2px; font-variant-numeric: tabular-nums; opacity: 0.85; }
+  @media (prefers-reduced-motion: reduce) { .timeline-block { transition: none; } .timeline-block:active { transform: none; } }
+
+  /* Faixa de dia bloqueado — fora da grade de propósito, nunca um card de
+     00:00-24:00 (mentiria sobre proporção do dia). Vive dentro do html que
+     #timelineEl recebe, então acompanha o mesmo slide de troca de dia sem
+     precisar de coreografia própria. */
+  .day-blocked-banner {
+    display: flex; align-items: center; gap: 8px; cursor: pointer;
+    margin: 0 0 10px; padding: 10px 14px; border-radius: var(--radius-sm, 12px);
+    background: var(--color-neutral-200); color: var(--color-neutral-700);
+    font-size: 12.5px; font-weight: 600;
+  }
+  .day-blocked-banner svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .block-detail-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 0;
+    font-size: 13.5px; color: var(--color-text);
+  }
+  .block-detail-row svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--color-neutral-600); }
 
   .login-wrap {
     max-width: 340px; margin: 80px auto 0; padding: 0 20px; text-align: center;
@@ -2624,7 +2701,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', appointments: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', appointments: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -2869,8 +2946,19 @@ function deleteApptPhoto(appointmentId, photoId) {
 }
 
 async function loadAll() {
-  await Promise.all([loadAppointments(), loadClients(), loadStaff(), loadServices(), loadProducts(), loadMovements(), loadBookingVisits()]);
+  await Promise.all([loadAppointments(), loadScheduleBlocks(), loadClients(), loadStaff(), loadServices(), loadProducts(), loadMovements(), loadBookingVisits()]);
   render();
+}
+
+// Bloqueio manual de agenda — entidade própria (não appointment fake). Sem
+// paginação: o volume é ínfimo perto de appointments.
+async function loadScheduleBlocks() {
+  const { data, error } = await sb
+    .from('schedule_blocks')
+    .select('id, staff_id, starts_at, ends_at, all_day, reason')
+    .order('starts_at');
+  if (error) { console.error(error); return; }
+  state.scheduleBlocks = data;
 }
 
 // ── REALTIME: escuta novos agendamentos ─────────────────────
@@ -3049,6 +3137,8 @@ const ICONS = {
   spray: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7.5" y="9" width="8" height="11.5" rx="2"/><path d="M10 9V6a1.5 1.5 0 0 1 1.5-1.5H13M18 5h.01M20.5 7.5h.01M18 10h.01M20.5 12h.01"/></svg>',
   scissors: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="17.5" r="2.6"/><circle cx="6.5" cy="6.5" r="2.6"/><path d="M19.5 4.5 8.6 15.7M19.5 19.5 8.6 8.3"/></svg>',
   glove: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20.5v-3.2a5 5 0 0 1-2-4V7.5a1.5 1.5 0 0 1 3 0V11m0 0V4.5a1.5 1.5 0 0 1 3 0V11m0 0V5.5a1.5 1.5 0 0 1 3 0V11m0 0V8a1.5 1.5 0 0 1 3 0v5.3a5 5 0 0 1-2 4v3.2"/><path d="M7 20.5h10"/></svg>',
+  // Bloqueio manual de agenda — "não entra", círculo + traço diagonal.
+  block: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M6.5 6.5l11 11"/></svg>',
 };
 
 // ── EmptyState genérico — ícone + título + legenda + ação opcional.
@@ -5154,12 +5244,15 @@ function layoutAppts(appts) {
 // expediente é sempre "livre" e mostrar isso seria ruído). Mescla
 // atendimentos sobrepostos (encaixe) antes de medir os buracos, senão dois
 // atendimentos que se cruzam abririam um "buraco" falso entre eles.
-function computeFreeGaps(day, dayAppts) {
+function computeFreeGaps(day, dayAppts, dayBlocks) {
   const dayStart = new Date(day); dayStart.setHours(OPEN_HOUR, 0, 0, 0);
   const dayEnd = new Date(day); dayEnd.setHours(CLOSE_HOUR, 0, 0, 0);
 
   const busy = dayAppts
     .map(a => ({ s: new Date(a.starts_at).getTime(), e: new Date(a.ends_at).getTime() }))
+    // Bloqueio ocupa o intervalo inteiro, igual a um appointment pra fins
+    // deste cálculo — nenhum card "Xh livres" pode nascer dentro dele.
+    .concat((dayBlocks || []).map(b => ({ s: new Date(b.starts_at).getTime(), e: new Date(b.ends_at).getTime() })))
     .sort((x, y) => x.s - y.s);
   const merged = [];
   busy.forEach(b => {
@@ -5284,6 +5377,13 @@ function buildAgendaGrid(day) {
   // ainda esteja em memória (cancelamento na sessão, mock do demo) sem
   // depender de como a lista foi carregada.
   const dayAppts = state.appointments.filter(a => sameDay(new Date(a.starts_at), day) && a.status !== 'cancelled');
+  // Bloqueio manual: dia inteiro vira faixa no topo (não card 00:00-24:00
+  // na grade — mentiria sobre proporção), parcial vira card próprio na
+  // timeline, hachurado (linguagem de "indisponível", ao contrário da pausa
+  // clara de um atendimento — ver comentário em cima de .timeline-block).
+  const dayBlocks = scheduleBlocksForDay(day);
+  const allDayBlocks = dayBlocks.filter(b => b.all_day);
+  const partialBlocks = dayBlocks.filter(b => !b.all_day);
   const hours = [];
   for (let h = AGENDA_START_HOUR; h < AGENDA_END_HOUR; h++) hours.push(h);
   const currentTime = sameDay(day, new Date()) ? currentTimeInfo() : null;
@@ -5457,7 +5557,31 @@ function buildAgendaGrid(day) {
     `;
   }).join('');
 
-  const freeSlotsHtml = computeFreeGaps(day, dayAppts).map(g => {
+  // Card próprio na timeline — hachurado, largura cheia (não recuado como
+  // um encaixe), z-index abaixo dos appointments: um bloqueio nunca invade
+  // o trabalho de um appointment (o backend recusa isso na criação), só
+  // pode coincidir visualmente com a faixa de PAUSA de um — e aí o card do
+  // appointment, por vir depois no DOM/z-index mais alto, seria o que
+  // ganhasse se algum dia colidissem no mesmo pixel.
+  const scheduleBlocksHtml = partialBlocks.map(b => {
+    const start = new Date(b.starts_at);
+    const end = new Date(b.ends_at);
+    const startMins = (start.getHours() - AGENDA_START_HOUR) * 60 + start.getMinutes();
+    const durMins = Math.max(20, (end - start) / 60000);
+    const top = (startMins / 60) * HOUR_HEIGHT;
+    const height = (durMins / 60) * HOUR_HEIGHT - 4;
+    const timeLabel = `${fmtTime(b.starts_at)}–${fmtTime(b.ends_at)}`;
+    const label = b.reason ? esc(b.reason) : 'Bloqueado';
+    const ariaLabel = `Bloqueio, ${timeLabel}${b.reason ? ', ' + b.reason : ''}`;
+    return `
+      <div class="timeline-block" data-block-id="${b.id}" aria-label="${esc(ariaLabel)}" style="top:${top}px; height:${height}px;">
+        <div class="tb-row">${ICONS.block}<span class="tb-label">${label}</span></div>
+        ${height >= 40 ? `<span class="tb-time">${timeLabel}</span>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  const freeSlotsHtml = computeFreeGaps(day, dayAppts, dayBlocks).map(g => {
     const gStart = new Date(g.s);
     const startMins = (gStart.getHours() - AGENDA_START_HOUR) * 60 + gStart.getMinutes();
     const top = (startMins / 60) * HOUR_HEIGHT;
@@ -5480,11 +5604,24 @@ function buildAgendaGrid(day) {
   // não no cabeçalho) de propósito: assim atualiza tanto no render cheio
   // quanto no caminho leve de troca de dia (renderAgendaGridTransition),
   // que só reescreve este nó.
-  const emptyNoteHtml = dayAppts.length
+  const emptyNoteHtml = (dayAppts.length || allDayBlocks.length)
     ? ''
     : `<p class="agenda-empty-note">${sameDay(day, new Date()) ? 'Hoje sua agenda está livre.' : 'Nenhum atendimento neste dia.'}</p>`;
 
+  // Dia inteiro vira FAIXA, não card de 00:00-24:00 na grade — decisão
+  // explícita (um card gigante mentiria sobre proporção do dia). Vive fora
+  // de .timeline-body (que é 100% posicionamento absoluto por minuto), mas
+  // dentro do html que #timelineEl recebe — então acompanha a mesma
+  // animação de slide da troca de dia, sem coreografia própria.
+  const allDayBannerHtml = allDayBlocks.map(b => `
+    <div class="day-blocked-banner" data-block-id="${b.id}">
+      ${ICONS.block}
+      <span>${b.reason ? esc(b.reason) : 'Salão fechado'}</span>
+    </div>
+  `).join('');
+
   const html = `
+    ${allDayBannerHtml}
     ${emptyNoteHtml}
     <div class="timeline-body" style="height:${(AGENDA_END_HOUR - AGENDA_START_HOUR) * HOUR_HEIGHT}px;">
       ${hours.map((h, i) => `
@@ -5493,6 +5630,7 @@ function buildAgendaGrid(day) {
         </div>
       `).join('')}
       ${freeSlotsHtml}
+      ${scheduleBlocksHtml}
       ${blocksHtml}
       ${currentTime ? `
         <div class="current-time-line" id="currentTimeLine" style="top:${currentTime.top}px;">
@@ -5559,7 +5697,7 @@ function agendaHeaderHtml(day) {
       </div>
       <div class="day-nav-actions">
         <button class="agenda-today-btn" id="agendaTodayBtn">Hoje</button>
-        <button class="agenda-add-btn" id="agendaAddBtn" aria-label="Novo agendamento">+</button>
+        <button class="agenda-add-btn" id="agendaAddBtn" aria-label="Adicionar — novo agendamento ou bloqueio">+</button>
       </div>
     </div>
     <div class="week-strip" id="weekStrip">
@@ -5581,7 +5719,7 @@ function bindAgendaHeader() {
     renderAgendaTransition('forward');
   };
   document.getElementById('openMonthView').onclick = () => openMonthCalendar(day);
-  document.getElementById('agendaAddBtn').onclick = openNewApptModal;
+  document.getElementById('agendaAddBtn').onclick = openAgendaAddMenu;
   document.getElementById('agendaTodayBtn').onclick = goToToday;
   // Toque num dia dentro da MESMA semana: a faixa continua com as mesmas 7
   // datas, só a seleção muda (updateWeekStripSelection, sem refazer o HTML),
@@ -5632,6 +5770,14 @@ function bindFreeSlotClicks() {
   });
 }
 
+// Toque num bloqueio (card parcial ou faixa de dia inteiro) abre o sheet de
+// detalhe — não a tela de Appointment Detail, é outra entidade.
+function bindTimelineBlockClicks() {
+  app.querySelectorAll('[data-block-id]').forEach(el => {
+    el.onclick = () => openBlockDetailSheet(el.dataset.blockId);
+  });
+}
+
 function renderAgenda() {
   document.getElementById('greeting').textContent = 'Agenda';
   document.getElementById('greetingSub').textContent = '';
@@ -5654,6 +5800,7 @@ function renderAgenda() {
   bindAgendaHeader();
   bindTimelineApptClicks();
   bindFreeSlotClicks();
+  bindTimelineBlockClicks();
   attachTimelineScrollbarFade(document.getElementById('timelineEl'));
   scrollTimelineTo(document.getElementById('timelineEl'), computeRelevantScrollTop(day, dayAppts), { animate: false });
 }
@@ -5751,6 +5898,7 @@ function renderAgendaGridTransition(direction) {
     el.innerHTML = html;
     bindTimelineApptClicks();
     bindFreeSlotClicks();
+    bindTimelineBlockClicks();
     scrollTimelineTo(el, computeRelevantScrollTop(day, dayAppts), { animate: false });
   });
 }
@@ -8164,6 +8312,241 @@ function newWizState(prefillDate, prefillTime, freeSlot) {
   };
 }
 
+// ── Bloqueio manual de agenda ────────────────────────────────
+// O + da Agenda agora abre uma escolha simples antes do wizard de sempre —
+// "Novo agendamento" continua indo direto pro openNewApptModal(), que não
+// muda em nada.
+function openAgendaAddMenu() {
+  modalContainer.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet">
+        <h2>Agenda</h2>
+        <button class="sheet-option" data-acao="agendamento"><span>Novo agendamento</span></button>
+        <button class="sheet-option" data-acao="bloqueio"><span>Bloquear horário</span></button>
+        <button class="btn btn-ghost" id="modalClose">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalClose').onclick = closeModal;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+  modalContainer.querySelectorAll('[data-acao]').forEach(btn => {
+    btn.onclick = () => {
+      const acao = btn.dataset.acao;
+      closeModal();
+      if (acao === 'agendamento') openNewApptModal();
+      else openBlockModal();
+    };
+  });
+}
+
+// `blockForm` é o equivalente de `wiz` pro formulário de bloqueio — mais
+// simples, sem etapas, então não precisa de uma máquina de estado própria.
+let blockForm = null;
+
+function newBlockFormState(existing) {
+  const ativos = profissionaisAtivos();
+  const base = existing ? new Date(existing.starts_at) : state.agendaDate;
+  return {
+    id: existing ? existing.id : null,
+    staffId: existing ? existing.staff_id : (ativos.length ? ativos[0].id : null),
+    date: dateInputValue(base),
+    allDay: existing ? existing.all_day : false,
+    startTime: existing && !existing.all_day ? fmtTime(existing.starts_at) : '09:00',
+    endTime: existing && !existing.all_day ? fmtTime(existing.ends_at) : '10:00',
+    reason: existing ? (existing.reason || '') : '',
+    error: null,
+  };
+}
+
+function openBlockModal(existing) {
+  blockForm = newBlockFormState(existing);
+  renderBlockModal();
+}
+
+function renderBlockModal() {
+  const ativos = profissionaisAtivos();
+  const f = blockForm;
+  modalContainer.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet">
+        <h2>${f.id ? 'Editar bloqueio' : 'Bloquear horário'}</h2>
+        <div class="modal-section">
+          <div class="modal-field-label">Data</div>
+          <input type="date" id="blkDate" value="${f.date}">
+
+          ${ativos.length > 1 ? `
+          <div class="modal-field-label">Profissional</div>
+          <select id="blkStaff">
+            ${ativos.map(s => `<option value="${s.id}" ${s.id === f.staffId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
+          </select>` : ''}
+
+          <div class="modal-field-label">Período</div>
+          <div class="toggle-row" id="blkAllDayToggle">
+            <button type="button" data-val="0" class="${!f.allDay ? 'active' : ''}">Horário</button>
+            <button type="button" data-val="1" class="${f.allDay ? 'active' : ''}">Dia inteiro</button>
+          </div>
+
+          <div id="blkTimeFields" style="${f.allDay ? 'display:none' : ''}">
+            <div class="modal-field-label">Início</div>
+            <input type="time" id="blkStart" value="${f.startTime}" step="1800">
+            <div class="modal-field-label">Fim</div>
+            <input type="time" id="blkEnd" value="${f.endTime}" step="1800">
+          </div>
+
+          <div class="modal-field-label">Motivo (opcional)</div>
+          <input type="text" id="blkReason" value="${esc(f.reason)}" placeholder="Ex.: Pessoal, Compromisso, Salão fechado" autocomplete="off">
+        </div>
+        ${f.error ? `<div class="login-error" style="margin-top:var(--space-3)">${esc(f.error)}</div>` : ''}
+        <button class="btn btn-primary" id="blkSave">${f.id ? 'Salvar alterações' : 'Bloquear horário'}</button>
+        ${f.id ? `<button class="btn btn-ghost" id="blkDelete" style="color:var(--color-accent-2-700)">Remover bloqueio</button>` : ''}
+        <button class="btn btn-ghost" id="modalClose">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalClose').onclick = closeModal;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+  document.getElementById('blkDate').onchange = (e) => { f.date = e.target.value; };
+  const staffSel = document.getElementById('blkStaff');
+  if (staffSel) staffSel.onchange = (e) => { f.staffId = e.target.value; };
+  // Toggle reescreve a folha inteira — não tem input com foco no meio do
+  // toque num botão, então não cai na armadilha de "o que anima/tem foco
+  // não sobrevive a um innerHTML novo" (ver app/CLAUDE.md).
+  document.querySelectorAll('#blkAllDayToggle button').forEach(btn => {
+    btn.onclick = () => { f.allDay = btn.dataset.val === '1'; renderBlockModal(); };
+  });
+  const startEl = document.getElementById('blkStart');
+  const endEl = document.getElementById('blkEnd');
+  if (startEl) startEl.onchange = (e) => { f.startTime = e.target.value; };
+  if (endEl) endEl.onchange = (e) => { f.endTime = e.target.value; };
+  document.getElementById('blkReason').oninput = (e) => { f.reason = e.target.value; };
+  document.getElementById('blkSave').onclick = saveScheduleBlock;
+  const delBtn = document.getElementById('blkDelete');
+  if (delBtn) delBtn.onclick = () => { const id = f.id; closeModal(); confirmDeleteScheduleBlock(id); };
+}
+
+// Mesma convenção de horário do resto do painel: componentes LOCAIS do
+// aparelho, não salonTimeToInstant() — o painel roda com a Juliane
+// fisicamente em Dublin, não no telefone de uma cliente em outro fuso (essa
+// é a armadilha que salonTimeToInstant existe pra evitar em agendar.html).
+// "Dia inteiro" é literalmente 00:00 do dia escolhido até 00:00 do dia
+// seguinte, nunca 09:00-18:00: se o expediente mudar no futuro, um bloqueio
+// de dia inteiro continua significando dia inteiro.
+async function saveScheduleBlock() {
+  const f = blockForm;
+  const btn = document.getElementById('blkSave');
+  if (!f.staffId || !f.date) { f.error = 'Selecione data e profissional.'; renderBlockModal(); return; }
+
+  let startsAt, endsAt;
+  if (f.allDay) {
+    startsAt = new Date(`${f.date}T00:00:00`);
+    endsAt = new Date(startsAt.getTime() + 86400000);
+  } else {
+    if (!f.startTime || !f.endTime) { f.error = 'Informe início e fim.'; renderBlockModal(); return; }
+    const [sh, sm] = f.startTime.split(':').map(Number);
+    const [eh, em] = f.endTime.split(':').map(Number);
+    startsAt = new Date(`${f.date}T00:00:00`); startsAt.setHours(sh, sm, 0, 0);
+    endsAt = new Date(`${f.date}T00:00:00`); endsAt.setHours(eh, em, 0, 0);
+    if (endsAt <= startsAt) { f.error = 'O fim precisa ser depois do início.'; renderBlockModal(); return; }
+  }
+
+  orenziUI.setButtonBusy(btn, f.id ? 'Salvando…' : 'Bloqueando…');
+  const payload = {
+    staff_id: f.staffId,
+    starts_at: startsAt.toISOString(),
+    ends_at: endsAt.toISOString(),
+    all_day: f.allDay,
+    reason: f.reason.trim() || null,
+  };
+  const query = f.id
+    ? sb.from('schedule_blocks').update(payload).eq('id', f.id).select('id')
+    : sb.from('schedule_blocks').insert(payload).select('id');
+  const { data, error } = await query;
+
+  if (error || !data || !data.length) {
+    orenziUI.resetButton(btn);
+    // 23P01 é o mesmo código que BOOKING_CONFLICT usa pra appointment — aqui
+    // é schedule_blocks_guard_conflict() recusando por causa de um
+    // atendimento existente (ver migration schedule_blocks_foundation). No
+    // demo essa checagem não existe (escrita mockada sempre "sucede") — é
+    // esperado, o mock nunca simulou conflito de horário.
+    if (error?.code === '23P01') {
+      f.error = error.details || 'Já existe atendimento nesse horário. Resolva o agendamento antes de bloquear.';
+    } else if (error) {
+      console.error('schedule_blocks.save', error);
+      f.error = 'Não foi possível salvar o bloqueio. Tente de novo.';
+    } else {
+      f.error = 'Não foi possível salvar — faça login novamente.';
+    }
+    renderBlockModal();
+    return;
+  }
+
+  // Monta o registro a partir do que a própria tela já sabe (payload), não
+  // do retorno cru do `.select()`: o mock de escrita do demo só garante
+  // `data[0].id` (ver window.supabase.from().insert/update no topo do
+  // arquivo) — "o que aparece é o que o painel já pôs no state antes de
+  // chamar", mesmo espírito do resto deste arquivo.
+  const saved = { id: (f.id || data[0].id), ...payload };
+  if (f.id) {
+    const idx = state.scheduleBlocks.findIndex(b => b.id === f.id);
+    if (idx >= 0) state.scheduleBlocks[idx] = saved; else state.scheduleBlocks.push(saved);
+  } else {
+    state.scheduleBlocks.push(saved);
+  }
+  await orenziUI.setButtonSuccess(btn, f.id ? 'Salvo' : 'Bloqueado');
+  closeModal();
+  showToast(f.id ? 'Bloqueio atualizado' : 'Horário bloqueado');
+  if (state.tab === 'agenda') renderAgenda(); else render();
+}
+
+// Toque num bloqueio (card parcial ou faixa de dia inteiro) — sheet simples,
+// não a tela de Appointment Detail: é outra entidade, com outro conjunto de
+// ações (Editar / Remover bloqueio, nunca "cancelar").
+function openBlockDetailSheet(blockId) {
+  const b = state.scheduleBlocks.find(x => x.id === blockId);
+  if (!b) return;
+  const dateLabel = fmtDate(b.starts_at);
+  const timeLabel = b.all_day ? 'Dia inteiro' : `${fmtTime(b.starts_at)} – ${fmtTime(b.ends_at)}`;
+  modalContainer.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet">
+        <h2>Bloqueio</h2>
+        <div class="modal-section">
+          <div class="block-detail-row">${ICONS.calendar}<span>${esc(dateLabel)}</span></div>
+          <div class="block-detail-row">${ICONS.clock}<span>${esc(timeLabel)}</span></div>
+          ${b.reason ? `<div class="block-detail-row">${ICONS.tag}<span>${esc(b.reason)}</span></div>` : ''}
+        </div>
+        <button class="btn btn-primary" id="blkEditBtn">Editar</button>
+        <button class="btn btn-ghost" id="blkRemoveBtn" style="color:var(--color-accent-2-700)">Remover bloqueio</button>
+        <button class="btn btn-ghost" id="modalClose">Fechar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalClose').onclick = closeModal;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+  document.getElementById('blkEditBtn').onclick = () => { closeModal(); openBlockModal(b); };
+  document.getElementById('blkRemoveBtn').onclick = () => { closeModal(); confirmDeleteScheduleBlock(b.id); };
+}
+
+// Wording "Remover bloqueio", nunca "Cancelar" — não é appointment, é uma
+// indisponibilidade que some. O horário volta a participar da
+// disponibilidade assim que a linha sai de schedule_blocks.
+function confirmDeleteScheduleBlock(blockId) {
+  orenziUI.confirm({
+    title: 'Remover bloqueio?',
+    message: 'O horário volta a ficar disponível imediatamente.',
+    confirmLabel: 'Remover bloqueio',
+    destructive: true,
+    successLabel: 'Removido',
+    onConfirm: async () => {
+      const { error } = await sb.from('schedule_blocks').delete().eq('id', blockId);
+      if (error) { console.error('schedule_blocks.delete', error); throw new Error('Não foi possível remover o bloqueio. Tente de novo.'); }
+      state.scheduleBlocks = state.scheduleBlocks.filter(x => x.id !== blockId);
+      if (state.tab === 'agenda') renderAgenda(); else render();
+    },
+  });
+}
+
 function openNewApptModal() {
   wiz = newWizState(null, null);
   renderWizard();
@@ -8186,7 +8569,7 @@ function openNewApptModalAt(dateStr, timeStr, slotStartMs, slotEndMs) {
 // fica de fora de propósito, igual a RPC get_busy_slots que o agendar.html
 // usa: durante a pausa a profissional está livre pra atender outra cliente.
 function busyBlocksForStaffOnDate(staffId, dayDate) {
-  return state.appointments
+  const apptBlocks = state.appointments
     .filter(a => a.staff?.id === staffId && a.status !== 'cancelled' && sameDay(new Date(a.starts_at), dayDate))
     .flatMap(a => {
       const seg = segmentsOf(a);
@@ -8197,6 +8580,26 @@ function busyBlocksForStaffOnDate(staffId, dayDate) {
       if (seg.wa > 0) blocks.push([new Date(end.getTime() - seg.wa * 60000), end]);
       return blocks;
     });
+  // Bloqueio manual é opaco — ocupa o intervalo inteiro, sem distinção de
+  // trabalho/pausa. Mesmo espírito do UNION ALL de schedule_blocks dentro de
+  // staff_work_blocks/get_busy_slots no banco.
+  const blockBlocks = state.scheduleBlocks
+    .filter(b => b.staff_id === staffId && scheduleBlockOverlapsDay(b, dayDate))
+    .map(b => [new Date(b.starts_at), new Date(b.ends_at)]);
+  return apptBlocks.concat(blockBlocks);
+}
+
+function scheduleBlockOverlapsDay(b, dayDate) {
+  const dayStart = new Date(dayDate); dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart.getTime() + 86400000);
+  return new Date(b.starts_at) < dayEnd && new Date(b.ends_at) > dayStart;
+}
+
+// Bloqueios que tocam o dia (dia inteiro ou parcial), independente da
+// profissional — mesma simplificação que dayAppts já assume em
+// computeFreeGaps (só a Juliane atende hoje; ver profissionaisAtivos()).
+function scheduleBlocksForDay(dayDate) {
+  return state.scheduleBlocks.filter(b => scheduleBlockOverlapsDay(b, dayDate));
 }
 
 // Horários "HH:MM" livres pra um serviço, profissional e dia — mesma regra

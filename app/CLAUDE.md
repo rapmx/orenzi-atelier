@@ -41,6 +41,7 @@ edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
 | Tela inicial, KPIs, ocupação | `renderHome()`, `occupancyPct()` |
 | Insights, gráfico de tendência | `renderInsights()`, `computeIndicatorsData()` |
 | Agenda, sobreposição, pausa | `renderAgenda()`, `layoutAppts()`, `segmentsOf()` |
+| Bloqueio manual de agenda | `openAgendaAddMenu()`, `openBlockModal()`, `saveScheduleBlock()`, `openBlockDetailSheet()`, `confirmDeleteScheduleBlock()`, `busyBlocksForStaffOnDate()` |
 | Estoque | `// ── ESTOQUE`, `renderStock()`, `renderStockList()`, `renderStockInsights()`, `openProductModal()` |
 | Clientes, fotos, detalhe | `renderClients()`, `renderClientDetail()`, `renderApptDetail()` |
 | Login | `checkSession()`, `renderLogin()` |
@@ -52,9 +53,12 @@ Estoque ocupou o lugar de Equipe em 02/08/2026 — com uma profissional só,
 
 ## Banco (Supabase, projeto `gsagtsxkhqlpxuvrijgw`)
 
-Tabelas: `appointments`, `clients`, `staff`, `staff_services`, `services`,
-`salon_settings`, `products`, `product_movements`, `client_photos`,
+Tabelas: `appointments`, `schedule_blocks`, `clients`, `staff`, `staff_services`,
+`services`, `salon_settings`, `products`, `product_movements`, `client_photos`,
 `client_questionnaires`, `booking_visits`, `lookup_attempts`.
+
+`schedule_blocks` (13/08/2026) é o bloqueio manual de agenda — ver seção
+própria em "Regras do domínio" abaixo.
 
 `product_movements` (03/08/2026) é o histórico de estoque: `product_id`,
 `kind` (`entrada` | `saida` | `ajuste`), `quantity` **sempre positivo** (o
@@ -70,7 +74,17 @@ Duas RPCs `SECURITY DEFINER` — a página da cliente usa a chave anônima e a R
 **todo horário parecia livre**:
 
 - `get_busy_slots(p_staff_id, p_from, p_to)` — blocos em que a profissional trabalha
+  **ou está com a agenda bloqueada** (`schedule_blocks`, desde 13/08/2026)
 - `get_chair_load(p_from, p_to)` — ocupação das cadeiras (limite em `salon_settings.chairs`)
+
+`staff_work_blocks(p_staff_id, p_from, p_to, p_exclude_id)` é a função interna
+(sem grant pra `anon`/`authenticated`) que `get_busy_slots` espelha — é ela que
+`appointments_guard_conflict()` (trigger) e as RPCs de criação/reagendamento
+de appointment (`_create_booking_core`, `create_public_booking`,
+`reschedule_booking_by_token` e as variantes `_orchestrated`) chamam de
+verdade. **Um bloqueio manual entra no `UNION ALL` dela** — é por isso que
+nenhuma dessas funções precisou ser tocada pra passar a respeitar
+`schedule_blocks`: todas já delegavam a disponibilidade pra cá.
 
 Trigger `trg_notify_new_appointment` dispara e-mail (Resend) a cada INSERT em
 `appointments`. Cuidado ao inserir dados de teste.
@@ -105,6 +119,77 @@ status**. Mudar 44 num lado exige mudar no outro.
 
 **Conflito** só existe quando um *bloco de trabalho* encosta em outro. Pausa
 sobreposta a pausa, ou trabalho dentro de pausa alheia, é permitido.
+
+### Bloqueio manual de agenda (`schedule_blocks`, 13/08/2026)
+
+Entidade própria — **não** é appointment fake. Serve pra profissional marcar
+um período como indisponível (dia inteiro ou intervalo), com motivo interno
+opcional que **nunca** chega ao Booking público (`get_busy_slots` só devolve
+`busy_start`/`busy_end`, sem `reason`).
+
+- **Schema**: `id`, `staff_id` (obrigatório — não existe "bloqueio de salão
+  inteiro" nesta fase, só por profissional), `starts_at`/`ends_at`
+  (`timestamptz`), `all_day`, `reason` (nullable), `created_by`,
+  `created_at`/`updated_at`. Sem recorrência — só bloqueios pontuais.
+- **"Dia inteiro" é o dia civil local completo** (`Europe/Dublin`): `00:00` do
+  dia escolhido → `00:00` do dia seguinte. **Nunca** `09:00`–`18:00` — se o
+  expediente mudar no futuro, um bloqueio de dia inteiro continua significando
+  dia inteiro. Na Agenda isso vira **faixa no topo do dia**
+  (`.day-blocked-banner`, "Salão fechado" ou o motivo), nunca um card de
+  `00:00`–`24:00` na timeline — mentiria sobre a proporção do dia.
+- **Disponibilidade**: um bloqueio é um terceiro tipo de intervalo opaco, ao
+  lado de `work_before`/`work_after` — entra no mesmo `UNION ALL` de
+  `staff_work_blocks`/`get_busy_slots`/`get_chair_load` (ver seção "Banco"
+  acima). **Gap de appointment continua livre**: um bloqueio pode ocupar
+  exatamente o `gap` de um atendimento (a tinta agindo, a profissional livre)
+  sem conflitar com ele — só não pode tocar `work_before`/`work_after`.
+- **Conflito bloqueio↔appointment é bidirecional e decidido no banco, nunca só
+  no frontend**:
+  - *Bloqueio sobre appointment existente* — `trg_schedule_blocks_no_appointment_conflict`
+    (`schedule_blocks_guard_conflict()`) rejeita na criação/edição do bloqueio
+    se ele intersectar o bloco de trabalho de um appointment da mesma
+    profissional (erro `23P01`/`BLOCK_CONFLICTS_WITH_APPOINTMENT`, com a data
+    do conflito na mensagem). Nunca apaga, cancela nem move o appointment — só
+    recusa e devolve o motivo pra UI mostrar.
+  - *Appointment sobre bloqueio existente* — `appointments_guard_conflict()`
+    (o trigger que já existia) já recusa sozinho, porque lê `staff_work_blocks`
+    e o bloqueio já está no `UNION ALL` dela. Nenhuma linha desse trigger foi
+    tocada.
+  - Mesmo advisory lock por `staff_id` dos dois lados
+    (`pg_advisory_xact_lock(hashtextextended(staff_id::text, 0))`,
+    `hashtextextended` de um argumento só — a mesma fórmula de
+    `lock_staff_for_booking()`) — criar/editar bloqueio e criar/reagendar
+    appointment na mesma profissional nunca correm em paralelo sem se ver.
+- **Painel**: `loadScheduleBlocks()` carrega junto de `loadAll()`;
+  `busyBlocksForStaffOnDate()` soma os bloqueios aos blocos de trabalho —
+  é o que faz o modal de novo agendamento (`computeAvailableSlots()`) e o
+  indicador de disponibilidade do calendário (`dayAvailabilityLevel()`) já não
+  oferecerem horário bloqueado, de graça. `computeFreeGaps()` também os trata
+  como ocupados, pra nenhum card "Xh livres" nascer dentro de um bloqueio.
+  FAB `+` da Agenda (`agendaAddBtn`) abre `openAgendaAddMenu()` — escolha
+  entre "Novo agendamento" (fluxo de sempre) e "Bloquear horário"
+  (`openBlockModal()`). Timeline: card próprio hachurado
+  (`.timeline-block`, z-index abaixo de `.timeline-appt`) pro bloqueio
+  parcial — rachurado é linguagem de "indisponível" aqui, ao contrário da
+  pausa (que fica clara, sem listra, de propósito: pausa é o oposto
+  semântico, "cabe encaixar alguém"). Toque no bloqueio (card ou faixa) abre
+  `openBlockDetailSheet()` — **não** a tela de Appointment Detail, é outra
+  entidade. Botão de remoção sempre "Remover bloqueio", nunca "Cancelar".
+- **`painel_demo.html`**: mesmo mock genérico de escrita do resto do arquivo
+  (`insert`/`update`/`delete` sempre "sucedem" sem persistir; `saveScheduleBlock()`
+  monta o registro local a partir do payload enviado, não do retorno cru do
+  `.select()`, pelo mesmo motivo que o resto do app já segue essa convenção).
+  `demoSalao()` gera dois bloqueios de exemplo (`blocos`) em dias fora do
+  encaixe Camila/Marina — um parcial (card na timeline) e um dia inteiro
+  (faixa) — pra mostrar os dois tratamentos visuais sem mexer no cenário
+  existente.
+- **Segurança**: RLS ligada, sem grant pra `anon` nem `authenticated` por
+  padrão — `REVOKE ALL ... FROM PUBLIC, anon, authenticated` explícito (a
+  convenção "Segurança de objetos novos" abaixo), depois `GRANT SELECT,
+  INSERT, UPDATE, DELETE` só pra `authenticated`. Testado pela superfície
+  PostgREST real com a chave anônima: `SELECT`/`INSERT`/`DELETE` direto na
+  tabela devolvem `401`; `get_busy_slots` reflete o bloqueio sem expor
+  `reason`.
 
 ### Status na timeline (10/08/2026)
 
