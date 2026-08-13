@@ -465,6 +465,44 @@ Antes de aprovar qualquer mudança:
 
 # Changelog
 
+## [1.2.1] — 2026-08-13
+
+Correção de semântica de movimento na folha de tela cheia, no mesmo dia da
+1.2.0. Nenhuma mudança de layout, conteúdo ou regra de negócio.
+
+### Corrigido
+- **A entrada vertical era uma regra do container, não um evento.** Enquanto
+  `animation: fullSheetIn` viveu no `.o-fullsheet`/`.o-wizard-sheet`, todo
+  re-render a reaplicava — cada etapa do wizard e cada toque no segmented
+  control disparavam bottom→top, e o fluxo lia como uma pilha de modais
+  abrindo uma sobre a outra. Virou a classe `.is-entering`, posta só por
+  `openFullSheet()`.
+- **Navegação interna virou horizontal** (§14b de [05](05_MOTION_SYSTEM.md)):
+  menu → destino e destino → menu deslizam dentro da folha já aberta, com
+  parallax de −28% na tela que sai. Antes fechavam e reabriam a folha.
+- **Etapas do wizard não recriam mais o shell.** `renderWizard()` foi partido
+  em `paintWizardShell()` (entrar no fluxo) e `paintWizStep()` +
+  `updateWizChrome()` (trocar de etapa). Medido: o elemento do shell é o
+  mesmo objeto entre etapas.
+- **Segmented control ganhou indicador que desliza** (`.blk-seg-thumb`,
+  posicionado por `transform`). Antes era o fundo do botão que acendia e
+  apagava — fundo interpola cor, não posição.
+- **Trocar o tipo de bloqueio não move mais a tela.** Só a região abaixo do
+  segmented troca, com fade + 4px e altura interpolada. Medido: título,
+  subtítulo, data e o próprio segmented ficam no mesmo pixel (12 / 38 / 133 /
+  259) antes e depois.
+
+### Adicionado
+- `--motion` de navegação de página: 260ms + `--ease-out`, reaproveitando as
+  curvas existentes — nenhuma duração ou easing novo.
+
+### Verificado
+- Estado sobrevive a toda transição: data, início, fim e motivo preservados ao
+  alternar o segmented (o motivo vive na região que é recriada, mas o valor
+  vem do state, que é a autoridade).
+- `prefers-reduced-motion`: zero animações, zero clones de palco, altura da
+  região dinâmica não fica presa em px.
+
 ## [1.2.0] — 2026-08-13
 
 Extensão do sistema pedida pelo dono do produto ao repaginar os sheets da

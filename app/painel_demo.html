@@ -1844,8 +1844,7 @@ window.supabase = {
     background: var(--color-bg);
     width: 100%; max-width: var(--canvas-max-width); margin: 0 auto;
     height: 100vh; height: 100dvh;
-    overflow: hidden;
-    animation: fullSheetIn var(--motion-emphasized) var(--ease-out);
+    overflow: hidden; position: relative;
   }
   .o-wizard-head {
     display: flex; align-items: center; gap: var(--space-2);
@@ -1914,13 +1913,45 @@ window.supabase = {
     background: var(--color-bg);
     width: 100%; max-width: var(--canvas-max-width); margin: 0 auto;
     height: 100vh; height: 100dvh;
-    overflow: hidden;
+    overflow: hidden; position: relative;
+  }
+  /* A entrada vertical é uma CLASSE, não uma regra do container (13/08/2026).
+     Enquanto vivia no `.o-fullsheet`, qualquer re-render reaplicava
+     bottom→top e cada etapa do wizard parecia uma modal nova abrindo. Agora
+     só `openFullSheet()` põe `.is-entering`, e navegação interna nunca põe. */
+  .o-fullsheet.is-entering, .o-wizard-sheet.is-entering {
     animation: fullSheetIn var(--motion-emphasized) var(--ease-out);
+  }
+  .o-fullsheet.is-leaving, .o-wizard-sheet.is-leaving {
+    animation: fullSheetOut var(--motion-fast) var(--ease-in) forwards;
   }
   @keyframes fullSheetIn {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
   }
+  @keyframes fullSheetOut {
+    from { transform: translateY(0); }
+    to { transform: translateY(100%); }
+  }
+  .modal-overlay.is-fullsheet.is-leaving { animation: modalOverlayOut var(--motion-fast) var(--ease-in) forwards; }
+  @keyframes modalOverlayOut { from { opacity: 1; } to { opacity: 0; } }
+
+  /* ── Palco de páginas (navigation stack) ───────────────────────────────
+     O shell (fundo, altura, largura) fica parado; quem desliza é o palco,
+     que carrega head + body + footer de UMA tela. Durante a transição os
+     dois palcos viram absolutos e se cruzam — por isso `position: relative`
+     no shell acima. Fora da transição o palco é um flex normal, senão o
+     `overflow-y: auto` do corpo não teria altura de referência. */
+  .o-fullsheet-stage { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+  .o-fullsheet-stage.is-sliding { position: absolute; inset: 0; }
+  /* Saída com recuo parcial (-28%), não -100%: é o parallax do navigation
+     stack do iOS — a tela que sai anda menos que a que entra, o que dá a
+     leitura de camada por baixo em vez de duas telas empurrando uma à
+     outra. */
+  @keyframes pageInFromRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  @keyframes pageOutToLeft   { from { transform: translateX(0); } to { transform: translateX(-28%); opacity: .6; } }
+  @keyframes pageInFromLeft  { from { transform: translateX(-28%); opacity: .6; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes pageOutToRight  { from { transform: translateX(0); } to { transform: translateX(100%); } }
   .o-fullsheet-head {
     flex-shrink: 0; display: flex; align-items: center; gap: var(--space-2);
     padding: calc(var(--space-3) + var(--safe-top)) var(--space-4) var(--space-3);
@@ -2040,27 +2071,57 @@ window.supabase = {
      do rótulo — o estado selecionado é sólido e o outro é texto puro, sem
      meio-termo. `.toggle-row` (o par de pílulas antigo) não foi tocado:
      ele continua servindo as outras telas. */
+  /* Segmented control com indicador que DESLIZA entre as opções, em vez de
+     apagar de um lado e acender do outro (13/08/2026). O indicador é um
+     elemento próprio (`.blk-seg-thumb`) posicionado por transform — não o
+     fundo do botão: fundo não interpola posição, só cor, e é isso que
+     produzia o "pisca-pisca" de antes. Largura fixa em 50% porque são
+     sempre duas opções; se um dia forem três, a conta vira 100/n. */
   .blk-seg {
-    display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-1);
+    position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-1);
     padding: var(--space-1); border-radius: var(--radius-full);
     background: var(--color-neutral-200);
   }
+  .blk-seg-thumb {
+    position: absolute; top: var(--space-1); bottom: var(--space-1);
+    left: var(--space-1); width: calc(50% - var(--space-1));
+    border-radius: var(--radius-full); background: var(--color-surface);
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(43,36,32,0.12));
+    transition: transform var(--motion-fast) var(--ease-standard);
+    pointer-events: none;
+  }
+  /* `calc(100% + gap)`: o trilho tem gap entre as duas células, então o
+     deslocamento até a segunda não é exatamente a largura do polegar. */
+  .blk-seg-thumb.is-right { transform: translateX(calc(100% + var(--space-1))); }
   .blk-seg button {
+    position: relative; z-index: 1;
     padding: var(--space-2-5) var(--space-2); border: none; border-radius: var(--radius-full);
     background: transparent; color: var(--color-neutral-700); cursor: pointer;
     font-family: var(--font-body); font-size: var(--text-body-size); font-weight: 600;
-    transition: background-color var(--motion-fast) var(--ease-standard),
-                color var(--motion-fast) var(--ease-standard);
+    transition: color var(--motion-fast) var(--ease-standard);
     -webkit-tap-highlight-color: transparent;
   }
-  .blk-seg button.is-active {
-    background: var(--color-surface); color: var(--color-text);
-    font-weight: var(--text-body-strong-weight); box-shadow: var(--shadow-sm, 0 1px 3px rgba(43,36,32,0.12));
-  }
+  .blk-seg button.is-active { color: var(--color-text); font-weight: var(--text-body-strong-weight); }
   .blk-seg button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+  /* Região que troca com o segmented. `height` é animada a partir do valor
+     medido em JS (auto não interpola) e volta pra `auto` no fim, senão o
+     bloco ficaria preso em px e cortaria se o texto quebrasse em mais
+     linhas (rotação de tela, fonte grande do sistema) — mesma armadilha já
+     documentada no dropdown do diagnóstico. */
+  .blk-dynamic { overflow: hidden; transition: height var(--motion-fast) var(--ease-standard); }
+  .blk-dynamic-inner { animation: blkFieldsIn var(--motion-fast) var(--ease-out); }
+  @keyframes blkFieldsIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .blk-seg button, .agenda-menu-action { transition: none; }
+    .blk-seg button, .agenda-menu-action, .blk-seg-thumb, .blk-dynamic { transition: none; }
     .agenda-menu-action:active { transform: none; }
+    .o-fullsheet.is-entering, .o-wizard-sheet.is-entering,
+    .o-fullsheet.is-leaving, .o-wizard-sheet.is-leaving,
+    .modal-overlay.is-fullsheet.is-leaving, .blk-dynamic-inner { animation: none; }
   }
 
   .blk-reason-input {
@@ -8476,6 +8537,7 @@ let wiz = null;
 function closeModal() {
   modalContainer.innerHTML = '';
   wiz = null;
+  blockForm = null;
 }
 
 const SERVICE_CATEGORY_ICONS = {
@@ -8515,52 +8577,161 @@ function newWizState(prefillDate, prefillTime, freeSlot) {
   };
 }
 
+// ── Motor da folha de tela cheia (13/08/2026) ────────────────
+// Corrige a semântica de movimento: subir do rodapé é o gesto de ENTRAR no
+// fluxo, e só isso. Antes, toda troca de tela e toda etapa do wizard
+// recriavam o sheet inteiro e reaplicavam bottom→top, então cada passo
+// parecia uma modal nova abrindo em cima da anterior.
+//
+// Agora há três movimentos distintos, cada um dizendo uma coisa diferente:
+//   entrar no fluxo   → vertical  (bottom→top), uma única vez
+//   navegar dentro    → horizontal (avançar ←, voltar →), navigation stack
+//   sair do fluxo     → vertical  (top→bottom)
+//
+// O shell (fundo, altura, largura) fica parado o tempo todo; quem desliza é
+// o palco `.o-fullsheet-stage`, que carrega head + body + footer de uma tela.
+const FULLSHEET_NAV_MS = 260;
+
+function fullSheetEl() {
+  return modalContainer.querySelector('.o-fullsheet, .o-wizard-sheet');
+}
+function fullSheetIsOpen() { return !!fullSheetEl(); }
+
+// Única porta de entrada com movimento vertical. `drawFn` desenha a tela.
+function openFullSheet(drawFn) {
+  drawFn();
+  if (prefersReducedMotion()) return;
+  const sheet = fullSheetEl();
+  if (!sheet) return;
+  sheet.classList.add('is-entering');
+  const limpar = () => sheet.classList.remove('is-entering');
+  sheet.addEventListener('animationend', limpar, { once: true });
+  // Rede de segurança: em aba sem composição a animação não corre e o
+  // `animationend` nunca dispara — mesma armadilha já documentada em
+  // morphAvatar(). A classe presa não quebraria nada, mas re-animaria numa
+  // eventual volta de foco.
+  setTimeout(limpar, 600);
+}
+
+// Navegação interna: o palco antigo sai, o novo entra, o shell não se mexe.
+// `direction` é 'forward' (avançar) ou 'back' (voltar).
+// O clone é tirado ANTES de drawFn() e anexado DEPOIS — drawFn reescreve o
+// modalContainer inteiro, e o palco antigo morreria junto (mesma lição de
+// slidePane() na Agenda).
+function fullSheetNavigate(direction, drawFn) {
+  const palcoAntigo = modalContainer.querySelector('.o-fullsheet-stage');
+  if (!palcoAntigo || prefersReducedMotion()) { drawFn(); return; }
+
+  const clone = palcoAntigo.cloneNode(true);
+  // O clone é decorativo: sem ids duplicados (quebrariam getElementById da
+  // tela nova) e invisível para leitor de tela.
+  clone.removeAttribute('id');
+  clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+  clone.setAttribute('aria-hidden', 'true');
+
+  drawFn();
+
+  const sheet = fullSheetEl();
+  const palcoNovo = modalContainer.querySelector('.o-fullsheet-stage');
+  if (!sheet || !palcoNovo) return;
+
+  clone.classList.add('is-sliding');
+  palcoNovo.classList.add('is-sliding');
+  sheet.appendChild(clone);
+
+  const avancar = direction !== 'back';
+  const entrada = avancar ? 'pageInFromRight' : 'pageInFromLeft';
+  const saida = avancar ? 'pageOutToLeft' : 'pageOutToRight';
+  const easing = 'cubic-bezier(0, 0, .2, 1)';   // --ease-out
+  palcoNovo.style.animation = `${entrada} ${FULLSHEET_NAV_MS}ms ${easing}`;
+  clone.style.animation = `${saida} ${FULLSHEET_NAV_MS}ms ${easing} forwards`;
+
+  let limpo = false;
+  const limpar = () => {
+    if (limpo) return;
+    limpo = true;
+    clone.remove();
+    palcoNovo.classList.remove('is-sliding');
+    palcoNovo.style.animation = '';
+  };
+  palcoNovo.addEventListener('animationend', limpar, { once: true });
+  setTimeout(limpar, FULLSHEET_NAV_MS + 240);
+}
+
+// Fecha com o movimento inverso da entrada. `closeModal()` continua sendo o
+// caminho seco (usado quando outra tela toma o lugar, ou em reduced motion).
+function closeFullSheet() {
+  const sheet = fullSheetEl();
+  const overlay = document.getElementById('modalOverlay');
+  if (!sheet || prefersReducedMotion()) { closeModal(); return; }
+  sheet.classList.add('is-leaving');
+  if (overlay) overlay.classList.add('is-leaving');
+  let fechado = false;
+  const fechar = () => { if (fechado) return; fechado = true; closeModal(); };
+  sheet.addEventListener('animationend', fechar, { once: true });
+  setTimeout(fechar, 500);
+}
+
 // ── Bloqueio manual de agenda ────────────────────────────────
 // O + da Agenda agora abre uma escolha simples antes do wizard de sempre —
 // "Novo agendamento" continua indo direto pro openNewApptModal(), que não
 // muda em nada.
 function openAgendaAddMenu() {
+  openFullSheet(paintAgendaAddMenu);
+}
+
+function paintAgendaAddMenu() {
   modalContainer.innerHTML = `
     <div class="modal-overlay is-fullsheet" id="modalOverlay">
       <div class="o-fullsheet" role="dialog" aria-modal="true" aria-label="Adicionar na agenda">
-        <div class="o-fullsheet-head">
-          <div class="o-fullsheet-titles">
-            <div class="o-fullsheet-title">Agenda</div>
-            <div class="o-fullsheet-subtitle">O que você quer adicionar?</div>
+        <div class="o-fullsheet-stage">
+          <div class="o-fullsheet-head">
+            <div class="o-fullsheet-titles">
+              <div class="o-fullsheet-title">Agenda</div>
+              <div class="o-fullsheet-subtitle">O que você quer adicionar?</div>
+            </div>
+            <button class="o-icon-btn" id="modalClose" aria-label="Fechar">${ICONS.close}</button>
           </div>
-          <button class="o-icon-btn" id="modalClose" aria-label="Fechar">${ICONS.close}</button>
-        </div>
-        <div class="o-fullsheet-body">
-          <div class="agenda-menu-actions">
-            <button class="agenda-menu-action" data-acao="agendamento">
-              <span class="ama-icon">${ICONS.calendar}</span>
-              <span class="ama-body">
-                <span class="ama-title">Novo agendamento</span>
-                <span class="ama-desc">Marcar um atendimento para uma cliente</span>
-              </span>
-              <span class="ama-chevron">${ICONS.chevron}</span>
-            </button>
-            <button class="agenda-menu-action" data-acao="bloqueio">
-              <span class="ama-icon is-neutral">${ICONS.block}</span>
-              <span class="ama-body">
-                <span class="ama-title">Bloquear horário</span>
-                <span class="ama-desc">Marcar um período como indisponível</span>
-              </span>
-              <span class="ama-chevron">${ICONS.chevron}</span>
-            </button>
+          <div class="o-fullsheet-body">
+            <div class="agenda-menu-actions">
+              <button class="agenda-menu-action" data-acao="agendamento">
+                <span class="ama-icon">${ICONS.calendar}</span>
+                <span class="ama-body">
+                  <span class="ama-title">Novo agendamento</span>
+                  <span class="ama-desc">Marcar um atendimento para uma cliente</span>
+                </span>
+                <span class="ama-chevron">${ICONS.chevron}</span>
+              </button>
+              <button class="agenda-menu-action" data-acao="bloqueio">
+                <span class="ama-icon is-neutral">${ICONS.block}</span>
+                <span class="ama-body">
+                  <span class="ama-title">Bloquear horário</span>
+                  <span class="ama-desc">Marcar um período como indisponível</span>
+                </span>
+                <span class="ama-chevron">${ICONS.chevron}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   `;
-  document.getElementById('modalClose').onclick = closeModal;
-  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+  document.getElementById('modalClose').onclick = closeFullSheet;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeFullSheet(); };
   modalContainer.querySelectorAll('[data-acao]').forEach(btn => {
     btn.onclick = () => {
+      // Avança DENTRO da folha já aberta — nada de fechar e reabrir, que era
+      // o que reaplicava bottom→top e fazia o destino parecer outra modal.
       const acao = btn.dataset.acao;
-      closeModal();
-      if (acao === 'agendamento') openNewApptModal();
-      else openBlockModal();
+      if (acao === 'agendamento') {
+        wiz = newWizState(null, null);
+        wiz.fromMenu = true;   // o "voltar" da etapa 1 devolve ao menu
+        fullSheetNavigate('forward', paintWizardShell);
+      } else {
+        blockForm = newBlockFormState(null);
+        blockForm.fromMenu = true;
+        fullSheetNavigate('forward', renderBlockModal);
+      }
     };
   });
 }
@@ -8581,12 +8752,111 @@ function newBlockFormState(existing) {
     endTime: existing && !existing.all_day ? fmtTime(existing.ends_at) : '10:00',
     reason: existing ? (existing.reason || '') : '',
     error: null,
+    fromMenu: false,   // ligado por quem abre pelo menu do + (dá o botão voltar)
   };
 }
 
 function openBlockModal(existing) {
   blockForm = newBlockFormState(existing);
-  renderBlockModal();
+  // Aberto do menu já foi tratado lá (navegação horizontal). Aqui é entrada
+  // direta — do detalhe do bloqueio, por exemplo — então: sobe se a folha
+  // ainda não existe, troca no lugar se já existe.
+  if (fullSheetIsOpen()) renderBlockModal();
+  else openFullSheet(renderBlockModal);
+}
+
+// Só os campos que dependem do tipo de bloqueio. Tudo acima do segmented
+// (cabeçalho, data, o próprio segmented) fica fora daqui de propósito — é o
+// que garante que trocar Horário↔Dia inteiro não mexa um pixel do topo.
+function blockDynamicFieldsHtml() {
+  const f = blockForm;
+  return `
+    <div class="blk-dynamic-inner">
+      ${f.allDay ? '' : `
+      <div class="blk-group" id="blkTimeFields">
+        <div class="blk-group-label">Horários</div>
+        <div class="blk-time-grid">
+          <label class="blk-time-card">
+            <span class="btc-label">Início</span>
+            <input type="time" id="blkStart" value="${f.startTime}" step="1800">
+          </label>
+          <label class="blk-time-card">
+            <span class="btc-label">Fim</span>
+            <input type="time" id="blkEnd" value="${f.endTime}" step="1800">
+          </label>
+        </div>
+      </div>`}
+
+      <div class="blk-group">
+        <div class="blk-group-label" id="blkReasonLabel">Motivo (opcional)</div>
+        <input type="text" class="blk-reason-input" id="blkReason" value="${esc(f.reason)}"
+          placeholder="Ex.: compromisso pessoal, salão fechado, pausa, viagem"
+          autocomplete="off" aria-labelledby="blkReasonLabel">
+      </div>
+    </div>
+  `;
+}
+
+function blockCtaLabel() {
+  const f = blockForm;
+  return f.id ? 'Salvar alterações' : (f.allDay ? 'Bloquear dia' : 'Bloquear horário');
+}
+
+// Troca do segmented: NÃO re-renderiza a folha (era isso que disparava um
+// slide vertical da tela inteira a cada toque). Move o indicador, troca só a
+// região dinâmica e anima a altura de um valor medido para o outro — `auto`
+// não interpola, e sem isso o rodapé daria um salto.
+function setBlockAllDay(valor) {
+  const f = blockForm;
+  if (f.allDay === valor) return;
+  f.allDay = valor;
+
+  const thumb = document.querySelector('.blk-seg-thumb');
+  if (thumb) thumb.classList.toggle('is-right', valor);
+  document.querySelectorAll('#blkAllDayToggle button').forEach(btn => {
+    const ativo = (btn.dataset.val === '1') === valor;
+    btn.classList.toggle('is-active', ativo);
+    btn.setAttribute('aria-pressed', String(ativo));
+  });
+
+  const cta = document.getElementById('blkSave');
+  if (cta) cta.textContent = blockCtaLabel();
+
+  const zona = document.getElementById('blkDynamic');
+  if (!zona) return;
+  if (prefersReducedMotion()) { zona.innerHTML = blockDynamicFieldsHtml(); bindBlockDynamicFields(); return; }
+
+  const alturaAntes = zona.offsetHeight;
+  zona.style.height = alturaAntes + 'px';
+  zona.innerHTML = blockDynamicFieldsHtml();
+  bindBlockDynamicFields();
+  const alturaDepois = zona.firstElementChild ? zona.firstElementChild.offsetHeight : 0;
+  // Reflow síncrono de propósito: requestAnimationFrame não dispara em aba
+  // sem composição e a altura ficaria presa no valor antigo — mesma
+  // armadilha já documentada no dropdown do diagnóstico da cliente.
+  void zona.offsetHeight;
+  zona.style.height = alturaDepois + 'px';
+
+  let solto = false;
+  const soltar = () => {
+    if (solto) return;
+    solto = true;
+    zona.style.height = 'auto';   // preso em px, cortaria se o texto quebrasse
+  };
+  zona.addEventListener('transitionend', soltar, { once: true });
+  setTimeout(soltar, 400);
+}
+
+// Rebinda os campos que vivem na região dinâmica — eles nascem de novo a
+// cada troca de tipo, então os handlers antigos morrem com o innerHTML.
+function bindBlockDynamicFields() {
+  const f = blockForm;
+  const startEl = document.getElementById('blkStart');
+  const endEl = document.getElementById('blkEnd');
+  if (startEl) startEl.onchange = (e) => { f.startTime = e.target.value; };
+  if (endEl) endEl.onchange = (e) => { f.endTime = e.target.value; };
+  const reasonEl = document.getElementById('blkReason');
+  if (reasonEl) reasonEl.oninput = (e) => { f.reason = e.target.value; };
 }
 
 function renderBlockModal() {
@@ -8595,94 +8865,78 @@ function renderBlockModal() {
   // O CTA nomeia o que vai acontecer — "Bloquear dia" quando é dia inteiro,
   // "Bloquear horário" quando é um intervalo (docs/06: o botão diz a ação,
   // não "Confirmar"). Em edição vira "Salvar alterações" nos dois casos.
-  const ctaLabel = f.id ? 'Salvar alterações' : (f.allDay ? 'Bloquear dia' : 'Bloquear horário');
+  const voltarAoMenu = !!f.fromMenu;
   modalContainer.innerHTML = `
     <div class="modal-overlay is-fullsheet" id="modalOverlay">
       <div class="o-fullsheet" role="dialog" aria-modal="true" aria-label="${f.id ? 'Editar bloqueio' : 'Bloquear horário'}">
-        <div class="o-fullsheet-head">
-          <div class="o-fullsheet-titles">
-            <div class="o-fullsheet-title">${f.id ? 'Editar bloqueio' : 'Bloquear horário'}</div>
-            <div class="o-fullsheet-subtitle">Defina um período indisponível na agenda</div>
-          </div>
-          <button class="o-icon-btn" id="modalClose" aria-label="Fechar">${ICONS.close}</button>
-        </div>
-
-        <div class="o-fullsheet-body">
-          <div class="blk-group">
-            <div class="blk-group-label" id="blkDateLabel">Data</div>
-            <div class="blk-row">
-              <span class="blk-row-icon">${ICONS.calendar}</span>
-              <span class="blk-row-label">Dia</span>
-              <input type="date" id="blkDate" value="${f.date}" aria-labelledby="blkDateLabel">
+        <div class="o-fullsheet-stage">
+          <div class="o-fullsheet-head">
+            ${voltarAoMenu ? `<button class="o-icon-btn o-wizard-back" id="blkBack" aria-label="Voltar">${ICONS.chevron}</button>` : ''}
+            <div class="o-fullsheet-titles">
+              <div class="o-fullsheet-title">${f.id ? 'Editar bloqueio' : 'Bloquear horário'}</div>
+              <div class="o-fullsheet-subtitle">Defina um período indisponível na agenda</div>
             </div>
+            <button class="o-icon-btn" id="modalClose" aria-label="Fechar">${ICONS.close}</button>
           </div>
 
-          ${ativos.length > 1 ? `
-          <div class="blk-group">
-            <div class="blk-group-label" id="blkStaffLabel">Profissional</div>
-            <select class="o-select" id="blkStaff" aria-labelledby="blkStaffLabel">
-              ${ativos.map(s => `<option value="${s.id}" ${s.id === f.staffId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
-            </select>
-          </div>` : ''}
-
-          <div class="blk-group">
-            <div class="blk-group-label" id="blkTipoLabel">Tipo de bloqueio</div>
-            <div class="blk-seg" id="blkAllDayToggle" role="group" aria-labelledby="blkTipoLabel">
-              <button type="button" data-val="0" class="${!f.allDay ? 'is-active' : ''}" aria-pressed="${!f.allDay}">Horário específico</button>
-              <button type="button" data-val="1" class="${f.allDay ? 'is-active' : ''}" aria-pressed="${f.allDay}">Dia inteiro</button>
+          <div class="o-fullsheet-body">
+            <div class="blk-group">
+              <div class="blk-group-label" id="blkDateLabel">Data</div>
+              <div class="blk-row">
+                <span class="blk-row-icon">${ICONS.calendar}</span>
+                <span class="blk-row-label">Dia</span>
+                <input type="date" id="blkDate" value="${f.date}" aria-labelledby="blkDateLabel">
+              </div>
             </div>
-          </div>
 
-          ${f.allDay ? '' : `
-          <div class="blk-group" id="blkTimeFields">
-            <div class="blk-group-label">Horários</div>
-            <div class="blk-time-grid">
-              <label class="blk-time-card">
-                <span class="btc-label">Início</span>
-                <input type="time" id="blkStart" value="${f.startTime}" step="1800">
-              </label>
-              <label class="blk-time-card">
-                <span class="btc-label">Fim</span>
-                <input type="time" id="blkEnd" value="${f.endTime}" step="1800">
-              </label>
+            ${ativos.length > 1 ? `
+            <div class="blk-group">
+              <div class="blk-group-label" id="blkStaffLabel">Profissional</div>
+              <select class="o-select" id="blkStaff" aria-labelledby="blkStaffLabel">
+                ${ativos.map(s => `<option value="${s.id}" ${s.id === f.staffId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
+              </select>
+            </div>` : ''}
+
+            <div class="blk-group">
+              <div class="blk-group-label" id="blkTipoLabel">Tipo de bloqueio</div>
+              <div class="blk-seg" id="blkAllDayToggle" role="group" aria-labelledby="blkTipoLabel">
+                <span class="blk-seg-thumb ${f.allDay ? 'is-right' : ''}" aria-hidden="true"></span>
+                <button type="button" data-val="0" class="${!f.allDay ? 'is-active' : ''}" aria-pressed="${!f.allDay}">Horário específico</button>
+                <button type="button" data-val="1" class="${f.allDay ? 'is-active' : ''}" aria-pressed="${f.allDay}">Dia inteiro</button>
+              </div>
             </div>
-          </div>`}
 
-          <div class="blk-group">
-            <div class="blk-group-label" id="blkReasonLabel">Motivo (opcional)</div>
-            <input type="text" class="blk-reason-input" id="blkReason" value="${esc(f.reason)}"
-              placeholder="Ex.: compromisso pessoal, salão fechado, pausa, viagem"
-              autocomplete="off" aria-labelledby="blkReasonLabel">
+            <!-- Tudo daqui pra baixo troca com o segmented; tudo acima fica
+                 parado. É a fronteira que garante zero movimento no topo. -->
+            <div class="blk-dynamic" id="blkDynamic">${blockDynamicFieldsHtml()}</div>
+
+            ${f.error ? `<div class="blk-error" role="alert">${esc(f.error)}</div>` : ''}
           </div>
 
-          ${f.error ? `<div class="blk-error" role="alert">${esc(f.error)}</div>` : ''}
-        </div>
-
-        <div class="o-fullsheet-footer">
-          <button class="o-btn o-btn-primary" id="blkSave">${ctaLabel}</button>
-          ${f.id ? `<button class="o-btn o-btn-destructive" id="blkDelete">Remover bloqueio</button>` : ''}
-          <button class="o-btn o-btn-ghost" id="blkCancel">Cancelar</button>
+          <div class="o-fullsheet-footer">
+            <button class="o-btn o-btn-primary" id="blkSave">${blockCtaLabel()}</button>
+            ${f.id ? `<button class="o-btn o-btn-destructive" id="blkDelete">Remover bloqueio</button>` : ''}
+            <button class="o-btn o-btn-ghost" id="blkCancel">Cancelar</button>
+          </div>
         </div>
       </div>
     </div>
   `;
-  document.getElementById('blkCancel').onclick = closeModal;
-  document.getElementById('modalClose').onclick = closeModal;
-  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+  document.getElementById('blkCancel').onclick = closeFullSheet;
+  document.getElementById('modalClose').onclick = closeFullSheet;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeFullSheet(); };
+  const backBtn = document.getElementById('blkBack');
+  if (backBtn) backBtn.onclick = () => { blockForm = null; fullSheetNavigate('back', paintAgendaAddMenu); };
   document.getElementById('blkDate').onchange = (e) => { f.date = e.target.value; };
   const staffSel = document.getElementById('blkStaff');
   if (staffSel) staffSel.onchange = (e) => { f.staffId = e.target.value; };
-  // Toggle reescreve a folha inteira — não tem input com foco no meio do
-  // toque num botão, então não cai na armadilha de "o que anima/tem foco
-  // não sobrevive a um innerHTML novo" (ver app/CLAUDE.md).
+  // O toggle NÃO re-renderiza a folha (era isso que deslizava a tela inteira
+  // pra cima a cada toque): setBlockAllDay() move o indicador e troca só a
+  // região dinâmica.
   document.querySelectorAll('#blkAllDayToggle button').forEach(btn => {
-    btn.onclick = () => { f.allDay = btn.dataset.val === '1'; renderBlockModal(); };
+    btn.onclick = () => setBlockAllDay(btn.dataset.val === '1');
   });
-  const startEl = document.getElementById('blkStart');
-  const endEl = document.getElementById('blkEnd');
-  if (startEl) startEl.onchange = (e) => { f.startTime = e.target.value; };
-  if (endEl) endEl.onchange = (e) => { f.endTime = e.target.value; };
-  document.getElementById('blkReason').oninput = (e) => { f.reason = e.target.value; };
+  bindBlockDynamicFields();
   document.getElementById('blkSave').onclick = saveScheduleBlock;
   const delBtn = document.getElementById('blkDelete');
   if (delBtn) delBtn.onclick = () => { const id = f.id; closeModal(); confirmDeleteScheduleBlock(id); };
@@ -8966,45 +9220,86 @@ function wizContextBannerHtml() {
   `;
 }
 
-function renderWizard() {
+// Desenha o SHELL do wizard (cabeçalho, dots, palco vazio). Chamada só ao
+// entrar no fluxo — nunca na troca de etapa, que agora é paintWizStep() +
+// updateWizChrome(). Era essa chamada por etapa que reaplicava bottom→top e
+// fazia cada passo parecer uma modal nova.
+function paintWizardShell() {
   const total = wizTotalSteps();
   modalContainer.innerHTML = `
     <div class="modal-overlay is-fullsheet" id="modalOverlay">
       <div class="o-wizard-sheet" role="dialog" aria-modal="true" aria-label="Novo agendamento">
-        <div class="o-wizard-head">
-          <button class="o-icon-btn o-wizard-back" id="wizBack" aria-label="Voltar"
-            style="visibility:${(wiz.step > 1 || wiz.sub) ? 'visible' : 'hidden'}">${ICONS.chevron}</button>
-          <div class="o-wizard-titles"></div>
-          <button class="o-icon-btn" id="wizCloseBtn" aria-label="Fechar">${ICONS.close}</button>
+        <div class="o-fullsheet-stage">
+          <div class="o-wizard-head">
+            <button class="o-icon-btn o-wizard-back" id="wizBack" aria-label="Voltar"
+              style="visibility:${wizCanGoBack() ? 'visible' : 'hidden'}">${ICONS.chevron}</button>
+            <div class="o-wizard-titles"></div>
+            <button class="o-icon-btn" id="wizCloseBtn" aria-label="Fechar">${ICONS.close}</button>
+          </div>
+          <div class="o-wizard-dots" id="wizDots" role="progressbar" aria-valuemin="1" aria-valuemax="${total}"
+            aria-valuenow="${wiz.step}" aria-label="Etapa ${wiz.step} de ${total}">
+            ${Array.from({ length: total }, (_, i) => i + 1).map(n => `
+              <span class="o-wizard-dot ${n === wiz.step ? 'is-active' : ''} ${n < wiz.step ? 'is-done' : ''}"></span>
+            `).join('')}
+          </div>
+          ${wizContextBannerHtml()}
+          <div class="o-wizard-body" id="wizBody"></div>
+          <div class="o-wizard-footer" id="wizFooter"></div>
         </div>
-        <div class="o-wizard-dots" role="progressbar" aria-valuemin="1" aria-valuemax="${total}"
-          aria-valuenow="${wiz.step}" aria-label="Etapa ${wiz.step} de ${total}">
-          ${Array.from({ length: total }, (_, i) => i + 1).map(n => `
-            <span class="o-wizard-dot ${n === wiz.step ? 'is-active' : ''} ${n < wiz.step ? 'is-done' : ''}"></span>
-          `).join('')}
-        </div>
-        ${wizContextBannerHtml()}
-        <div class="o-wizard-body" id="wizBody"></div>
-        <div class="o-wizard-footer" id="wizFooter"></div>
       </div>
     </div>
   `;
-  document.getElementById('wizCloseBtn').onclick = closeModal;
-  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+  document.getElementById('wizCloseBtn').onclick = closeFullSheet;
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeFullSheet(); };
   document.getElementById('wizBack').onclick = wizGoBack;
   const alterBtn = document.getElementById('wizContextAlterBtn');
   if (alterBtn) alterBtn.onclick = wizSwitchToFullFlowAtDate;
   paintWizStep();
 }
 
+// Compatibilidade: quem chamava renderWizard() para ABRIR o fluxo continua
+// funcionando, agora com a entrada vertical no lugar certo.
+function renderWizard() {
+  if (fullSheetIsOpen()) { paintWizardShell(); return; }
+  openFullSheet(paintWizardShell);
+}
+
+// Há para onde voltar? Dentro do wizard, ou de volta ao menu do + quando foi
+// por ele que se chegou aqui.
+function wizCanGoBack() {
+  return !!(wiz && (wiz.step > 1 || wiz.sub || wiz.fromMenu));
+}
+
+// Dots e botão de voltar são o "chrome" do wizard: mudam de estado a cada
+// etapa, mas NÃO deslizam junto com o conteúdo — é o que dá a leitura de
+// progresso contínuo dentro da mesma tela, em vez de telas empilhadas.
+function updateWizChrome() {
+  const total = wizTotalSteps();
+  const dots = document.getElementById('wizDots');
+  if (dots) {
+    dots.setAttribute('aria-valuemax', total);
+    dots.setAttribute('aria-valuenow', wiz.step);
+    dots.setAttribute('aria-label', `Etapa ${wiz.step} de ${total}`);
+    dots.innerHTML = Array.from({ length: total }, (_, i) => i + 1).map(n => `
+      <span class="o-wizard-dot ${n === wiz.step ? 'is-active' : ''} ${n < wiz.step ? 'is-done' : ''}"></span>
+    `).join('');
+  }
+  const back = document.getElementById('wizBack');
+  if (back) back.style.visibility = wizCanGoBack() ? 'visible' : 'hidden';
+}
+
 function wizGoBack() {
-  if (wiz.sub) { wiz.sub = null; wiz.back = true; renderWizard(); return; }
-  if (wiz.step > 1) { wiz.step -= 1; wiz.back = true; renderWizard(); }
+  if (wiz.sub) { wiz.sub = null; wiz.back = true; paintWizStep(); updateWizChrome(); return; }
+  if (wiz.step > 1) { wiz.step -= 1; wiz.back = true; paintWizStep(); updateWizChrome(); return; }
+  // Etapa 1 e veio do menu: o voltar sai do wizard e devolve o menu,
+  // deslizando para a direita — é o topo da pilha de navegação.
+  if (wiz.fromMenu) { wiz = null; fullSheetNavigate('back', paintAgendaAddMenu); }
 }
 
 function wizGoToStep(n) {
   wiz.step = n; wiz.back = false; wiz.sub = null;
-  renderWizard();
+  paintWizStep();
+  updateWizChrome();
 }
 
 // Preenche cabeçalho + corpo + rodapé da etapa atual. Chamada só na troca
@@ -9137,9 +9432,11 @@ function wizRenderClientList() {
     btn.onclick = () => { wiz.clientId = btn.dataset.clientId; wizGoToStep(2); };
   });
   document.getElementById('wizAddClientBtn').onclick = () => {
+    // Sub-tela entra deslizando como uma etapa qualquer — não recria o shell.
     wiz.sub = 'quickAddClient';
     wiz.back = false;
-    renderWizard();
+    paintWizStep();
+    updateWizChrome();
   };
 }
 
@@ -9309,7 +9606,11 @@ function wizRenderServiceList() {
       wiz.serviceId = btn.dataset.serviceId;
       if (!wiz.date) {
         const base = new Date();
-        wiz.date = base.toISOString().split('T')[0];
+        // dateInputValue(), nunca toISOString(): ver o comentário no
+        // calendário abaixo — a mesma armadilha valia aqui, e depois das
+        // 23h de Dublin no horário de verão esta linha já nascia com o dia
+        // seguinte errado.
+        wiz.date = dateInputValue(base);
         wiz.calendarMonth = new Date(base.getFullYear(), base.getMonth(), 1);
       }
       wizGoToStep(3);
@@ -9351,7 +9652,16 @@ function wizRenderCalendar() {
     <div class="o-wizard-cal-grid">
       ${cells.map(d => {
         const inMonth = d.getMonth() === viewDate.getMonth();
-        const dateStr = d.toISOString().split('T')[0];
+        // ⚠ NUNCA `d.toISOString().split('T')[0]` aqui. `d` é meia-noite
+        // LOCAL, e em Dublin no horário de verão (UTC+1, de fim de março a
+        // fim de outubro) esse instante é 23:00 UTC do DIA ANTERIOR — o
+        // fatiamento devolvia o dia -1 e o agendamento era gravado um dia
+        // antes do que a Juliane tocou no calendário. O número exibido vem
+        // de `d.getDate()` (local, certo), então a tela parecia coerente e
+        // só o `data-date` mentia: bug silencioso de PERSISTÊNCIA, não de
+        // exibição. `dateInputValue()` lê os componentes locais e é a única
+        // forma segura de tirar uma data civil de um Date neste projeto.
+        const dateStr = dateInputValue(d);
         const isPast = d < todayStart;
         const level = inMonth && !isPast ? dayAvailabilityLevel(dateStr, staffId, service?.duration_minutes) : null;
         const disabled = !inMonth || isPast || level === 'indisponivel';

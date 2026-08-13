@@ -934,9 +934,18 @@ formulário), nunca empilhar.
 **Toque.** Fecha pelo `X` da head e pelo fundo escurecido nas laterais (só
 existe no desktop). Fecha com `Esc`. **Não** fecha por arraste: o gesto
 conflita com a rolagem do corpo, que aqui é a interação principal.
-**Movimento.** `translateY(100%) → 0` em `--motion-emphasized` + `--ease-out`
-— mesma receita de folha inferior ([05 §14](05_MOTION_SYSTEM.md)); muda o
-destino, não a curva. Respeita `prefers-reduced-motion`.
+**Movimento.** Três, e cada um significa uma coisa — regra completa em
+[05 §14b](05_MOTION_SYSTEM.md): **vertical** para entrar e sair do fluxo
+(`translateY(100%) → 0`, `--motion-emphasized` + `--ease-out`), **horizontal**
+para navegar dentro dele (avançar entra pela direita, voltar pela esquerda,
+com parallax de −28% na tela que sai), e **nenhum movimento de tela** para
+troca de estado local, que é fade curto + 4px no bloco afetado. O shell fica
+parado em toda navegação interna; quem desliza é o palco
+(`.o-fullsheet-stage`). Respeita `prefers-reduced-motion`.
+**Navegação.** Empilha telas como um navigation stack: cada destino recebe um
+botão de voltar que devolve à tela anterior **dentro da mesma folha** — nunca
+fechar e reabrir, que reaplicaria a entrada vertical e faria o destino
+parecer outra modal.
 **Acessibilidade.** `role="dialog"`, `aria-modal="true"`, rótulo na folha.
 ⚠ Herda de `BottomSheet` a pendência de **captura e restauração de foco** e
 de tornar o fundo inerte — **P0** ([07 §8](07_ACCESSIBILITY.md)).

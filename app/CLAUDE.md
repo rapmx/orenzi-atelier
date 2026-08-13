@@ -43,6 +43,7 @@ edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
 | Agenda, sobreposição, pausa | `renderAgenda()`, `layoutAppts()`, `segmentsOf()` |
 | Bloqueio manual de agenda | `openAgendaAddMenu()`, `openBlockModal()`, `saveScheduleBlock()`, `openBlockDetailSheet()`, `confirmDeleteScheduleBlock()`, `busyBlocksForStaffOnDate()` |
 | Folha de tela cheia (os 3 sheets da Agenda) | `.o-fullsheet` / `.o-wizard-sheet` no `<style>`, `.modal-overlay.is-fullsheet` |
+| Movimento da folha (entrar/navegar/fechar) | `openFullSheet()`, `fullSheetNavigate()`, `closeFullSheet()`, `paintWizardShell()`, `updateWizChrome()`, `setBlockAllDay()` |
 | Estoque | `// ── ESTOQUE`, `renderStock()`, `renderStockList()`, `renderStockInsights()`, `openProductModal()` |
 | Clientes, fotos, detalhe | `renderClients()`, `renderClientDetail()`, `renderApptDetail()` |
 | Login | `checkSession()`, `renderLogin()` |
@@ -189,6 +190,19 @@ opcional que **nunca** chega ao Booking público (`get_busy_slots` só devolve
   `docs/04_COMPONENT_LIBRARY.md §FullScreenSheet`. **Altura é `100dvh`, nunca
   `100vh`**: no Safari do iPhone o `100vh` conta a barra de endereço que some
   ao rolar, e o CTA do rodapé cairia atrás do chrome do navegador.
+- **Movimento da folha: vertical é entrar/sair, horizontal é andar dentro**
+  (13/08/2026). A entrada bottom→top é a classe `.is-entering`, posta **só**
+  por `openFullSheet()` — nunca uma regra do container. Isso não é
+  preciosismo: enquanto a animação viveu no `.o-fullsheet`, todo re-render a
+  reaplicava, e cada etapa do wizard e cada toque no segmented control
+  pareciam abrir uma modal nova. Navegação entre telas da folha é
+  `fullSheetNavigate('forward'|'back', drawFn)`, que desliza o palco
+  (`.o-fullsheet-stage`) enquanto o shell fica parado. **Trocar de etapa no
+  wizard não recria o shell**: `paintWizardShell()` é só a entrada,
+  `paintWizStep()` + `updateWizChrome()` são a troca. Trocar estado local
+  (segmented de tipo de bloqueio) não move tela nenhuma — `setBlockAllDay()`
+  mexe só no indicador e na região `#blkDynamic`. Regra completa em
+  `docs/05_MOTION_SYSTEM.md §14b`.
 - **`painel_demo.html`**: mesmo mock genérico de escrita do resto do arquivo
   (`insert`/`update`/`delete` sempre "sucedem" sem persistir; `saveScheduleBlock()`
   monta o registro local a partir do payload enviado, não do retorno cru do
@@ -262,6 +276,32 @@ uma segunda passada. **Nunca** construir horário de slot com
 cliente, e quem marcasse "9h" com o telefone no horário do Brasil gravava 13h em
 Dublin. A falha é silenciosa — tela, e-mail e painel divergem sem erro nenhum.
 `salonToday()` e `salonClock()` existem pela mesma razão.
+
+**⚠ O caminho INVERSO também morde: tirar a data civil de um `Date`.**
+Bug real, encontrado em produção em 13/08/2026 — a Juliane tocava `22/08` no
+calendário do novo agendamento e o atendimento era **gravado em `21/08`**.
+Causa: `d.toISOString().split('T')[0]`, onde `d` era meia-noite **local**. Em
+Dublin no horário de verão (IST, UTC+1, de fim de março a fim de outubro) esse
+instante é `23:00 UTC do dia anterior`, e o fatiamento devolvia o dia −1.
+
+Três coisas fazem desta uma armadilha especialmente cruel:
+
+- **O número na tela vinha de `d.getDate()`** (local, correto), então o
+  calendário parecia certo; só o `data-date` mentia. Não era bug de exibição:
+  a data errada era persistida.
+- **Só existe metade do ano.** No inverno Dublin é `UTC+0`, meia-noite local
+  é meia-noite UTC, e o fatiamento acerta. O bug nasce e some com o horário
+  de verão — por isso passou por várias revisões sem aparecer.
+- **Falha silenciosa e coerente**: horários, review, confirmação e banco
+  concordavam entre si, todos no dia errado.
+
+Regra: **data civil sai de `dateInputValue(d)`** (componentes locais), nunca
+de `toISOString()`. Converter para instante é só o passo final, quando já há
+data **e** hora. `toISOString().slice(0,10)` só é seguro sobre um `Date`
+construído com `Date.UTC(...)` — é o que `agendar.html` faz em `addDaysIso()`,
+e é por isso que o Booking público nunca teve este bug (ele também tira o
+"hoje" de `Intl.DateTimeFormat('en-CA', { timeZone })`, que devolve a data
+civil de Dublin direto, sem passar por `Date`).
 
 **Expediente: 9h–18h, fecha domingo e segunda.** O atendimento tem que
 **terminar** até as 18h.

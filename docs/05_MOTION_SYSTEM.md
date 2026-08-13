@@ -257,6 +257,49 @@ em `--motion-fast`.
 
 ---
 
+## 14b. Folha de tela cheia — três movimentos, três significados
+
+`FullScreenSheet` ([04](04_COMPONENT_LIBRARY.md#fullscreensheet)) tem **um
+movimento para cada tipo de mudança**, e a regra que os separa é:
+
+> **Vertical é entrar e sair do fluxo. Horizontal é andar dentro dele.
+> Trocar um estado local não move tela nenhuma.**
+
+```
+entrar no fluxo   folha translateY(100%) → 0   · --motion-emphasized · --ease-out
+sair do fluxo     folha translateY(0) → 100%   · --motion-fast       · --ease-in
+                  (fundo escurecido acompanha, como no bottom sheet)
+
+avançar           entra  translateX(100%) → 0  · 260ms · --ease-out
+                  sai    translateX(0) → -28%  + opacidade .6
+voltar            inverso dos dois
+
+conteúdo local    opacity 0 → 1 + translateY(4px) → 0 · --motion-fast · --ease-out
+                  altura do contêiner interpolada no mesmo tempo
+```
+
+**A saída horizontal recua só 28%, não 100%.** É o parallax do navigation
+stack: a tela que sai anda menos que a que entra, e isso lê como camada por
+baixo em vez de duas telas se empurrando.
+
+**O shell não se mexe em nenhuma navegação interna.** Quem desliza é o palco
+(`.o-fullsheet-stage`), que carrega cabeçalho, corpo e rodapé de uma tela. O
+fundo, a altura e a largura da folha ficam parados o tempo todo — é isso que
+distingue "andei para a próxima tela" de "abriu outra modal por cima".
+
+**Erro que isto corrige (13/08/2026).** Enquanto a entrada vertical era uma
+regra do container em vez de uma classe, todo re-render a reaplicava: cada
+etapa do wizard e cada toque no segmented control disparavam bottom→top, e o
+fluxo inteiro parecia uma pilha de modais abrindo uma sobre a outra. A
+animação de entrada agora é `.is-entering`, posta **só** por quem abre o
+fluxo.
+
+**Nunca:** vertical em troca de etapa; vertical em troca de estado local
+(segmented, toggle, filtro); indicador de segmented que apaga de um lado e
+acende do outro em vez de deslizar.
+
+---
+
 ## 15. Modais
 
 ```
@@ -267,6 +310,10 @@ saída:   fade + scale(1 → .98)                   · --motion-fast      · --e
 O modal de novo agendamento usa esta receita — a mesma do balão de ajuda de
 Insights, mas subindo em vez de nascer centralizado, porque é uma folha de
 formulário comprida e não um balão curto.
+
+⚠ **Desde 13/08/2026 o novo agendamento não é mais um modal**, e sim uma
+`FullScreenSheet` (§14b) — a receita acima continua valendo para os modais
+que restam (balão de ajuda, folha de produto do Estoque).
 
 **Nunca:** modal que cai de cima, que gira ao entrar, ou que escala de zero.
 
