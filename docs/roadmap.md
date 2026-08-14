@@ -11,8 +11,8 @@ editável) adiado — **não agora** — e D3 (VIP manual) resolvido como
 "começar do zero": ninguém migrado, `clients.vip` nasceu `false` pra todo
 mundo. Tudo já commitado e no ar.
 
-**Próximo passo: Fase 4 — Questionário: tela de idioma.** Trava D4 em aberto
-(ver seção abaixo) — perguntar ao Raphael antes de começar.
+**Fase 4 (Questionário) concluída em 15/08/2026** — ver seção abaixo. D4
+resolvido: traduz o questionário inteiro nos 3 idiomas.
 
 ## Fase 0 — Padrão visual — ✅ concluída (02/08/2026)
 
@@ -118,15 +118,32 @@ precisa de mensagem/stack pra virar achado de verdade.
       alcance da lista — toda conta de receita (gasto da cliente, gráfico de
       evolução, indicadores de Insights) passaria a ler `a.price ?? s.price`.
 
-## Fase 4 — Questionário: tela de idioma — em espera de decisão
+## Fase 4 — Questionário V2 — ✅ concluída (15/08/2026)
 
-Primeira tela ao selecionar a cliente: "Selecione seu idioma" com animação
-alternando a frase em pt-BR/en/es, e as três bandeiras (Brasil, Irlanda,
-Espanha) como botão.
+- [x] **D4 resolvido: traduz o questionário inteiro.** pt-BR, en e es cobrem
+      perguntas, opções, helpers, botões, revisão e sucesso. O valor gravado
+      continua canônico em português — a tradução é só de apresentação.
+- [x] Tela de abertura com a saudação alternando (Bem-vinda / Welcome /
+      Bienvenida), movimento vertical, `prefers-reduced-motion` mostra as
+      três paradas. **Sem bandeiras** — idioma não é país (mudança em
+      relação ao esboço original desta fase).
+- [x] Redesign completo sobre o DS: opções em cartão no lugar de `<select>`,
+      anatomia de FullScreenSheet, `100dvh`, safe areas, progresso "N de 7".
+- [x] Voltar, sair com confirmação, revisão antes de salvar, CTA que diz
+      "Salvar questionário" (o `✕` que gravava morreu).
+- [x] Etapa nova de referências visuais (até 3, placeholders declarados até
+      a Juliane mandar as fotos).
+- [x] Relatório do perfil com data, idioma e referências; estado vazio
+      virou tela.
+- [ ] **Etapa B — migration pendente de aplicar** (`language`,
+      `reference_images`, índice, REVOKE de `anon`). O arquivo está em
+      `supabase/migrations/20260815120000_questionnaire_v2_language_and_references.sql`.
+      A interface funciona sem ela e grava as seis respostas antigas; os
+      dois campos novos só passam a persistir depois de aplicada.
 
-**Trava — D4:** a escolha traduz o questionário inteiro (todas as perguntas e
-opções nos 3 idiomas) ou é só a tela de abertura, gravando o idioma escolhido
-pra referência? A primeira opção é bem maior.
+**Fora do escopo por decisão de 15/08:** alerta automático, integração com
+Appointment/Agenda, recomendação, expiração/revalidação, histórico
+navegável, multi-select das perguntas químicas, edição posterior.
 
 ## Lembrete permanente
 

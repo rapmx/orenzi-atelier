@@ -434,6 +434,25 @@ function mockData(table){
   if (table === 'booking_visits') return demoSalao().visitas.map(x => ({ ...x }));
   if (table === 'schedule_blocks') return demoSalao().blocos.map(x => ({ ...x }));
 
+  // Um questionário respondido, da Camila — o suficiente pra demonstrar as
+  // três coisas novas do relatório (data, idioma usado e referências
+  // visuais) sem inventar dado sensível: as respostas são as mesmas opções
+  // canônicas do catálogo, e o objetivo é uma frase sobre cabelo.
+  // Marina fica sem questionário de propósito: é o estado vazio da tela.
+  if (table === 'client_questionnaires') return [{
+    id: 'demo-quest-1',
+    client_id: 'demo-camila',
+    language: 'en',
+    had_bleaching: 'Sim',
+    chemical_treatment: 'Nenhum desses',
+    last_chemical: 'De 3 a 6 meses',
+    chemical_cut_or_breakage: 'Nenhum desses',
+    henna_or_black_dye: 'Nenhum desses',
+    goal: 'Manter o loiro iluminado sem ressecar as pontas.',
+    reference_images: ['ref_02', 'ref_04'],
+    created_at: new Date(startOfDay(now).getTime() - 3 * 864e5 + 15 * 36e5).toISOString(),
+  }];
+
   return [];
 }
 
@@ -517,13 +536,33 @@ window.supabase = {
               // .maybeSingle() de fato busca em mockData(table) — antes sempre
               // devolvia null, o que escondia o fluxo de "telefone já
               // cadastrado" (openNewClientSheet) atrás de um mock cego.
+              //
+              // BUG REAL (15/08/2026): "Infos do questionário" quebrava aqui.
+              // O painel lê `.eq().order().limit().maybeSingle()`, e o `order`
+              // devolvido era o `listaOrder` genérico, cujo `.limit` resolve
+              // numa Promise sem `.maybeSingle` — o clique lançava TypeError e
+              // não acontecia nada, nem toast. O `order` daqui agora respeita o
+              // filtro do `.eq()` e carrega `.limit()`/`.maybeSingle()` junto.
               eq: function (col, val) {
+                const filtrada = function () {
+                  return mockData(table).filter(function (row) { return row[col] === val; });
+                };
+                const primeira = function (linhas) {
+                  return Promise.resolve({ data: linhas[0] || null, error: null });
+                };
+                const ordenada = function () {
+                  const p = Promise.resolve({ data: filtrada(), error: null });
+                  p.limit = function (n) {
+                    const q = Promise.resolve({ data: filtrada().slice(0, n), error: null });
+                    q.maybeSingle = function () { return primeira(filtrada().slice(0, n)); };
+                    return q;
+                  };
+                  p.maybeSingle = function () { return primeira(filtrada()); };
+                  return p;
+                };
                 return {
-                  order: listaOrder,
-                  maybeSingle: function () {
-                    const achado = mockData(table).find(function (row) { return row[col] === val; });
-                    return Promise.resolve({ data: achado || null });
-                  },
+                  order: ordenada,
+                  maybeSingle: function () { return primeira(filtrada()); },
                 };
               },
               neq: function () { return { order: listaOrder }; },
@@ -1786,26 +1825,287 @@ window.supabase = {
   .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
   .btn-ghost { background: transparent; color: var(--color-neutral-700); }
 
-  .quiz-fullscreen {
+  /* ── QUESTIONÁRIO V2 (15/08/2026) ──────────────────────────────────────
+     A tela mais antiga do painel foi reconstruída sobre a anatomia do
+     FullScreenSheet (docs/04 §FullScreenSheet): head → corpo rolável →
+     rodapé fixo. Não é o `.o-fullsheet` literal porque aquele é uma folha
+     que sobe por cima de outra tela; aqui o questionário É a tela da aba.
+     O que se repete é a anatomia, que é o que faz parecer o mesmo produto.
+
+     Dois modos:
+     - `.is-inline` — idioma e escolha da cliente. Quem opera é a Juliane,
+       com o rodapé de navegação à vista: ainda não é quiosque.
+     - padrão (fixed) — do primeiro passo do questionário em diante, com o
+       tablet já na mão da cliente.
+
+     `100dvh`, nunca `100vh`: no Safari do iPhone o `100vh` conta a barra de
+     endereço que some ao rolar e o CTA do rodapé cairia atrás do chrome do
+     navegador. Mesma regra do `.o-fullsheet`. */
+  .quiz-screen {
     position: fixed; top: 0; left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 480px; height: 100%;
-    background: var(--color-bg); z-index: 20;
-    display: flex; flex-direction: column; justify-content: center;
-    padding: 60px 24px 40px; box-sizing: border-box;
+    width: 100%; max-width: var(--canvas-max-width);
+    height: 100vh; height: 100dvh;
+    background: var(--color-bg); z-index: var(--z-sheet);
+    display: flex; flex-direction: column; overflow: hidden;
   }
-  .quiz-message {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    text-align: center; font-family: var(--font-heading); font-weight: 600;
-    font-size: 22px; line-height: 1.4;
-    animation: quizMessageIn 0.6s ease;
+  .quiz-screen.is-inline {
+    position: static; transform: none; max-width: none;
+    height: auto; min-height: 58vh; z-index: auto; background: none;
   }
-  @keyframes quizMessageIn {
-    from { opacity: 0; transform: translateY(18px); }
+
+  .quiz-head {
+    flex-shrink: 0; display: flex; align-items: center; gap: var(--space-2);
+    padding: calc(var(--space-3) + var(--safe-top)) var(--space-4) var(--space-3);
+  }
+  .quiz-screen.is-inline .quiz-head { padding: 0 0 var(--space-3); }
+  .quiz-head-titles { flex: 1; min-width: 0; padding: 0 var(--space-1); }
+  .quiz-head-title {
+    font-family: var(--font-heading); font-size: var(--text-title-3-size);
+    font-weight: var(--text-title-3-weight); color: var(--color-text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .quiz-head-sub { font-size: var(--text-caption-size); color: var(--color-neutral-600); margin-top: 1px; }
+  .quiz-head-spacer { width: var(--touch-target-min); flex-shrink: 0; }
+  .quiz-back svg { transform: rotate(180deg); }
+
+  /* Progresso discreto: barra fina + contagem em texto. A barra sozinha não
+     serve pra leitor de tela e o texto sozinho não dá noção de quanto falta
+     num relance — os dois juntos custam uma linha. */
+  .quiz-progress { flex-shrink: 0; padding: 0 var(--space-5) var(--space-3); }
+  .quiz-progress-track {
+    height: 3px; border-radius: var(--radius-full);
+    background: var(--color-neutral-200); overflow: hidden;
+  }
+  .quiz-progress-fill {
+    height: 100%; border-radius: var(--radius-full); background: var(--color-accent);
+    transition: width var(--motion-standard) var(--ease-standard);
+  }
+  .quiz-progress-label {
+    margin-top: var(--space-2); font-size: var(--text-caption-size);
+    color: var(--color-neutral-600);
+  }
+
+  .quiz-body { flex: 1 1 auto; overflow-y: auto; padding: 0 var(--space-5) var(--space-4); }
+  .quiz-screen.is-inline .quiz-body { overflow: visible; padding: 0; }
+  .quiz-footer {
+    flex-shrink: 0; display: flex; flex-direction: column; gap: var(--space-2);
+    padding: var(--space-3) var(--space-5) calc(var(--space-4) + var(--safe-bottom));
+  }
+  .quiz-screen.is-inline .quiz-footer { padding: var(--space-4) 0 0; }
+
+  /* Entrada de cada passo. Anima o conteúdo, nunca o shell — mesma razão
+     documentada no `.o-fullsheet`: enquanto a animação vivia no container,
+     todo re-render a reaplicava e cada toque parecia abrir uma tela nova. */
+  .quiz-page { animation: quizPageIn var(--motion-standard) var(--ease-out); }
+  @keyframes quizPageIn {
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .quiz-center { margin: auto 0; width: 100%; }
-  .quiz-goal-content { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-  .quiz-subtitle { font-size: 14px; color: var(--color-neutral-600); margin-bottom: 14px; }
+
+  .quiz-question {
+    font-family: var(--font-heading); font-size: var(--text-title-2-size);
+    font-weight: var(--text-title-2-weight); line-height: var(--leading-tight);
+    color: var(--color-text); margin: var(--space-2) 0 var(--space-2);
+  }
+  .quiz-question:focus { outline: none; }
+  .quiz-question:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+  .quiz-helper {
+    font-size: var(--text-body-size); color: var(--color-neutral-600);
+    line-height: var(--leading-relaxed); margin-bottom: var(--space-5);
+  }
+
+  /* Option card (docs/04 §Card + §Chip): 2 a 4 opções curtas viram alvos
+     grandes, não um dropdown. É o mesmo movimento que o Diagnóstico do
+     cabelo já fez ao trocar `<select>` por chips — aqui em cartão porque a
+     tela é de uma pergunta só e há espaço vertical de sobra. */
+  .quiz-options { display: flex; flex-direction: column; gap: var(--space-3); }
+  .quiz-option {
+    display: flex; align-items: center; gap: var(--space-3);
+    width: 100%; min-height: 56px; text-align: left;
+    padding: var(--space-4); cursor: pointer;
+    font-family: var(--font-body); font-size: var(--text-body-size);
+    color: var(--color-text);
+  }
+  .quiz-option-label { flex: 1; min-width: 0; }
+  .quiz-option-mark {
+    flex-shrink: 0; width: 22px; height: 22px; border-radius: var(--radius-circle);
+    border: var(--border-width-emphasis) solid var(--color-neutral-300);
+    position: relative;
+    transition: border-color var(--motion-fast) var(--ease-standard);
+  }
+  .quiz-option[aria-checked="true"] {
+    border-color: var(--color-accent);
+    background: var(--color-accent-100);
+  }
+  .quiz-option[aria-checked="true"] .quiz-option-mark { border-color: var(--color-accent); }
+  .quiz-option[aria-checked="true"] .quiz-option-mark::after {
+    content: ''; position: absolute; inset: 4px;
+    border-radius: var(--radius-circle); background: var(--color-accent);
+  }
+
+  /* Galeria de referências. As imagens reais ainda vêm da Juliane: cada
+     tile é um `placeholder` declarado, com o id do catálogo por baixo —
+     trocar por foto é preencher `imageUrl` no catálogo, sem tocar aqui. */
+  .quiz-refs { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+  .quiz-ref {
+    display: flex; flex-direction: column; gap: var(--space-2);
+    padding: var(--space-2); cursor: pointer; text-align: left;
+    font-family: var(--font-body);
+  }
+  .quiz-ref-swatch {
+    position: relative; display: block; width: 100%; aspect-ratio: 3 / 4;
+    border-radius: var(--radius-sm); overflow: hidden;
+    background: linear-gradient(160deg, var(--ref-1) 0%, var(--ref-2) 100%);
+  }
+  .quiz-ref-swatch img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .quiz-ref-tag {
+    position: absolute; left: var(--space-2); bottom: var(--space-2);
+    padding: 2px var(--space-2); border-radius: var(--radius-full);
+    background: rgba(247, 241, 232, 0.88); color: var(--color-neutral-700);
+    font-size: var(--text-micro-size); font-weight: var(--text-micro-weight);
+    letter-spacing: 0.04em;
+  }
+  .quiz-ref-name {
+    font-size: var(--text-caption-size); color: var(--color-text);
+    padding: 0 var(--space-1) var(--space-1);
+  }
+  .quiz-ref-check {
+    position: absolute; top: var(--space-2); right: var(--space-2);
+    width: 26px; height: 26px; border-radius: var(--radius-circle);
+    background: var(--color-surface); border: var(--border-width-emphasis) solid var(--color-divider);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--color-bg);
+    transition: background var(--motion-fast) var(--ease-standard),
+                border-color var(--motion-fast) var(--ease-standard);
+  }
+  .quiz-ref-check svg { width: 15px; height: 15px; opacity: 0; }
+  .quiz-ref[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent-100); }
+  .quiz-ref[aria-pressed="true"] .quiz-ref-check {
+    background: var(--color-accent); border-color: var(--color-accent);
+  }
+  .quiz-ref[aria-pressed="true"] .quiz-ref-check svg { opacity: 1; }
+  /* No limite de seleção o que sobra fica inerte em vez de recusar o toque
+     em silêncio — o contador logo abaixo explica por quê. */
+  .quiz-ref[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+  .quiz-ref-counter {
+    margin-top: var(--space-4); font-size: var(--text-caption-size);
+    color: var(--color-neutral-600); text-align: center;
+  }
+
+  /* ── Tela de idioma ────────────────────────────────────────────────────
+     A palavra sobe, perde opacidade e a próxima entra por baixo. O tempo de
+     permanência (QUIZ_WELCOME_DWELL_MS) é leitura, não transição — mesma
+     natureza do SUCCESS_HOLD_MS de orenzi-ui.js, por isso fora da escala de
+     docs/05 §3. O movimento em si usa --motion-route, o degrau mais lento
+     que a escala tem. */
+  .quiz-welcome { display: flex; flex-direction: column; justify-content: center; min-height: 46vh; }
+  .quiz-welcome-word-wrap {
+    height: 1.3em; overflow: hidden; text-align: center;
+    font-family: var(--font-heading); font-size: var(--text-display-size);
+    font-weight: var(--text-display-weight); color: var(--color-text);
+  }
+  .quiz-welcome-word { display: block; line-height: 1.3; }
+  .quiz-welcome-word.is-out {
+    animation: quizWordOut var(--motion-route) var(--ease-in) forwards;
+  }
+  .quiz-welcome-word.is-in {
+    animation: quizWordIn var(--motion-route) var(--ease-out);
+  }
+  @keyframes quizWordOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-0.5em); }
+  }
+  @keyframes quizWordIn {
+    from { opacity: 0; transform: translateY(0.5em); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  /* Sem movimento: as três saudações ficam à vista de uma vez. Nada pisca,
+     nada faz loop, e a tela continua dizendo o que é (docs/05 §16). */
+  .quiz-welcome-static { text-align: center; }
+  .quiz-welcome-static span { display: block; line-height: 1.35; }
+  .quiz-welcome-static span + span { color: var(--color-neutral-600); font-size: 0.8em; }
+  .quiz-welcome-prompt {
+    text-align: center; margin-top: var(--space-3);
+    font-size: var(--text-body-size); color: var(--color-neutral-600);
+  }
+  .quiz-lang-list { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-8); }
+
+  /* ── Escolha da cliente ────────────────────────────────────────────── */
+  .quiz-client-list { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4); }
+  .quiz-client {
+    display: flex; align-items: center; gap: var(--space-3);
+    width: 100%; padding: var(--space-3); text-align: left; cursor: pointer;
+    font-family: var(--font-body); font-size: var(--text-body-size); color: var(--color-text);
+  }
+  .quiz-client-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* .avatar-round não declara tamanho (cada tela dá o seu) e .ar-chevron é
+     escopado em .action-row — os dois precisam de regra própria aqui. */
+  .quiz-client .avatar-round {
+    width: 38px; height: 38px; font-size: 14px; background: var(--color-neutral-300);
+  }
+  .quiz-client-chev { display: flex; flex-shrink: 0; color: var(--color-neutral-600); }
+  .quiz-client-chev svg { width: 14px; height: 14px; }
+
+  /* ── Revisão ───────────────────────────────────────────────────────── */
+  .quiz-review-list { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-4); }
+  .quiz-review-item { padding: var(--space-4); }
+  .quiz-review-head { display: flex; align-items: flex-start; gap: var(--space-3); }
+  .quiz-review-q {
+    flex: 1; min-width: 0; font-size: var(--text-caption-size);
+    color: var(--color-neutral-600); line-height: var(--leading-normal);
+  }
+  .quiz-review-a {
+    margin-top: var(--space-2); font-size: var(--text-body-size);
+    font-weight: var(--text-body-strong-weight); color: var(--color-text);
+    line-height: var(--leading-relaxed); white-space: pre-wrap;
+  }
+  .quiz-review-a.is-empty { font-weight: var(--text-body-weight); color: var(--color-neutral-600); }
+  .quiz-review-refs { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+  .quiz-review-ref {
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-1) var(--space-2-5) var(--space-1) var(--space-1);
+    border-radius: var(--radius-full); background: var(--color-neutral-200);
+    font-size: var(--text-caption-size); color: var(--color-text);
+  }
+  .quiz-review-ref i {
+    width: 22px; height: 22px; border-radius: var(--radius-circle); flex-shrink: 0;
+    background: linear-gradient(160deg, var(--ref-1) 0%, var(--ref-2) 100%);
+  }
+
+  /* Erro de gravação: fica na tela, junto do botão, e é anunciado. Toast
+     some sozinho e é a última coisa que serve quando a ação falhou. */
+  .quiz-error {
+    padding: var(--space-3) var(--space-3-5); border-radius: var(--radius-sm);
+    background: var(--color-accent-2-100); color: var(--color-accent-2-700);
+    font-size: var(--text-caption-size); line-height: var(--leading-normal);
+  }
+  .quiz-error[hidden] { display: none; }
+
+  /* ── Sucesso ───────────────────────────────────────────────────────── */
+  .quiz-success { display: flex; flex-direction: column; justify-content: center; min-height: 52vh; text-align: center; gap: var(--space-3); }
+  .quiz-success-mark {
+    width: 56px; height: 56px; margin: 0 auto var(--space-2);
+    border-radius: var(--radius-circle); background: var(--color-success-100);
+    color: var(--color-success-700);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .quiz-success-mark svg { width: 26px; height: 26px; }
+  .quiz-success-title {
+    font-family: var(--font-heading); font-size: var(--text-title-1-size);
+    font-weight: var(--text-title-1-weight); color: var(--color-text);
+  }
+  .quiz-success-msg {
+    font-size: var(--text-body-size); color: var(--color-neutral-600);
+    line-height: var(--leading-relaxed);
+  }
+
+  /* ── Relatório no perfil da cliente ────────────────────────────────── */
+  .quiz-report-meta { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .quiz-page, .quiz-welcome-word.is-in, .quiz-welcome-word.is-out { animation: none; }
+    .quiz-progress-fill, .quiz-option-mark, .quiz-ref-check { transition: none; }
+  }
   /* margin-bottom em 18px, não 14: precisa bater com o respiro antes do
      primeiro rótulo da outra seção do modal (padding 14px do cartão + 4px
      do margin-top do label = 18px) — com 14 o gap colapsava pro valor
@@ -2965,7 +3265,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -6891,9 +7191,10 @@ function renderClientDetail() {
     const { data, error } = await sb
       .from('client_questionnaires').select('*').eq('client_id', c.id)
       .order('created_at', { ascending: false }).limit(1).maybeSingle();
-    if (error) { showToast('Erro ao carregar: ' + error.message); return; }
-    if (!data) { showToast('Nenhum questionário preenchido ainda.'); return; }
-    state.viewQuestionnaire = data;
+    if (error) { console.error('client_questionnaires.select', error); showToast('Não foi possível carregar o questionário.'); return; }
+    // Estado vazio é tela, não toast: um aviso que some sozinho e não muda
+    // nada na tela era indistinguível de botão quebrado.
+    state.viewQuestionnaire = data || { __empty: true };
     render();
   };
 
@@ -7100,36 +7401,814 @@ function renderApptDetail() {
   };
 }
 
-function qaBlock(question, answer) {
-  return `
-    <div style="margin-bottom:16px;">
-      <div class="section-label" style="margin-bottom:4px;">${question.toUpperCase()}</div>
-      <div style="font-size:14px;font-weight:700;">${answer || '—'}</div>
-    </div>
-  `;
+// ── QUESTIONÁRIO (V2 — 15/08/2026) ───────────────────────────
+// O produto continua o mesmo e é simples de propósito: a Juliane entrega o
+// tablet quando a cliente chega, a cliente responde, as respostas ficam no
+// perfil pra consulta manual. Nada aqui deriva duração, preço, alerta,
+// recomendação ou qualquer regra de agendamento — e não deve passar a
+// derivar sem o Raphael pedir.
+//
+// O que mudou nesta versão: 3 idiomas, tela de boas-vindas, opções em
+// cartão no lugar de `<select>` cru, voltar/sair de verdade, revisão antes
+// de gravar, botão que diz que salva (o `✕` que gravava era o pior legado
+// da tela) e uma etapa nova de referências visuais.
+//
+// **Valor persistido é canônico, em português.** A tradução é só de
+// apresentação: `had_bleaching` continua gravando 'Sim'/'Não' com a cliente
+// respondendo em inglês. Sem isso, o relatório de uma cliente que respondeu
+// em espanhol chegaria em espanhol pra Juliane, e qualquer leitura futura
+// (contagem, filtro) teria que conhecer os três idiomas.
+
+const QUIZ_LANGS = [
+  { code: 'pt-BR', name: 'Português', welcome: 'Bem-vinda' },
+  { code: 'en',    name: 'English',   welcome: 'Welcome' },
+  { code: 'es',    name: 'Español',   welcome: 'Bienvenida' },
+];
+const QUIZ_LANG_DEFAULT = 'pt-BR';
+
+// Quanto cada saudação fica parada antes de dar lugar à próxima. É tempo de
+// leitura, não transição — mesma natureza do SUCCESS_HOLD_MS de
+// orenzi-ui.js, e por isso fora da escala de docs/05_MOTION_SYSTEM.md §3.
+// O movimento em si usa --motion-route (280ms), o degrau mais lento da
+// escala; QUIZ_WORD_SWAP_MS espelha esse token no JS.
+const QUIZ_WELCOME_DWELL_MS = 2600;
+const QUIZ_WORD_SWAP_MS = 280;
+
+const QUIZ_MAX_REFS = 3;
+
+// ── Catálogo de referências visuais ───────────────────────────
+// As fotos reais ainda serão fornecidas pela Juliane. Até lá cada item é um
+// PLACEHOLDER declarado na tela (nenhuma foto inventada, nada baixado da
+// internet). O que vai pro banco é o `id` — estável e independente de onde
+// o arquivo vier morar. Quando as fotos chegarem, basta preencher
+// `imageUrl` aqui: nem a gravação nem o relatório mudam.
+const QUIZ_REFERENCES = [
+  { id: 'ref_01', imageUrl: null, tone: ['#f0e2c8', '#d9bd8e'], name: { 'pt-BR': 'Loiro claro', en: 'Light blonde', es: 'Rubio claro' } },
+  { id: 'ref_02', imageUrl: null, tone: ['#e6cfae', '#c49a6a'], name: { 'pt-BR': 'Loiro dourado', en: 'Golden blonde', es: 'Rubio dorado' } },
+  { id: 'ref_03', imageUrl: null, tone: ['#e2d3c4', '#b39b86'], name: { 'pt-BR': 'Loiro acinzentado', en: 'Ash blonde', es: 'Rubio ceniza' } },
+  { id: 'ref_04', imageUrl: null, tone: ['#d9b98f', '#9a6f45'], name: { 'pt-BR': 'Mel', en: 'Honey', es: 'Miel' } },
+  { id: 'ref_05', imageUrl: null, tone: ['#c69a6d', '#7d4f2c'], name: { 'pt-BR': 'Caramelo', en: 'Caramel', es: 'Caramelo' } },
+  { id: 'ref_06', imageUrl: null, tone: ['#b98a63', '#6b4326'], name: { 'pt-BR': 'Morena iluminada', en: 'Bronde', es: 'Morena iluminada' } },
+  { id: 'ref_07', imageUrl: null, tone: ['#8f6547', '#4a2e1d'], name: { 'pt-BR': 'Castanho natural', en: 'Natural brown', es: 'Castaño natural' } },
+  { id: 'ref_08', imageUrl: null, tone: ['#6d5a4c', '#332723'], name: { 'pt-BR': 'Escuro com brilho', en: 'Dark and glossy', es: 'Oscuro con brillo' } },
+];
+
+function quizReference(id) {
+  return QUIZ_REFERENCES.find(r => r.id === id) || null;
 }
 
-function renderQuestionnaireReport() {
-  const q = state.viewQuestionnaire;
-  document.getElementById('greeting').textContent = 'Questionário';
+// ── Textos de interface ───────────────────────────────────────
+const QUIZ_UI = {
+  'pt-BR': {
+    tab: 'Questionário', langPrompt: 'Escolha seu idioma para continuar',
+    clientTitle: 'Para quem é este questionário?',
+    clientHelper: 'Escolha a cliente antes de entregar o tablet.',
+    clientSearch: 'Buscar cliente', clientEmpty: 'Nenhuma cliente encontrada.', clear: 'Limpar busca',
+    back: 'Voltar', continue: 'Continuar', exit: 'Sair',
+    exitTitle: 'Sair do questionário?', exitMsg: 'As respostas desta sessão não serão salvas.',
+    exitConfirm: 'Sair sem salvar', exitCancel: 'Continuar respondendo', exitDone: 'Saiu',
+    progress: (n, total) => `${n} de ${total}`,
+    refCounter: (n, max) => n === 0
+      ? `Nenhuma selecionada — você pode continuar sem escolher`
+      : `${n} de ${max} selecionadas`,
+    refPlaceholder: 'placeholder',
+    reviewTitle: 'Confira suas respostas',
+    reviewHelper: 'Toque em qualquer resposta para alterar antes de salvar.',
+    edit: 'Alterar', save: 'Salvar questionário', saving: 'Salvando…', saved: 'Salvo',
+    unanswered: 'Sem resposta', none: 'Nenhuma referência escolhida',
+    saveError: 'Não foi possível salvar. Tente de novo.',
+    saveErrorAuth: 'Não foi possível salvar — faça login novamente.',
+    successTitle: 'Tudo pronto',
+    successMsg: 'Obrigada por responder. Essas informações foram salvas no seu perfil.',
+    successCta: 'Concluir',
+  },
+  en: {
+    tab: 'Questionnaire', langPrompt: 'Choose your language to continue',
+    clientTitle: 'Who is this questionnaire for?',
+    clientHelper: 'Pick the client before handing over the tablet.',
+    clientSearch: 'Search client', clientEmpty: 'No client found.', clear: 'Clear search',
+    back: 'Back', continue: 'Continue', exit: 'Exit',
+    exitTitle: 'Leave the questionnaire?', exitMsg: 'The answers from this session will not be saved.',
+    exitConfirm: 'Leave without saving', exitCancel: 'Keep answering', exitDone: 'Left',
+    progress: (n, total) => `${n} of ${total}`,
+    refCounter: (n, max) => n === 0
+      ? `None selected — you can continue without choosing`
+      : `${n} of ${max} selected`,
+    refPlaceholder: 'placeholder',
+    reviewTitle: 'Check your answers',
+    reviewHelper: 'Tap any answer to change it before saving.',
+    edit: 'Change', save: 'Save questionnaire', saving: 'Saving…', saved: 'Saved',
+    unanswered: 'Not answered', none: 'No reference chosen',
+    saveError: 'We could not save it. Please try again.',
+    saveErrorAuth: 'We could not save it — please sign in again.',
+    successTitle: 'All done',
+    successMsg: 'Thank you. Your answers have been saved to your profile.',
+    successCta: 'Finish',
+  },
+  es: {
+    tab: 'Cuestionario', langPrompt: 'Elige tu idioma para continuar',
+    clientTitle: '¿Para quién es este cuestionario?',
+    clientHelper: 'Elige a la clienta antes de entregar la tablet.',
+    clientSearch: 'Buscar clienta', clientEmpty: 'No se encontró ninguna clienta.', clear: 'Borrar búsqueda',
+    back: 'Volver', continue: 'Continuar', exit: 'Salir',
+    exitTitle: '¿Salir del cuestionario?', exitMsg: 'Las respuestas de esta sesión no se guardarán.',
+    exitConfirm: 'Salir sin guardar', exitCancel: 'Seguir respondiendo', exitDone: 'Salió',
+    progress: (n, total) => `${n} de ${total}`,
+    refCounter: (n, max) => n === 0
+      ? `Ninguna seleccionada — puedes continuar sin elegir`
+      : `${n} de ${max} seleccionadas`,
+    refPlaceholder: 'placeholder',
+    reviewTitle: 'Revisa tus respuestas',
+    reviewHelper: 'Toca cualquier respuesta para cambiarla antes de guardar.',
+    edit: 'Cambiar', save: 'Guardar cuestionario', saving: 'Guardando…', saved: 'Guardado',
+    unanswered: 'Sin respuesta', none: 'Ninguna referencia elegida',
+    saveError: 'No se pudo guardar. Inténtalo de nuevo.',
+    saveErrorAuth: 'No se pudo guardar — inicia sesión de nuevo.',
+    successTitle: 'Todo listo',
+    successMsg: 'Gracias. Tus respuestas se guardaron en tu perfil.',
+    successCta: 'Finalizar',
+  },
+};
+
+// ── As perguntas ──────────────────────────────────────────────
+// `field` é a coluna; `value` de cada opção é o valor canônico gravado (o
+// texto em português que a V1 já gravava — linhas antigas continuam
+// legíveis). `label` é só apresentação.
+const QUIZ_QUESTIONS = [
+  {
+    field: 'had_bleaching', type: 'choice',
+    title: {
+      'pt-BR': 'Você já fez descoloração?',
+      en: 'Have you ever bleached your hair?',
+      es: '¿Alguna vez te has decolorado el cabello?',
+    },
+    options: [
+      { value: 'Sim', label: { 'pt-BR': 'Sim', en: 'Yes', es: 'Sí' } },
+      { value: 'Não', label: { 'pt-BR': 'Não', en: 'No', es: 'No' } },
+    ],
+  },
+  {
+    field: 'chemical_treatment', type: 'choice',
+    title: {
+      'pt-BR': 'Já fez progressiva, botox ou alisamento?',
+      en: 'Have you had a keratin treatment, hair botox or straightening treatment?',
+      es: '¿Te has hecho alisado, bótox capilar o algún tratamiento de alisado?',
+    },
+    options: [
+      { value: 'Progressiva', label: { 'pt-BR': 'Progressiva', en: 'Keratin treatment', es: 'Alisado' } },
+      { value: 'Botox', label: { 'pt-BR': 'Botox', en: 'Hair botox', es: 'Bótox capilar' } },
+      { value: 'Alisamento', label: { 'pt-BR': 'Alisamento', en: 'Straightening', es: 'Alisado permanente' } },
+      { value: 'Nenhum desses', label: { 'pt-BR': 'Nenhum desses', en: 'None of these', es: 'Ninguno de estos' } },
+    ],
+  },
+  {
+    field: 'last_chemical', type: 'choice',
+    title: {
+      'pt-BR': 'Quando foi a última química?',
+      en: 'When was your last chemical treatment?',
+      es: '¿Cuándo fue tu último tratamiento químico?',
+    },
+    options: [
+      { value: 'Últimos 3 meses', label: { 'pt-BR': 'Últimos 3 meses', en: 'Last 3 months', es: 'Últimos 3 meses' } },
+      { value: 'De 3 a 6 meses', label: { 'pt-BR': 'De 3 a 6 meses', en: '3 to 6 months ago', es: 'De 3 a 6 meses' } },
+      { value: 'Mais de um ano', label: { 'pt-BR': 'Mais de um ano', en: 'More than a year ago', es: 'Más de un año' } },
+      { value: 'Nunca fiz química', label: { 'pt-BR': 'Nunca fiz química', en: 'Never had one', es: 'Nunca me he hecho' } },
+    ],
+  },
+  {
+    field: 'chemical_cut_or_breakage', type: 'choice',
+    title: {
+      'pt-BR': 'Já teve corte químico ou quebra?',
+      en: 'Have you ever experienced chemical breakage or hair breakage?',
+      es: '¿Has tenido corte químico o rotura del cabello?',
+    },
+    options: [
+      { value: 'Corte químico', label: { 'pt-BR': 'Corte químico', en: 'Chemical breakage', es: 'Corte químico' } },
+      { value: 'Quebra', label: { 'pt-BR': 'Quebra', en: 'Hair breakage', es: 'Rotura' } },
+      { value: 'Nenhum desses', label: { 'pt-BR': 'Nenhum desses', en: 'None of these', es: 'Ninguno de estos' } },
+    ],
+  },
+  {
+    field: 'henna_or_black_dye', type: 'choice',
+    title: {
+      'pt-BR': 'Usa hena ou tintura preta?',
+      en: 'Do you use henna or black hair dye?',
+      es: '¿Usas henna o tinte negro?',
+    },
+    options: [
+      { value: 'Hena', label: { 'pt-BR': 'Hena', en: 'Henna', es: 'Henna' } },
+      { value: 'Tintura', label: { 'pt-BR': 'Tintura', en: 'Black dye', es: 'Tinte negro' } },
+      { value: 'Nenhum desses', label: { 'pt-BR': 'Nenhum desses', en: 'None of these', es: 'Ninguno de estos' } },
+    ],
+  },
+  {
+    field: 'goal', type: 'text',
+    title: {
+      'pt-BR': 'Qual é o seu objetivo para o cabelo?',
+      en: 'What is your goal for your hair?',
+      es: '¿Cuál es tu objetivo para tu cabello?',
+    },
+    helper: {
+      'pt-BR': 'Conte para a gente como você gostaria de ver o seu cabelo.',
+      en: 'Tell us how you would like your hair to look.',
+      es: 'Cuéntanos cómo te gustaría ver tu cabello.',
+    },
+    placeholder: {
+      'pt-BR': 'Ex. Ficar mais loira, manter morena iluminada, recuperar a saúde do cabelo',
+      en: 'E.g. Go lighter, keep my bronde, bring my hair back to health',
+      es: 'Ej. Aclarar más, mantener el bronde, recuperar la salud del cabello',
+    },
+  },
+  {
+    field: 'reference_images', type: 'refs',
+    title: {
+      'pt-BR': 'Como você imagina o seu cabelo ao final do seu processo com a gente?',
+      en: 'How do you imagine your hair at the end of your journey with us?',
+      es: '¿Cómo imaginas tu cabello al final de tu proceso con nosotros?',
+    },
+    helper: {
+      'pt-BR': 'Escolha até 3 referências que mais se aproximam do resultado que você imagina.',
+      en: 'Choose up to 3 references that best match the result you have in mind.',
+      es: 'Elige hasta 3 referencias que más se acerquen al resultado que imaginas.',
+    },
+  },
+];
+
+// ── Estado e traduções ────────────────────────────────────────
+function quizFreshState() {
+  return {
+    phase: 'client', index: 0, language: null, welcomeIndex: 0, welcomeTimer: null,
+    clientId: null, clientQuery: '', answers: {}, refs: [], saving: false,
+    // Ligado quando o passo foi aberto pelo "Alterar" da revisão: corrigir
+    // uma resposta tem que devolver pra revisão, não recomeçar a fila.
+    returnToReview: false,
+  };
+}
+
+function quizLang() {
+  return (state.quiz && state.quiz.language) || QUIZ_LANG_DEFAULT;
+}
+
+// Texto de interface no idioma corrente, com o português como rede.
+function qt(key, ...args) {
+  const dict = QUIZ_UI[quizLang()] || QUIZ_UI[QUIZ_LANG_DEFAULT];
+  const val = dict[key] != null ? dict[key] : QUIZ_UI[QUIZ_LANG_DEFAULT][key];
+  return typeof val === 'function' ? val(...args) : (val || '');
+}
+
+// Texto de conteúdo (pergunta, opção, referência) — recebe o mapa por
+// idioma. `lang` explícito serve ao relatório, que lê sempre em português.
+function qtr(map, lang) {
+  if (!map) return '';
+  const code = lang || quizLang();
+  return map[code] != null ? map[code] : (map[QUIZ_LANG_DEFAULT] || '');
+}
+
+// Rótulo de uma resposta gravada. O banco guarda o canônico em português;
+// aqui ele volta a ser texto de tela no idioma pedido.
+function quizAnswerLabel(question, value, lang) {
+  if (!value) return '';
+  if (question.type !== 'choice') return value;
+  const opt = (question.options || []).find(o => o.value === value);
+  return opt ? qtr(opt.label, lang) : value;
+}
+
+// ── Motor da tela ─────────────────────────────────────────────
+function quizStopWelcomeLoop() {
+  if (state.quiz && state.quiz.welcomeTimer) {
+    clearInterval(state.quiz.welcomeTimer);
+    state.quiz.welcomeTimer = null;
+  }
+}
+
+// Zera tudo — usado na troca de aba, no "Sair" e depois de salvar. Precisa
+// passar por aqui (e não por um objeto literal solto) porque o loop da tela
+// de idioma é um setInterval: sem o clear, ele sobrevive à troca de aba e
+// fica procurando um elemento que não existe mais.
+function quizResetAll() {
+  quizStopWelcomeLoop();
+  state.quiz = quizFreshState();
+}
+
+function quizGo(mutateFn) {
+  quizStopWelcomeLoop();
+  if (mutateFn) mutateFn();
+  renderQuestionario();
+}
+
+// A anatomia é sempre a mesma — head → corpo rolável → rodapé — e é isso
+// que faz as 11 telas do fluxo lerem como um produto só.
+function quizShellHtml({ kiosk = true, exit = kiosk, back = false, title = '', subtitle = '', progress = null, body, footer = '' }) {
+  const total = QUIZ_QUESTIONS.length;
+  return `
+    <section class="quiz-screen${kiosk ? '' : ' is-inline'}">
+      <header class="quiz-head">
+        ${back
+          ? `<button type="button" class="o-icon-btn quiz-back" id="quizBack" aria-label="${esc(qt('back'))}">${ICONS.chevron}</button>`
+          : '<span class="quiz-head-spacer"></span>'}
+        <div class="quiz-head-titles">
+          ${title ? `<div class="quiz-head-title">${esc(title)}</div>` : ''}
+          ${subtitle ? `<div class="quiz-head-sub">${esc(subtitle)}</div>` : ''}
+        </div>
+        ${exit
+          ? `<button type="button" class="o-btn o-btn-ghost o-btn-inline" id="quizExit">${esc(qt('exit'))}</button>`
+          : '<span class="quiz-head-spacer"></span>'}
+      </header>
+      ${progress == null ? '' : `
+        <div class="quiz-progress">
+          <div class="quiz-progress-track" role="progressbar"
+               aria-valuemin="1" aria-valuemax="${total}" aria-valuenow="${progress}"
+               aria-label="${esc(qt('progress', progress, total))}">
+            <div class="quiz-progress-fill" style="width:${Math.round((progress / total) * 100)}%"></div>
+          </div>
+          <div class="quiz-progress-label">${esc(qt('progress', progress, total))}</div>
+        </div>`}
+      <div class="quiz-body"><div class="quiz-page">${body}</div></div>
+      <footer class="quiz-footer">${footer}</footer>
+    </section>`;
+}
+
+// Foco no título do passo (docs/07 §6): sem isso o innerHTML novo joga o
+// foco no <body> e o leitor de tela recomeça do topo do documento a cada
+// pergunta. `preventScroll` porque o corpo já nasce no topo.
+function quizFocusStep() {
+  const el = document.getElementById('quizStepTitle');
+  if (el) el.focus({ preventScroll: true });
+}
+
+function quizBindShell({ onBack } = {}) {
+  const back = document.getElementById('quizBack');
+  if (back) back.onclick = onBack;
+  const exit = document.getElementById('quizExit');
+  if (exit) exit.onclick = quizConfirmExit;
+}
+
+function quizConfirmExit() {
+  orenziUI.confirm({
+    title: qt('exitTitle'),
+    message: qt('exitMsg'),
+    confirmLabel: qt('exitConfirm'),
+    cancelLabel: qt('exitCancel'),
+    successLabel: qt('exitDone'),
+    destructive: true,
+    onConfirm: () => { quizGo(quizResetAll); },
+  });
+}
+
+// ── Passo: idioma ─────────────────────────────────────────────
+function quizRenderLanguage() {
+  const reduced = prefersReducedMotion();
+  const first = QUIZ_LANGS[state.quiz.welcomeIndex] || QUIZ_LANGS[0];
+  // O nome no subtítulo é para a Juliane conferir a quem está entregando o
+  // tablet — a cliente já foi escolhida na tela anterior.
+  const client = (state.clients || []).find(c => c.id === state.quiz.clientId);
+
+  // Com movimento reduzido as três saudações aparecem juntas e paradas —
+  // é a mesma informação sem loop nenhum, e não uma versão pobre da tela.
+  const headline = reduced
+    ? `<h2 class="quiz-welcome-static" id="quizStepTitle" tabindex="-1">
+         ${QUIZ_LANGS.map(l => `<span lang="${l.code}">${esc(l.welcome)}</span>`).join('')}
+       </h2>`
+    : `<h2 class="quiz-welcome-word-wrap" id="quizStepTitle" tabindex="-1">
+         <span class="quiz-welcome-word is-in" id="quizWelcomeWord" lang="${first.code}">${esc(first.welcome)}</span>
+       </h2>`;
+
+  app.innerHTML = quizShellHtml({
+    back: true,
+    subtitle: client ? client.name : '',
+    body: `
+      <div class="quiz-welcome">
+        ${headline}
+        <p class="quiz-welcome-prompt">
+          ${QUIZ_LANGS.map(l => `<span lang="${l.code}">${esc(QUIZ_UI[l.code].langPrompt)}</span>`).join('<br>')}
+        </p>
+        <div class="quiz-lang-list">
+          ${QUIZ_LANGS.map(l => `
+            <button type="button" class="o-btn o-btn-secondary" data-lang="${esc(l.code)}" lang="${l.code}">
+              ${esc(l.name)}
+            </button>`).join('')}
+        </div>
+      </div>`,
+  });
+
+  // Voltar daqui devolve o tablet para a Juliane (sai do quiosque) e zera o
+  // idioma: quem escolhe é a cliente, e a próxima pode não ser a mesma.
+  quizBindShell({ onBack: () => quizGo(() => {
+    state.quiz.language = null;
+    state.quiz.phase = 'client';
+  }) });
+
+  app.querySelectorAll('[data-lang]').forEach(btn => {
+    btn.onclick = () => quizGo(() => {
+      state.quiz.language = btn.dataset.lang;
+      state.quiz.phase = 'questions';
+      state.quiz.index = 0;
+    });
+  });
+
+  quizFocusStep();
+  if (!reduced) quizStartWelcomeLoop();
+}
+
+// A palavra sobe e some, a próxima entra por baixo. Mexe só no
+// `#quizWelcomeWord` — nada de re-render, senão os botões de idioma
+// nasceriam de novo a cada 2,6s e um toque no meio da troca se perderia.
+function quizStartWelcomeLoop() {
+  quizStopWelcomeLoop();
+  state.quiz.welcomeTimer = setInterval(() => {
+    const el = document.getElementById('quizWelcomeWord');
+    // A tela saiu de baixo do timer (troca de aba, escolha de idioma):
+    // o próprio loop se desliga em vez de depender de quem saiu.
+    if (!el) { quizStopWelcomeLoop(); return; }
+    state.quiz.welcomeIndex = (state.quiz.welcomeIndex + 1) % QUIZ_LANGS.length;
+    const next = QUIZ_LANGS[state.quiz.welcomeIndex];
+    el.classList.remove('is-in');
+    el.classList.add('is-out');
+    setTimeout(() => {
+      const still = document.getElementById('quizWelcomeWord');
+      if (!still) return;
+      still.textContent = next.welcome;
+      still.setAttribute('lang', next.code);
+      still.classList.remove('is-out');
+      still.classList.add('is-in');
+    }, QUIZ_WORD_SWAP_MS);
+  }, QUIZ_WELCOME_DWELL_MS);
+}
+
+// ── Passo: cliente ────────────────────────────────────────────
+function quizClientMatches() {
+  const q = (state.quiz.clientQuery || '').trim().toLowerCase();
+  const list = (state.clients || []).slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  if (!q) return list;
+  return list.filter(c => (c.name || '').toLowerCase().includes(q) || (c.phone || '').includes(q));
+}
+
+function quizClientListHtml() {
+  const list = quizClientMatches();
+  if (!list.length) {
+    return emptyStateHtml({ icon: ICONS.users, compact: true, title: qt('clientEmpty') });
+  }
+  return list.map(c => `
+    <button type="button" class="quiz-client o-card o-card-interactive" data-client="${esc(c.id)}">
+      <span class="avatar-round" aria-hidden="true">${esc(initials(c.name))}</span>
+      <span class="quiz-client-name">${esc(c.name)}</span>
+      <span class="quiz-client-chev" aria-hidden="true">${ICONS.chevron}</span>
+    </button>`).join('');
+}
+
+function quizRenderClientPicker() {
+  app.innerHTML = quizShellHtml({
+    kiosk: false,
+    body: `
+      <h2 class="quiz-question" id="quizStepTitle" tabindex="-1">${esc(qt('clientTitle'))}</h2>
+      <p class="quiz-helper">${esc(qt('clientHelper'))}</p>
+      <label class="o-search-field${state.quiz.clientQuery ? ' has-text' : ''}" id="quizSearchField">
+        <span class="o-search-field-icon" aria-hidden="true">${ICONS.search}</span>
+        <input type="search" id="quizClientSearch" value="${esc(state.quiz.clientQuery)}"
+               placeholder="${esc(qt('clientSearch'))}" aria-label="${esc(qt('clientSearch'))}"
+               autocomplete="off">
+        <button type="button" class="o-search-clear" id="quizClientClear" aria-label="${esc(qt('clear'))}">${ICONS.close}</button>
+      </label>
+      <div class="quiz-client-list" id="quizClientList">${quizClientListHtml()}</div>`,
+  });
+
+  // Primeira tela do fluxo: não há para onde voltar, e não há "Sair" —
+  // sair daqui é tocar em outra aba, que é o que a Juliane já faria.
+  const input = document.getElementById('quizClientSearch');
+  const field = document.getElementById('quizSearchField');
+  // A busca não passa por renderQuestionario(): o <input> seria recriado a
+  // cada tecla e perderia o foco com o cursor voltando pro começo. Mesma
+  // armadilha já documentada na lista de clientes e no Estoque.
+  input.oninput = () => {
+    state.quiz.clientQuery = input.value;
+    field.classList.toggle('has-text', !!input.value);
+    quizPaintClientList();
+  };
+  // mousedown, não click: o blur do input dispararia primeiro e o botão já
+  // teria sumido junto com a classe .has-text.
+  document.getElementById('quizClientClear').onmousedown = (e) => {
+    e.preventDefault();
+    state.quiz.clientQuery = '';
+    input.value = '';
+    field.classList.remove('has-text');
+    quizPaintClientList();
+    input.focus();
+  };
+  quizBindClientRows();
+  quizFocusStep();
+}
+
+function quizPaintClientList() {
+  const wrap = document.getElementById('quizClientList');
+  if (!wrap) return;
+  wrap.innerHTML = quizClientListHtml();
+  quizBindClientRows();
+}
+
+function quizBindClientRows() {
+  app.querySelectorAll('[data-client]').forEach(row => {
+    row.onclick = () => quizGo(() => {
+      state.quiz.clientId = row.dataset.client;
+      // Daqui em diante é quiosque: a próxima tela (idioma) já é da cliente.
+      state.quiz.phase = 'lang';
+    });
+  });
+}
+
+// ── Passo: pergunta ───────────────────────────────────────────
+function quizQuestionBodyHtml(q) {
+  const answer = state.quiz.answers[q.field];
+
+  if (q.type === 'choice') {
+    return `
+      <div class="quiz-options" role="radiogroup" aria-labelledby="quizStepTitle">
+        ${q.options.map(o => {
+          const on = answer === o.value;
+          return `
+            <button type="button" class="quiz-option o-card o-card-interactive" role="radio"
+                    aria-checked="${on}" data-value="${esc(o.value)}">
+              <span class="quiz-option-label">${esc(qtr(o.label))}</span>
+              <span class="quiz-option-mark" aria-hidden="true"></span>
+            </button>`;
+        }).join('')}
+      </div>`;
+  }
+
+  if (q.type === 'text') {
+    // O rótulo programático é o próprio título do passo (aria-labelledby):
+    // um <label> visível repetiria a pergunta que já está logo acima em
+    // corpo maior. O que a V1 não tinha era o vínculo, não o texto.
+    return `
+      <div class="o-field">
+        <textarea class="o-textarea" id="quizText" rows="5" aria-labelledby="quizStepTitle"
+                  placeholder="${esc(qtr(q.placeholder))}">${esc(answer || '')}</textarea>
+      </div>`;
+  }
+
+  // refs
+  const chosen = state.quiz.refs;
+  const full = chosen.length >= QUIZ_MAX_REFS;
+  return `
+    <div class="quiz-refs" role="group" aria-labelledby="quizStepTitle">
+      ${QUIZ_REFERENCES.map(r => {
+        const on = chosen.includes(r.id);
+        const off = !on && full;
+        return `
+          <button type="button" class="quiz-ref o-card o-card-interactive" data-ref="${esc(r.id)}"
+                  aria-pressed="${on}" aria-disabled="${off}">
+            <span class="quiz-ref-swatch" style="--ref-1:${r.tone[0]};--ref-2:${r.tone[1]}">
+              ${r.imageUrl ? `<img src="${esc(r.imageUrl)}" alt="">` : ''}
+              ${r.imageUrl ? '' : `<span class="quiz-ref-tag">${esc(qt('refPlaceholder'))}</span>`}
+              <span class="quiz-ref-check" aria-hidden="true">${ICONS.check}</span>
+            </span>
+            <span class="quiz-ref-name">${esc(qtr(r.name))}</span>
+          </button>`;
+      }).join('')}
+    </div>
+    <p class="quiz-ref-counter" id="quizRefCounter" role="status" aria-live="polite">
+      ${esc(qt('refCounter', chosen.length, QUIZ_MAX_REFS))}
+    </p>`;
+}
+
+function quizRenderQuestion() {
+  const i = state.quiz.index;
+  const q = QUIZ_QUESTIONS[i];
+  const client = (state.clients || []).find(c => c.id === state.quiz.clientId);
+
+  app.innerHTML = quizShellHtml({
+    back: true,
+    subtitle: client ? client.name : '',
+    progress: i + 1,
+    body: `
+      <h2 class="quiz-question" id="quizStepTitle" tabindex="-1">${esc(qtr(q.title))}</h2>
+      ${q.helper ? `<p class="quiz-helper">${esc(qtr(q.helper))}</p>` : ''}
+      ${quizQuestionBodyHtml(q)}`,
+    footer: `<button type="button" class="o-btn o-btn-primary" id="quizNext">${esc(qt('continue'))}</button>`,
+  });
+
+  quizBindShell({ onBack: quizBack });
+
+  if (q.type === 'choice') {
+    // Sem auto-advance: a V1 pulava de tela no `onchange` do <select> e não
+    // havia como revisar. Selecionar e confirmar é mais previsível, que foi
+    // o que o Raphael pediu — e o toque duplo (escolher + Continuar) num
+    // tablet custa menos que uma resposta errada sem volta.
+    app.querySelectorAll('.quiz-option').forEach(btn => {
+      btn.onclick = () => {
+        state.quiz.answers[q.field] = btn.dataset.value;
+        app.querySelectorAll('.quiz-option').forEach(o => {
+          o.setAttribute('aria-checked', String(o === btn));
+        });
+      };
+    });
+  }
+
+  if (q.type === 'refs') {
+    app.querySelectorAll('.quiz-ref').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.ref;
+        const at = state.quiz.refs.indexOf(id);
+        if (at >= 0) state.quiz.refs.splice(at, 1);
+        else if (state.quiz.refs.length < QUIZ_MAX_REFS) state.quiz.refs.push(id);
+        else return;
+        quizPaintRefs();
+      };
+    });
+  }
+
+  const next = document.getElementById('quizNext');
+  next.onclick = () => {
+    if (q.type === 'text') {
+      const el = document.getElementById('quizText');
+      state.quiz.answers[q.field] = el.value.trim();
+    }
+    quizGo(() => {
+      if (state.quiz.returnToReview) { state.quiz.returnToReview = false; state.quiz.phase = 'review'; return; }
+      if (state.quiz.index < QUIZ_QUESTIONS.length - 1) state.quiz.index += 1;
+      else state.quiz.phase = 'review';
+    });
+  };
+
+  quizFocusStep();
+}
+
+// Estado dos tiles sem re-render: a grade rolada não pode saltar pro topo a
+// cada toque, e o botão sob o dedo não pode ser destruído no meio do gesto.
+function quizPaintRefs() {
+  const chosen = state.quiz.refs;
+  const full = chosen.length >= QUIZ_MAX_REFS;
+  app.querySelectorAll('.quiz-ref').forEach(btn => {
+    const on = chosen.includes(btn.dataset.ref);
+    btn.setAttribute('aria-pressed', String(on));
+    btn.setAttribute('aria-disabled', String(!on && full));
+  });
+  const counter = document.getElementById('quizRefCounter');
+  if (counter) counter.textContent = qt('refCounter', chosen.length, QUIZ_MAX_REFS);
+}
+
+function quizBack() {
+  quizGo(() => {
+    if (state.quiz.returnToReview) { state.quiz.returnToReview = false; state.quiz.phase = 'review'; return; }
+    if (state.quiz.phase === 'review') { state.quiz.index = QUIZ_QUESTIONS.length - 1; state.quiz.phase = 'questions'; return; }
+    if (state.quiz.index > 0) { state.quiz.index -= 1; return; }
+    state.quiz.phase = 'lang';
+  });
+}
+
+// ── Passo: revisão ────────────────────────────────────────────
+function quizRenderReview() {
+  const client = (state.clients || []).find(c => c.id === state.quiz.clientId);
+
+  const items = QUIZ_QUESTIONS.map((q, i) => {
+    let answerHtml;
+    if (q.type === 'refs') {
+      answerHtml = state.quiz.refs.length
+        ? `<div class="quiz-review-refs">${state.quiz.refs.map(id => {
+            const r = quizReference(id);
+            if (!r) return '';
+            return `<span class="quiz-review-ref"><i style="--ref-1:${r.tone[0]};--ref-2:${r.tone[1]}"></i>${esc(qtr(r.name))}</span>`;
+          }).join('')}</div>`
+        : `<div class="quiz-review-a is-empty">${esc(qt('none'))}</div>`;
+    } else {
+      const val = state.quiz.answers[q.field];
+      answerHtml = val
+        ? `<div class="quiz-review-a">${esc(quizAnswerLabel(q, val))}</div>`
+        : `<div class="quiz-review-a is-empty">${esc(qt('unanswered'))}</div>`;
+    }
+    return `
+      <div class="quiz-review-item o-card">
+        <div class="quiz-review-head">
+          <span class="quiz-review-q">${esc(qtr(q.title))}</span>
+          <button type="button" class="o-btn o-btn-inline" data-edit="${i}">${esc(qt('edit'))}</button>
+        </div>
+        ${answerHtml}
+      </div>`;
+  }).join('');
+
+  app.innerHTML = quizShellHtml({
+    back: true,
+    subtitle: client ? client.name : '',
+    body: `
+      <h2 class="quiz-question" id="quizStepTitle" tabindex="-1">${esc(qt('reviewTitle'))}</h2>
+      <p class="quiz-helper">${esc(qt('reviewHelper'))}</p>
+      <div class="quiz-review-list">${items}</div>`,
+    footer: `
+      <div class="quiz-error" id="quizError" role="alert" hidden></div>
+      <button type="button" class="o-btn o-btn-primary" id="quizSave">${esc(qt('save'))}</button>`,
+  });
+
+  quizBindShell({ onBack: quizBack });
+
+  app.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.onclick = () => quizGo(() => {
+      state.quiz.index = Number(btn.dataset.edit);
+      state.quiz.phase = 'questions';
+      state.quiz.returnToReview = true;
+    });
+  });
+
+  document.getElementById('quizSave').onclick = (e) => quizSave(e.currentTarget);
+  quizFocusStep();
+}
+
+// ── Gravação ──────────────────────────────────────────────────
+// A migration que traz `language` e `reference_images` é a etapa B deste
+// trabalho e ainda não foi aplicada. Enquanto ela não entrar, o INSERT
+// completo volta com "coluna não existe" — aqui isso é detectado e o
+// registro é gravado sem os dois campos novos, em vez de a cliente ver um
+// erro por uma dívida de banco. Quando a migration entrar, o primeiro
+// INSERT passa e este caminho deixa de ser usado sozinho.
+function quizMissingColumn(error) {
+  if (!error) return false;
+  if (error.code === '42703' || error.code === 'PGRST204') return true;
+  return /could not find the .* column|column .* does not exist/i.test(error.message || '');
+}
+
+async function quizSave(btn) {
+  if (state.quiz.saving) return;
+  state.quiz.saving = true;
+
+  const errorEl = document.getElementById('quizError');
+  if (errorEl) errorEl.hidden = true;
+  orenziUI.setButtonBusy(btn, qt('saving'));
+
+  const legacy = {
+    client_id: state.quiz.clientId,
+    had_bleaching: state.quiz.answers.had_bleaching || null,
+    chemical_treatment: state.quiz.answers.chemical_treatment || null,
+    last_chemical: state.quiz.answers.last_chemical || null,
+    chemical_cut_or_breakage: state.quiz.answers.chemical_cut_or_breakage || null,
+    henna_or_black_dye: state.quiz.answers.henna_or_black_dye || null,
+    goal: state.quiz.answers.goal || null,
+  };
+  const payload = {
+    ...legacy,
+    language: state.quiz.language || QUIZ_LANG_DEFAULT,
+    reference_images: state.quiz.refs.slice(),
+  };
+
+  function fail(msg, err) {
+    if (err) console.error('client_questionnaires.insert', err);
+    state.quiz.saving = false;
+    orenziUI.resetButton(btn);
+    if (errorEl) { errorEl.textContent = msg; errorEl.hidden = false; }
+  }
+
+  let { data, error } = await sb.from('client_questionnaires').insert(payload).select();
+
+  if (error && quizMissingColumn(error)) {
+    console.warn('client_questionnaires: colunas language/reference_images ainda não existem — gravando sem elas (migration da etapa B pendente).', error);
+    ({ data, error } = await sb.from('client_questionnaires').insert(legacy).select());
+  }
+
+  if (error) return fail(qt('saveError'), error);
+  // Escrita autenticada sempre confere o retorno do .select(): com a sessão
+  // expirada a RLS deixa o insert passar sem tocar em linha nenhuma, e a
+  // tela mentiria dizendo que salvou.
+  if (!data || !data.length) return fail(qt('saveErrorAuth'));
+
+  await orenziUI.setButtonSuccess(btn, qt('saved'));
+  state.quiz.saving = false;
+  quizGo(() => { state.quiz.phase = 'success'; });
+}
+
+// ── Sucesso ───────────────────────────────────────────────────
+function quizRenderSuccess() {
+  app.innerHTML = quizShellHtml({
+    exit: false,
+    body: `
+      <div class="quiz-success">
+        <span class="quiz-success-mark" aria-hidden="true">${ICONS.check}</span>
+        <h2 class="quiz-success-title" id="quizStepTitle" tabindex="-1">${esc(qt('successTitle'))}</h2>
+        <p class="quiz-success-msg">${esc(qt('successMsg'))}</p>
+      </div>`,
+    footer: `<button type="button" class="o-btn o-btn-primary" id="quizDone">${esc(qt('successCta'))}</button>`,
+  });
+  // O CTA devolve o painel para a Juliane — volta para a escolha de cliente,
+  // fora do quiosque, sem cliente, idioma, respostas ou referências da
+  // sessão anterior em memória (quizResetAll).
+  document.getElementById('quizDone').onclick = () => quizGo(quizResetAll);
+  quizFocusStep();
+}
+
+// ── Roteador da aba ───────────────────────────────────────────
+function renderQuestionario() {
+  document.getElementById('greeting').textContent = QUIZ_UI[QUIZ_LANG_DEFAULT].tab;
   document.getElementById('greetingSub').textContent = '';
 
-  app.innerHTML = `
-    <button class="profile-back" id="backToClientFromQuiz">‹ Voltar</button>
-    <h2>Respostas do questionário</h2>
-    ${qaBlock('Respondido em', `${fmtDate(q.created_at)} às ${fmtTime(q.created_at)}`)}
-    ${qaBlock('Já fez descoloração?', q.had_bleaching)}
-    ${qaBlock('Já fez progressiva, botox ou alisamento?', q.chemical_treatment)}
-    ${qaBlock('Quando foi a última química?', q.last_chemical)}
-    ${qaBlock('Já teve corte químico ou quebra?', q.chemical_cut_or_breakage)}
-    ${qaBlock('Usa hena ou tintura preta?', q.henna_or_black_dye)}
-    ${qaBlock('Objetivo da cliente', q.goal)}
-  `;
+  const phase = state.quiz.phase;
+  // A escolha da cliente é a PRIMEIRA tela e pertence ao painel da Juliane:
+  // header e nav continuam à vista, porque é ela quem opera. O quiosque
+  // começa no instante em que a cliente é escolhida — a partir daí o tablet
+  // está conceitualmente na mão da cliente, e a tela de idioma já é dela.
+  // Ao contrário da V1, sempre existe saída: o botão "Sair" no cabeçalho.
+  setKioskMode(phase !== 'client');
 
-  document.getElementById('backToClientFromQuiz').onclick = () => {
-    state.viewQuestionnaire = null;
-    render();
-  };
+  if (phase === 'lang') return quizRenderLanguage();
+  if (phase === 'client') return quizRenderClientPicker();
+  if (phase === 'review') return quizRenderReview();
+  if (phase === 'success') return quizRenderSuccess();
+  return quizRenderQuestion();
 }
 
 function setKioskMode(active) {
@@ -7138,171 +8217,81 @@ function setKioskMode(active) {
   document.body.style.paddingBottom = active ? '0' : '';
 }
 
-// Troca de tela do questionário com fade-out do conteúdo atual, seguido de fade-in do novo.
-function quizTransitionTo(mutateFn) {
-  app.style.transition = 'opacity 0.22s ease';
-  app.style.opacity = '0';
-  setTimeout(() => {
-    mutateFn();
-    render();
-    setTimeout(() => { app.style.opacity = '1'; }, 20);
-  }, 220);
+// ── Relatório no perfil da cliente ────────────────────────────
+// Consulta manual da Juliane, e só isso: nenhuma análise, nenhum alerta,
+// nenhuma recomendação derivada das respostas (decisão de produto de
+// 15/08/2026 — o questionário é arquivo, não motor).
+//
+// As respostas são exibidas SEMPRE em português, mesmo quando a cliente
+// respondeu em inglês ou espanhol: quem lê esta tela é a Juliane. O idioma
+// usado aparece como etiqueta, porque é informação sobre o atendimento.
+function quizLanguageName(code) {
+  const l = QUIZ_LANGS.find(x => x.code === code);
+  return l ? l.name : (code || '—');
 }
 
-function renderQuizMessage(text, buttonLabel, onNext) {
-  app.innerHTML = `
-    <div class="quiz-fullscreen">
-      <div class="quiz-message">${text}</div>
-      <button class="btn btn-primary" id="quizNextBtn">${buttonLabel}</button>
-    </div>
-  `;
-  document.getElementById('quizNextBtn').onclick = () => quizTransitionTo(onNext);
-}
-
-function renderQuizQuestion(question, options, field, nextStep) {
-  app.innerHTML = `
-    <div class="quiz-fullscreen">
-      <div class="quiz-center">
-        <h2 style="text-align:center;">${question}</h2>
-        <select id="quizAnswerSelect">
-          <option value="">Selecione…</option>
-          ${options.map(o => `<option value="${o}" ${state.quiz.answers[field] === o ? 'selected' : ''}>${o}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-  `;
-  document.getElementById('quizAnswerSelect').onchange = (e) => {
-    if (!e.target.value) return;
-    const value = e.target.value;
-    quizTransitionTo(() => {
-      state.quiz.answers[field] = value;
-      state.quiz.step = nextStep;
-    });
-  };
-}
-
-function renderQuestionario() {
-  document.getElementById('greeting').textContent = 'Questionário';
+function renderQuestionnaireReport() {
+  const q = state.viewQuestionnaire;
+  document.getElementById('greeting').textContent = QUIZ_UI[QUIZ_LANG_DEFAULT].tab;
   document.getElementById('greetingSub').textContent = '';
 
-  const step = state.quiz.step;
-  setKioskMode(step >= 1);
+  const back = `<button class="profile-back" id="backToClientFromQuiz">${ICONS.chevron} Voltar</button>`;
 
-  if (step === 0) {
+  if (q && q.__empty) {
     app.innerHTML = `
-      <h2>Questionário</h2>
-      <label>Cliente</label>
-      <select id="quizClientSelect">
-        <option value="">Selecione…</option>
-        ${state.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-      </select>
-    `;
-    document.getElementById('quizClientSelect').onchange = (e) => {
-      if (!e.target.value) return;
-      const clientId = e.target.value;
-      quizTransitionTo(() => {
-        state.quiz.clientId = clientId;
-        state.quiz.step = 1;
-      });
+      ${back}
+      ${emptyStateHtml({
+        icon: ICONS.clipboard,
+        title: 'Nenhum questionário preenchido ainda.',
+        caption: 'Abra a aba Questionário e entregue o tablet para a cliente — as respostas aparecem aqui assim que ela terminar.',
+      })}`;
+    document.getElementById('backToClientFromQuiz').onclick = () => {
+      state.viewQuestionnaire = null;
+      render();
     };
     return;
   }
 
-  if (step === 1) {
-    renderQuizMessage('Queremos conhecer você melhor', 'Começar', () => { state.quiz.step = 2; });
-    return;
-  }
+  const refs = Array.isArray(q.reference_images) ? q.reference_images : [];
+  const rows = QUIZ_QUESTIONS.map(question => {
+    if (question.type === 'refs') {
+      const body = refs.length
+        ? `<div class="quiz-review-refs">${refs.map(id => {
+            const r = quizReference(id);
+            return r
+              ? `<span class="quiz-review-ref"><i style="--ref-1:${r.tone[0]};--ref-2:${r.tone[1]}"></i>${esc(qtr(r.name, QUIZ_LANG_DEFAULT))}</span>`
+              // Referência que saiu do catálogo continua legível pelo id —
+              // o dado é do banco, não do arquivo que desenha a grade.
+              : `<span class="quiz-review-ref">${esc(id)}</span>`;
+          }).join('')}</div>`
+        : `<div class="quiz-review-a is-empty">—</div>`;
+      return `
+        <div class="quiz-review-item o-card">
+          <div class="quiz-review-q">${esc(qtr(question.title, QUIZ_LANG_DEFAULT))}</div>
+          ${body}
+        </div>`;
+    }
+    const val = q[question.field];
+    return `
+      <div class="quiz-review-item o-card">
+        <div class="quiz-review-q">${esc(qtr(question.title, QUIZ_LANG_DEFAULT))}</div>
+        <div class="quiz-review-a${val ? '' : ' is-empty'}">${esc(val ? quizAnswerLabel(question, val, QUIZ_LANG_DEFAULT) : '—')}</div>
+      </div>`;
+  }).join('');
 
-  if (step === 2) {
-    renderQuizQuestion('Você já fez descoloração?', ['Sim', 'Não'], 'had_bleaching', 3);
-    return;
-  }
+  app.innerHTML = `
+    ${back}
+    <h2>Respostas do questionário</h2>
+    <div class="quiz-report-meta">
+      <span class="o-badge o-badge-neutral">${esc(fmtDate(q.created_at))} · ${esc(fmtTime(q.created_at))}</span>
+      <span class="o-badge o-badge-neutral">${esc(quizLanguageName(q.language || QUIZ_LANG_DEFAULT))}</span>
+    </div>
+    <div class="quiz-review-list">${rows}</div>`;
 
-  if (step === 3) {
-    renderQuizQuestion('Já fez progressiva, botox ou alisamento?', ['Progressiva', 'Botox', 'Alisamento', 'Nenhum desses'], 'chemical_treatment', 4);
-    return;
-  }
-
-  if (step === 4) {
-    renderQuizMessage('Certo, para poder fazer o melhor atendimento possível, precisamos saber mais algumas informações...', 'Vamos lá', () => { state.quiz.step = 5; });
-    return;
-  }
-
-  if (step === 5) {
-    renderQuizQuestion('Quando foi a última química?', ['Últimos 3 meses', 'De 3 a 6 meses', 'Mais de um ano', 'Nunca fiz química'], 'last_chemical', 6);
-    return;
-  }
-
-  if (step === 6) {
-    renderQuizQuestion('Já teve corte químico ou quebra?', ['Corte químico', 'Quebra', 'Nenhum desses'], 'chemical_cut_or_breakage', 7);
-    return;
-  }
-
-  if (step === 7) {
-    renderQuizMessage('Agora só mais um detalhe....', 'Continuar', () => { state.quiz.step = 8; });
-    return;
-  }
-
-  if (step === 8) {
-    renderQuizQuestion('Usa hena ou tintura preta?', ['Hena', 'Tintura', 'Nenhum desses'], 'henna_or_black_dye', 9);
-    return;
-  }
-
-  if (step === 9) {
-    renderQuizMessage('Essas perguntas ajudam a evitar problemas na descoloração...', 'Continuar', () => { state.quiz.step = 10; });
-    return;
-  }
-
-  if (step === 10) {
-    app.innerHTML = `
-      <div class="quiz-fullscreen">
-        <div class="quiz-goal-content">
-          <h2>Objetivo da cliente</h2>
-          <div class="quiz-subtitle">Conte-nos como você quer o seu cabelo</div>
-          <textarea id="quizGoal" placeholder="Ex. Ficar mais loira, Manter morena iluminada, recuperar saúde do cabelo" style="min-height:120px;">${state.quiz.answers.goal || ''}</textarea>
-        </div>
-        <button class="btn btn-primary" id="quizFinishBtn">Concluir</button>
-      </div>
-    `;
-    document.getElementById('quizFinishBtn').onclick = () => {
-      const goal = document.getElementById('quizGoal').value.trim();
-      quizTransitionTo(() => {
-        state.quiz.answers.goal = goal;
-        state.quiz.step = 11;
-      });
-    };
-    return;
-  }
-
-  if (step === 11) {
-    app.innerHTML = `
-      <div class="quiz-fullscreen">
-        <div style="display:flex; justify-content:flex-end;">
-          <button id="quizCloseBtn" style="background:none; border:none; font-size:22px; color:var(--color-neutral-600); cursor:pointer;">✕</button>
-        </div>
-        <div class="quiz-message">Obrigado pelas informações, vamos preparar o melhor atendimento para você</div>
-      </div>
-    `;
-    document.getElementById('quizCloseBtn').onclick = async () => {
-      const payload = {
-        client_id: state.quiz.clientId,
-        had_bleaching: state.quiz.answers.had_bleaching || null,
-        chemical_treatment: state.quiz.answers.chemical_treatment || null,
-        last_chemical: state.quiz.answers.last_chemical || null,
-        chemical_cut_or_breakage: state.quiz.answers.chemical_cut_or_breakage || null,
-        henna_or_black_dye: state.quiz.answers.henna_or_black_dye || null,
-        goal: state.quiz.answers.goal || null,
-      };
-      const { data: inserted, error } = await sb.from('client_questionnaires').insert(payload).select();
-      if (error) { showToast('Erro ao salvar: ' + error.message); return; }
-      if (!inserted || !inserted.length) { showToast('Não foi possível salvar — faça login novamente.'); return; }
-      showToast('Questionário salvo');
-      quizTransitionTo(() => {
-        state.quiz = { step: 0, clientId: null, answers: {} };
-      });
-    };
-    return;
-  }
+  document.getElementById('backToClientFromQuiz').onclick = () => {
+    state.viewQuestionnaire = null;
+    render();
+  };
 }
 
 // ── ESTOQUE ──────────────────────────────────────────────────
@@ -8479,7 +9468,14 @@ document.querySelectorAll('nav button').forEach(btn => {
     state.selectedApptId = null;
     state.viewQuestionnaire = null;
     state.clientContext = null;
-    state.quiz = { step: 0, clientId: null, answers: {} };
+    quizResetAll();
+    // Sair do quiosque tem que ser explicito: `render()` so chama
+    // setKioskMode() dentro de renderQuestionario(), entao trocar de aba a
+    // partir de uma tela de quiosque deixaria header e nav escondidos na aba
+    // nova. Hoje a nav esta display:none nesse estado (o dedo nao alcanca),
+    // mas basta um caminho novo chamar render() com outra aba pro painel
+    // ficar sem chrome nenhum. Fechar aqui custa uma linha.
+    setKioskMode(false);
     // Tocar na aba é entrada nova: começa do topo. O scroll guardado serve
     // pro caminho de volta do perfil, não pra troca de aba.
     state.clientsScrollTop = 0;

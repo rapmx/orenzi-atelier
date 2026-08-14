@@ -295,6 +295,82 @@ qualquer `STRIPE_SECRET_KEY` que não comece com `sk_test_`.
   `sk_test_` e `whsec_` só como secrets das Edge Functions. `client_secret`
   vai ao browser mas **nunca** é gravado nem logado.
 
+### Questionário V2 (15/08/2026)
+
+**O produto é simples de propósito e deve continuar simples.** A Juliane
+entrega o tablet quando a cliente chega, a cliente responde, as respostas
+ficam no perfil pra **consulta manual**. Nenhuma resposta deriva duração,
+preço, serviço, alerta, recomendação ou qualquer regra de agendamento — e
+não deve passar a derivar sem o Raphael pedir. Foi decisão explícita, não
+lacuna: a auditoria de 14/08 mostrou uso funcional zero e o pedido foi
+**manter assim**.
+
+- **Três idiomas** (`pt-BR`, `en`, `es`) escolhidos numa tela de abertura
+  com a saudação alternando (`QUIZ_WELCOME_DWELL_MS`, palavra sobe e a
+  próxima entra por baixo). Sem bandeira: idioma não é país.
+- **Valor persistido é canônico, em português.** `had_bleaching` grava
+  `'Sim'` mesmo com a cliente respondendo em inglês; a tradução é só de
+  apresentação (`qtr()`/`quizAnswerLabel()`). Sem isso o relatório da
+  Juliane chegaria em espanhol e toda leitura futura teria que conhecer os
+  três idiomas. **O relatório do perfil é sempre em pt-BR**, com o idioma
+  usado como etiqueta.
+- **11 telas viraram fluxo com volta**: cliente → idioma → 7 passos (5
+  escolhas + objetivo + referências) → revisão → sucesso. Progresso "N de
+  7", `Voltar` em todo passo, `Sair` com confirmação — a V1 escondia a nav
+  e não tinha saída nenhuma. **O `✕` que salvava morreu**: o CTA diz
+  "Salvar questionário", com busy/erro por `orenziUI`.
+- **A ordem é cliente → idioma, e isso é sobre de quem é a tela**
+  (15/08/2026). A escolha da cliente é a **primeira** tela e pertence ao
+  painel: header e nav à vista, sem `Voltar` (não há pra onde) e sem
+  `Sair` (sair é tocar noutra aba). O quiosque começa **no instante da
+  escolha** — `setKioskMode(phase !== 'client')` — e a tela de idioma já é
+  da cliente, com o nome dela no subtítulo pra Juliane conferir a quem
+  está entregando o tablet. Voltar do idioma devolve o painel e **zera
+  `language`**: quem escolhe idioma é a cliente, e a próxima pode não ser
+  a mesma. O Sucesso continua em quiosque (o tablet ainda está com a
+  cliente) mas sem `Sair`: o CTA é a única saída e devolve o painel.
+- **Trocar de aba desliga o quiosque explicitamente.** `render()` só chama
+  `setKioskMode()` dentro de `renderQuestionario()`, então sair do
+  questionário por outra aba deixaria header e nav escondidos na aba nova.
+  Hoje a nav está `display:none` nesse estado e o dedo não alcança, mas o
+  handler da nav chama `setKioskMode(false)` de qualquer forma — basta um
+  caminho novo chamar `render()` com outra aba pro painel ficar sem chrome
+  nenhum.
+- **Referências visuais são placeholders declarados** até a Juliane mandar
+  as fotos. O catálogo é `QUIZ_REFERENCES`; o que vai pro banco é o `id`
+  (`ref_01`…), nunca URL — quando a foto chegar, preenche-se `imageUrl` e
+  nem a gravação nem o relatório mudam. Até 3, e 0 é resposta válida.
+- **Sem auto-advance.** A V1 pulava de tela no `onchange` do `<select>` e
+  não havia como revisar. Escolher e confirmar custa um toque a mais e
+  evita resposta errada sem volta.
+- **A busca de cliente não passa por `renderQuestionario()`** —
+  `quizPaintClientList()` mexe só no `#quizClientList`. Mesma armadilha de
+  foco já documentada em Clientes e Estoque. Os tiles de referência seguem
+  a mesma regra (`quizPaintRefs()`): re-renderizar destruiria o botão sob
+  o dedo e jogaria a grade rolada pro topo.
+- **O loop da saudação é um `setInterval` e precisa morrer.**
+  `quizResetAll()` (troca de aba, Sair, fim) limpa; o próprio loop se
+  desliga se o elemento sumiu. Com `prefers-reduced-motion` não há loop:
+  as três saudações aparecem paradas, juntas.
+- **Histórico continua append-only e invisível**: um INSERT por resposta, a
+  tela lê a mais recente. Sem UPDATE, sem upsert, sem tela de histórico —
+  fora do escopo desta rodada.
+- **Banco**: `language` (`text`, CHECK nos 3 códigos, NULL nas linhas
+  antigas — não se inventa o passado) e `reference_images` (`text[]`,
+  default `{}`, CHECK ≤ 3), índice em `(client_id, created_at DESC)` e
+  `REVOKE ALL ... FROM PUBLIC, anon` (a tabela é anterior à convenção e
+  ficava só na RLS). Migration
+  `20260815120000_questionnaire_v2_language_and_references.sql`.
+  **`quizSave()` funciona antes dela**: se o Postgres disser que a coluna
+  não existe (`quizMissingColumn()`), regrava só os seis campos antigos em
+  vez de mostrar erro pra cliente por uma dívida de banco.
+- **Demo**: o stub tinha um bug real — `.eq().order().limit().maybeSingle()`
+  estourava `TypeError` e "Infos do questionário" não fazia nada, nem
+  toast. O `order` devolvido pelo `.eq()` agora respeita o filtro e carrega
+  `.limit()`/`.maybeSingle()`. Camila tem questionário de exemplo (em
+  inglês, com duas referências); Marina não tem, de propósito — é o estado
+  vazio, que deixou de ser toast e virou tela.
+
 ### Status na timeline (10/08/2026)
 
 A agenda **não carimba o que é normal**. `timelineStatusBadge()` (logo abaixo
@@ -436,9 +512,9 @@ mesmo vermelho que `.pc-status.is-busy` ("Agenda praticamente lotada") e a seta
 de queda dos indicadores já usam. Não introduzir uma cor de alerta nova.
 
 Feito: Estoque (redesenhado por inteiro em 03/08 — ver abaixo), Agenda (`.timeline` no padrão de cartão,
-animação de toque em dia da semana/booking/botão +) e Clientes (lista e
-perfil, os dois com redesign próprio — ver abaixo). Questionário ainda não
-entrou.
+animação de toque em dia da semana/booking/botão +), Clientes (lista e
+perfil, os dois com redesign próprio — ver abaixo) e Questionário
+(reconstruído em 15/08 — seção própria em "Regras do domínio").
 
 **Redesign da lista de clientes (03/08/2026, prompt de "design review" do
 Raphael com print de referência).** A tela ganhou busca, filtros, resumo e
