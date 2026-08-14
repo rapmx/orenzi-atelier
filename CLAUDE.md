@@ -61,6 +61,12 @@ não serve para nada.
 - **Expediente 9h–18h, fecha domingo e segunda.** Está duplicado em
   `agendar.html` e `painel.html` — mudou num, muda no outro, senão vira
   overbooking.
+- **Pagamento: sinal de 20% do valor BASE, Stripe em SANDBOX.** Serviço com
+  `price_varies` cobra 20% do `services.price` (o piso) — copy tem que dizer
+  "valor base", nunca "valor final". **`LIVE PAYMENTS BLOCKED UNTIL
+  CANCELLATION POLICY V2 IS APPROVED`**: a policy v1 promete taxa fixa de €16 e
+  desconto do sinal, o que com 20% viraria devolver dinheiro. Detalhes em
+  `app/CLAUDE.md`.
 - **`painel_demo.html` é espelho do `painel.html`.** Toda mudança de tela entra
   nos dois. O que difere é só o stub de `window.supabase` no topo do demo.
 

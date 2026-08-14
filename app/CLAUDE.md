@@ -57,7 +57,13 @@ Estoque ocupou o lugar de Equipe em 02/08/2026 — com uma profissional só,
 
 Tabelas: `appointments`, `schedule_blocks`, `clients`, `staff`, `staff_services`,
 `services`, `salon_settings`, `products`, `product_movements`, `client_photos`,
-`client_questionnaires`, `booking_visits`, `lookup_attempts`.
+`client_questionnaires`, `booking_visits`, `lookup_attempts`, `payments`,
+`stripe_webhook_events`.
+
+`payments` e `stripe_webhook_events` (14/08/2026) são do depósito de 20% —
+ver seção própria em "Regras do domínio". RLS ligada e **sem policy nenhuma**:
+só `service_role` (que ignora RLS) alcança. Testado pela superfície PostgREST
+real com a chave anônima: `401` nas tabelas, `404` em todas as RPCs novas.
 
 `schedule_blocks` (13/08/2026) é o bloqueio manual de agenda — ver seção
 própria em "Regras do domínio" abaixo.
@@ -218,6 +224,76 @@ opcional que **nunca** chega ao Booking público (`get_busy_slots` só devolve
   PostgREST real com a chave anônima: `SELECT`/`INSERT`/`DELETE` direto na
   tabela devolvem `401`; `get_busy_slots` reflete o bloqueio sem expor
   `reason`.
+
+### Depósito de 20% + slot hold (Stripe, sandbox — 14/08/2026)
+
+**⚠ LIVE PAYMENTS BLOCKED UNTIL CANCELLATION POLICY V2 IS APPROVED.** A policy
+v1 em produção promete taxa fixa de €16 e diz que "o sinal é descontado de
+qualquer taxa de cancelamento". Com depósito de 20%, isso implica **devolver
+dinheiro** em cancelamento tardio — regra financeira que ninguém decidiu.
+Sandbox pode rodar sob a v1; produção não. As duas Edge Functions recusam
+qualquer `STRIPE_SECRET_KEY` que não comece com `sk_test_`.
+
+- **Depósito = 20% de `sum(services.price)`, calculado no banco**
+  (`deposit_for_services(uuid[])` → `total_cents`, `deposit_cents`). O browser
+  nunca manda preço e o `amount` do Stripe nunca deriva do frontend.
+  Serviços com `price_varies=true` usam o mesmo campo numérico, que é o valor
+  **base/mínimo** — Highlights cobra 20% de €290 mesmo podendo custar €370.
+  Por isso a copy do Review é diferente para eles: **"20% do valor base"**,
+  nunca "do valor final". Dizer "final" ali seria falso em 9 dos 15 serviços.
+- **Hold = `appointments.status='pending'` + `hold_expires_at`**, não entidade
+  nova. Escolhido porque `staff_work_blocks` já contava `pending` como ocupado:
+  o guard de conflito, `get_busy_slots`, `get_chair_load` e as RPCs de criação/
+  reagendamento passaram a respeitar hold **sem uma linha de lógica nova**,
+  mesmo argumento que fez `schedule_blocks` custar barato. TTL 12min, estendido
+  para 15 quando o PaymentIntent nasce (3DS demora).
+- **Expiração é preguiçosa, na leitura** — `appointment_occupies_agenda(status,
+  hold_expires_at)` é a regra única, usada por `staff_work_blocks`,
+  `get_busy_slots`, `get_chair_load` e `schedule_blocks_guard_conflict`.
+  **Não existe cron**, e não pode passar a existir como mecanismo de correção:
+  o cron seria só limpeza cosmética. `schedule_blocks_guard_conflict()` tem
+  cópia própria da consulta (não delega a `staff_work_blocks`) — foi preciso
+  corrigir lá também, senão um hold vencido impediria a Juliane de bloquear a
+  própria agenda.
+- **Hold NÃO aparece na agenda** (decisão de produto): `loadAppointments()`
+  separa em `state.paymentHolds` e `state.appointments`. Todo o resto do painel
+  continua sem saber que hold existe. Só dois pontos precisam saber, e os dois
+  são sobre **disponibilidade**: `busyBlocksForStaffOnDate()` (o modal de novo
+  agendamento não pode oferecer horário reservado) e o "Xh livres" de
+  `buildAgendaGrid()`. Hold vencido não entra nem em `state.paymentHolds` — a
+  tela tem que concordar com o banco.
+- **Confirmação é do servidor, nunca do browser.** `stripe.confirmPayment()`
+  resolver sem erro não é "confirmado": quem confirma é o webhook, dentro de
+  uma transação (`handle_stripe_event`). O browser faz polling de
+  `booking_state` (~1s por 15s) e, se o webhook demorar, mostra estado
+  intermediário honesto — nunca erro, nunca sucesso falso. O dinheiro entrou e
+  o horário já é dela.
+- **Idempotência**: a mesma `request_key` atravessa hold → PaymentIntent →
+  confirmação. `booking_operation_requests` (uma operação), `pi:{request_key}`
+  como Idempotency-Key do Stripe (um PaymentIntent),
+  `stripe_webhook_events.event_id` PK (um efeito por evento),
+  `created:{request_key}` no Resend (um e-mail).
+- **`manage_token` é rotacionado na confirmação.** O token do hold nunca sai do
+  banco; `handle_stripe_event` gera um novo e ele existe só em memória →
+  corpo do e-mail → fim. Consequência: a tela de sucesso **não** tem o token e
+  cai no caminho "use o link enviado por e-mail" que já existia.
+- **E-mail `created` saiu da Edge do booking e foi para o webhook** — só depois
+  de `payment_intent.succeeded`. Ganhou total / sinal pago / saldo restante.
+- **Nenhum refund automático.** `charge.refunded` só registra o que o Stripe já
+  fez. "Pagou e o horário sumiu" vira `payments.status='needs_manual_refund'` +
+  log, nunca estorno por conta própria.
+- **`event_type: 'created'` continua existindo** na Edge e na RPC
+  (`create_public_booking_orchestrated`) — é o caminho sem pagamento. O Booking
+  público **não usa mais**: sinal é obrigatório, e um caminho paralelo sem
+  cobrança seria porta dos fundos para reservar de graça.
+- **Payment Element não sobrevive a `innerHTML`.** `renderStepBody()` desenha a
+  casca da tela de pagamento **uma vez por abertura** e nunca reescreve; só
+  `updatePayStatus()` escreve, e só no `#payStatus`. Mesma família de armadilha
+  do foco da busca e do dropdown do diagnóstico — aqui o dano seria perder o
+  formulário de cartão no meio da digitação. Medido: 1 mount em 7 renders.
+- **Chaves**: `pk_test_` no `agendar.html` (pública por desenho do Stripe);
+  `sk_test_` e `whsec_` só como secrets das Edge Functions. `client_secret`
+  vai ao browser mas **nunca** é gravado nem logado.
 
 ### Status na timeline (10/08/2026)
 

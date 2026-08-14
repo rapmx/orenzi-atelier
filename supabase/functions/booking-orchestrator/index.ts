@@ -21,6 +21,43 @@ const MANAGE_BASE_URL = Deno.env.get("MANAGE_BASE_URL") ?? "https://orenziatelie
 const SALON_TIMEZONE = "Europe/Dublin";
 const LOCALE = "pt-BR";
 
+// ── STRIPE (SANDBOX/TEST MODE) ───────────────────────────────────────────
+// sk_test_... vive SO aqui, como secret da function. Nunca no source, nunca
+// no browser. A publishable pk_test_ e que vai pro agendar.html — e publica
+// por desenho do proprio Stripe.
+//
+// ⚠ LIVE PAYMENTS BLOCKED UNTIL CANCELLATION POLICY V2 IS APPROVED.
+//   A policy v1 corrente promete taxa fixa de EUR 16 e diz que o sinal e
+//   descontado dela. Com deposito de 20% isso implica devolver dinheiro em
+//   cancelamento tardio — regra financeira que ainda nao foi decidida.
+//   Este guard recusa qualquer chave que nao seja de teste.
+const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
+const HOLD_MINUTES_INITIAL = 12;
+const HOLD_MINUTES_ON_PAYMENT = 15;
+
+// Import DINAMICO, nao no topo do arquivo. Esta function carrega o Booking
+// publico inteiro (created/rescheduled/cancelled) e ja esta em producao: um
+// import estatico de npm:stripe que falhasse ao resolver derrubaria TAMBEM o
+// agendamento, que nao tem nada a ver com pagamento. Assim, no pior caso, so
+// o caminho de pagamento cai — e cai devolvendo 503, nao 500.
+let stripeSingleton: any = null;
+async function stripeClient(): Promise<any | null> {
+  if (!STRIPE_SECRET_KEY) return null;
+  if (!STRIPE_SECRET_KEY.startsWith("sk_test_")) return null;   // live bloqueado
+  if (stripeSingleton) return stripeSingleton;
+  try {
+    const { default: Stripe } = await import("npm:stripe@18");
+    stripeSingleton = new Stripe(STRIPE_SECRET_KEY, {
+      apiVersion: "2025-05-28.basil",
+      httpClient: Stripe.createFetchHttpClient(),
+    });
+    return stripeSingleton;
+  } catch (err) {
+    console.error("stripe: falha ao carregar o SDK", (err as Error)?.message);
+    return null;
+  }
+}
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -166,11 +203,124 @@ Deno.serve(async (req: Request) => {
   }
 
   const { event_type, request_key, payload } = body ?? {};
-  if (!event_type || !request_key || !payload) {
+  // booking_state e so uma consulta pela request_key — nao carrega payload.
+  const needsPayload = event_type !== "booking_state";
+  if (!event_type || !request_key || (needsPayload && !payload)) {
     return new Response(JSON.stringify({ operation_success: false, code: "invalid_request" }), { status: 400, headers: jsonHeaders });
   }
 
   try {
+    // ── payment_intent: hold + deposito de 20% + PaymentIntent (sandbox) ──
+    // A ORDEM importa: o hold nasce ANTES do cartao aparecer. E isso que faz
+    // "pagou e perdeu o horario" ser impossivel — o slot ja e dela quando o
+    // Payment Element monta.
+    if (event_type === "payment_intent") {
+      const stripe = await stripeClient();
+      if (!stripe) {
+        return new Response(JSON.stringify({ operation_success: false, code: "payments_unavailable" }),
+          { status: 503, headers: jsonHeaders });
+      }
+
+      // 1) Hold. Retry do browser com a MESMA request_key devolve o MESMO
+      //    appointment_id (replay), nunca um segundo hold.
+      const { data: hold, error: holdErr } = await admin.rpc("create_booking_hold_orchestrated", {
+        p_request_key: request_key,
+        p_service_ids: payload.service_ids,
+        p_staff_pref: payload.staff_pref ?? null,
+        p_starts_at: payload.starts_at,
+        p_client_name: payload.name,
+        p_client_phone: payload.phone,
+        p_client_email: payload.email,
+        p_notes: payload.notes ?? null,
+        p_policy_accepted: payload.policy_accepted === true,
+        p_hold_minutes: HOLD_MINUTES_INITIAL,
+      });
+      if (holdErr) {
+        return new Response(JSON.stringify({ operation_success: false, code: holdErr.message }),
+          { status: 400, headers: jsonHeaders });
+      }
+
+      // Ja confirmado (replay depois do webhook): nao cria PaymentIntent novo.
+      if (hold.status === "confirmed") {
+        return new Response(JSON.stringify({ operation_success: true, already_confirmed: true }),
+          { status: 200, headers: jsonHeaders });
+      }
+
+      // 2) Preco: SEMPRE do servidor, a partir dos service_ids reais.
+      //    O browser nunca manda valor e o amount do Stripe nunca deriva dele.
+      const { data: dep, error: depErr } = await admin.rpc("deposit_for_services", {
+        p_service_ids: payload.service_ids,
+      });
+      const money = Array.isArray(dep) ? dep[0] : dep;
+      if (depErr || !money || !(money.deposit_cents > 0)) {
+        return new Response(JSON.stringify({ operation_success: false, code: "invalid_service" }),
+          { status: 400, headers: jsonHeaders });
+      }
+
+      // 3) PaymentIntent. A idempotency key amarra UM PaymentIntent por
+      //    tentativa logica: retry com a mesma request_key devolve o mesmo
+      //    objeto do Stripe em vez de criar (e cobrar) outro.
+      //    Metadata so o minimo de reconciliacao — sem telefone, e-mail,
+      //    observacoes ou token.
+      const intent = await stripe.paymentIntents.create({
+        amount: money.deposit_cents,
+        currency: "eur",
+        automatic_payment_methods: { enabled: true },
+        metadata: {
+          request_key,
+          appointment_id: hold.appointment_id,
+          booking_reference: hold.booking_reference ?? "",
+        },
+      }, { idempotencyKey: `pi:${request_key}` });
+
+      // 4) Registra o pagamento. Idempotente pelo UNIQUE do PaymentIntent id.
+      await admin.rpc("register_payment_intent", {
+        p_request_key: request_key,
+        p_appointment_id: hold.appointment_id,
+        p_payment_intent_id: intent.id,
+        p_amount_total_cents: money.total_cents,
+        p_amount_cents: money.deposit_cents,
+        p_currency: "eur",
+        p_status: intent.status,
+      });
+
+      if (intent.status === "succeeded") {
+        return new Response(JSON.stringify({ operation_success: true, already_paid: true }),
+          { status: 200, headers: jsonHeaders });
+      }
+
+      // 5) Estende o hold: dai pra frente a cliente pode ficar minutos numa
+      //    tela de 3DS do banco dela.
+      const { data: newExpiry } = await admin.rpc("extend_booking_hold", {
+        p_request_key: request_key, p_minutes: HOLD_MINUTES_ON_PAYMENT,
+      });
+
+      // client_secret e semi-segredo por desenho do Stripe: vai pro browser,
+      // mas NUNCA e gravado nem logado deste lado.
+      return new Response(JSON.stringify({
+        operation_success: true,
+        client_secret: intent.client_secret,
+        total_cents: money.total_cents,
+        deposit_cents: money.deposit_cents,
+        balance_cents: money.total_cents - money.deposit_cents,
+        currency: "eur",
+        hold_expires_at: newExpiry ?? hold.hold_expires_at ?? null,
+      }), { status: 200, headers: jsonHeaders });
+    }
+
+    // ── booking_state: o polling. Autoridade da confirmacao e o servidor. ──
+    if (event_type === "booking_state") {
+      const { data, error } = await admin.rpc("get_booking_state_by_request_key", {
+        p_request_key: request_key,
+      });
+      if (error) {
+        return new Response(JSON.stringify({ operation_success: false, code: "internal_error" }),
+          { status: 400, headers: jsonHeaders });
+      }
+      return new Response(JSON.stringify({ operation_success: true, state: data }),
+        { status: 200, headers: jsonHeaders });
+    }
+
     if (event_type === "created") {
       const { data, error } = await admin.rpc("create_public_booking_orchestrated", {
         p_request_key: request_key,

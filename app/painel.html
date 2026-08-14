@@ -2445,7 +2445,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', appointments: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: { step: 0, clientId: null, answers: {} }, insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -2534,7 +2534,7 @@ function showToast(text) {
 const APPTS_PAGINA = 1000;
 async function loadAppointments() {
   const campos = `
-      id, starts_at, ends_at, status, notes, technique, product_used, oxidant_used, pause_time, color_formula, created_at, source,
+      id, starts_at, ends_at, status, notes, technique, product_used, oxidant_used, pause_time, color_formula, created_at, source, hold_expires_at,
       client:client_id ( id, name, phone ),
       staff:staff_id ( id, name ),
       service:service_id ( id, name, price )
@@ -2551,7 +2551,25 @@ async function loadAppointments() {
     todos.push(...data);
     if (data.length < APPTS_PAGINA) break;
   }
-  state.appointments = todos;
+
+  // ── Hold de pagamento (Stripe, 14/08/2026) ──
+  // `status='pending'` + `hold_expires_at` é infraestrutura temporária: alguém
+  // está com o cartão na tela, ainda não pagou, e tem ~12 minutos. Decisão de
+  // produto: NÃO é agendamento operacional e não aparece em lugar nenhum do
+  // painel — nem card na timeline, nem KPI, nem ocupação, nem Insights.
+  //
+  // Separar aqui, na leitura, é o que torna isso verdade de uma vez só: todo
+  // o resto do painel continua lendo `state.appointments` sem saber que hold
+  // existe. Só dois lugares precisam saber, e os dois são sobre DISPONIBILIDADE
+  // (o horário continua indisponível): busyBlocksForStaffOnDate() e o cálculo
+  // de "Xh livres" em buildAgendaGrid().
+  //
+  // Hold VENCIDO não entra nem aqui: o banco já o trata como livre
+  // (appointment_occupies_agenda), e a tela tem que concordar com o banco.
+  const agora = Date.now();
+  const ehHold = a => a.status === 'pending' && a.hold_expires_at;
+  state.paymentHolds = todos.filter(a => ehHold(a) && new Date(a.hold_expires_at).getTime() > agora);
+  state.appointments = todos.filter(a => !ehHold(a));
 }
 
 // Mesma paginação de loadAppointments, e pela mesma razão: a ordem é
@@ -5326,7 +5344,12 @@ function buildAgendaGrid(day) {
     `;
   }).join('');
 
-  const freeSlotsHtml = computeFreeGaps(day, dayAppts, dayBlocks).map(g => {
+  // Holds entram como intervalo ocupado no cálculo de "Xh livres" — o card
+  // não pode oferecer um vão que já está reservado por alguém pagando. Eles
+  // não viram card na timeline (decisão de produto): entram só aqui, pela
+  // mesma porta que `dayBlocks`, que já é uma lista de {starts_at, ends_at}.
+  const dayHolds = (state.paymentHolds || []).filter(h => sameDay(new Date(h.starts_at), day));
+  const freeSlotsHtml = computeFreeGaps(day, dayAppts, dayBlocks.concat(dayHolds)).map(g => {
     const gStart = new Date(g.s);
     const startMins = (gStart.getHours() - AGENDA_START_HOUR) * 60 + gStart.getMinutes();
     const top = (startMins / 60) * HOUR_HEIGHT;
@@ -8589,7 +8612,17 @@ function busyBlocksForStaffOnDate(staffId, dayDate) {
   const blockBlocks = state.scheduleBlocks
     .filter(b => b.staff_id === staffId && scheduleBlockOverlapsDay(b, dayDate))
     .map(b => [new Date(b.starts_at), new Date(b.ends_at)]);
-  return apptBlocks.concat(blockBlocks);
+
+  // Hold de pagamento (14/08/2026): não aparece na agenda, mas OCUPA. Sem
+  // isto o modal de novo agendamento ofereceria um horário que o banco vai
+  // recusar — `staff_work_blocks` conta o hold vivo, e a Juliane levaria um
+  // erro de conflito depois de preencher o formulário inteiro.
+  // Opaco por inteiro, como um bloqueio manual: um hold nunca tem pausa.
+  const holdBlocks = (state.paymentHolds || [])
+    .filter(h => h.staff?.id === staffId && sameDay(new Date(h.starts_at), dayDate))
+    .map(h => [new Date(h.starts_at), new Date(h.ends_at)]);
+
+  return apptBlocks.concat(blockBlocks, holdBlocks);
 }
 
 function scheduleBlockOverlapsDay(b, dayDate) {

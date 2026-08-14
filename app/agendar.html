@@ -6,6 +6,7 @@
 <title>Orenzi — Agendar horário</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://js.stripe.com/v3/"></script>
 <script src="shared/salon.js"></script>
 <script src="ds/orenzi-ui.js"></script>
 <!-- Orenzi Design System — carregado antes do <style> local de propósito:
@@ -496,74 +497,19 @@
   .bk-consent-row.has-error input[type="checkbox"] { border-color: var(--color-accent-2); }
   .bk-consent-row.has-error span { color: var(--color-accent-2-700); }
 
-  /* ── Cartão de garantia (mock visual, Stripe ainda não existe) ──── */
-  /* Tudo aqui sai dos tokens que a página já usa — nenhuma cor, raio ou
-     espaçamento novo. O bloco mora dentro de .bk-block, igual à política. */
-  .bk-card-add {
-    display: flex; align-items: center; justify-content: center; gap: var(--space-2);
-    width: 100%; height: 48px; margin-top: var(--space-3);
-    border: 1.5px dashed var(--color-divider); border-radius: var(--radius-sm);
-    background: var(--color-bg); color: var(--color-accent-700);
-    font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
-    transition: border-color var(--motion-fast) var(--ease-standard),
-      background var(--motion-fast) var(--ease-standard),
-      transform var(--motion-instant) var(--ease-out);
-  }
-  .bk-card-add:hover { border-color: var(--color-accent-600); background: var(--color-surface); }
-  .bk-card-add:active { transform: scale(.98); }
-  .bk-card-add:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-  .bk-card-add-icon { display: flex; }
-  .bk-card-add-icon svg { width: 16px; height: 16px; }
-  /* Cartão guardado: pílula da bandeira + máscara + "Alterar". A bandeira é
-     texto, não logo — não temos licença de marca e um Visa desenhado à mão
-     ficaria pior que o nome. */
-  .bk-card-saved {
-    display: flex; align-items: center; gap: var(--space-2-5);
-    margin-top: var(--space-3); padding: var(--space-3);
-    border: 1px solid var(--color-divider); border-radius: var(--radius-sm);
-    background: var(--color-bg);
-  }
-  .bk-card-brand {
-    flex-shrink: 0; padding: 3px 8px; border-radius: 5px;
-    background: var(--color-neutral-200); color: var(--color-neutral-700);
-    font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
-  }
-  .bk-card-mask {
-    flex: 1; min-width: 0; font-size: 14px; font-weight: 600;
-    font-variant-numeric: tabular-nums; letter-spacing: 0.04em;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .bk-card-change { flex-shrink: 0; padding: 0; }
-  .bk-card-note { font-size: 12px; color: var(--color-neutral-600); margin-top: var(--space-3); }
-  /* Prévia do cartão no topo da subview — dá o "peso" de produto que um
-     formulário solto não tem. Gradiente derivado do accent da marca. */
-  .bk-card-preview {
-    display: flex; flex-direction: column; justify-content: space-between;
-    height: 168px; padding: var(--space-4); margin-bottom: var(--space-4);
-    border-radius: var(--radius-md); color: var(--color-bg);
-    background: linear-gradient(135deg, var(--color-accent-700), var(--color-accent-600));
-    box-shadow: var(--elevation-hover, 0 8px 20px rgba(43,36,32,0.16));
-  }
-  .bk-card-preview .cp-brand { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; opacity: .9; }
-  .bk-card-preview .cp-number {
-    font-size: 18px; font-weight: 600; letter-spacing: 0.08em; font-variant-numeric: tabular-nums;
-  }
-  .bk-card-preview .cp-foot {
-    display: flex; justify-content: space-between; font-size: 11px; letter-spacing: 0.06em; opacity: .85;
-  }
-  .bk-card-demo-note {
-    font-size: 12px; line-height: 1.5; color: var(--color-neutral-700);
-    background: var(--color-surface); border: 1px solid var(--color-divider);
-    border-radius: var(--radius-sm); padding: var(--space-3); margin-bottom: var(--space-4);
-  }
-  .bk-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
-  /* Campo readonly PARECE campo, mas não recebe foco nem digitação — a
-     aparência é a do produto, o comportamento é o seguro. */
-  .bk-field input[readonly] { background: var(--color-surface); color: var(--color-neutral-700); cursor: default; }
-  @media (prefers-reduced-motion: reduce) {
-    .bk-card-add { transition: none; }
-    .bk-card-add:active { transform: none; }
-  }
+  /* ── Sinal de 20% (Stripe, sandbox) ────────────────────────────── */
+  /* Substituiu o cartão de demonstração em 14/08/2026. Todo o CSS do mock
+     (prévia com gradiente, campos readonly, pílula de bandeira) saiu junto:
+     não sobrou markup que o use, e o formulário sensível agora é o iframe do
+     Stripe — que NÃO se estiliza por CSS daqui, só pela Appearance API.
+     Nenhum token novo aqui: as linhas de valor reaproveitam .bk-summary. */
+  .bk-deposit .bk-deposit-rows { margin-top: var(--space-3); }
+  .bk-deposit-note { margin-top: var(--space-3); }
+  /* Espaço para o Payment Element montar. Altura mínima evita o "pulo" de
+     layout entre a casca aparecer e o iframe do Stripe carregar. */
+  #stripeMount { min-height: 220px; }
+  #payStatus:empty { display: none; }
+  #payStatus { margin-top: var(--space-3); }
 
   /* ── Recuperação de conflito ───────────────────────────────────── */
   .bk-conflict { margin-bottom: var(--space-5); }
@@ -644,6 +590,20 @@
 // ── CONFIGURAÇÃO ─────────────────────────────────────────────
 const SUPABASE_URL = 'https://gsagtsxkhqlpxuvrijgw.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
+
+// ── STRIPE (SANDBOX/TEST MODE) ───────────────────────────────
+// Publishable key. É PÚBLICA por desenho do Stripe — pode ficar no source,
+// como a sb_publishable_ acima. A sk_test_ vive só como secret da Edge
+// Function e NUNCA aparece aqui.
+//
+// ⚠ Só pk_test_. Uma pk_live_ aqui é bug de configuração, não uma opção:
+//   LIVE PAYMENTS BLOCKED UNTIL CANCELLATION POLICY V2 IS APPROVED.
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51U4QQp1d4u7ThAuINBv9LQk8v8lPPJ6IAoRW3VwnkhauToywZ3fxbtNSHsDtwYlAibyxuyerpyvAFCTrJcZSuwjF00vQxbmCk5';
+
+// Depósito: 20% do valor BASE. Aqui é SÓ apresentação — quem calcula o valor
+// cobrado é deposit_for_services() no banco, a partir dos service_ids. Se os
+// dois divergirem, quem manda é o servidor.
+const DEPOSIT_PERCENT = 20;
 
 // Expediente do salão — fonte única em shared/salon.js (painel e booking
 // público carregam o mesmo arquivo). Mudou expediente? Mexe lá E na função
@@ -804,18 +764,24 @@ const state = {
   manageToken: null,         // só em memória; nunca localStorage/sessionStorage/log
   emailSuccess: null,        // true|false|null — null quando o e-mail nem foi tentado (replay)
 
-  // ── Cartão de garantia — MOCK VISUAL, Stripe ainda não existe ──
-  // Guarda no máximo a constante DEMO_CARD abaixo: bandeira e 4 dígitos
-  // fictícios. Nunca recebe entrada da cliente, nunca vai pro payload do
-  // commit, nunca sai da memória desta aba. Ver openCard().
-  mockCard: null,            // null | { brand, last4 }
+  // ── Pagamento do sinal (Stripe, sandbox) ──
+  // NADA de dado de cartão vive aqui — número, validade e CVV ficam dentro do
+  // iframe do Stripe e nunca chegam a este código. O que guardamos são valores
+  // vindos do SERVIDOR e o client_secret (semi-segredo por desenho do Stripe:
+  // só existe em memória desta aba, nunca em storage e nunca em log).
+  payment: null,   // null | { clientSecret, totalCents, depositCents, balanceCents, currency, holdExpiresAt }
+  payError: null,  // mensagem legível de recusa/erro do cartão
+  paying: false,   // criando hold + PaymentIntent (CTA da Revisão)
+  confirming: false, // stripe.confirmPayment em andamento
+  payStage: null,  // null | 'processing' | 'pending_confirmation'
 };
 
-// Cartão fictício da demonstração. É uma CONSTANTE, não um campo: os inputs
-// da tela de cartão são readonly justamente pra que não exista caminho em que
-// um número real entre no app. 4242… é o número de teste público do Stripe,
-// escolhido de propósito por ser reconhecidamente falso.
-const DEMO_CARD = { brand: 'Visa', last4: '4242' };
+// Instâncias do Stripe. Ficam fora do `state` de propósito: são objetos vivos
+// com DOM associado, não dados — e o Payment Element não sobrevive a nenhum
+// `innerHTML` novo (ver mountPaymentElement).
+let stripeJs = null;
+let stripeElements = null;
+let paymentElement = null;
 
 // Trocar os serviços muda a duração total E o conjunto de profissionais
 // elegíveis, então toda escolha posterior deixa de ser válida. Chamada em TODO
@@ -1158,7 +1124,13 @@ function ensureRequestKey() {
   return state.createRequestKey;
 }
 
-async function commitBooking() {
+// ⚠ APOSENTADA em 14/08/2026 pelo depósito de 20% — ver startPayment().
+// O caminho `event_type: 'created'` continua existindo na Edge Function (e a
+// RPC create_public_booking_orchestrated também), porque é ele que cria
+// agendamento SEM pagamento. O Booking público não usa mais: sinal é
+// obrigatório, e um caminho paralelo sem cobrança seria uma porta dos fundos
+// para reservar de graça. Mantida como referência do contrato antigo.
+async function commitBookingSemPagamento_APOSENTADA() {
   // Guarda de duplo submit no próprio estado: não basta desabilitar o botão,
   // porque Enter/duplo toque podem disparar antes do re-render.
   if (state.committing) return;
@@ -1338,7 +1310,7 @@ function renderShell() {
   if (state.subview) {
     const SUB = {
       policy:   { titulo: 'Política de cancelamento', voltar: 'Voltar para a revisão', fechar: closePolicy },
-      card:     { titulo: 'Cartão de garantia',       voltar: 'Voltar para a revisão', fechar: closeCard },
+      card:     { titulo: 'Pagamento do sinal',       voltar: 'Voltar para a revisão', fechar: closeCard },
       calendar: { titulo: 'Escolha uma data',         voltar: 'Fechar calendário',     fechar: closeCalendar },
     };
     const sub = SUB[state.subview] || SUB.calendar;
@@ -1351,7 +1323,8 @@ function renderShell() {
   }
 
   // Sucesso encerra o fluxo: sem voltar (o agendamento já existe) e sem progresso.
-  if (state.step === 'success') {
+  // Pagamento em confirmação idem: já foi cobrado, não há para onde voltar.
+  if (state.step === 'success' || state.payStage) {
     topbar.className = 'bk-topbar';
     topbar.innerHTML = `<div class="bk-mark" style="margin:0 auto"><span class="bk-mark-dot" aria-hidden="true">O</span></div>`;
     return;
@@ -2065,31 +2038,51 @@ function renderStepReview() {
       </label>
     </div>
 
-    ${guaranteeBlockHtml()}`;
+    ${depositBlockHtml()}`;
 }
 
-// Bloco "Garantia do agendamento" — a experiência de cartão aprovada no V2,
-// com o Stripe ainda por vir. É opcional de propósito: sem cobrança real, um
-// cartão obrigatório barraria agendamento de verdade por causa de uma
-// demonstração. Quem continua obrigatória é a política de cancelamento.
-function guaranteeBlockHtml() {
-  const c = state.mockCard;
+// Bloco do SINAL. Substituiu o "Garantia do agendamento" com cartão de
+// demonstração: agora existe cobrança real (sandbox), e a copy antiga
+// ("Nenhuma cobrança será feita agora.") passou a ser mentira.
+//
+// A copy muda conforme o preço seja fixo ou variável, e a diferença NÃO é
+// cosmética: em 9 dos 15 serviços o `price` do catálogo é o valor BASE, não o
+// final. Dizer "20% do valor final" ali seria falso — Highlights cobra 20% de
+// €290 e pode custar €370. Ver §2 da decisão de produto de 14/08/2026.
+function depositBlockHtml() {
+  const varies = anySelectedPriceVaries();
+  const total = totalPrice();
+  const deposit = total * DEPOSIT_PERCENT / 100;
+  const balance = total - deposit;
+
   return `
-    <div class="bk-block">
-      <div class="bk-block-title">Garantia do agendamento</div>
-      <div class="bk-block-text">Um cartão guardado reserva o seu horário. ${c ? '' : 'É opcional.'}</div>
-      ${c ? `
-        <div class="bk-card-saved">
-          <span class="bk-card-brand" aria-hidden="true">${esc(c.brand)}</span>
-          <span class="bk-card-mask">•••• ${esc(c.last4)}</span>
-          <button type="button" class="bk-block-link bk-card-change" id="cardBtn">Alterar cartão</button>
-        </div>` : `
-        <button type="button" class="bk-card-add" id="cardBtn">
-          <span class="bk-card-add-icon" aria-hidden="true">${ICONS.plus}</span>
-          <span>Adicionar cartão</span>
-        </button>`}
-      <div class="bk-card-note">Nenhuma cobrança será feita agora.</div>
+    <div class="bk-block bk-deposit">
+      <div class="bk-block-title">${varies ? 'Sinal do agendamento' : 'Pagamento'}</div>
+      <div class="bk-summary bk-deposit-rows">
+        <div class="bk-summary-row">
+          <span class="sr-label">${varies ? 'Valor base' : 'Total'}</span>
+          <span class="sr-value">${esc(formatMoney(total))}</span>
+        </div>
+        <div class="bk-summary-row total">
+          <span class="sr-label">${varies ? 'Sinal' : 'Pagar agora'}</span>
+          <span class="sr-value">${esc(formatMoney(deposit))}</span>
+        </div>
+        ${varies ? '' : `
+        <div class="bk-summary-row">
+          <span class="sr-label">Restante no atendimento</span>
+          <span class="sr-value">${esc(formatMoney(balance))}</span>
+        </div>`}
+      </div>
+      <div class="bk-block-text bk-deposit-note">${varies
+        ? `O sinal corresponde a ${DEPOSIT_PERCENT}% do valor base. O valor final do serviço é confirmado após avaliação.`
+        : `O sinal de ${DEPOSIT_PERCENT}% reserva o seu horário. O restante é pago no atendimento.`}</div>
     </div>`;
+}
+
+// Rótulo do CTA da Revisão. O valor exibido é estimativa de UX; o cobrado é o
+// que deposit_for_services() devolve no servidor.
+function depositCtaLabel() {
+  return `Pagar ${formatMoney(totalPrice() * DEPOSIT_PERCENT / 100)} e confirmar`;
 }
 
 function bindStepReview() {
@@ -2111,8 +2104,6 @@ function bindStepReview() {
     btn.addEventListener('click', () => goTo(btn.dataset.alter));
   });
   document.getElementById('policyLinkBtn').addEventListener('click', () => openPolicy());
-  const cardBtn = document.getElementById('cardBtn');
-  if (cardBtn) cardBtn.addEventListener('click', () => openCard());
   const chk = document.getElementById('policyCheck');
   chk.addEventListener('change', () => {
     state.policyAccepted = chk.checked;
@@ -2139,59 +2130,322 @@ function renderPolicyFull() {
   return `<div class="bk-block-text">${body.split(/\n{2,}/).map(p => `<p>${esc(p)}</p>`).join('')}</div>`;
 }
 
-// ── CARTÃO DE GARANTIA (subview full-screen) — MOCK VISUAL ───
-// A integração com o Stripe não existe ainda. Esta tela existe pra segurar o
-// desenho aprovado do V2 e poder mostrá-lo, não pra receber cartão.
+// ── PAGAMENTO DO SINAL (subview full-screen) — STRIPE REAL ───
+// A tela full-screen aprovada no V2 continua exatamente onde estava; o que
+// mudou é o conteúdo: no lugar dos campos falsos, o Payment Element do Stripe.
 //
-// Os quatro campos são `readonly` e já vêm preenchidos com o cartão de teste
-// público do Stripe. Isso é escolha de segurança, não preguiça: campo que
-// aceita digitação é campo onde alguém digita um cartão DE VERDADE, e aí a
-// promessa de "não guardamos" passa a depender de o código nunca escorregar.
-// Readonly torna a captura impossível por construção — não há valor da
-// cliente pra vazar pro payload, pro storage ou pro log, porque não há valor
-// da cliente. Quando o Stripe entrar, estes inputs dão lugar ao Elements
-// (iframe do próprio Stripe) e o número nunca chega a tocar neste código.
+// Número, validade e CVV vivem dentro do iframe do Stripe e NUNCA chegam a
+// este código — não há valor da cliente pra vazar pro payload, pro storage ou
+// pro log, porque não há valor da cliente aqui. Antes isso era garantido por
+// inputs readonly; agora é garantido por construção, pelo próprio Stripe.
+
+// Passo 1 — Revisão: cria (ou reusa) o hold e o PaymentIntent, e só então abre
+// a tela do cartão. A ORDEM importa: o horário já é dela antes de o cartão
+// aparecer, e é isso que torna "pagou e perdeu o horário" impossível.
+async function startPayment() {
+  if (state.paying) return;
+  state.paying = true;
+  state.commitError = null;
+  state.conflict = null;
+  state.payError = null;
+  renderStepBody(); renderCTA();
+
+  const slot = slotAt(state.selectedDateIso, state.selectedTime);
+  if (!slot) {
+    state.paying = false;
+    state.commitError = { code: 'outside_booking_window', ...COMMIT_ERRORS.outside_booking_window };
+    renderStepBody(); renderCTA();
+    return;
+  }
+
+  // Mesmo contrato de sempre: só service_ids e dados da cliente. Preço,
+  // duração e o valor do sinal são derivados no servidor — enviar qualquer um
+  // deles seria tratar o browser como autoridade sobre dinheiro.
+  const payload = {
+    service_ids: [...state.selectedServiceIds],
+    staff_pref: (!state.staffPref || state.staffPref === 'any') ? null : state.staffPref,
+    starts_at: slot.start.toISOString(),
+    name: state.form.name.trim(),
+    phone: state.form.phone.trim(),
+    email: state.form.email.trim(),
+    notes: state.form.notes.trim() || null,
+    policy_accepted: state.policyAccepted === true,
+  };
+
+  let body;
+  try {
+    const res = await sb.functions.invoke('booking-orchestrator', {
+      body: { event_type: 'payment_intent', request_key: ensureRequestKey(), payload },
+    });
+    body = res.data;
+    if (res.error) throw res.error;
+  } catch (e) {
+    state.paying = false;
+    state.commitError = { code: 'internal_error', ...COMMIT_ERRORS.internal_error };
+    console.error('agendar.startPayment', e && e.message);   // nunca client_secret, nunca PII
+    renderStepBody(); renderCTA();
+    return;
+  }
+  state.paying = false;
+
+  if (!body || !body.operation_success) {
+    const code = (body && body.code) || 'internal_error';
+    if (code === 'slot_conflict') {
+      // Mesma recuperação contextual de sempre — a request_key NÃO é trocada.
+      await ensureAvailability(true);
+      state.conflict = { alternatives: buildAlternatives() };
+      renderStepBody(); renderCTA();
+      return;
+    }
+    const known = COMMIT_ERRORS[code] || COMMIT_ERRORS.internal_error;
+    state.commitError = { code, ...known };
+    console.error('agendar.startPayment', code);
+    if (known.step && known.step !== 'review') {
+      if (known.step === 'data') state.formValidated = true;
+      if (known.step === 'service') invalidateDownstreamSelections();
+      goTo(known.step);
+      return;
+    }
+    renderStepBody(); renderCTA();
+    return;
+  }
+
+  // Replay depois de tudo já ter dado certo: pula direto pro desfecho.
+  if (body.already_confirmed || body.already_paid) {
+    state.payStage = 'processing';
+    renderAll();
+    pollBookingState();
+    return;
+  }
+
+  state.payment = {
+    clientSecret: body.client_secret,
+    totalCents: body.total_cents,
+    depositCents: body.deposit_cents,
+    balanceCents: body.balance_cents,
+    currency: body.currency || 'eur',
+    holdExpiresAt: body.hold_expires_at || null,
+  };
+  openCard();
+}
+
 function openCard() {
-  state.calReturnFocusId = 'cardBtn';
+  state.calReturnFocusId = 'ctaBtn';
   state.subview = 'card';
   renderAll();
 }
 function closeCard() {
+  unmountPaymentElement();
   state.subview = null;
+  state.payError = null;
   renderAll();
-  const back = document.getElementById(state.calReturnFocusId);
-  if (back) back.focus();
-  state.calReturnFocusId = null;
 }
-// Só grava a CONSTANTE de demonstração — nunca lê os inputs da tela.
-function useDemoCard() {
-  state.mockCard = { ...DEMO_CARD };
-  closeCard();
+
+// Monta o Payment Element UMA vez. Tudo aqui existe por causa de uma regra
+// dura: **um `innerHTML` novo mata o iframe do Stripe e ele não volta.** É a
+// mesma família de armadilha já documentada no projeto (foco do input de
+// busca, dropdown do diagnóstico) — só que aqui o dano é perder o formulário
+// de pagamento no meio da digitação.
+function mountPaymentElement() {
+  if (!state.payment || paymentElement) return;
+  const alvo = document.getElementById('stripeMount');
+  if (!alvo) return;
+
+  if (!stripeJs) stripeJs = Stripe(STRIPE_PUBLISHABLE_KEY);
+
+  // Appearance API: aproxima o iframe do Design System pelos tokens que já
+  // existem, lendo do CSS em vez de repetir valores crus aqui. Não se estiliza
+  // o interior do iframe por outro caminho — não há hack de CSS no Stripe.
+  const css = getComputedStyle(document.documentElement);
+  const token = (nome, fallback) => (css.getPropertyValue(nome) || '').trim() || fallback;
+
+  stripeElements = stripeJs.elements({
+    clientSecret: state.payment.clientSecret,
+    locale: 'pt',
+    appearance: {
+      theme: 'flat',
+      variables: {
+        colorPrimary: token('--color-accent-700', '#8c491a'),
+        colorBackground: token('--color-surface', '#ffffff'),
+        colorText: token('--color-text', '#2b2420'),
+        colorDanger: token('--color-accent-2-700', '#a33'),
+        fontFamily: token('--font-body', 'system-ui, sans-serif'),
+        borderRadius: '12px',
+        spacingUnit: '4px',
+      },
+    },
+  });
+  paymentElement = stripeElements.create('payment', { layout: 'tabs' });
+  paymentElement.mount(alvo);
+  paymentElement.on('change', ev => {
+    // Erro de validação do próprio Element (campo incompleto etc.).
+    const msg = ev.error ? ev.error.message : null;
+    if (msg !== state.payError) { state.payError = msg; updatePayStatus(); }
+  });
 }
-function renderCardForm() {
-  const f = (id, label, valor, extra) => `
-    <div class="bk-field">
-      <label for="${id}">${label}</label>
-      <input id="${id}" type="text" value="${escAttr(valor)}" readonly tabindex="-1"
-        autocomplete="off" aria-readonly="true" ${extra || ''}>
-    </div>`;
+
+function unmountPaymentElement() {
+  if (paymentElement) { try { paymentElement.destroy(); } catch (_) {} }
+  paymentElement = null;
+  stripeElements = null;
+}
+
+// Casca da tela. Renderizada uma única vez por abertura — quem muda depois é
+// updatePayStatus(), que mexe só no #payStatus.
+function renderPayShell() {
+  const p = state.payment || {};
+  const varies = anySelectedPriceVaries();
   return `
-    <div class="bk-card-preview" aria-hidden="true">
-      <span class="cp-brand">${esc(DEMO_CARD.brand)}</span>
-      <span class="cp-number">•••• •••• •••• ${esc(DEMO_CARD.last4)}</span>
-      <span class="cp-foot"><span>ORENZI ATELIER</span><span>12/30</span></span>
-    </div>
-    <div class="bk-card-demo-note" role="note">
-      Demonstração: os campos vêm preenchidos e não aceitam edição. Nada é
-      enviado nem guardado.
-    </div>
-    ${f('cardNumber', 'Número do cartão', `4242 4242 4242 ${DEMO_CARD.last4}`)}
-    <div class="bk-card-grid">
-      ${f('cardExp', 'Validade', '12/30')}
-      ${f('cardCvv', 'CVV', '•••')}
-    </div>
-    ${f('cardName', 'Nome no cartão', 'ORENZI ATELIER')}
-    <p class="bk-card-note">Nenhuma cobrança será feita agora.</p>`;
+    <div id="payShell">
+      <div class="bk-summary bk-deposit-rows" style="margin-bottom:var(--space-4)">
+        <div class="bk-summary-row">
+          <span class="sr-label">${varies ? 'Valor base' : 'Total'}</span>
+          <span class="sr-value">${esc(centsToMoney(p.totalCents))}</span>
+        </div>
+        <div class="bk-summary-row total">
+          <span class="sr-label">${varies ? 'Sinal' : 'Pagar agora'}</span>
+          <span class="sr-value">${esc(centsToMoney(p.depositCents))}</span>
+        </div>
+        <div class="bk-summary-row">
+          <span class="sr-label">Restante no atendimento</span>
+          <span class="sr-value">${esc(centsToMoney(p.balanceCents))}</span>
+        </div>
+      </div>
+      ${varies ? `<p class="price-disclaimer" style="margin-top:calc(var(--space-3) * -1)">
+        O sinal corresponde a ${DEPOSIT_PERCENT}% do valor base. O valor final do
+        serviço é confirmado após avaliação.</p>` : ''}
+      <div id="stripeMount"></div>
+      <div id="payStatus" role="status" aria-live="polite"></div>
+    </div>`;
+}
+
+// Única coisa que escreve na tela do cartão depois de montada. NUNCA pode
+// tocar em #stripeMount.
+function updatePayStatus() {
+  const el = document.getElementById('payStatus');
+  if (!el) return;
+  if (state.payError) {
+    el.innerHTML = `<div class="bk-commit-error" role="alert">${esc(state.payError)}</div>`;
+    return;
+  }
+  el.innerHTML = '';
+}
+
+// Passo 2 — confirma o pagamento. `redirect: 'if_required'` mantém a cliente
+// na página quando não há 3DS; quando há, o próprio Stripe conduz.
+async function confirmPayment() {
+  if (state.confirming || !stripeElements) return;
+  state.confirming = true;
+  state.payError = null;
+  updatePayStatus(); renderCTA();
+
+  let result;
+  try {
+    result = await stripeJs.confirmPayment({
+      elements: stripeElements,
+      redirect: 'if_required',
+    });
+  } catch (e) {
+    state.confirming = false;
+    state.payError = 'Não foi possível concluir o pagamento. Tente novamente.';
+    console.error('agendar.confirmPayment', e && e.message);
+    updatePayStatus(); renderCTA();
+    return;
+  }
+  state.confirming = false;
+
+  if (result.error) {
+    // Cartão recusado / dados inválidos: o hold continua vivo e ela pode
+    // tentar outro cartão dentro do TTL.
+    state.payError = result.error.message || 'Pagamento não autorizado. Tente outro cartão.';
+    updatePayStatus(); renderCTA();
+    return;
+  }
+
+  // ⚠ Daqui em diante o browser NÃO é autoridade. `confirmPayment` ter
+  // resolvido sem erro não é "agendamento confirmado" — quem confirma é o
+  // webhook, dentro de uma transação, e a tela só acredita no servidor.
+  unmountPaymentElement();
+  state.subview = null;
+  state.payStage = 'processing';
+  renderAll();
+  pollBookingState();
+}
+
+// Passo 3 — polling curto do estado REAL, ~1s por até ~15s.
+async function pollBookingState() {
+  const ate = Date.now() + 15000;
+  while (Date.now() < ate) {
+    let body;
+    try {
+      const res = await sb.functions.invoke('booking-orchestrator', {
+        body: { event_type: 'booking_state', request_key: ensureRequestKey() },
+      });
+      body = res.data;
+    } catch (e) {
+      console.error('agendar.pollBookingState', e && e.message);
+    }
+    const st = body && body.state;
+    if (st && st.confirmed) {
+      state.booking = {
+        booking_reference: st.booking_reference,
+        starts_at: st.starts_at,
+        ends_at: st.ends_at,
+        total_price: st.total_price,
+        total_duration_minutes: st.total_duration_minutes,
+        staff: st.staff,
+        services: st.services,
+        deposit_cents: st.deposit_cents,
+        total_cents: st.total_cents,
+        balance_cents: st.balance_cents,
+      };
+      // manage_token não vem por aqui de propósito: o token só existe dentro
+      // do e-mail. A tela de sucesso já tem o caminho para esse caso.
+      state.manageToken = null;
+      state.emailSuccess = null;
+      state.payStage = null;
+      state.step = 'success';
+      renderAll();
+      document.getElementById('main').scrollTop = 0;
+      return;
+    }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  // Webhook ainda não chegou. NÃO é erro: o dinheiro entrou e o horário é
+  // dela. Estado intermediário honesto.
+  state.payStage = 'pending_confirmation';
+  renderAll();
+}
+
+function centsToMoney(cents) {
+  if (cents === null || cents === undefined) return '—';
+  return formatMoney(Number(cents) / 100);
+}
+
+// Tela intermediária: "processando" e "recebido, confirmando".
+function renderProcessing() {
+  const pendente = state.payStage === 'pending_confirmation';
+  return `
+    <div class="bk-success-wrap">
+      <div class="bk-success-icon">${pendente ? ICONS.check : ICONS.calendar}</div>
+      <h1 class="bk-success-title">${pendente
+        ? 'Pagamento recebido'
+        : 'Estamos confirmando seu pagamento'}</h1>
+      <div class="bk-success-email-note">${pendente
+        ? 'Estamos confirmando seu horário. Você receberá os detalhes por e-mail em instantes.'
+        : 'Isso leva alguns segundos. Não feche esta tela.'}</div>
+      ${pendente ? `<div class="bk-success-actions">
+        <button type="button" class="bk-btn-secondary" id="recheckBtn">Verificar de novo</button>
+      </div>` : ''}
+    </div>`;
+}
+function bindProcessing() {
+  const btn = document.getElementById('recheckBtn');
+  if (btn) btn.addEventListener('click', () => {
+    state.payStage = 'processing';
+    renderAll();
+    pollBookingState();
+  });
 }
 
 // ── SUCESSO ──────────────────────────────────────────────────
@@ -2236,7 +2490,12 @@ function renderSuccess() {
         <div class="bk-summary-row"><span class="sr-label">Data</span><span class="sr-value">${esc(fmtDayShort(startsIso))}</span></div>
         <div class="bk-summary-row"><span class="sr-label">Horário</span><span class="sr-value">${esc(hora)}</span></div>
         <div class="bk-summary-row"><span class="sr-label">Duração</span><span class="sr-value">${durationLabel(b.total_duration_minutes || 0)}</span></div>
-        <div class="bk-summary-row total"><span class="sr-label">Total</span><span class="sr-value">${esc(formatMoney(b.total_price || 0))}</span></div>
+        <div class="bk-summary-row"><span class="sr-label">Total</span><span class="sr-value">${esc(formatMoney(b.total_price || 0))}</span></div>
+        ${b.deposit_cents != null ? `
+        <div class="bk-summary-row"><span class="sr-label">Sinal pago</span>
+          <span class="sr-value">${esc(centsToMoney(b.deposit_cents))}</span></div>
+        <div class="bk-summary-row total"><span class="sr-label">Restante no atendimento</span>
+          <span class="sr-value">${esc(centsToMoney(b.balance_cents))}</span></div>` : ''}
       </div>
       <div class="bk-success-actions">
         <button type="button" class="bk-btn-secondary" id="addCalBtn">Adicionar ao calendário</button>
@@ -2299,7 +2558,12 @@ function resetFlow() {
   state.policyAccepted = false; state.policyTouched = false;
   state.commitError = null; state.conflict = null; state.booking = null;
   state.createRequestKey = null; state.manageToken = null; state.emailSuccess = null;
-  state.mockCard = null;
+  // Pagamento: client_secret e valores morrem junto com a tentativa anterior.
+  // Nada da cliente que acabou de agendar pode vazar pra próxima pessoa que
+  // abrir a página no mesmo aparelho.
+  unmountPaymentElement();
+  state.payment = null; state.payError = null;
+  state.paying = false; state.confirming = false; state.payStage = null;
   state.subview = null;
   invalidateDownstreamSelections();
   renderAll();
@@ -2310,7 +2574,23 @@ function renderStepBody() {
   const steps = document.getElementById('steps');
   if (state.subview === 'calendar') { steps.innerHTML = renderCalendar(); bindCalendar(); return; }
   if (state.subview === 'policy') { steps.innerHTML = renderPolicyFull(); return; }
-  if (state.subview === 'card') { steps.innerHTML = renderCardForm(); return; }
+
+  // ⚠ A tela de pagamento é a ÚNICA que não pode ser reescrita a cada render:
+  // o Payment Element é um iframe do Stripe e um `innerHTML` novo o mata sem
+  // volta, no meio da digitação. A casca é desenhada uma vez por abertura;
+  // depois disso só updatePayStatus() escreve, e só no #payStatus.
+  if (state.subview === 'card') {
+    if (!document.getElementById('payShell')) {
+      steps.innerHTML = renderPayShell();
+      mountPaymentElement();
+    }
+    updatePayStatus();
+    return;
+  }
+
+  // Pagamento aceito pelo Stripe, aguardando o servidor confirmar. Sobrepõe
+  // o passo (que continua sendo 'review') porque não há mais nada a revisar.
+  if (state.payStage) { steps.innerHTML = renderProcessing(); bindProcessing(); return; }
 
   if (state.step === 'service') steps.innerHTML = renderStepServices();
   else if (state.step === 'professional') steps.innerHTML = renderStepProfessional();
@@ -2344,16 +2624,18 @@ function renderCTA() {
     return;
   }
 
-  // Rótulo honesto: o que o toque faz é usar um cartão de demonstração, não
-  // salvar o cartão de ninguém. "Salvar cartão" prometeria o que não acontece.
+  // Pagamento: o rótulo diz o valor exato que sai do cartão agora.
   if (state.subview === 'card') {
-    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn">Usar cartão de demonstração</button>`;
-    document.getElementById('ctaBtn').addEventListener('click', useDemoCard);
+    const p = state.payment || {};
+    const label = state.confirming ? 'Processando…' : `Pagar ${centsToMoney(p.depositCents)}`;
+    wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn"
+      ${state.confirming ? 'disabled aria-busy="true"' : ''}>${label}</button>`;
+    if (!state.confirming) document.getElementById('ctaBtn').addEventListener('click', confirmPayment);
     return;
   }
 
-  // Sucesso: as ações vivem no corpo da tela, não no CTA fixo.
-  if (state.step === 'success') { wrap.innerHTML = ''; return; }
+  // Sucesso e confirmação em andamento: as ações vivem no corpo da tela.
+  if (state.step === 'success' || state.payStage) { wrap.innerHTML = ''; return; }
 
   if (state.step === 'data') {
     const ok = formIsValid();
@@ -2369,14 +2651,14 @@ function renderCTA() {
       return;
     }
     const pronto = state.policyAccepted && formIsValid() && !!state.selectedTime;
-    const label = state.committing ? 'Confirmando…' : 'Confirmar agendamento';
+    const label = state.paying ? 'Reservando…' : depositCtaLabel();
     wrap.innerHTML = `<button type="button" class="bk-cta" id="ctaBtn"
-      ${(!pronto || state.committing) ? 'disabled' : ''} ${state.committing ? 'aria-busy="true"' : ''}>${label}</button>`;
-    if (pronto && !state.committing) {
+      ${(!pronto || state.paying) ? 'disabled' : ''} ${state.paying ? 'aria-busy="true"' : ''}>${label}</button>`;
+    if (pronto && !state.paying) {
       document.getElementById('ctaBtn').addEventListener('click', () => {
         state.policyTouched = true;
         if (!state.policyAccepted) { renderStepBody(); renderCTA(); return; }
-        commitBooking();
+        startPayment();
       });
     }
     return;
