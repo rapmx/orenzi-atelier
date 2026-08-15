@@ -6,7 +6,7 @@ Ordenado por acordo, não por tamanho.
 
 | # | Frente | Estado |
 |---|---|---|
-| 1 | **[[Splash]]** | aprovada, não especificada |
+| 1 | ~~**[[Splash]]**~~ | ✅ **fechada 15/08/2026** — já existia em produção sem registro; foi redesenhada, não criada |
 | 2 | **[[Login]]** | aprovada, não especificada |
 | 3 | demais pendências do app | ver abaixo |
 | 4 | Product Map / SaaS | **só depois do Orenzi finalizado** |

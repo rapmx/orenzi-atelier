@@ -30,7 +30,9 @@ barata da lista.
 
 ## Informações ainda necessárias para telas pendentes
 
-- **[[Splash]]** — o que exibir, e se cobre `agendar.html` também
+- **[[Splash]]** — ✅ escopo e conteúdo decididos em 15/08/2026 (só o painel,
+  wordmark tipográfico). Resta **só os ícones do PWA**, que continuam com o
+  anel escuro: trocá-los muda o ícone na tela inicial do celular dela
 - **[[Login]]** — comportamento de sessão expirada em tablet compartilhado
 - **[[Financeiro - futuro]]** — o que "receita" significa para ela
 

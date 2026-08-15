@@ -58,6 +58,7 @@ edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
 | Estoque | `// ── ESTOQUE`, `renderStock()`, `renderStockList()`, `renderStockInsights()`, `openProductModal()` |
 | Clientes, fotos, detalhe | `renderClients()`, `renderClientDetail()`, `renderApptDetail()` |
 | Login | `checkSession()`, `renderLogin()` |
+| Splash e boot | `// ── SPLASH — CICLO DE VIDA` (fim do script), `markReady()`, `splashBoot()`, `#splash` no `<style>` |
 | Qual tela aparece | `render()` |
 
 Abas da nav: **Início · Insights · Agenda · Clientes · Estoque · Questionário**.
@@ -563,6 +564,81 @@ Stripe, Questionário, Clientes e Insights não foram tocados.
      (`diasAbertos[1]` e `[3]`), justamente pra não caírem em cima de um
      cenário — antes eram `hoje + 3` / `hoje + 6` e, dependendo do dia da
      semana, pousavam no mesmo dia do encaixe.
+
+### Splash e boot do painel (15/08/2026)
+
+Redesenho visual **e** troca do mecanismo de saída. Só `painel.html` e
+`painel_demo.html` — `agendar.html`, `gerenciar.html` e a landing continuam
+entrando direto, de propósito. Contexto de produto em `vault/01 - Product/Splash.md`.
+
+- **A splash sai quando o app está pronto, nunca por cronômetro.** Antes era
+  `setTimeout(1300)` + fade de 500ms: 1,8s fixos que sobravam em rede boa
+  (`DOMContentLoaded` aos 82ms no localhost) e faltavam em rede ruim — quando
+  `loadAll()` passava de 1,3s, a splash saía e revelava um `#app` **vazio**,
+  porque `render()` só roda depois dela.
+- **`markReady(motivo)` é o único portão, e é idempotente.** Três emissores,
+  o primeiro vence: `READY_LOGIN` (sem sessão, `renderLogin()` desenhou),
+  `READY_PANEL` (`loadAll()` terminou no `finally` e `render()` desenhou),
+  `READY_TIMEOUT` (`SPLASH_TETO_MS`, 2,5s desde a navegação). A
+  idempotência **não é zelo**: `onAuthStateChange` emite `SIGNED_IN` durante
+  o boot do supabase-js e chama `checkSession()` de novo — sem o flag, a
+  saída seria reagendada depois de a splash já ter saído.
+- **O piso é de BRANDING, não de loading** (ajustado no mesmo dia, depois de
+  a primeira versão ficar rápida demais pra marca ser lida).
+  `SPLASH_BRANDING_MS` = **2100ms contados de tW**, e o ritmo é: entrada
+  ~340ms (`--splash-in`) → permanência plena ~1760ms → saída 280ms
+  (`--motion-route`). Total ~2,4–2,6s conforme a fonte demore.
+  **Isso não é a volta do timer cego**: sem `markReady()` a splash não sai
+  por conta do piso. O piso só atrasa uma saída já autorizada — quem chega
+  **depois** manda, e em rede lenta é o app que dita.
+- **O piso conta do wordmark, não do início.** Roda a partir do frame em que
+  a marca ficou **visível**, e ela espera Jost até `SPLASH_FONTE_MS` (600ms).
+  O CSS de fonte usa `display=swap`: pintar antes faria a marca trocar de
+  tipografia no meio da splash. Contado do início, uma fonte lenta comeria
+  justamente o tempo de leitura que o piso existe pra garantir.
+- **`--splash-in: 340ms` é exceção aprovada**, declarada no escopo de
+  `#splash` e não no `:root`. Fica acima do teto de 350ms de `docs/05 §3`
+  para transição *rotineira* — a splash é abertura de marca, não transição
+  de estado, e o ritmo foi pedido pelo dono do produto. O valor está
+  **espelhado em `SPLASH_ENTRADA_MS`** no JS: mudar um exige mudar o outro.
+- **A barra de progresso é monotônica por contrato.** `splashProgresso()`
+  ignora qualquer valor menor que o atual. Bug real pego no teste: em rede
+  boa `loadAll()` resolve **antes** da fonte chegar, e a barra ia a 100% e
+  voltava a 80% — progresso andando pra trás. O segundo argumento (`durMs`)
+  faz a barra encher exatamente no tempo que falta pra saída, em vez de
+  saltar pra 100% e ficar cheia parada os dois segundos do branding.
+- **`splashState.saidaEm` / `readyAt` existem pra diagnóstico**, não pra
+  lógica. Aba em segundo plano agrupa timers em ~1s e falseia qualquer
+  cronometragem feita de fora; esses campos dizem o instante que o código
+  realmente decidiu.
+- **`markReady` no `finally` de `loadAll()`, não no caminho feliz.** Os 8
+  loaders engolem erro de query, então `Promise.all` quase nunca rejeita —
+  mas se uma exceção escapar, `state.booting` ficaria ligado pra sempre.
+- **`state.booting` existe pra Home não mentir.** Se o teto revela o painel
+  antes dos dados, `renderHome()` desenha `.home-boot` (estado neutro) e
+  retorna cedo. Empty state ali diria "Nenhum atendimento hoje" com o state
+  vazio — afirmação **falsa** sobre a agenda, pior que espera. Só a Home
+  precisa saber: `state.tab` nasce `'inicio'` e nenhuma outra aba é
+  alcançável antes de `loadAll()` voltar. Não é skeleton, e não deve virar.
+- **Limpeza idempotente por três gatilhos** (`transitionend` + `setTimeout`
+  de 600ms + o flag `done`). Mesma armadilha do `morphAvatar()`: sem
+  composição de frames o `transitionend` **não dispara** — confirmado neste
+  redesenho, com a aba oculta a remoção veio sempre pela rede de segurança.
+- **Ordem dos `<link>` no `<head>` importa.** Os CSS locais vêm **antes** do
+  CSS de fonte do Google, que é render-blocking: com o Google primeiro, o
+  primeiro pixel era **branco** e a splash só aparecia depois. Agora o
+  primeiro paint já sai em `--color-bg` e a sequência do PWA é bege → bege →
+  bege. Mais `preconnect` pros dois domínios de fonte. Não mexe na cascata: o
+  CSS do Google só declara `@font-face`.
+- **Nenhum valor visual novo.** Fundo `--color-bg`, marca
+  `--color-accent-700`/`--color-neutral-600`, barra `--color-accent`,
+  durações e curvas todas de token. A splash anterior tinha seis cores
+  cruas (`#16151a`, `#26242a`, `#3a383e`, roxo, `#b8933c`, off-white) e
+  invertia o tema duas vezes. **O anel escuro continua nos ícones do PWA** —
+  trocá-los depende da Juliane.
+- **`prefers-reduced-motion` via `orenziUI.prefersReducedMotion()`**, não um
+  media query reimplementado. Somem deslocamento e crescimento da barra;
+  restam as opacidades. Piso e teto continuam valendo.
 
 ### Status na timeline (10/08/2026)
 

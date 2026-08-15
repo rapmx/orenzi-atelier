@@ -17,8 +17,20 @@ Nenhuma foi corrigida nesta rodada; ficam registradas para decisão.
 | A4 | `docs/README.md` dizia "implementação não iniciada" | ✅ **corrigido** |
 | A5 | Changelog para em `1.2.1` (13/08) | ✅ **corrigido** — `1.3.0` e `1.4.0` escritas |
 | A6 | `docs/10 §17` mandava ADR em `/docs/adr/`, que nunca existiu | ✅ **corrigido** — aponta para `vault/03 - Decisions/` |
+| A7 | Vault dizia "Splash NÃO IMPLEMENTADA"; existia em produção | ✅ **corrigido** em 15/08/2026 — ver abaixo |
 
-**Todas as seis corrigidas em 15/08/2026**, na rodada de fechamento.
+**As seis primeiras corrigidas em 15/08/2026**, na rodada de fechamento.
+
+**A7 — achada na rodada da Splash (15/08/2026).** [[Splash]],
+[[Estado Atual do Produto]] e [[Product Backlog]] diziam, os três, que a
+splash era "só backlog, não implementada". Havia uma splash rodando em
+produção em `painel.html` e `painel_demo.html` desde antes do refresh.
+
+A causa não é descuido de escrita: a tela **nunca passou por especificação**,
+então nunca gerou registro — e o vault só sabe o que alguém escreve nele.
+Vale como lembrete do porquê de o vault ser 4º na hierarquia de fonte de
+verdade: código e migration quebram quando mentem, documento só envelhece em
+silêncio. Os três arquivos foram corrigidos.
 
 **A5 — como ficou.** `1.3.0` (Questionário V2) e `1.4.0` (Agenda Visual V2)
 escritas em `docs/10`. Fica registrada uma pendência **nova e menor**, dentro da
@@ -73,6 +85,22 @@ entrou. **É o lugar que vai ser esquecido** no próximo tipo de ocupação.
 **`event_type: 'created'` ainda existe** na Edge e na RPC — é o caminho sem
 pagamento. O Booking público não usa mais, mas é porta dos fundos se alguém
 reativar.
+
+**Os 8 loaders do painel engolem erro de query.** `loadAppointments`,
+`loadScheduleBlocks`, `loadClients`, `loadStaff`, `loadServices`,
+`loadProducts`, `loadMovements` e `loadBookingVisits` fazem todos
+`if (error) { console.error(error); return; }`. Consequência: `Promise.all`
+em `loadAll()` praticamente **nunca rejeita**, e falha de query fica
+**indistinguível de "não há dados"** — a tela mostra empty state legítimo
+para uma consulta que não foi respondida.
+
+Achado na rodada da [[Splash]] (15/08/2026), ao definir o que "app pronto"
+significa. **Não foi corrigido de propósito**: mexer no tratamento de erro
+dos loaders é mudança de comportamento de carregamento, fora de uma rodada
+visual. A splash lida com isso sem depender de rejeição (`markReady` no
+`finally` de `loadAll`), então o defeito está contido, não resolvido.
+**Gatilho para atacar:** a primeira vez que alguém reportar "sumiu tudo do
+painel" sem erro visível.
 
 **Acessibilidade.** A auditoria de 03/08 achou **zero** ocorrência de
 `:focus-visible`, `<label for>`, `role=` e `aria-live` no projeto inteiro. Parte

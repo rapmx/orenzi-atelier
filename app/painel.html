@@ -11,14 +11,24 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Orenzi">
 <meta name="theme-color" content="#f7f3ea">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap">
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<!-- Ordem deliberada (15/08/2026): os CSS locais vêm ANTES do CSS de fonte
+     do Google. CSS é render-blocking, e com o Google primeiro o navegador
+     não pintava NADA até ele responder — o primeiro pixel era branco, e só
+     depois vinha a splash. Com os tokens antes, o primeiro paint já sai em
+     --color-bg e a sequência fica bege → bege → bege (splash nativa do PWA,
+     splash HTML, app). O preconnect corta o handshake do domínio de fonte.
+     Isto não mexe na cascata: o CSS do Google só declara @font-face, e o
+     <style> local continua vindo por último e vencendo. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Orenzi Design System — carregado antes do <style> local de propósito:
      pela cascata, o CSS abaixo continua vencendo até esta página ser
      migrada componente por componente. Ver docs/08_IMPLEMENTATION_RULES.md. -->
 <link rel="stylesheet" href="ds/orenzi-tokens.css">
 <link rel="stylesheet" href="ds/orenzi-base.css">
 <link rel="stylesheet" href="ds/orenzi-components.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Jost:wght@400;500;600;700&display=swap">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --color-bg: #f3ede4;
@@ -1123,32 +1133,105 @@
     margin-bottom: 28px;
   }
 
+  /* ── SPLASH — "papel e assinatura" (15/08/2026) ───────────────────
+     A abertura usa a MESMA marca do Login (.wordmark/.wordmark-sub, logo
+     acima) e do rodapé da landing: wordmark tipográfico sobre --color-bg.
+
+     O que saiu: um anel escuro de 220px (#16151a de fundo, #26242a/#3a383e
+     no anel, fita roxa, filete dourado #b8933c). Seis cores, zero tokens —
+     roxo não existe no DS e o dourado registrado é token de LANDING, não do
+     produto. Além disso invertia o tema duas vezes (splash nativa bege →
+     splash preta → app bege) num app cujo tema escuro foi recusado pela
+     cliente (ADR 0001), e concorria com as outras três representações da
+     marca. O anel continua vivo nos ícones do PWA — trocá-los muda o que a
+     Juliane vê na tela inicial do celular e depende de aprovação dela.
+
+     Nenhum valor novo aqui: todas as cores, durações e curvas são tokens.
+     A saída é comandada por markReady() — ver "SPLASH — CICLO DE VIDA" no
+     fim do script. Não existe mais timer cego. */
   #splash {
-    position: fixed; inset: 0; background: #16151a; z-index: 500;
-    display: flex; align-items: center; justify-content: center;
-    transition: opacity 0.5s ease;
+    /* Entrada do wordmark. Fora da escala de docs/05 (teto de 350ms para
+       transição ROTINEIRA) de propósito e com aprovação explícita do dono do
+       produto em 15/08/2026: a splash não é transição de estado, é abertura
+       de marca, e o ritmo pedido foi 300–400ms de entrada. Fica no escopo do
+       componente, não no :root — nenhuma outra tela herda isto. Se a splash
+       virar padrão reaproveitável, promover a token em docs/03. */
+    --splash-in: 340ms;
+    position: fixed; inset: 0; background: var(--color-bg); z-index: 500;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: var(--space-3);
+    transition: opacity var(--motion-route, 280ms) var(--ease-in, ease);
   }
   #splash.fade-out { opacity: 0; pointer-events: none; }
-  .logo-ring {
-    width: 220px; height: 220px; border-radius: 50%;
-    background: #26242a; border: 6px solid #3a383e;
+
+  /* O wordmark NASCE OCULTO e só entra quando Jost estiver utilizável (ou
+     no teto de SPLASH_FONTE_MS). O CSS de fonte usa display=swap, então
+     pintar de imediato faria a marca trocar de tipografia no meio da
+     splash — numa tela cuja única função é a marca, é o defeito mais caro.
+     A espera pela fonte VIRA o delay de entrada em vez de virar um FOUT. */
+  .splash-mark {
+    opacity: 0; transform: translateY(8px); text-align: center;
+    transition: opacity var(--splash-in) var(--ease-out, ease),
+                transform var(--splash-in) var(--ease-out, ease);
+  }
+  .splash-mark.is-in { opacity: 1; transform: none; }
+  .splash-word {
+    font-family: var(--font-body); font-weight: 600; font-size: 22px;
+    letter-spacing: 0.14em; color: var(--color-accent-700);
+    line-height: var(--leading-tight);
+  }
+  .splash-sub {
+    font-family: var(--font-body); font-size: 11px; letter-spacing: 0.28em;
+    color: var(--color-neutral-600); margin-top: 2px;
+  }
+  /* Progresso honesto: 12% no boot, 80% quando a marca aparece, 100% quando
+     o app fica pronto de verdade. Nunca uma barra indeterminada fingindo
+     saber quanto falta. */
+  .splash-line {
+    width: 42px; height: 2px; border-radius: 2px;
+    background: var(--color-divider); overflow: hidden;
+  }
+  .splash-line i {
+    display: block; width: 0%; height: 100%; border-radius: 2px;
+    background: var(--color-accent);
+    transition: width var(--motion-standard, 200ms) var(--ease-out, ease);
+  }
+
+  /* Estado neutro do carregamento inicial da Home — ver renderHome().
+     Aparece só quando o teto da splash revela o painel antes de loadAll()
+     voltar. NÃO é skeleton: não finge a forma do conteúdo, só diz que os
+     dados ainda não chegaram. */
+  .home-boot {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    position: relative; box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset;
+    gap: var(--space-3); padding: 72px var(--gutter) 0; text-align: center;
   }
-  .logo-purple-mark {
-    position: absolute; right: 4px; top: 42%; width: 5px; height: 34px; border-radius: 3px;
-    background: linear-gradient(180deg, #a97fc7, #7a4f9e);
+  .home-boot-line {
+    width: 42px; height: 2px; border-radius: 2px;
+    background: var(--color-divider); overflow: hidden;
   }
-  .logo-text {
-    font-family: "Jost", system-ui, sans-serif; font-weight: 700; font-size: 30px;
-    letter-spacing: 0.04em; color: #f4f2ee; text-transform: uppercase;
+  .home-boot-line i {
+    display: block; width: 40%; height: 100%; border-radius: 2px;
+    background: var(--color-accent);
+    animation: bootSlide 1200ms var(--ease-standard) infinite;
   }
-  .logo-sub {
-    font-family: "Jost", system-ui, sans-serif; font-size: 10px; letter-spacing: 0.32em;
-    color: rgba(244,242,238,0.75); margin-top: 4px; text-transform: uppercase;
+  .home-boot-text {
+    font-family: var(--font-body); font-size: var(--text-caption-size);
+    color: var(--color-neutral-600);
   }
-  .logo-gold-line {
-    width: 42px; height: 2px; background: #b8933c; margin-top: 12px; border-radius: 2px;
+  @keyframes bootSlide {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(250%); }
+  }
+
+  /* Reduced motion: some o deslocamento e some o crescimento — a linha
+     aparece completa e parada, e resta só a opacidade. O piso e o teto
+     continuam valendo: acessibilidade não é motivo pra marca piscar. */
+  @media (prefers-reduced-motion: reduce) {
+    .splash-mark, .splash-mark.is-in { transform: none; }
+    /* Barra completa e parada — mesmo tratamento do .home-boot-line. O piso
+       de branding continua valendo: só o movimento sai, não o tempo. */
+    .splash-line i { transition: none; width: 100%; }
+    .home-boot-line i { animation: none; width: 100%; }
   }
   .login-wrap h1 { font-family: var(--font-heading); font-weight: 600; font-size: 24px; margin: 0 0 20px; }
   .login-wrap input {
@@ -2705,13 +2788,12 @@
 </style>
 </head>
 <body>
-<div id="splash">
-  <div class="logo-ring">
-    <div class="logo-purple-mark"></div>
-    <div class="logo-text">ORENZI</div>
-    <div class="logo-sub">ATELIER</div>
-    <div class="logo-gold-line"></div>
+<div id="splash" role="status" aria-label="Carregando Orenzi Atelier">
+  <div class="splash-mark" id="splashMark">
+    <div class="splash-word">ORENZI</div>
+    <div class="splash-sub">ATELIER</div>
   </div>
+  <div class="splash-line" aria-hidden="true"><i id="splashProgress"></i></div>
 </div>
 <div id="toast"></div>
 <header id="globalHeader">
@@ -2765,7 +2847,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', booting: false, appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -3028,8 +3110,18 @@ function deleteApptPhoto(appointmentId, photoId) {
 }
 
 async function loadAll() {
-  await Promise.all([loadAppointments(), loadScheduleBlocks(), loadClients(), loadStaff(), loadServices(), loadProducts(), loadMovements(), loadBookingVisits()]);
-  render();
+  try {
+    await Promise.all([loadAppointments(), loadScheduleBlocks(), loadClients(), loadStaff(), loadServices(), loadProducts(), loadMovements(), loadBookingVisits()]);
+  } finally {
+    // `finally`, não o caminho feliz: os 8 loaders engolem erro de query
+    // (console.error + return), então Promise.all praticamente nunca
+    // rejeita — mas se uma exceção inesperada escapar, a Home ficaria presa
+    // pra sempre no estado neutro de carregamento e a splash dependeria só
+    // do teto. Aqui o boot termina de qualquer jeito.
+    state.booting = false;
+    render();
+    markReady('READY_PANEL');
+  }
 }
 
 // Bloqueio manual de agenda — entidade própria (não appointment fake). Sem
@@ -3552,6 +3644,20 @@ function renderHome() {
   const now = new Date();
   document.getElementById('greeting').textContent = now.getHours() < 12 ? 'Bom dia' : (now.getHours() < 18 ? 'Boa tarde' : 'Boa noite');
   document.getElementById('greetingSub').textContent = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  // Carregamento inicial ainda em curso: o teto da splash revelou o painel
+  // antes de loadAll() voltar. A Home NÃO renderiza empty state aqui —
+  // "Nenhum atendimento hoje" com o state vazio seria afirmação falsa sobre
+  // a agenda da Juliane, e empty state falso é pior que espera. Estado
+  // neutro, sem skeleton. loadAll() desliga o flag e chama render() de novo.
+  if (state.booting) {
+    app.innerHTML = `
+      <div class="home-boot" role="status">
+        <div class="home-boot-line" aria-hidden="true"><i></i></div>
+        <div class="home-boot-text">Carregando seus dados…</div>
+      </div>`;
+    return;
+  }
 
   const today = todayAppointments();
   const tomorrow = tomorrowAppointments();
@@ -9469,9 +9575,14 @@ async function checkSession() {
     state.userLabel = apelido ? apelido.charAt(0).toUpperCase() + apelido.slice(1) : 'Painel';
     document.querySelector('nav').style.display = 'flex';
     document.getElementById('logoutBtn').style.display = 'inline';
+    // O painel ainda não tem dado nenhum. Enquanto isso a Home não pode
+    // afirmar "Nenhum atendimento hoje" — o que se sabe é que ainda não se
+    // sabe. loadAll() desliga no `finally`.
+    state.booting = true;
     loadAll();
   } else {
     renderLogin();
+    markReady('READY_LOGIN');
   }
 }
 
@@ -10952,13 +11063,169 @@ function goToToday() {
 // horário atual sem re-renderizar a tela inteira.
 setInterval(updateCurrentTimeLine, 30000);
 
-checkSession();
+// ── SPLASH — CICLO DE VIDA (15/08/2026) ───────────────────────
+// A splash cobre o carregamento REAL e sai quando o app está pronto, não
+// quando um cronômetro estoura. Antes eram setTimeout(1300) + fade de
+// 500ms: 1,8s fixos, que SOBRAVAM em rede boa (medido: DOMContentLoaded aos
+// 82ms no localhost) e FALTAVAM em rede ruim — a splash saía e revelava um
+// #app vazio, porque `render()` só roda depois de loadAll().
+//
+// Três emissores chamam markReady(); o primeiro vence:
+//   READY_LOGIN   — sem sessão, renderLogin() já desenhou
+//   READY_PANEL   — com sessão, loadAll() terminou e render() desenhou
+//   READY_TIMEOUT — rede de segurança, SPLASH_TETO_MS desde a navegação
+//
+// A saída acontece em max(piso de branding, appReady). O piso conta a partir
+// do frame em que o WORDMARK ficou visível, não do início: o wordmark espera
+// Jost (até SPLASH_FONTE_MS), e um piso contado do início encurtaria a marca
+// justamente quando a fonte demora.
+//
+// ── O PISO É DE BRANDING, NÃO DE LOADING (ajuste de 15/08/2026) ──
+// A primeira versão usava 400ms, só pra evitar piscada. Ficou rápida demais:
+// `ORENZI / ATELIER` não dava tempo de ser lido. A intenção mudou — a splash
+// agora é também um momento curto de marca. O piso subiu para
+// SPLASH_BRANDING_MS e o ritmo é:
+//
+//   entrada do wordmark   ~340ms   (--splash-in, no CSS)
+//   permanência legível   ~1760ms  (SPLASH_BRANDING_MS - entrada)
+//   saída                  280ms   (--motion-route)
+//   ────────────────────────────
+//   total desde tW        ~2380ms, mais o tempo até a fonte resolver
+//
+// Isto NÃO é a volta do timer cego. O readiness continua sendo a condição de
+// saída: sem markReady() a splash não sai por conta do piso. O piso só
+// atrasa uma saída que já foi autorizada. Quem chega depois manda — em rede
+// lenta é o app que dita, não o relógio.
+const SPLASH_ENTRADA_MS  = 340;   // espelha --splash-in no CSS; mudar os dois juntos
+const SPLASH_BRANDING_MS = 2100;  // de tW até o INÍCIO da saída (entrada + permanência)
+const SPLASH_TETO_MS     = 2500;  // desde a navegação (performance.now() é essa base)
+const SPLASH_FONTE_MS    = 600;   // espera máxima por Jost antes de aceitar system-ui
 
-setTimeout(() => {
+const splashState = {
+  done: false, ready: false, motivo: null,
+  wordmarkAt: null, tetoId: null, saidaAgendada: false, pct: 0,
+};
+
+function splashReduzido() {
+  return !!(window.orenziUI && orenziUI.prefersReducedMotion && orenziUI.prefersReducedMotion());
+}
+
+// Monotônica por contrato: a barra nunca anda pra trás. Em rede boa o app
+// fica pronto ANTES de a fonte chegar, e sem esta guarda o 100% viraria 80%
+// quando a marca aparecesse — progresso regredindo na cara de quem abre.
+// `durMs` deixa a barra encher no tempo exato que falta pra saída, em vez de
+// saltar e ficar cheia parada durante todo o piso de branding.
+function splashProgresso(pct, durMs) {
+  if (pct <= splashState.pct) return;
+  splashState.pct = pct;
+  const barra = document.getElementById('splashProgress');
+  if (!barra || splashReduzido()) return;
+  if (durMs != null) barra.style.transitionDuration = durMs + 'ms';
+  barra.style.width = pct + '%';
+}
+
+// Revela o wordmark e ABRE o piso. Chamada quando Jost fica utilizável ou
+// no teto de SPLASH_FONTE_MS — o que vier primeiro.
+function splashRevelarMarca() {
+  if (splashState.wordmarkAt !== null) return;
+  splashState.wordmarkAt = performance.now();
+  const mark = document.getElementById('splashMark');
+  if (mark) mark.classList.add('is-in');
+  splashProgresso(80);
+  splashAgendarSaida();
+}
+
+// Idempotente de propósito: onAuthStateChange dispara SIGNED_IN durante o
+// próprio boot do supabase-js e chamaria checkSession() outra vez. A splash
+// não pode reabrir nem reagendar saída depois de já ter saído.
+function markReady(motivo) {
+  if (splashState.ready || splashState.done) return;
+  splashState.ready = true;
+  splashState.motivo = motivo;
+  splashAgendarSaida();
+}
+
+// Chamada pelos dois lados (marca revelada / app pronto) porque a saída
+// depende dos dois, e a ordem entre eles varia com a rede. `saidaAgendada`
+// impede agendar duas vezes — o que não quebraria splashSair (idempotente)
+// mas daria à barra duas durações de enchimento diferentes.
+function splashAgendarSaida() {
+  if (splashState.done || splashState.saidaAgendada) return;
+  if (!splashState.ready || splashState.wordmarkAt === null) return;
+  splashState.saidaAgendada = true;
+  splashState.readyAt = performance.now();
+  const decorrido = splashState.readyAt - splashState.wordmarkAt;
+  const espera = Math.max(0, SPLASH_BRANDING_MS - decorrido);
+  // Alvo absoluto desde tW, guardado pra diagnóstico: é o contrato do piso
+  // ("a marca fica no ar até aqui"), independente de quanto o setTimeout
+  // atrase na prática. Sem isto, medir o ritmo exige cronometrar de fora, e
+  // aba em segundo plano agrupa timers em ~1s e falseia a medida.
+  splashState.saidaEm = splashState.readyAt + espera;
+  // A barra enche exatamente no instante da saída: quando ela chega ao fim,
+  // a splash sai. Agora que o piso de branding costuma mandar no tempo
+  // restante, é essa a leitura honesta de "quanto falta" — saltar pra 100%
+  // e ficar parada dois segundos diria que acabou quando não acabou.
+  splashProgresso(100, espera);
+  setTimeout(splashSair, espera);
+}
+
+// Limpeza idempotente com três gatilhos (transitionend + rede de segurança
+// por setTimeout + o próprio flag): sem composição de frames — aba em
+// segundo plano — o transitionend nunca dispara e a splash ficaria presa
+// por cima do app. Mesma armadilha já documentada em morphAvatar().
+function splashSair() {
+  if (splashState.done) return;
+  splashState.done = true;
+  if (splashState.tetoId) clearTimeout(splashState.tetoId);
+  const appEl = document.getElementById('app');
+  if (appEl) appEl.removeAttribute('inert');
   const splash = document.getElementById('splash');
+  if (!splash) return;
+  const remover = () => { if (splash.parentNode) splash.remove(); };
+  splash.addEventListener('transitionend', remover, { once: true });
+  setTimeout(remover, 600);
   splash.classList.add('fade-out');
-  setTimeout(() => splash.remove(), 500);
-}, 1300);
+}
+
+function splashBoot() {
+  // Enquanto a splash cobre a tela, nada atrás dela recebe foco de teclado.
+  const appEl = document.getElementById('app');
+  if (appEl) appEl.setAttribute('inert', '');
+  splashProgresso(12);
+
+  // O wordmark espera a fonte, e não o contrário. O teto garante que uma
+  // rede ruim no CSS do Google não segure a marca indefinidamente — passado
+  // ele, a marca entra em system-ui e a diferença é assumida.
+  let fonteResolvida = false;
+  const aceitarFonte = () => {
+    if (fonteResolvida) return;
+    fonteResolvida = true;
+    splashRevelarMarca();
+  };
+  if (document.fonts && document.fonts.load) {
+    document.fonts.load('600 22px Jost').then(aceitarFonte).catch(aceitarFonte);
+  }
+  setTimeout(aceitarFonte, SPLASH_FONTE_MS);
+
+  // performance.now() já conta desde a navegação, então o teto cobre também
+  // o parse do script inline (este arquivo tem ~570 KB) — não só o tempo a
+  // partir daqui.
+  splashState.tetoId = setTimeout(() => {
+    // Teto atingido, app ainda não pronto. Sair revelando um #app vazio
+    // seria pior que a splash, então há sempre algo desenhado antes:
+    //  · com sessão (state.booting) — o painel em modo carregando, onde
+    //    renderHome() mostra estado neutro em vez de empty state falso;
+    //  · sem sessão resolvida — o Login, que é tela completa e honesta sem
+    //    depender de rede nenhuma.
+    if (state.booting) render();
+    else if (!appEl || !appEl.innerHTML.trim()) renderLogin();
+    splashRevelarMarca();
+    markReady('READY_TIMEOUT');
+  }, Math.max(0, SPLASH_TETO_MS - performance.now()));
+}
+
+splashBoot();
+checkSession();
 </script>
 </body>
 </html>
