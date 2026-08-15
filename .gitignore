@@ -4,11 +4,18 @@ media-raw/
 # Historico morto pre-git (zips e copias antigas) - fica so no HD local
 archive/
 
-# Graphify: o grafo e derivado, so o relatorio e util no repo
+# Graphify: o grafo e derivado, so o relatorio e o custo sao uteis no repo
 graphify-out/cache/
 graphify-out/.graphify_*
 graphify-out/graph.html
 graphify-out/manifest.json
+# graph.json FICA versionado de proposito: e ele que `graphify query/path/affected`
+# le. Sem ele, um clone novo teria que pagar a regeneracao pra poder consultar.
+# Sidecars com o JS inline extraido dos HTMLs (15/08/2026). Sao artefato puro,
+# regerado por tools/graphify/derive_js.py — a fonte de verdade e o .html.
+graphify-out/derived/
+# Backup do grafo de 02/08, guardado so pra comparacao desta rodada
+graphify-archive-*/
 
 # Segredos - nunca commitar
 *.env
@@ -16,6 +23,16 @@ graphify-out/manifest.json
 *API*KEY*.txt
 *secret*
 *.pem
+
+# Prototipos ja superados pelo codigo em producao (booking-v2, insights-v2).
+# Ficam no HD como referencia visual; nao entram no repo.
+preview/
+
+# Obsidian: as configuracoes do vault (plugins, view do grafo) ficam versionadas
+# pra ele abrir igual em qualquer maquina. O layout da sessao, nao — muda a cada
+# vez que a janela e mexida e sujaria todo commit.
+vault/.obsidian/workspace.json
+vault/.obsidian/workspace-mobile.json
 
 # Lixo de sistema / editor
 Thumbs.db

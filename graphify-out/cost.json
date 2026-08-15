@@ -4,9 +4,19 @@
       "date": "2026-08-02T08:11:11.324425+00:00",
       "input_tokens": 315897,
       "output_tokens": 0,
-      "files": 11
+      "files": 11,
+      "backend": "claude-subagents",
+      "note": "escopo completo; indexou modules/*.js que nao existem mais"
+    },
+    {
+      "date": "2026-08-15T12:55:00+00:00",
+      "input_tokens": 70960,
+      "output_tokens": 0,
+      "files": 33,
+      "backend": "gemini",
+      "note": "escopo enxuto (sem painel_demo, sem docs/) + sidecars derivados do JS inline + gramatica SQL. Semantica no Gemini, nao em subagente: o custo saiu da conta da sessao."
     }
   ],
-  "total_input_tokens": 315897,
+  "total_input_tokens": 386857,
   "total_output_tokens": 0
 }

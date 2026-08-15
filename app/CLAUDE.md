@@ -6,14 +6,25 @@ qualquer (`npx serve .`) — não existe passo de compilação.
 
 ## Mapa dos arquivos
 
-| Arquivo | Linhas | O que é |
+| Arquivo | Tamanho | O que é |
 |---|---|---|
-| `index.html` | ~1290 | Landing pública: hero em vídeo, galeria, antes/depois, PT/EN |
-| `agendar.html` | ~760 | Agendamento pela cliente, 3 passos (serviço → data/hora → dados) |
-| `painel.html` | ~2990 | Painel da Juliane. **Tudo inline** — config, dados, todas as telas |
-| `painel_demo.html` | ~3160 | Cópia do painel com stub do Supabase, pra demonstrar sem login |
+| `index.html` | 70 KB | Landing pública: hero em vídeo, galeria, antes/depois, PT/EN |
+| `agendar.html` | 138 KB | Agendamento pela cliente, 3 passos (serviço → data/hora → dados + sinal) |
+| `gerenciar.html` | 61 KB | Self-service da cliente: remarcar/cancelar por `manage_token` |
+| `painel.html` | **555 KB** | Painel da Juliane. **Tudo inline** — config, dados, todas as telas |
+| `painel_demo.html` | **602 KB** | Cópia do painel com stub do Supabase, pra demonstrar sem login |
+| `design-system.html` | 31 KB | Vitrine do Design System |
+| `shared/salon.js` | — | `window.OrenziSalon`: expediente, fuso, slot |
+| `ds/` | — | `orenzi-tokens.css`, `orenzi-base.css`, `orenzi-components.css`, `orenzi-ui.js` |
 | `manifest.json` | — | PWA (nome, ícones, cor) |
 | `assets/` | — | Fotos e vídeos da landing |
+
+⚠ **Nunca varra `painel.html` nem `painel_demo.html` inteiros** — custam ~140k e
+~150k tokens. Use as âncoras abaixo + grep, ou o grafo (`graphify query`).
+
+**Contexto de produto (por que algo é assim, o que está bloqueado, de quem
+depende) fica em `vault/`**, não aqui. Este arquivo é o índice do *código*.
+Ver `CLAUDE.md` da raiz, §"Protocolo de contexto".
 
 ### Tudo é inline — não existem módulos
 
@@ -55,10 +66,28 @@ Estoque ocupou o lugar de Equipe em 02/08/2026 — com uma profissional só,
 
 ## Banco (Supabase, projeto `gsagtsxkhqlpxuvrijgw`)
 
-Tabelas: `appointments`, `schedule_blocks`, `clients`, `staff`, `staff_services`,
-`services`, `salon_settings`, `products`, `product_movements`, `client_photos`,
-`client_questionnaires`, `booking_visits`, `lookup_attempts`, `payments`,
-`stripe_webhook_events`.
+**19 tabelas**, conferidas contra produção em 15/08/2026:
+
+| Grupo | Tabelas |
+|---|---|
+| Agendamento | `appointments`, `appointment_services`, `appointment_events`, `schedule_blocks` |
+| Cliente | `clients`, `client_photos`, `client_questionnaires` |
+| Catálogo | `services`, `staff`, `staff_services`, `salon_settings` |
+| Estoque | `products`, `product_movements` |
+| Booking V2 | `booking_operation_requests`, `booking_visits`, `lookup_attempts`, `cancellation_policies` |
+| Pagamento | `payments`, `stripe_webhook_events` |
+
+⚠ **`supabase/migrations/` é espelho PARCIAL**: 11 arquivos locais contra 38
+migrations aplicadas — só de `booking_v2` (09/08/2026) em diante existe arquivo.
+`find_or_create_client`, `normalize_ie_phone`, `products`, `client_photos`,
+`product_movements` e `booking_visits` existem **só no banco**. Não achar no
+repo não significa que não exista. Os timestamps dos nomes locais também são
+aproximações escritas à mão e não batem com as versões aplicadas.
+
+**Edge Functions ativas: três**, todas com fonte em `supabase/functions/` —
+`booking-orchestrator` (v7), `stripe-webhook` (v4) e `send-appointment-email`
+(v8, recuperada em 15/08/2026; é a que `trg_notify_new_appointment` aciona e
+formata o e-mail no fuso do salão, não no do servidor).
 
 `payments` e `stripe_webhook_events` (14/08/2026) são do depósito de 20% —
 ver seção própria em "Regras do domínio". RLS ligada e **sem policy nenhuma**:
@@ -364,6 +393,9 @@ lacuna: a auditoria de 14/08 mostrou uso funcional zero e o pedido foi
   `REVOKE ALL ... FROM PUBLIC, anon` (a tabela é anterior à convenção e
   ficava só na RLS). Migration
   `20260815120000_questionnaire_v2_language_and_references.sql`.
+  ✅ **APLICADA em produção** (versão real `20260814233019`) — verificado em
+  15/08/2026, as duas colunas existem. `docs/roadmap.md` Fase 4 ainda diz
+  "pendente de aplicar" e está **desatualizado**.
   **`quizSave()` funciona antes dela**: se o Postgres disser que a coluna
   não existe (`quizMissingColumn()`), regrava só os seis campos antigos em
   vez de mostrar erro pra cliente por uma dívida de banco.

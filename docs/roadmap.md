@@ -4,15 +4,23 @@ Lista que o Raphael trouxe pra levar Agenda, Clientes, Estoque e Questionário
 ao mesmo padrão de Início/Insights, mais alguns comportamentos novos. Ordenado
 por dependência, não pela ordem em que ele escreveu.
 
-## 👉 Estado atual (fim da sessão de 03/08/2026) — comece por aqui
+## 👉 Estado atual (15/08/2026) — comece por aqui
 
-**Fases 0, 1, 2 e 3 concluídas.** Fase 3 (Clientes) fechou com D2 (valor
-editável) adiado — **não agora** — e D3 (VIP manual) resolvido como
-"começar do zero": ninguém migrado, `clients.vip` nasceu `false` pra todo
-mundo. Tudo já commitado e no ar.
+**As cinco fases deste roadmap estão concluídas.** Ele passa a ser registro
+histórico da padronização visual, não fila de trabalho.
 
-**Fase 4 (Questionário) concluída em 15/08/2026** — ver seção abaixo. D4
-resolvido: traduz o questionário inteiro nos 3 idiomas.
+- **Fases 0, 1, 2 e 3** — concluídas em 02–03/08/2026. Fase 3 (Clientes) fechou
+  com D2 (valor editável) adiado — **não agora** — e D3 (VIP manual) resolvido
+  como "começar do zero": ninguém migrado, `clients.vip` nasceu `false` pra
+  todo mundo.
+- **Fase 4 (Questionário V2)** — concluída em 15/08/2026, **inclusive a
+  migration**. D4 resolvido: traduz o questionário inteiro nos 3 idiomas.
+
+**Este roadmap não cobre o que veio depois dele.** Booking V2 e self-service
+(09–10/08), schedule blocking (13/08), Stripe depósito em sandbox (14/08) e
+Agenda Visual V2 (15/08) nasceram fora desta lista. O estado corrente do
+produto vive em `vault/00 - Start Here/Estado Atual do Produto.md`, e a fila de
+trabalho em `vault/04 - Backlog/Product Backlog.md`.
 
 ## Fase 0 — Padrão visual — ✅ concluída (02/08/2026)
 
@@ -135,11 +143,15 @@ precisa de mensagem/stack pra virar achado de verdade.
       a Juliane mandar as fotos).
 - [x] Relatório do perfil com data, idioma e referências; estado vazio
       virou tela.
-- [ ] **Etapa B — migration pendente de aplicar** (`language`,
-      `reference_images`, índice, REVOKE de `anon`). O arquivo está em
-      `supabase/migrations/20260815120000_questionnaire_v2_language_and_references.sql`.
-      A interface funciona sem ela e grava as seis respostas antigas; os
-      dois campos novos só passam a persistir depois de aplicada.
+- [x] **Etapa B — migration APLICADA** (`language`, `reference_images`, índice,
+      REVOKE de `anon`). Aplicada em produção como versão `20260814233019`;
+      verificado em 15/08/2026 — as duas colunas existem em
+      `client_questionnaires`. O arquivo local é
+      `supabase/migrations/20260815120000_questionnaire_v2_language_and_references.sql`
+      (⚠ o nome local é aproximado e não bate com a versão aplicada).
+      O caminho de degradação continua no código: se a coluna não existir,
+      `quizSave()` regrava só as seis respostas antigas em vez de mostrar erro
+      pra cliente.
 
 **Fora do escopo por decisão de 15/08:** alerta automático, integração com
 Appointment/Agenda, recomendação, expiração/revalidação, histórico

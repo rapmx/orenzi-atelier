@@ -352,27 +352,50 @@ código vira identidade por inércia.
 ## 17. Registro de decisões
 
 Toda decisão que muda uma regra vira um **ADR** (registro de decisão de
-arquitetura), guardado em `/docs/adr/NNNN-titulo-curto.md`.
+arquitetura).
+
+> ⚠ **A casa dos ADRs mudou em 15/08/2026.** Eles vivem em
+> **`vault/03 - Decisions/`**, não em `/docs/adr/` — essa pasta foi
+> especificada aqui mas **nunca chegou a ser criada**, e o rationale do projeto
+> passou a morar no vault. **Não criar `/docs/adr/`:** duas casas de ADR é como
+> se perde ADR. Índice em `vault/03 - Decisions/ADR Index.md`.
+>
+> O **template** (§19 abaixo) continua sendo o oficial e não mudou.
 
 **Merece ADR:** mudança de token, adoção ou recusa de padrão, mudança de
 arquitetura, recusa consciente de uma prática comum.
 
 **Não merece:** escolha de implementação sem efeito sobre a regra.
 
-**Decisões já tomadas que merecem ADR retroativo** (⚠ ainda não escritos):
+### Decisões deste documento, e onde estão hoje
 
-| # | Decisão | Data |
-|---|---|---|
-| 1 | Tema escuro recusado pela cliente | anterior a 08/2026 |
-| 2 | Sem build, sem framework, sem npm — decisão deliberada | anterior a 08/2026 |
-| 3 | Sem grafo de código: ~300 mil tokens por extração, não se paga | 02/08/2026 |
-| 4 | Cor do atendimento por categoria de serviço, não por profissional | 02/08/2026 |
-| 5 | Sem amarelo; o degrau de atenção é o caramelo da marca | 03/08/2026 |
-| 6 | VIP manual, não derivado de contagem de visitas | 03/08/2026 |
-| 7 | Sem funcionalidades inexistentes na interface ("Importar contatos", "Escanear código de barras") | 03/08/2026 |
-| 8 | O código é a fonte de verdade da identidade; o documento se corrige | 03/08/2026 |
-| 9 | Sem camada de alias de tokens; nomes finais direto | 03/08/2026 |
-| 10 | Aceitar CSS externo compartilhado em `app/ds/` | ⚠ **pendente de aprovação** |
+Os ADRs retroativos foram **escritos em 15/08/2026**, no vault. Esta tabela
+vira ponteiro:
+
+| # | Decisão | Data | ADR |
+|---|---|---|---|
+| 1 | Tema escuro recusado pela cliente | anterior a 08/2026 | `ADR 0001` |
+| 2 | Sem build, sem framework, sem npm — decisão deliberada | anterior a 08/2026 | `ADR 0002` |
+| 3 | ~~Sem grafo de código~~ | 02/08/2026 | ⚠ **revertida** — ver abaixo |
+| 4 | Cor do atendimento por categoria de serviço, não por profissional | 02/08/2026 | `ADR 0004` |
+| 5 | Sem amarelo; o degrau de atenção é o caramelo da marca | 03/08/2026 | só aqui |
+| 6 | VIP manual, não derivado de contagem de visitas | 03/08/2026 | `ADR 0003` |
+| 7 | Sem funcionalidades inexistentes na interface ("Importar contatos", "Escanear código de barras") | 03/08/2026 | só aqui |
+| 8 | O código é a fonte de verdade da identidade; o documento se corrige | 03/08/2026 | só aqui |
+| 9 | Sem camada de alias de tokens; nomes finais direto | 03/08/2026 | só aqui |
+| 10 | Aceitar CSS externo compartilhado em `app/ds/` | 03/08/2026 | ✅ **aprovado e implementado** — os quatro arquivos existem e são carregados |
+
+**Decisão 3 foi revertida em 15/08/2026.** A recusa do grafo de código valia
+enquanto a extração semântica rodava em subagente Claude (315.897 tokens). Com
+`GEMINI_API_KEY` no ambiente e escopo enxuto, a rodada custou 70.960 tokens de
+Gemini e o grafo saiu com 734 nós contra 258. Ver `ADR 0014` no vault.
+
+**Decisões tomadas depois deste documento** (todas com ADR no vault, nenhuma
+duplicada aqui): fuso `Europe/Dublin` (0005) · disponibilidade delegada a
+`staff_work_blocks` (0006) · expediente duplicado JS↔SQL aceito (0007) ·
+confirmação de pagamento pelo webhook (0008) · reagendamento como evento (0009)
+· questionário é consulta manual (0010) · painel e demo são espelhos (0011) ·
+hold como `pending` (0012) · bloqueio de agenda como entidade própria (0013).
 
 ---
 
@@ -458,12 +481,191 @@ Antes de aprovar qualquer mudança:
 **Documentação**
 - [ ] Documento afetado atualizado
 - [ ] Changelog atualizado
-- [ ] ADR escrito, se houve mudança de regra
+- [ ] ADR escrito **em `vault/03 - Decisions/`**, se houve mudança de regra
 - [ ] Exceção registrada no formato de §7, se houver
 
 ---
 
 # Changelog
+
+> Este changelog cobre o **Design System**. O registro narrativo de cada
+> entrega (o que foi decidido e por quê) está em `vault/05 - Handoffs/`, e o
+> estado corrente do produto em
+> `vault/00 - Start Here/Estado Atual do Produto.md`.
+
+## [1.4.0] — 2026-08-15
+
+Agenda Visual V2 (commit `f36d908`). Redesenho **só visual** da timeline —
+referência estrutural: Calendar do iPhone; identidade, cor e tipografia
+continuam Orenzi. **Nenhuma regra de negócio mudou**: conflito, disponibilidade,
+gaps, `schedule_blocks`, booking, Stripe, Questionário, Clientes e Insights não
+foram tocados.
+
+⚠ **Por que minor e não major.** Pelo §13, alterar valor de token e remover
+componente é major. Os valores abaixo são **locais da Agenda**: não estão em
+`app/ds/orenzi-tokens.css`, não estão em [03](03_DESIGN_SYSTEM.md), e as
+classes removidas não constam da lista de componentes autorizados de
+[04](04_COMPONENT_LIBRARY.md). São internos ao componente, não identidade
+global — por isso minor. **`TimelineItem` é a única exceção**: `.timeline-appt`
+converge para ele ([04 §TimelineItem](04_COMPONENT_LIBRARY.md)), e o documento
+dele precisa ser atualizado com a nova geometria. Registrado como pendente
+abaixo.
+
+### Adicionado
+- **Escala temporal única `PX_PER_MINUTE`** (`= HOUR_HEIGHT / 60`). Todo `top` e
+  toda `height` da grade passam por `minutesToPx()` e `agendaOffsetMinutes()`.
+  Nada é posicionado por aproximação — verificado no navegador: 09:30 cai em
+  0,5000 entre as linhas de 09:00 e 10:00, 09:40 em 0,6667, 10:35 em 0,5833,
+  12:30 em 0,5000.
+- **`--appt-bar-w: 5px`** — barra de destaque (`.timeline-appt::before`) no
+  lugar do `border-left: 3px`. Cor = `c.border` com 15% de `c.text`. Corre a
+  **altura inteira**, atravessando a pausa: é ela que faz
+  `work_before + gap + work_after` lerem como uma reserva só. Contraste medido
+  contra o fundo do próprio card: **1,9–2,9:1**, abaixo dos 3:1 de componente
+  não-textual e **aceito de propósito** — a barra é ênfase, não portadora de
+  informação (a categoria já está no preenchimento e no texto). Exceção no
+  formato de §7.
+- **`APPT_MIN_HEIGHT` (14px)** — piso em **pixels**, só alvo de toque.
+- **`GRID_HAIRLINE` (2px)** — fio de separação constante, não escala com a
+  duração, então o topo do card continua exato.
+- **Encaixe aninhado**: `NIVEL_RECUO` e `NIVEL_RECUO_DIR` (8px por nível, à
+  esquerda e à direita) + `Z_APPT` (10, +1 por nível). O recuo à direita expõe
+  a fatia do card de baixo.
+- **`apptTimeRange()`** — o card passa a mostrar a **faixa de horário**
+  ("Coloração · 9:00–11:30"), nunca a duração. Classes `.hours`,
+  `.micro-hours`, `.compact-hours`.
+- **Pager de dias por arrasto horizontal** (`bindAgendaPager()`,
+  `pagerSettle()`, `pagerCommit()`, `pagerGoTo()`): três páginas irmãs num
+  trilho, `touch-action: pan-y` na `.timeline`, direction lock por
+  `PAGER_INTENT_PX` (8px) e `|dx| > |dy| * 1.2`, commit por
+  `PAGER_COMMIT_RATIO` (22% da largura) **ou** `PAGER_FLICK_VELOCITY`
+  (0,45 px/ms) na mesma direção do deslocamento.
+
+### Alterado
+- **`--appt-head-h` e `APPT_HEAD_SAFE`: 44 → 40.** Os dois espelham o mesmo
+  valor e **têm que mudar juntos**.
+- **`--tl-gutter`: 52 → 40px** (só rótulos de hora, formato `9:00`, sem zero à
+  esquerda) e **`--tl-card-left`: 6 → 4px**. O eixo esquerdo saiu de 58px
+  somados para 44px.
+- **`AGENDA_APPT_COMPACT_MAX_MINUTES`: 60 → 45.** Consequência direta do
+  padding: com 8px as duas linhas medem 36,8px e cabem num card de 45min (que
+  mede 43px); com 12px não cabiam.
+- **Padding do card: 12/14px → `8px 10px`** (mais `--appt-bar-w + 9px` à
+  esquerda). Não altera altura (ela é px), mas afrouxava o topo e roubava a
+  segunda linha de texto.
+- **Recuo do encaixe: 18 → 8px por nível.** A 24px o encaixe lia como card
+  decorativo dentro de outro card.
+- **Altura vem só da duração** — saiu o `Math.max(20, durMins)`, que era piso em
+  **minutos** e esticava a duração desenhada de um atendimento curto.
+- **Pausa (`.appt-gap`)**: véu branco sobre a própria cor do card, com fade de
+  6px nas duas pontas, começando em `left: var(--appt-bar-w)`. Passa a ser um
+  **nó vazio** — nada de flex dentro.
+- **Camadas da `.timeline` documentadas em lista única no CSS**: 0 linhas ·
+  1 `.agenda-free-slot` · 4 `.timeline-block` · 10 appointment (+1 por nível) ·
+  30 linha do horário atual · 200 overlays.
+- **Cabeçalho**: o botão da esquerda mostra o **mês por extenso** (`Agosto`) com
+  chevron; fora do ano corrente volta abreviado com ano (`Set 2027`), o único
+  formato que cabe em 320px.
+
+### Removido
+- **`.gap-label`** ("⏱ pausa · 70min"). A pausa passa a ser comunicada **só**
+  pelo fade. Motivo de leitura: o rótulo brigava com o nome da cliente e, num
+  card com encaixe por cima, ficava escondido metade das vezes — informação que
+  aparece por acaso é pior que informação nenhuma. **Não se substitui por outro
+  texto.** A duração da pausa sobrevive em `segmentsOf()` e no detalhe.
+- **`.status-dot`** (bolinha de status nos tiers micro/compact). Como
+  `statusLabel(null)` devolve `'Confirmado'` e `statusClass()` cai em
+  `st-confirmed` por omissão, ela aparecia em **100% dos cards** quase sempre na
+  mesma cor: legenda que não existia em lugar nenhum. **Nada de dot sem
+  rótulo** — se voltar a existir sinal de status na agenda, tem que ser texto.
+- **`.agenda-free-slot`** (cards tracejados "Xh livres"). A ausência de card já
+  significa disponibilidade; num calendário de verdade ninguém pinta o buraco.
+  Saiu **só o desenho** — `computeFreeGaps()`, `freeSlotLabel()`,
+  `AGENDA_FREE_MIN_MINUTES` e `openNewApptModalAt()` continuam intactos. Junto
+  saiu `bindFreeSlotClicks()`, que não tinha mais elemento para amarrar.
+- **`.dur`, `.micro-dur`, `.compact-dur`** — substituídas pelas `*-hours`.
+- **`renderAgendaGridTransition()`** — o toque na faixa de dias passa pelo mesmo
+  motor do gesto (`pagerGoTo()`). `slidePane()` continua sendo o motor da troca
+  de **semana** (`renderAgendaTransition`), que é outro nível.
+
+### Acessibilidade
+- **A duração sobrevive só no `aria-label`**, de propósito: quem não vê a altura
+  do card não tem de onde tirá-la.
+- **`prefers-reduced-motion`**: o dedo continua sendo acompanhado no arrasto
+  (feedback direto é acessibilidade, não decoração); só o snap vira instantâneo.
+- Formato 24h **sem zero à esquerda**, igual aos rótulos da coluna de hora. 12h
+  com AM/PM seria a referência americana e não existe em lugar nenhum do painel.
+
+### Não alterado, de propósito
+- **Bloqueio manual** ganhou o mesmo eixo e a mesma escala, e só isso: segue
+  hachurado, neutro e **sem barra de destaque**. Pausa clareia ("cabe encaixar
+  alguém"), bloqueio hachura — a distinção de 10/08/2026 continua valendo.
+- **`.tb-time` do bloqueio** continua em `fmtTime()` (`14:00–16:00`, com zero à
+  esquerda) — fora do escopo desta rodada.
+
+### Pendente
+- **[04 §TimelineItem](04_COMPONENT_LIBRARY.md) desatualizado.** Ainda diz
+  "**Converge:** `.timeline-appt` — implementação já correta" e lista tokens
+  `--radius-sm` / `--text-caption`, sem a nova geometria, a barra de destaque
+  nem a regra de faixa de horário. Precisa ser reescrito.
+
+---
+
+## [1.3.0] — 2026-08-15
+
+Questionário V2 (commit `a692d27`). Primeira tela do painel construída
+inteiramente sobre a anatomia de `FullScreenSheet` introduzida em 1.2.0.
+
+### Adicionado
+- **`.quiz-option` / `.quiz-option-label` / `.quiz-option-mark`** — escolha em
+  **cartão** no lugar do `<select>` nativo. `min-height: 56px` (alvo de toque),
+  `padding: var(--space-4)`, `gap: var(--space-3)`, `--font-body`,
+  `--text-body-size`, `--color-text`. Sem valor cru.
+- **`.quiz-progress` / `-track` / `-fill` / `-label`** — progresso "N de 7".
+  Track de 3px com `--radius-full` sobre `--color-neutral-200`.
+- **`.quiz-ref` / `-check` / `-counter` / `-name` / `-swatch`** — tiles de
+  referência visual, seleção múltipla até 3, com contador. **0 é resposta
+  válida.**
+- **`.quiz-lang-list`** — escolha de idioma (`pt-BR`, `en`, `es`). **Sem
+  bandeira: idioma não é país.**
+- **`.quiz-welcome`** — saudação alternando, a palavra sobe e a próxima entra
+  por baixo. O movimento usa **`--motion-route` (280ms)**, o degrau mais lento
+  da escala de [05 §3](05_MOTION_SYSTEM.md), espelhado no JS como
+  `QUIZ_WORD_SWAP_MS`.
+- **Modo quiosque** (`setKioskMode()`) — esconde `header` e `nav` enquanto o
+  tablet está com a cliente. Padrão novo: até aqui nenhuma tela do painel
+  escondia o chrome.
+
+### Alterado
+- **Estado vazio do relatório: toast → tela.** Alinha com o padrão de empty
+  state do resto do app.
+- **CTA nomeia a ação:** "Salvar questionário", com busy e erro por `orenziUI`.
+- **`FullScreenSheet`** (1.2.0) aplicado fora da Agenda pela primeira vez, com
+  `100dvh` e safe areas — confirmando a anatomia head → body rolável → footer
+  fixo como padrão geral, não como solução local da Agenda.
+
+### Removido
+- **`<select>` nativo** do fluxo do questionário.
+- **Auto-advance no `onchange`** — a V1 pulava de tela e não havia como revisar.
+- **O `✕` que gravava.** Fechar deixou de ser um caminho de salvamento.
+
+### Exceção registrada (formato de §7)
+- **`QUIZ_WELCOME_DWELL_MS` (2600ms) está fora da escala de movimento de
+  [05 §3](05_MOTION_SYSTEM.md)**, e isso é deliberado: é tempo de **leitura**,
+  não de transição — mesma natureza do `SUCCESS_HOLD_MS` de
+  `app/ds/orenzi-ui.js`. Declarado no comentário do próprio CSS.
+
+### Não alterado, de propósito
+- **Stripe depósito sandbox** (commit `d342808`, 14/08/2026) **não gerou
+  entrada de DS**: não introduziu token, componente nem padrão. O que ele
+  acrescentou foi uma **regra de implementação** — o Payment Element não
+  sobrevive a `innerHTML`, então a casca da tela de pagamento é desenhada uma
+  vez por abertura e só `#payStatus` é reescrito (medido: 1 mount em 7
+  renders). Pertence a [08](08_IMPLEMENTATION_RULES.md), não aqui.
+- **Nenhuma resposta do questionário deriva regra de negócio.** Decisão de
+  produto, não lacuna — ver `vault/03 - Decisions/ADR 0010`.
+
+---
 
 ## [1.2.1] — 2026-08-13
 

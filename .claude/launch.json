@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "app"],
       "port": 3000
+    },
+    {
+      "name": "orenzi-graph",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "graphify-out", "-l", "3210"],
+      "port": 3210
     }
   ]
 }
