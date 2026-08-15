@@ -18,6 +18,7 @@ Supabase de produção — não reconstruído por memória.
 | **Clientes** | Fase 3 concluída, VIP manual | [[Clientes]] |
 | **Estoque** | Fase 1 concluída; DS só planejado | [[Estoque]] |
 | **Splash** | redesenhada 15/08; já existia antes, sem registro | [[Splash]] |
+| **Login** | V2 em 15/08 — cartão de recepção, sessão expirada resolvida | [[Login]] |
 
 ⚠ **"Fechado" não é "em produção livre".** O Stripe está fechado como
 *implementação* e bloqueado como *operação* — ver [[Production Blockers]].
@@ -26,7 +27,7 @@ Supabase de produção — não reconstruído por memória.
 
 | Frente | Estado |
 |---|---|
-| **Login** | só backlog, redesign posterior — [[Login]] |
+| **Password Recovery** | aberta pelo Login V2; só entra end-to-end — [[Product Backlog]] |
 | **Financeiro** | conceito, sem escopo — [[Financeiro - futuro]] |
 | **Appointment Detail** | auditoria aberta, sem especificação — ver [[Product Backlog]] |
 | **Client History** | regra escrita, nada implementado — [[Product Backlog]] |
@@ -42,8 +43,8 @@ Detalhe em [[Waiting on Juliane]].
 
 1. ~~Splash screen~~ — **fechada em 15/08/2026** ([[Splash]]). Não era frente
    nova: já existia em produção, sem especificação, e foi **redesenhada**.
-2. Login
-3. demais pendências do app
+2. ~~Login~~ — **fechado em 15/08/2026** ([[Login]]), sem recuperação de senha
+3. demais pendências do app, com *Password Recovery end-to-end* na fila
 4. Product Map / SaaS — **somente** quando o Orenzi estiver finalizado
 
 ## O que mudou desde o último snapshot de documento

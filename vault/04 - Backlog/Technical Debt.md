@@ -18,6 +18,8 @@ Nenhuma foi corrigida nesta rodada; ficam registradas para decisão.
 | A5 | Changelog para em `1.2.1` (13/08) | ✅ **corrigido** — `1.3.0` e `1.4.0` escritas |
 | A6 | `docs/10 §17` mandava ADR em `/docs/adr/`, que nunca existiu | ✅ **corrigido** — aponta para `vault/03 - Decisions/` |
 | A7 | Vault dizia "Splash NÃO IMPLEMENTADA"; existia em produção | ✅ **corrigido** em 15/08/2026 — ver abaixo |
+| A8 | `docs/07` dizia "zero `:focus-visible` nos quatro arquivos" | ✅ **corrigido** — `ds/orenzi-base.css` cobre desde o PR1 do DS |
+| A9 | [[Login]] dizia que o grafo agrupa a autenticação numa comunidade "Authentication" | ✅ **corrigido** — no grafo de 15/08 `checkSession()`/`renderLogin()` caem na Community 19, sem nome, junto dos loaders de boot. O grafo é derivado: navegação, não fonte de verdade |
 
 **As seis primeiras corrigidas em 15/08/2026**, na rodada de fechamento.
 
@@ -103,8 +105,36 @@ visual. A splash lida com isso sem depender de rejeição (`markReady` no
 painel" sem erro visível.
 
 **Acessibilidade.** A auditoria de 03/08 achou **zero** ocorrência de
-`:focus-visible`, `<label for>`, `role=` e `aria-live` no projeto inteiro. Parte
-foi corrigida via `app/ds/*`, mas não há medição nova. `docs/07` tem veto.
+`:focus-visible`, `<label for>`, `role=` e `aria-live` no projeto inteiro.
+`app/ds/orenzi-base.css` passou a dar o anel de foco a todo controle nativo, e
+o [[Login]] V2 trouxe os primeiros `<label for>`, `role="alert"` e
+`aria-invalid`/`aria-describedby` do painel. O resto das telas continua sem
+medição nova. `docs/07` tem veto.
+
+**`--focus-ring` é fraco demais sobre o bege.** O token é
+`0 0 0 3px var(--color-accent-100)` (#ecdcc9), que mede **1,15:1** contra
+`--color-bg` — abaixo dos 3:1 que a WCAG 1.4.11 pede para indicador de foco.
+O anel existe e aplica corretamente; ele é que quase não se vê. Achado na
+rodada do Login (15/08/2026) e **deixado de fora de propósito**: é token do
+DS, e corrigir localmente com um valor mágico numa tela só espalharia a
+inconsistência. **Gatilho:** a próxima rodada que toque `docs/03 §Elevação e
+foco`.
+
+**Duas exceções locais no campo do Login**, ambas comentadas no código:
+- `font-size: 16px` — abaixo disso o Safari do iPhone dá zoom ao focar. O corpo
+  do produto é 15px (`--text-body-size`) e `docs/04 §Input` registra a decisão
+  como pendente. Enquanto for pendente, todo campo novo herda o problema.
+- `border-radius: var(--radius-sm)` — o painel tem uma regra global
+  `input[type="email"] { border-radius: 999px }` que, por ser seletor de
+  atributo, **vence a classe do DS** e transforma qualquer `.o-input` em
+  pílula. Vale para os próximos campos migrados.
+
+**Erro de escrita inline fica fora do caminho de sessão expirada.** O gancho
+central mora em `showToast()` e cobre os 14 handlers que avisam por toast. Os
+três que escrevem o erro na própria tela (`#ncError`, `#prodError`,
+`#wizNcError`) mostram "faça login novamente" sem levar ao Login. Contido de
+propósito — o pedido foi não transformar isso em refactor geral de error
+handling.
 
 **Todo o CSS é inline em cada HTML.** Mexer no visual do Estoque é editar o
 `<style>` do `painel.html` **e** do `painel_demo.html`.

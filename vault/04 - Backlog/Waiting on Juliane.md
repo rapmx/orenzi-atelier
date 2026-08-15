@@ -33,7 +33,9 @@ barata da lista.
 - **[[Splash]]** — ✅ escopo e conteúdo decididos em 15/08/2026 (só o painel,
   wordmark tipográfico). Resta **só os ícones do PWA**, que continuam com o
   anel escuro: trocá-los muda o ícone na tela inicial do celular dela
-- **[[Login]]** — comportamento de sessão expirada em tablet compartilhado
+- ~~**[[Login]]**~~ — sessão expirada **decidida pelo Raphael em 15/08/2026**:
+  caminho central de fim de sessão, sessão do Supabase sem timeout próprio e sem
+  "lembrar de mim". Nada pendente com a Juliane
 - **[[Financeiro - futuro]]** — o que "receita" significa para ela
 
 ## Links

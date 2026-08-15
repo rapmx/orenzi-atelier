@@ -131,10 +131,18 @@ foco visível a navegação por teclado é cega na prática.
 4. O anel nunca é reduzido por preferência de movimento reduzido.
 5. Ao fechar folha ou modal, o foco volta ao elemento que o abriu.
 
-⚠ **Estado atual: zero ocorrências de `:focus-visible` nos quatro arquivos.**
-Existem dois `outline: none` explícitos sem substituto (campo de busca do painel
-e campo de `agendar.html`). O anel de foco visual do campo de busca depende de
-uma classe aplicada por JS — não funciona por teclado. **P0.**
+⚠ **Estado atual (revisto em 15/08/2026).** A afirmação anterior — "zero
+ocorrências de `:focus-visible` nos quatro arquivos" — vale para o inventário de
+03/08 e **não descreve mais o código**: `app/ds/orenzi-base.css` aplica o anel a
+todo controle nativo (`a`, `button`, `input`, `select`, `textarea`, `[tabindex]`)
+e `orenzi-components.css` reforça no `.o-input` e no `.o-btn`. Continuam de pé:
+os dois `outline: none` sem substituto (campo de busca do painel e campo de
+`agendar.html`), e o anel do campo de busca dependendo de classe aplicada por JS.
+
+⚠ **A regra 3 (contraste ≥3:1) não é cumprida pelo próprio token.**
+`--focus-ring` usa `--color-accent-100` (#ecdcc9), que mede **1,15:1** contra
+`--color-bg`. O anel aplica; ele é que quase não se vê. Correção pendente no DS
+— não corrigir localmente em uma tela só.
 
 ---
 

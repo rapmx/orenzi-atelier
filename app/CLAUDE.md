@@ -57,7 +57,8 @@ edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
 | Movimento da folha (entrar/navegar/fechar) | `openFullSheet()`, `fullSheetNavigate()`, `closeFullSheet()`, `paintWizardShell()`, `updateWizChrome()`, `setBlockAllDay()` |
 | Estoque | `// ── ESTOQUE`, `renderStock()`, `renderStockList()`, `renderStockInsights()`, `openProductModal()` |
 | Clientes, fotos, detalhe | `renderClients()`, `renderClientDetail()`, `renderApptDetail()` |
-| Login | `checkSession()`, `renderLogin()` |
+| Login | `// ── AUTENTICAÇÃO`, `renderLogin()`, `submeterLogin()`, `loginErro()`, `checkSession()` |
+| Fim de sessão (expirada ou "Sair") | `encerrarSessaoUI()`, `confirmarSessaoExpirada()`, `setAuthedChrome()` |
 | Splash e boot | `// ── SPLASH — CICLO DE VIDA` (fim do script), `markReady()`, `splashBoot()`, `#splash` no `<style>` |
 | Qual tela aparece | `render()` |
 
@@ -564,6 +565,107 @@ Stripe, Questionário, Clientes e Insights não foram tocados.
      (`diasAbertos[1]` e `[3]`), justamente pra não caírem em cima de um
      cenário — antes eram `hoje + 3` / `hoje + 6` e, dependendo do dia da
      semana, pousavam no mesmo dia do encaixe.
+
+### Login V2 — "cartão de recepção" (15/08/2026)
+
+Redesenho da única tela autenticada do produto, nos dois arquivos. Nenhuma
+regra de negócio, RPC, RLS ou política de sessão do Supabase foi tocada.
+
+- **A marca não salta entre a Splash e o Login** — desde 16/08/2026 isso é
+  feito por **movimento**, não por offset. Ver "Shared motion" logo abaixo. O
+  `calc(50dvh - 29px)` que alinhava as duas telas **saiu**: o destino é medido
+  em runtime. `.wordmark`/`.wordmark-sub` e `.splash-word`/`.splash-sub`
+  continuam **espelhando valores** e precisam mudar juntos — é a mesma marca
+  atravessando duas telas.
+- **O conjunto (marca + cartão) centraliza com `margin: auto`**, nunca
+  `justify-content: center`: com o conteúdo maior que a viewport o center
+  esconde o topo atrás da borda e ele fica inalcançável mesmo com rolagem.
+- **`body.is-login`** anula o `padding-top: 8px` do `#app` (que existe para
+  todas as outras telas) e o `padding-bottom: 100px` do `body`, reservado à nav
+  que o Login esconde. A classe entra e sai em `setAuthedChrome()`.
+- **Erro não redesenha a tela.** `loginErro()` mexe só no `#loginError`, no
+  `aria-invalid` e na classe `.o-field-error`. O e-mail é preservado, a senha é
+  limpa e o foco vai para ela. A mensagem do Supabase **nunca** chega à tela:
+  ela só escolhe entre a copy de credencial e a de rede.
+- **Um submit por vez** (`loginEmCurso`) e botão busy por
+  `orenziUI.setButtonBusy()`. No sucesso o botão **fica** busy: quem troca a
+  tela é `checkSession()`, e devolver o botão ao normal daria um piscar de
+  "clique de novo" antes de tudo ser substituído.
+- **`state.painelAtivo` é a guarda de entrada dupla.** `onAuthStateChange`
+  emite `SIGNED_IN` durante o boot do supabase-js e chamava `checkSession()`
+  outra vez — com `loadAll()` junto, que são 8 consultas.
+- **`encerrarSessaoUI()` é o caminho único de fim de sessão**, para "Sair" e
+  para expiração; o que muda é só a copy. Ele limpa o que o Login sozinho não
+  alcança, porque `renderLogin()` troca **só** o `#app`: `closeModal()` (folha
+  ou wizard aberto), os `.o-dialog-overlay` do DS (anexados ao `<body>`) e
+  `setKioskMode(false)` (o quiosque do Questionário esconde header e nav por
+  conta própria). `state.tab` é preservado; conteúdo não salvo **não é**, e a
+  tela não promete que seja.
+- **O gancho de sessão expirada mora em `showToast()`** — é o único ponto comum
+  aos 14 handlers que avisam "faça login novamente" quando a escrita com
+  `.select()` não toca linha nenhuma. A string não decide nada:
+  `confirmarSessaoExpirada()` confirma em `getSession()` antes de agir, e se a
+  copy mudar o pior caso é voltar ao comportamento antigo, nunca um logout
+  falso. Os três formulários que mostram erro **inline** (`#ncError`,
+  `#prodError`, `#wizNcError`) ficam fora — dívida registrada, não descuido.
+- **Sem recuperação de senha e sem link para ela.** Ver *Password Recovery
+  end-to-end* no backlog do vault.
+- **Duas exceções locais no campo**, comentadas no CSS: `font-size: 16px` (o
+  Safari do iPhone dá zoom abaixo disso) e `border-radius: var(--radius-sm)` —
+  o painel tem uma regra global `input[type="email"] { border-radius: 999px }`
+  que, por ser seletor de atributo, vence a classe do DS e transformaria
+  qualquer `.o-input` em pílula.
+
+### Shared motion — Splash → Login (16/08/2026)
+
+A splash não é removida e substituída pelo Login: ela **vira** o Login. Só o
+boot sem sessão; o caminho autenticado (Splash → Painel) é o fade de sempre,
+sem uma linha nova. `splashMorphParaLogin()` é a função; `splashSair()` só
+escolhe entre ela e o fade.
+
+- **Quem se move é a marca DO LOGIN** (FLIP): mede-se o destino real com
+  `getBoundingClientRect()`, aplica-se o deslocamento inverso, solta-se. No
+  fim não existe troca de elemento — o que está na tela já é o Login. Não há
+  coordenada cravada, e por isso funciona igual de 320px a desktop e em
+  paisagem. Medido: subida de 163,6px em todas as alturas onde o conteúdo
+  cabe (as duas telas centralizam blocos de altura fixa, então a diferença é
+  constante), 126px em paisagem, delta residual **0px** em todas.
+- **A marca da splash é apagada no MESMO frame** em que a do Login assume a
+  posição dela (`#splash.is-morphing .splash-mark { opacity: 0; transition:
+  none }`). Sem crossfade, de propósito: são o mesmo desenho no mesmo ponto,
+  e qualquer transição ali produziria o instante com duas marcas.
+- **O fundo da splash fica transparente durante a passagem** e isso não
+  revela nada: `#splash` e `body` são os dois `--color-bg`. É o que permite
+  desligar a cobertura sem um frame de piscada.
+- **A splash só sai do DOM quando a passagem termina**, e o gatilho é o
+  **CTA**, não o wordmark: a marca chega aos 460ms, o botão é o último a
+  entrar (150 + 120 + 280 = 550ms). Fechar no fim do movimento cortaria os
+  últimos ~90ms do fade dele. Três redes como sempre: `transitionend`,
+  `setTimeout` e o flag.
+- **`inert` sai só no fim.** Durante a passagem o Login está atravessando a
+  tela e não recebe toque nem teclado; nenhum campo é focado por conta
+  própria.
+- **Aterramento na limpeza.** Antes de tirar as classes, as transições
+  pendentes são finalizadas (`getAnimations().finish()`). Em aba sem
+  composição de frames elas ficam congeladas onde estavam, e o CTA poderia
+  seguir invisível depois da limpeza — mesma família de armadilha do
+  `transitionend` que não dispara.
+- **Durações locais** (`--login-morph: 460ms`, `--login-reveal-start: 150ms`),
+  pelo mesmo motivo de `--splash-in`: abertura de marca não é transição
+  rotineira de estado. Ficam no escopo do componente e **espelhadas** em
+  `SPLASH_MORPH_MS` / `LOGIN_REVEAL_START_MS`. O reveal do formulário usa
+  `--motion-route` e `--ease-out`; a subida usa `--ease-standard`.
+- **Nada do ciclo da splash mudou**: `markReady`, os três motivos de
+  readiness, o piso de branding, o teto e a barra de progresso continuam como
+  estavam. A passagem roda **depois** de a saída já ter sido autorizada.
+- **Movimento reduzido**: a marca não percorre distância nenhuma (o JS não
+  aplica transform) e a troca vira **cross-fade** — as duas marcas mudam de
+  opacidade ao mesmo tempo, 280ms, porque sem deslocamento um sumiço
+  instantâneo deixaria um intervalo com nenhuma das duas. Stagger zerado.
+- **Logout e sessão expirada NÃO repetem isso.** `renderLogin()` só prepara a
+  passagem se a splash ainda estiver no ar (`!splashState.done`); fora do
+  boot a tela nasce pronta. Repetir a abertura de marca ali seria uma splash
+  falsa.
 
 ### Splash e boot do painel (15/08/2026)
 

@@ -7,11 +7,25 @@ Ordenado por acordo, não por tamanho.
 | # | Frente | Estado |
 |---|---|---|
 | 1 | ~~**[[Splash]]**~~ | ✅ **fechada 15/08/2026** — já existia em produção sem registro; foi redesenhada, não criada |
-| 2 | **[[Login]]** | aprovada, não especificada |
-| 3 | demais pendências do app | ver abaixo |
-| 4 | Product Map / SaaS | **só depois do Orenzi finalizado** |
+| 2 | ~~**[[Login]]**~~ | ✅ **fechada 15/08/2026** — V2 "cartão de recepção", com sessão expirada resolvida |
+| 3 | **Password Recovery end-to-end** | aberta pelo fechamento do Login — ver abaixo |
+| 4 | demais pendências do app | ver abaixo |
+| 5 | Product Map / SaaS | **só depois do Orenzi finalizado** |
 
 ## Pendências do app, com escopo já anotado
+
+### Password Recovery end-to-end — não iniciada
+
+O [[Login]] V2 saiu **sem** recuperação de senha, e **sem link** prometendo
+uma: um "Esqueci minha senha" que não leva a lugar nenhum é pior que a
+ausência. Só entra completo, com as seis etapas:
+
+`solicitação → e-mail → callback seguro → definição de nova senha → confirmação
+→ retorno ao Login`
+
+O e-mail depende da verificação do domínio na Resend (ver
+[[Waiting on Juliane]]) ou do remetente padrão do Supabase Auth — decidir qual
+faz parte do escopo.
 
 ### Appointment Detail — auditoria aberta
 

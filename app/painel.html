@@ -1116,21 +1116,188 @@
   }
   .block-detail-row svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--color-neutral-600); }
 
-  .login-wrap {
-    max-width: 340px; margin: 80px auto 0; padding: 0 20px; text-align: center;
+  /* ── LOGIN — "cartão de recepção" (15/08/2026) ────────────────────
+     Direção B. A tela deixou de ser uma coluna solta sobre o fundo e
+     virou um cartão de --color-surface sobre --color-bg. Os campos e o
+     CTA saíram do CSS local e passaram para os primitivos do DS
+     (.o-field / .o-input / .o-btn.o-btn-primary) — o botão antigo usava
+     --color-accent, que reprova AA (3,12:1); .o-btn-primary é
+     --color-accent-700 (5,02:1), a correção que docs/03 §6 já tinha
+     feito e que esta tela nunca recebeu.
+
+     CONTINUIDADE COM A SPLASH — feita por MOVIMENTO, não por offset
+     (16/08/2026). A primeira versão punha o wordmark do Login no mesmo
+     ponto em que a splash o deixava (`50dvh − 29px`), para a marca ficar
+     parada na troca. Funcionava, mas a transição continuava sendo um
+     corte: a splash sumia e o Login aparecia inteiro de uma vez.
+     Hoje a marca SOBE da posição da splash até a posição natural do
+     Login (conjunto marca + cartão centrado) e o formulário se revela
+     durante a subida — ver "SHARED MOTION" abaixo. O destino é medido em
+     runtime com FLIP; não existe mais coordenada cravada, e por isso o
+     offset de 29px saiu daqui.
+
+     O conjunto centraliza com margens `auto` — e não com
+     `justify-content: center` — porque com o conteúdo maior que a
+     viewport o center esconde o topo atrás da borda e ele fica
+     inalcançável mesmo com rolagem. */
+  /* O #app tem 8px de padding no topo para todas as telas do painel. Aqui
+     ele deslocaria o Login (e só ele) e ainda daria 8px de rolagem numa
+     tela que cabe inteira. A classe entra e sai junto com o Login, em
+     setAuthedChrome(). */
+  body.is-login #app { padding-top: 0; }
+  /* Ancorado na VIEWPORT, como a splash — e não no fluxo do #app. A
+     splash é `position: fixed; inset: 0`, então qualquer coisa acima do
+     #app (o padding do main, a tarja de DEMO, o #toast do espelho)
+     deslocaria só o Login, e origem e destino do movimento deixariam de
+     estar no mesmo sistema de coordenadas. Medido no demo: 26px. O
+     overflow fica no próprio container, para tela baixa continuar
+     rolando. */
+  .login-screen {
+    position: fixed; inset: 0; overflow-y: auto;
+    min-height: 100dvh;
+    display: flex; flex-direction: column; align-items: center;
+    gap: var(--space-6);
+    padding: var(--space-8) var(--gutter);
   }
-  .login-wrap .mark {
-    width: 56px; height: 56px; border-radius: 50%; background: var(--color-accent);
-    color: var(--color-bg); display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-heading); font-style: normal; font-weight: 600; font-size: 24px; margin: 0 auto 12px;
+  .login-mark { text-align: center; margin-top: auto; }
+  .login-screen .login-card { margin-bottom: auto; }
+  .login-card {
+    width: 100%; max-width: 340px;
+    display: flex; flex-direction: column; gap: var(--space-4);
+    padding: var(--space-6) var(--space-5) var(--space-5);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--elevation-hover);
   }
+  .login-title {
+    margin: 0; text-align: center;
+    font-family: var(--font-heading);
+    font-size: var(--text-title-1-size); font-weight: var(--text-title-1-weight);
+    line-height: var(--leading-tight);
+  }
+  /* Duas correções locais no campo, ambas declaradas de propósito:
+     · 16px — abaixo disso o Safari do iPhone dá zoom ao focar e a tela
+       salta logo na primeira interação do dia. O corpo do produto
+       continua 15px (--text-body-size); adotar 16px em TODO campo é
+       decisão do DS e está pendente em docs/04 §Input.
+     · o raio — o painel tem uma regra antiga `input[type="email"]
+       { border-radius: 999px }` que, por ser seletor de atributo, vence
+       a classe do DS e transformava o campo numa pílula.
+     As duas viram dívida registrada, não exceção silenciosa. */
+  .login-card .o-input { font-size: 16px; border-radius: var(--radius-sm); }
+  /* Classe própria, e não a `.login-error` genérica: aquela é usada por
+     três formulários do painel (#ncError, #prodError, #wizNcError) e
+     mudar cor ou margem lá seria mexer em tela que ninguém pediu. */
+  .login-form-error {
+    margin: 0;
+    font-size: var(--text-caption-size); line-height: var(--leading-normal);
+    color: var(--color-accent-2-700);
+  }
+  .login-form-error[hidden] { display: none; }
+  /* Sessão expirada: aviso de contexto, não erro. Fundo de marca em vez
+     de vermelho — nada deu errado, a sessão só acabou. */
+  .login-note {
+    margin: 0; padding: var(--space-3) var(--space-3-5);
+    border-radius: var(--radius-sm);
+    background: var(--color-accent-100); color: var(--color-neutral-700);
+    font-size: var(--text-caption-size); line-height: var(--leading-normal);
+  }
+  .login-note[hidden] { display: none; }
+
+  /* ── SHARED MOTION — Splash → Login (16/08/2026) ───────────────────
+     A splash não é removida e substituída pelo Login: ela VIRA o Login.
+     O wordmark é o elemento compartilhado — sobe da posição da splash
+     até a posição final do Login enquanto título, campos e CTA se
+     revelam por baixo dele.
+
+     Quem se move é a marca DO LOGIN, não a da splash (FLIP: mede-se o
+     destino real, aplica-se o deslocamento inverso e solta-se). No fim
+     do movimento não há troca de elemento nenhuma — o que está na tela
+     já é o Login. A marca da splash é apagada no mesmo frame em que a
+     do Login aparece na posição dela, então não existe frame com as
+     duas nem salto de tipografia: são o mesmo desenho, no mesmo ponto.
+
+     O fundo da splash fica transparente durante a passagem. Isso não
+     revela nada: `#splash` e `body` são os dois `--color-bg`, e é
+     exatamente por isso que dá para desligar a cobertura sem um único
+     frame de piscada.
+
+     Durações locais, pelo mesmo motivo de `--splash-in`: abertura de
+     marca não é transição rotineira de estado (docs/05 §3 fala do teto
+     de 350ms para essas). Ficam no escopo do componente, nunca no
+     :root, e espelhadas em SPLASH_MORPH_MS / LOGIN_REVEAL_START_MS no
+     JS — mudar de um lado exige mudar do outro. */
+  .login-screen {
+    --login-morph: 460ms;         /* subida do wordmark */
+    --login-reveal-start: 150ms;  /* ~1/3 do caminho: o form entra durante a subida */
+  }
+  /* Estado inicial: o Login está montado e medível, mas invisível. Ele
+     precisa estar PINTADO nesta condição um frame antes, senão não há
+     de onde a transição partir. */
+  .login-screen.is-preparing .login-mark,
+  .login-screen.is-preparing [data-reveal] { opacity: 0; }
+  .login-screen.is-preparing [data-reveal] { transform: translateY(var(--reveal-shift, 10px)); }
+  /* A marca aparece SEM transição de opacidade: ela troca de lugar com
+     a marca da splash no mesmo frame, e um crossfade aqui produziria
+     justamente o instante de duas marcas que não pode existir. */
+  .login-screen.is-morphing .login-mark {
+    opacity: 1;
+    transition: transform var(--login-morph) var(--ease-standard);
+  }
+  .login-screen.is-revealing [data-reveal] {
+    opacity: 1; transform: none;
+    transition: opacity var(--motion-route) var(--ease-out),
+                transform var(--motion-route) var(--ease-out);
+    transition-delay: calc(var(--login-reveal-start) + var(--reveal-delay, 0ms));
+  }
+  #splash.is-morphing { background: transparent; pointer-events: none; }
+  #splash.is-morphing .splash-mark { opacity: 0; transition: none; }
+  /* A barra já chegou a 100% quando a saída é autorizada: ela sai cedo,
+     sozinha, e não acompanha o wordmark — quem terminou de carregar não
+     precisa continuar dizendo isso durante a passagem. */
+  #splash.is-morphing .splash-line {
+    opacity: 0;
+    transition: opacity var(--motion-fast) var(--ease-out);
+  }
+  /* Movimento reduzido: a marca não percorre distância (o JS não aplica
+     deslocamento) e o conteúdo entra só por opacidade, sem stagger. A
+     continuidade continua existindo — o que sai é o deslocamento, não a
+     transição. O piso de branding não é afetado. */
+  @media (prefers-reduced-motion: reduce) {
+    .login-screen.is-preparing [data-reveal] { transform: none; }
+    /* Sem deslocamento, a troca vira cross-fade: as duas marcas mudam de
+       opacidade ao mesmo tempo. Se a da splash sumisse no ato (como faz
+       no caminho normal, onde a do Login já ocupa o lugar dela no mesmo
+       frame), sobraria um intervalo com nenhuma das duas — exatamente o
+       piscar que esta rodada existe para eliminar. */
+    #splash.is-morphing .splash-mark {
+      opacity: 0;
+      transition: opacity var(--motion-route) var(--ease-out);
+    }
+    .login-screen.is-morphing .login-mark {
+      opacity: 1;
+      transition: opacity var(--motion-route) var(--ease-out);
+    }
+    .login-screen.is-revealing [data-reveal] {
+      transform: none;
+      transition: opacity var(--motion-route) var(--ease-out);
+      transition-delay: 0ms;
+    }
+  }
+
+  /* ESPELHA .splash-word / .splash-sub, logo abaixo. Os dois pares
+     precisam continuar idênticos — é a mesma marca em duas telas que se
+     sucedem, e qualquer diferença de tamanho ou espaçamento vira um
+     salto visível no instante em que a splash sai. Mudar um exige mudar
+     o outro. */
   .wordmark {
     font-family: var(--font-body); font-weight: 600; font-size: 22px; letter-spacing: 0.14em;
-    color: var(--color-accent-700); margin-bottom: 2px;
+    color: var(--color-accent-700); line-height: var(--leading-tight);
   }
   .wordmark-sub {
-    font-family: var(--font-body); font-size: 11px; letter-spacing: 0.28em; color: var(--color-neutral-600);
-    margin-bottom: 28px;
+    font-family: var(--font-body); font-size: 11px; letter-spacing: 0.28em;
+    color: var(--color-neutral-600); margin-top: 2px;
   }
 
   /* ── SPLASH — "papel e assinatura" (15/08/2026) ───────────────────
@@ -1233,17 +1400,11 @@
     .splash-line i { transition: none; width: 100%; }
     .home-boot-line i { animation: none; width: 100%; }
   }
-  .login-wrap h1 { font-family: var(--font-heading); font-weight: 600; font-size: 24px; margin: 0 0 20px; }
-  .login-wrap input {
-    width: 100%; padding: 12px 14px; border-radius: 999px; border: 1px solid var(--color-divider);
-    background: var(--color-neutral-100); font-family: var(--font-body); font-size: 14px;
-    margin-bottom: 10px; color: var(--color-text);
-  }
-  .login-wrap button {
-    width: 100%; padding: 13px; border-radius: 999px; border: none; cursor: pointer;
-    font-family: var(--font-body); font-weight: 700; font-size: 15px;
-    background: var(--color-accent); color: var(--color-bg); margin-top: 6px;
-  }
+  /* `.login-wrap` e suas regras saíram no Login V2 (15/08/2026): campo,
+     botão e título agora são .o-field/.o-input/.o-btn e .login-title,
+     definidos junto do resto do Login logo acima. `.login-error` fica —
+     apesar do nome, quem a usa hoje são #ncError, #prodError e
+     #wizNcError; o Login tem a sua (.login-form-error). */
   .login-error { font-size: 13px; color: var(--color-accent-700); margin-top: 10px; }
   .logout-link {
     font-size: 12px; color: var(--color-neutral-600); cursor: pointer; text-decoration: underline;
@@ -2847,7 +3008,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', booting: false, appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', booting: false, painelAtivo: false, appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -2924,6 +3085,11 @@ function showToast(text) {
   t.textContent = text;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3200);
+  // Escrita autenticada que não tocou linha nenhuma avisa por aqui — e é o
+  // único ponto comum aos 14 handlers que fazem isso. Não decide nada
+  // sozinho: confirmarSessaoExpirada() só age depois de perguntar ao
+  // Supabase. Ver "Gancho central de sessão expirada" na AUTENTICAÇÃO.
+  if (String(text).includes('faça login novamente')) confirmarSessaoExpirada();
 }
 
 // ── CARREGAMENTO DE DADOS ────────────────────────────────────
@@ -9541,58 +9707,294 @@ document.querySelectorAll('nav button').forEach(btn => {
 });
 
 // ── AUTENTICAÇÃO ─────────────────────────────────────────────
-function renderLogin(errorMsg) {
-  document.querySelector('nav').style.display = 'none';
-  document.getElementById('logoutBtn').style.display = 'none';
-  document.getElementById('fabNewAppt').style.display = 'none';
+// Login V2 — "cartão de recepção" (15/08/2026). O que mudou, e por quê:
+//
+//  · A tela virou <form> com rótulos visíveis e primitivos do DS. Sem
+//    <form> não havia submit por Enter, e o rótulo era o placeholder —
+//    que some justamente quando se digita (docs/04 §Input).
+//  · Erro NÃO re-renderiza mais a tela. A versão anterior chamava
+//    renderLogin(error.message) e recriava tudo: o e-mail já digitado
+//    era apagado, o foco caía no <body> e a mensagem vinha crua do
+//    Supabase, em inglês. Hoje só o #loginError muda.
+//  · Fim de sessão passou a ter um caminho só (encerrarSessaoUI), que
+//    limpa o que o Login sozinho não alcança: folha aberta, diálogo do
+//    DS e modo quiosque do Questionário.
+//
+// A splash não foi tocada: a continuidade da marca é geométrica e vive
+// no CSS (ver "LOGIN — cartão de recepção" no <style>).
+
+const LOGIN_MSG_CREDENCIAL = 'E-mail ou senha incorretos. Verifique os dados e tente novamente.';
+const LOGIN_MSG_VAZIO      = 'Preencha e-mail e senha para entrar.';
+const LOGIN_MSG_REDE       = 'Não foi possível conectar. Verifique a internet e tente de novo.';
+const LOGIN_MSG_EXPIRADA   = 'Sua sessão expirou. Entre novamente para continuar.';
+
+let loginEmCurso = false;
+let logoutIntencional = false;
+
+// Header, nav, "Sair" e o padding que existe por causa da nav. O FAB não
+// entra aqui: quem decide se ele aparece é render(), por aba.
+function setAuthedChrome(visivel) {
+  document.querySelector('header').style.display = visivel ? 'flex' : 'none';
+  document.querySelector('nav').style.display = visivel ? 'flex' : 'none';
+  document.getElementById('logoutBtn').style.display = visivel ? 'inline' : 'none';
+  if (!visivel) document.getElementById('fabNewAppt').style.display = 'none';
+  document.body.classList.toggle('is-login', !visivel);
+  // Sem isto o Login carrega 100px de espaço reservado a uma nav que não
+  // está na tela — e o cartão fica descentrado no eixo vertical.
+  document.body.style.paddingBottom = visivel ? '' : '0';
+}
+
+function renderLogin(opts) {
+  opts = opts || {};
+  setAuthedChrome(false);
+  // Nenhum texto entra por interpolação: o aviso nasce no markup, vazio e
+  // hidden, e é preenchido por textContent logo abaixo. Mensagem de tela é
+  // conteúdo, não HTML — e assim não existe caminho para injeção nenhuma.
+  // `data-reveal` marca o que entra na passagem da splash (e só nela: sem
+  // as classes de estado, esses atributos não pintam nada). O cartão entra
+  // sem deslocamento próprio — com ele, cada filho subiria duas vezes.
   app.innerHTML = `
-    <div class="login-wrap">
-      <div class="wordmark">ORENZI</div>
-      <div class="wordmark-sub">ATELIER</div>
-      <h1>Entrar</h1>
-      <input type="email" id="loginEmail" placeholder="E-mail">
-      <input type="password" id="loginPassword" placeholder="Senha">
-      <button id="loginBtn">Entrar</button>
-      ${errorMsg ? `<div class="login-error">${errorMsg}</div>` : ''}
+    <div class="login-screen">
+      <div class="login-mark">
+        <div class="wordmark">ORENZI</div>
+        <div class="wordmark-sub">ATELIER</div>
+      </div>
+      <form class="login-card" id="loginForm" novalidate
+            data-reveal style="--reveal-shift:0px">
+        <h1 class="login-title" data-reveal>Entrar</h1>
+        <p class="login-note" id="loginNote" role="status" hidden data-reveal></p>
+        <div class="o-field" id="loginEmailField" data-reveal style="--reveal-delay:40ms">
+          <label class="o-field-label" for="loginEmail">E-mail</label>
+          <input class="o-input" type="email" id="loginEmail" name="email" required
+                 autocomplete="username" inputmode="email" autocapitalize="none"
+                 spellcheck="false" aria-describedby="loginError">
+        </div>
+        <div class="o-field" id="loginPasswordField" data-reveal style="--reveal-delay:80ms">
+          <label class="o-field-label" for="loginPassword">Senha</label>
+          <input class="o-input" type="password" id="loginPassword" name="password" required
+                 autocomplete="current-password" aria-describedby="loginError">
+        </div>
+        <p class="login-form-error" id="loginError" role="alert" hidden data-reveal></p>
+        <button class="o-btn o-btn-primary" type="submit" id="loginBtn"
+                data-reveal style="--reveal-delay:120ms">Entrar</button>
+      </form>
     </div>
   `;
-  document.getElementById('loginBtn').onclick = async () => {
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) renderLogin(error.message);
-  };
+  // A passagem compartilhada pertence ao BOOT, e só a ele: se a splash
+  // ainda está no ar, o Login nasce invisível e espera por ela. Logout e
+  // sessão expirada desenham a tela pronta — repetir a abertura de marca
+  // ali seria uma splash falsa, e o Raphael foi explícito sobre isso.
+  if (!splashState.done && document.getElementById('splash')) {
+    document.querySelector('.login-screen').classList.add('is-preparing');
+  }
+  if (opts.expirada) {
+    const nota = document.getElementById('loginNote');
+    nota.textContent = LOGIN_MSG_EXPIRADA;
+    nota.hidden = false;
+  }
+  const form = document.getElementById('loginForm');
+  // `submit` (e não onclick do botão) é o que faz o Enter funcionar em
+  // qualquer um dos dois campos, de graça e sem handler de teclado.
+  form.addEventListener('submit', submeterLogin);
+  // Digitar é a correção do erro: apaga a mensagem e a borda vermelha no
+  // primeiro toque, sem esperar o próximo envio. O aviso de sessão
+  // expirada NÃO é afetado — é contexto, não erro do que se está fazendo.
+  form.addEventListener('input', loginLimparErro);
+}
+
+// Só o #loginError e os atributos ARIA mudam — o formulário fica de pé,
+// com o e-mail preservado. `campos` recebe os ids que ficam inválidos:
+// numa credencial errada são os dois, num campo vazio é só ele.
+function loginErro(msg, opts) {
+  opts = opts || {};
+  const el = document.getElementById('loginError');
+  if (!el) return;
+  // textContent, nunca innerHTML: mensagem de erro é conteúdo dinâmico.
+  el.textContent = msg;
+  el.hidden = false;
+  (opts.campos || []).forEach(id => {
+    const campo = document.getElementById(id);
+    if (campo) campo.setAttribute('aria-invalid', 'true');
+    const field = document.getElementById(id + 'Field');
+    if (field) field.classList.add('o-field-error');
+  });
+  if (opts.limparSenha) {
+    const senha = document.getElementById('loginPassword');
+    if (senha) senha.value = '';
+  }
+  if (opts.focar) {
+    const alvo = document.getElementById(opts.focar);
+    if (alvo) alvo.focus();
+  }
+}
+
+function loginLimparErro() {
+  const el = document.getElementById('loginError');
+  if (el) { el.textContent = ''; el.hidden = true; }
+  ['loginEmail', 'loginPassword'].forEach(id => {
+    const campo = document.getElementById(id);
+    if (campo) campo.removeAttribute('aria-invalid');
+    const field = document.getElementById(id + 'Field');
+    if (field) field.classList.remove('o-field-error');
+  });
+}
+
+async function submeterLogin(ev) {
+  ev.preventDefault();
+  // Enter repetido, clique duplo e toque duplo caem todos aqui.
+  if (loginEmCurso) return;
+  const emailEl = document.getElementById('loginEmail');
+  const senhaEl = document.getElementById('loginPassword');
+  const btn = document.getElementById('loginBtn');
+  const email = emailEl.value.trim();
+  const senha = senhaEl.value;
+
+  // Validação local antes de bater no servidor: campo vazio não merece uma
+  // viagem de rede nem uma mensagem em inglês de volta.
+  if (!email || !senha) {
+    loginErro(LOGIN_MSG_VAZIO, {
+      campos: [!email ? 'loginEmail' : null, !senha ? 'loginPassword' : null].filter(Boolean),
+      focar: !email ? 'loginEmail' : 'loginPassword',
+    });
+    return;
+  }
+
+  loginEmCurso = true;
+  loginLimparErro();
+  orenziUI.setButtonBusy(btn, 'Entrando…');
+  emailEl.disabled = true;
+  senhaEl.disabled = true;
+
+  let error = null;
+  try {
+    const r = await sb.auth.signInWithPassword({ email, password: senha });
+    error = (r && r.error) || null;
+  } catch (e) {
+    error = e || new Error('falha de rede');
+  }
+
+  if (!error) {
+    // Sucesso: o botão FICA busy de propósito. Quem troca a tela é
+    // checkSession(), e devolver o botão ao normal aqui daria um piscar de
+    // "pronto pra clicar de novo" logo antes de tudo ser substituído.
+    // Chamada direta em vez de esperar SIGNED_IN — o evento também chega,
+    // e a guarda de state.painelAtivo impede o loadAll() duplicado.
+    loginEmCurso = false;
+    checkSession();
+    return;
+  }
+
+  loginEmCurso = false;
+  emailEl.disabled = false;
+  senhaEl.disabled = false;
+  orenziUI.resetButton(btn);
+
+  // A mensagem do Supabase nunca vai para a tela — só decide qual copy
+  // nossa aparece. Rede fora e credencial errada pedem ações diferentes.
+  const bruta = String((error && error.message) || '');
+  const falhaDeRede = !navigator.onLine || /fetch|network|timeout/i.test(bruta) ||
+                      (error && error.name === 'AuthRetryableFetchError');
+  if (falhaDeRede) {
+    loginErro(LOGIN_MSG_REDE, { focar: 'loginBtn' });
+    return;
+  }
+  // Senha limpa e foco nela: o e-mail costuma estar certo, e é a senha que
+  // precisa ser redigitada. O e-mail é preservado sempre.
+  loginErro(LOGIN_MSG_CREDENCIAL, {
+    campos: ['loginEmail', 'loginPassword'],
+    focar: 'loginPassword',
+    limparSenha: true,
+  });
 }
 
 async function checkSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
+    // Guarda contra entrada dupla: onAuthStateChange emite SIGNED_IN durante
+    // o boot do supabase-js (já documentado no ciclo da splash) e chamaria
+    // isto de novo — com loadAll() junto, que são 8 consultas.
+    if (state.painelAtivo) return;
+    state.painelAtivo = true;
     // Quem registrou a movimentação. Só existe uma conta hoje, mas o histórico
     // guarda o nome mesmo assim — sem isso, "quem tirou 2 luvas?" fica sem
     // resposta no dia em que houver uma segunda pessoa.
     const email = (session.user && session.user.email) || '';
     const apelido = email.split('@')[0].replace(/[._-]+/g, ' ').trim();
     state.userLabel = apelido ? apelido.charAt(0).toUpperCase() + apelido.slice(1) : 'Painel';
-    document.querySelector('nav').style.display = 'flex';
-    document.getElementById('logoutBtn').style.display = 'inline';
+    setAuthedChrome(true);
     // O painel ainda não tem dado nenhum. Enquanto isso a Home não pode
     // afirmar "Nenhum atendimento hoje" — o que se sabe é que ainda não se
     // sabe. loadAll() desliga no `finally`.
     state.booting = true;
     loadAll();
   } else {
+    state.painelAtivo = false;
     renderLogin();
     markReady('READY_LOGIN');
   }
 }
 
+// Caminho central de fim de sessão — um só para os dois motivos (tocou em
+// "Sair" ou a sessão morreu), porque a limpeza é idêntica e só a copy muda.
+//
+// O que ele limpa, e por que o Login sozinho não bastava: renderLogin()
+// troca só o #app, e tanto o #modalContainer quanto o diálogo do DS são
+// IRMÃOS dele — um wizard aberto ou um confirm continuavam por cima da tela
+// de entrar. O quiosque do Questionário é o terceiro caso: ele esconde
+// header e nav por conta própria, e sem desligá-lo a volta traria um painel
+// sem chrome nenhum.
+//
+// A aba (state.tab) é preservada de propósito: ao entrar de novo, a Juliane
+// volta para onde estava. Conteúdo não salvo de formulário ou wizard NÃO é
+// preservado — e a tela não promete que seja.
+function encerrarSessaoUI(opts) {
+  opts = opts || {};
+  if (!state.painelAtivo) return;
+  state.painelAtivo = false;
+  state.booting = false;
+  closeModal();
+  document.querySelectorAll('.o-dialog-overlay').forEach(el => el.remove());
+  setKioskMode(false);
+  renderLogin({ expirada: !!opts.expirada });
+  window.scrollTo(0, 0);
+}
+
+// Gancho central de sessão expirada nas ESCRITAS. Toda escrita autenticada
+// do painel termina com `.select()` e, quando a RLS não toca linha nenhuma,
+// mostra um toast terminado em "faça login novamente." — este é o único
+// ponto por onde todas passam, e é por isso que ele está aqui em vez de
+// espalhado por 14 handlers.
+//
+// A string não decide nada: ela só dispara uma CONFIRMAÇÃO real em
+// getSession(). Se a sessão estiver viva, nada acontece. Se a copy mudar um
+// dia, o pior caso é voltar ao comportamento antigo (toast sem caminho de
+// volta) — nunca um logout falso.
+async function confirmarSessaoExpirada() {
+  if (!state.painelAtivo) return;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) return;
+  } catch (e) {
+    return; // falha de rede não é sessão expirada
+  }
+  encerrarSessaoUI({ expirada: true });
+}
+
 document.getElementById('logoutBtn').onclick = async () => {
-  await sb.auth.signOut();
+  logoutIntencional = true;
+  try { await sb.auth.signOut(); } catch (e) { /* sair é local de qualquer forma */ }
+  encerrarSessaoUI({ expirada: false });
 };
 
 sb.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_IN') checkSession();
-  if (event === 'SIGNED_OUT') renderLogin();
+  if (event === 'SIGNED_OUT') {
+    // Só é "expirou" quando ninguém pediu para sair. O clique em "Sair"
+    // marca a intenção antes de chamar signOut().
+    const expirada = !logoutIntencional;
+    logoutIntencional = false;
+    encerrarSessaoUI({ expirada });
+  }
 });
 
 // ── NOVO AGENDAMENTO MANUAL — WIZARD (Fase 2, 06/08/2026) ─────
@@ -11097,6 +11499,12 @@ setInterval(updateCurrentTimeLine, 30000);
 // atrasa uma saída que já foi autorizada. Quem chega depois manda — em rede
 // lenta é o app que dita, não o relógio.
 const SPLASH_ENTRADA_MS  = 340;   // espelha --splash-in no CSS; mudar os dois juntos
+// Passagem compartilhada para o Login (16/08/2026). Espelham
+// --login-morph e --login-reveal-start no CSS; mudar os dois juntos.
+const SPLASH_MORPH_MS      = 460;
+const LOGIN_REVEAL_START_MS = 150;
+const LOGIN_REVEAL_MS       = 280;  // = --motion-route
+const LOGIN_STAGGER_MAX_MS  = 120;  // maior --reveal-delay do formulário
 const SPLASH_BRANDING_MS = 2100;  // de tW até o INÍCIO da saída (entrada + permanência)
 const SPLASH_TETO_MS     = 2500;  // desde a navegação (performance.now() é essa base)
 const SPLASH_FONTE_MS    = 600;   // espera máxima por Jost antes de aceitar system-ui
@@ -11178,13 +11586,101 @@ function splashSair() {
   splashState.done = true;
   if (splashState.tetoId) clearTimeout(splashState.tetoId);
   const appEl = document.getElementById('app');
-  if (appEl) appEl.removeAttribute('inert');
   const splash = document.getElementById('splash');
-  if (!splash) return;
+  if (!splash) { if (appEl) appEl.removeAttribute('inert'); return; }
+  // Destino Login: a splash não sai, ela VIRA a tela. Destino painel: o
+  // fade de sempre, sem uma linha nova no caminho autenticado.
+  const telaLogin = document.querySelector('.login-screen.is-preparing');
+  if (telaLogin) { splashMorphParaLogin(splash, telaLogin, appEl); return; }
+  if (appEl) appEl.removeAttribute('inert');
   const remover = () => { if (splash.parentNode) splash.remove(); };
   splash.addEventListener('transitionend', remover, { once: true });
   setTimeout(remover, 600);
   splash.classList.add('fade-out');
+}
+
+// ── Passagem compartilhada Splash → Login (16/08/2026) ────────
+// FLIP com o elemento DO LOGIN: mede-se onde ele vai ficar, joga-se ele
+// para onde a marca da splash está (sem transição), e solta-se. Assim o
+// que anima já é o elemento definitivo — no fim não há troca de nó,
+// nenhum "agora vale o outro", nenhum frame de duas marcas.
+//
+// Isto roda DEPOIS de a saída já ter sido autorizada (markReady + piso de
+// branding). Nada aqui adianta, atrasa ou condiciona a saída: readiness,
+// piso, teto e progresso continuam exatamente como estavam.
+function splashMorphParaLogin(splash, tela, appEl) {
+  const marcaLogin = tela.querySelector('.login-mark');
+  const marcaSplash = splash.querySelector('.splash-mark');
+  if (!marcaLogin || !marcaSplash) {
+    // Sem um dos dois não há o que compartilhar: cai no fade de sempre.
+    if (appEl) appEl.removeAttribute('inert');
+    tela.classList.remove('is-preparing');
+    splash.classList.add('fade-out');
+    setTimeout(() => { if (splash.parentNode) splash.remove(); }, 600);
+    return;
+  }
+  const reduzido = splashReduzido();
+  const destino = marcaLogin.getBoundingClientRect();   // onde ela VAI ficar
+  const origem = marcaSplash.getBoundingClientRect();   // onde ela ESTÁ
+  splashState.morph = {
+    origemY: Math.round(origem.top), destinoY: Math.round(destino.top),
+    dy: Math.round(origem.top - destino.top), reduzido,
+  };
+
+  // Fundo da splash sai da frente; a barra some sozinha. A marca da splash
+  // é apagada no MESMO frame em que a do Login assume o lugar dela.
+  splash.classList.add('is-morphing');
+  tela.classList.add('is-morphing');
+
+  if (!reduzido) {
+    const dx = origem.left - destino.left;
+    const dy = origem.top - destino.top;
+    marcaLogin.style.transition = 'none';
+    marcaLogin.style.transform = `translate(${dx}px, ${dy}px)`;
+    marcaLogin.getBoundingClientRect();   // reflow: fixa o ponto de partida
+    marcaLogin.style.transition = '';
+  }
+  // Mesmo frame: o formulário começa a entrar por conta do transition-delay
+  // do CSS (~1/3 do caminho da marca), não de um timer novo — timer em aba
+  // de segundo plano é agrupado e desmontaria a sobreposição.
+  tela.classList.add('is-revealing');
+  marcaLogin.style.transform = '';
+
+  // Limpeza idempotente, mesmas três redes da saída antiga: transitionend,
+  // setTimeout de segurança e o próprio flag. Sem composição de frames o
+  // transitionend não dispara — armadilha já documentada aqui.
+  let feito = false;
+  const encerrar = () => {
+    if (feito) return;
+    feito = true;
+    // Aterramento antes de tirar as classes: numa aba sem composição de
+    // frames as transições ficam congeladas onde estavam, e o CTA (o
+    // último a entrar) poderia continuar invisível depois da limpeza.
+    // Aqui elas já deveriam ter terminado — isto só garante o destino.
+    const aterrar = el => { if (el && el.getAnimations) el.getAnimations().forEach(a => { try { a.finish(); } catch (e) {} }); };
+    tela.querySelectorAll('[data-reveal]').forEach(aterrar);
+    aterrar(marcaLogin);
+    tela.classList.remove('is-preparing', 'is-morphing', 'is-revealing');
+    marcaLogin.style.transform = '';
+    marcaLogin.style.transition = '';
+    if (splash.parentNode) splash.remove();
+    // Só agora o Login aceita toque e teclado: antes disso ele estava
+    // atravessando a tela. Nenhum campo é focado por conta própria.
+    if (appEl) appEl.removeAttribute('inert');
+    splashState.morphFimEm = performance.now();
+  };
+  // O gatilho é o CTA, não o wordmark: a marca chega aos 460ms, mas o
+  // botão é o último a entrar (150 + 120 + 280 = 550ms). Fechar no fim do
+  // movimento cortaria os últimos ~90ms do fade dele.
+  const ultimo = tela.querySelector('#loginBtn') || marcaLogin;
+  ultimo.addEventListener('transitionend', ev => {
+    if (ev.propertyName === 'opacity') encerrar();
+  }, { once: true });
+  const total = Math.max(
+    SPLASH_MORPH_MS,
+    LOGIN_REVEAL_START_MS + LOGIN_STAGGER_MAX_MS + LOGIN_REVEAL_MS
+  );
+  setTimeout(encerrar, total + 120);
 }
 
 function splashBoot() {

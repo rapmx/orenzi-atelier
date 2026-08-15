@@ -39,6 +39,21 @@ e a splash entregava a mais divergente de todas para depois cortar para a
 segunda. O `.mark` circular continua existindo como elemento funcional do
 header, mas não compete mais como logomarca de abertura.
 
+## Saída para o Login — passagem compartilhada (16/08/2026)
+
+Quando não há sessão, a splash **não sai**: ela vira o [[Login]]. O wordmark é
+o elemento compartilhado — sobe até a posição que ocupa no Login enquanto o
+formulário se revela por baixo dele. Quem se move é a marca do Login (FLIP,
+destino medido em runtime), então no fim não há troca de elemento nem frame
+com duas marcas.
+
+⚠ **Nenhuma regra desta nota mudou por causa disso.** `markReady`, os três
+motivos de readiness, o piso de branding, o teto e a barra continuam
+exatamente como estão descritos acima; a passagem roda **depois** de a saída
+já ter sido autorizada. Com sessão válida, o destino é o painel e a saída
+continua sendo o fade de sempre. Detalhe técnico em `app/CLAUDE.md`,
+§"Shared motion — Splash → Login".
+
 ## O que existia antes (valor histórico)
 
 Anel escuro de 220px: fundo `#16151a`, anel `#26242a` com borda `#3a383e`,
