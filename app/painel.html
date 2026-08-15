@@ -594,12 +594,15 @@
     border-radius: 999px; padding: 2px 4px 2px 2px;
   }
   .month-pill .day-label {
-    font-family: var(--font-heading); font-weight: 600; font-size: 14px; padding: 0 2px;
-    white-space: nowrap;
+    font-family: var(--font-heading); font-weight: 600; font-size: 15px; padding: 0 2px;
+    /* Última linha de defesa em telas muito estreitas ou com fonte de
+       sistema aumentada: o mês trunca em vez de empurrar "Hoje" e o "+"
+       pra fora da linha. */
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .month-pill .day-label-btn {
     display: flex; align-items: center; gap: 6px; background: none; border: none;
-    cursor: pointer; padding: 4px 2px; color: inherit;
+    cursor: pointer; padding: 4px 2px; color: inherit; min-width: 0;
   }
   .month-pill .day-label-btn svg { width: 10px; height: 10px; color: var(--color-neutral-600); flex-shrink: 0; }
   .month-pill .day-label-btn:hover .day-label { color: var(--color-accent-700); }
@@ -721,12 +724,52 @@
      transparente, sem efeito no layout. */
   .agenda-viewport { position: relative; overflow: hidden; }
   .agenda-pane { position: absolute; top: 0; left: 0; width: 100%; will-change: transform; }
+
+  /* ── Pager de dias (Agenda v2, 15/08/2026) ───────────────────────────
+     Três páginas irmãs — anterior · atual · seguinte — dentro de um
+     viewport com overflow hidden. Só a ATUAL fica no fluxo: é ela que dá
+     altura ao trilho. As outras duas são absolutas e já nascem deslocadas
+     ±100%, então não custam layout enquanto ninguém arrasta e não há tela
+     vazia pra revelar quando o dedo encosta.
+     Durante o gesto quem se move é SÓ o trilho, e só por `transform` —
+     nada de top/left/width, nada de re-render por pixel. */
+  .agenda-pager { position: relative; overflow: hidden; }
+  .agenda-pager-track { position: relative; }
+  /* `will-change` só enquanto o dedo está na tela: fora disso segurar uma
+     camada de composição à toa custa memória em celular. */
+  .agenda-pager-track.is-dragging { will-change: transform; }
+  .agenda-page.is-prev, .agenda-page.is-next {
+    position: absolute; top: 0; left: 0; width: 100%;
+  }
+  .agenda-page.is-prev { transform: translateX(-100%); }
+  .agenda-page.is-next { transform: translateX(100%); }
   /* Sem card: a grade fica "solta" (referência: Apple Calendar) — só linhas
      de hora extremamente discretas, sem fundo nem borda envolvendo tudo.
-     O padding-left de 52px continua sendo geometria, não estilo. */
+
+     ── Geometria da timeline (Agenda v2) ────────────────────────────────
+     Uma escala só governa a grade inteira: PX_PER_MINUTE no JS
+     (HOUR_HEIGHT/60). Todo `top` e toda `height` de card saem dela — nada
+     é posicionado "por aproximação", e nenhum padding vertical entra na
+     conta (o espaço vertical É o tempo).
+
+     `--tl-gutter` é a ÚNICA coluna reservada à esquerda: só os rótulos de
+     hora vivem nela. O card começa `--tl-card-left` depois — 4px, não os
+     58px acumulados da versão anterior (gutter de 52 + 6 de recuo). Evento
+     ancorado na linha do tempo, não cartão flutuando na página.
+
+     Camadas (z-index), de baixo pra cima — a lista completa mora aqui,
+     nenhum valor solto espalhado pelo arquivo:
+       0   linhas de hora (.hour-row, fluxo normal)
+       4   bloqueio manual (.timeline-block)
+       10  appointment principal, +1 por nível de encaixe (Z_APPT no JS)
+       30  linha do horário atual (.current-time-line)
+       200 overlays/sheets (.modal-overlay, .month-cal-overlay) */
   .timeline {
+    --tl-gutter: 40px;
+    --tl-card-left: 4px;
+    --tl-card-right: 6px;
     position: relative;
-    padding: 0 0 0 52px; margin-top: 4px;
+    padding: 0 0 0 var(--tl-gutter); margin-top: 4px;
     /* 62vh -> 72vh: o cabeçalho encolheu ~130px (saiu o título grande de
        data, a linha de controle virou uma só e a faixa de dias ficou
        compacta), então a grade fica com a folga que ele deixou. */
@@ -734,6 +777,12 @@
     scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
     /* O gesto não "vaza" pro documento quando a grade chega no topo/fundo. */
     overscroll-behavior: contain;
+    /* `pan-y` é o que faz o scroll vertical e o pager horizontal
+       conviverem: o navegador continua dono do eixo Y (com momentum, sem
+       nenhum preventDefault da nossa parte) e devolve o eixo X pros
+       handlers de pointer. Sem isso a alternativa seria preventDefault
+       indiscriminado, que mataria o momentum do scroll. */
+    touch-action: pan-y;
     /* Some por padrão, só aparece durante a rolagem (classe .is-scrolling,
        ligada/desligada por JS — CSS não tem "faz 1s que parou de rolar"). */
     scrollbar-width: thin; scrollbar-color: transparent transparent;
@@ -755,7 +804,8 @@
      todos — ver z-index e cor abaixo. Opacidade baixa de propósito: a hora
      orienta, não compete pela atenção com os agendamentos. */
   .hour-label {
-    position: absolute; left: -52px; top: -8px; width: 46px; text-align: right;
+    position: absolute; left: calc(-1 * var(--tl-gutter)); top: -8px;
+    width: calc(var(--tl-gutter) - 6px); text-align: right;
     font-size: 10.5px; color: var(--color-neutral-600); opacity: 0.5; letter-spacing: 0.02em;
     font-variant-numeric: tabular-nums;
   }
@@ -765,7 +815,7 @@
      30s. transition:top faz o reposicionamento deslizar suave (parecer
      contínuo) em vez de saltar de 30 em 30s. */
   .current-time-line {
-    position: absolute; left: -52px; right: 0; display: flex; align-items: center;
+    position: absolute; left: calc(-1 * var(--tl-gutter)); right: 0; display: flex; align-items: center;
     z-index: 30; pointer-events: none; animation: currentTimeFadeIn .22s ease;
     transition: top 1s linear;
     /* `top` marca o instante exato, mas a caixa cresce pra baixo a partir
@@ -807,13 +857,35 @@
        card e não pode ser coberto por nada. Espelha APPT_HEAD_SAFE no
        JS: mudar um exige mudar o outro. A conta que fecha nos 44px está
        nas line-heights de .title/.sub logo abaixo. */
-    --appt-head-h: 44px;
-    position: absolute; left: 6px; right: 6px; border-radius: var(--radius-sm, 12px);
-    padding: var(--space-3, 12px) var(--space-3-5, 14px); overflow: hidden;
+    --appt-head-h: 40px;
+    /* Largura da barra de destaque (ver ::before). Vive aqui e não como
+       número solto porque três coisas dependem dela: o padding-left do
+       conteúdo, o `left` da faixa de pausa e a própria barra. */
+    --appt-bar-w: 5px;
+    position: absolute; left: var(--tl-card-left); right: var(--tl-card-right);
+    border-radius: var(--radius-sm, 12px);
+    /* Densidade de calendário (Agenda v2): 8px em cima/embaixo, não os 12
+       de cartão de lista. Padding não muda a altura do card (ela é setada
+       em px pela duração), mas empurrava o nome pra longe do topo e
+       roubava as duas linhas de texto dos cards médios. */
+    padding: 8px 10px 8px calc(var(--appt-bar-w) + 9px); overflow: hidden;
     cursor: pointer;
     transition: transform var(--motion-instant, 80ms) var(--ease-out, ease-out),
       opacity var(--motion-fast, 160ms) ease, box-shadow var(--motion-instant, 80ms) var(--ease-out, ease-out);
     -webkit-tap-highlight-color: transparent;
+  }
+  /* Barra de destaque na extrema esquerda — substitui o `border-left: 3px`
+     de antes. Não é borda de propósito: é um elemento pintado, mais
+     saturado que o fundo do card (--appt-bar sai da mesma cor de categoria,
+     puxada pro tom escuro da própria família — nenhuma cor nova), e corre a
+     ALTURA INTEIRA, atravessando a faixa de pausa. É essa continuidade que
+     faz work_before + pausa + work_after lerem como UMA reserva, e não como
+     três cards empilhados. */
+  .timeline-appt::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: var(--appt-bar-w); background: var(--appt-bar, currentColor);
+    border-radius: var(--radius-sm, 12px) 0 0 var(--radius-sm, 12px);
+    pointer-events: none;
   }
   .timeline-appt:active { transform: scale(0.98); opacity: 0.92; }
   /* Cabeçalho em linha (avatar + texto + status) — tier standard/expanded,
@@ -842,9 +914,11 @@
   }
   /* line-height fixa (não `normal`) nas duas linhas: é ela que faz o
      cabeçalho caber dentro de --appt-head-h de forma determinística —
-     12px de padding + 15.6 (título) + 13.2 (subtítulo) = 40.8px, com
-     folga até os 44px reservados. Com `normal` dava 46.4px e a faixa de
-     pausa mordia a última linha. */
+     8px de padding + 15.6 (título) + 13.2 (subtítulo) = 36.8px, com
+     folga até os 40px reservados. Com `normal` dava 42.4px e a faixa de
+     pausa mordia a última linha. (Os 44px anteriores caíram para 40 junto
+     com o padding, na densidade de calendário da Agenda v2 — o número
+     espelha APPT_HEAD_SAFE no JS e os dois mudam juntos.) */
   .timeline-appt .title { font-weight: 700; font-size: 12.5px; line-height: 1.25; letter-spacing: -0.01em; }
   /* Hierarquia cliente → serviço vem de peso e tamanho de fonte (title é
      700/12.5px, sub é 400/11px), não de opacidade — testado no navegador:
@@ -852,13 +926,15 @@
      contraste da categoria Coloração pra 4,17:1 (abaixo do mínimo AA), até
      em 0.85. Texto legível pesa mais que hierarquia por transparência. */
   .timeline-appt .sub { font-size: 11px; line-height: 1.2; }
-  .timeline-appt .sub .dur { font-variant-numeric: tabular-nums; }
+  /* Faixa de horário ("9:00–11:30"), que substituiu a duração em
+     15/08/2026. tabular-nums pra os dígitos não dançarem de card pra card. */
+  .timeline-appt .sub .hours { font-variant-numeric: tabular-nums; white-space: nowrap; }
   /* ── Tier is-micro (<30min): uma linha só, sem avatar ─────────────────
      Padding mínimo real (não é o padrão escondendo linha) — o card mais
      baixo desse tier mede ~16px, e o padrão de 12/14px sozinho já
      estouraria essa altura. */
   .timeline-appt.is-micro {
-    display: flex; align-items: center; padding: 1px 8px;
+    display: flex; align-items: center; padding: 1px 8px 1px calc(var(--appt-bar-w) + 6px);
   }
   .micro-row {
     display: flex; align-items: center; gap: 5px; width: 100%; min-width: 0;
@@ -867,15 +943,16 @@
     font-weight: 700; font-size: 10.5px; letter-spacing: -0.01em;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
   }
-  /* Duração nunca trunca — é a segunda informação mais importante do
+  /* Horário nunca trunca — é a segunda informação mais importante do
      tier (logo depois do nome) e precisa continuar sempre visível. */
-  .micro-row .micro-dur {
+  .micro-row .micro-hours {
     font-size: 9.5px; font-variant-numeric: tabular-nums; flex-shrink: 0; opacity: 0.9;
+    white-space: nowrap;
   }
   /* ── Tier is-compact (30-59min): nome + serviço + duração + status,
      também numa linha só (a de 30min mede ~26px, sem sobra pra duas). ── */
   .timeline-appt.is-compact {
-    display: flex; align-items: center; padding: 2px 9px;
+    display: flex; align-items: center; padding: 2px 9px 2px calc(var(--appt-bar-w) + 7px);
   }
   .compact-row {
     display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0;
@@ -884,8 +961,9 @@
     font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
   }
   .compact-row .compact-info b { font-weight: 700; }
-  .compact-row .compact-dur {
+  .compact-row .compact-hours {
     font-size: 10px; font-variant-numeric: tabular-nums; flex-shrink: 0; opacity: 0.9;
+    white-space: nowrap;
   }
   /* `.status-dot` (o ponto colorido de status em is-micro/is-compact) foi
      REMOVIDO em 10/08/2026 junto com o selo "Confirmado". Aparecia em todo
@@ -944,62 +1022,38 @@
      sem nada que a dispare ainda). */
   .timeline-appt.is-leaving { animation: apptLeave var(--motion-standard, 200ms) var(--ease-standard, ease) forwards; }
   @keyframes apptLeave { to { opacity: 0; } }
-  /* Horário livre virou convite a agendar, não só informação — toque abre o
-     modal de novo agendamento já com o dia e (tentando) a hora certos
-     (bindFreeSlotClicks). Cor de sucesso (--color-success), não uma cor
-     nova: é o token que já existe pra "saudável/disponível" no Estoque. */
-  .agenda-free-slot {
-    position: absolute; left: 0; right: 6px;
-    display: flex; align-items: center; justify-content: center; gap: var(--space-2, 8px);
-    border-radius: var(--radius-sm, 12px);
-    border: 1.5px dashed color-mix(in srgb, var(--color-success, #4f8a5b) 40%, transparent);
-    background: color-mix(in srgb, var(--color-success-100, #e7f0e9) 65%, transparent);
-    cursor: pointer;
-    transition: transform var(--motion-instant, 80ms) var(--ease-out, ease-out), opacity var(--motion-fast, 160ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .agenda-free-slot:active { transform: scale(0.98); opacity: 0.85; }
-  .agenda-free-slot .fs-plus {
-    width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
-    background: var(--color-success, #4f8a5b); color: var(--color-bg);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700; line-height: 1;
-  }
-  .agenda-free-slot span.fs-text {
-    font-size: 10.5px; font-weight: 600; color: var(--color-success-700, #3b6744);
-  }
-  @media (prefers-reduced-motion: reduce) { .agenda-free-slot { transition: none; } .agenda-free-slot:active { transform: none; } }
+  /* `.agenda-free-slot` (o card tracejado "Xh livres", verde, com o + no
+     meio) SAIU em 15/08/2026, junto com o rótulo da pausa. A ausência de
+     card já significa disponibilidade — num calendário de verdade ninguém
+     desenha o vazio. Só o CSS e o desenho saíram: computeFreeGaps() e
+     freeSlotLabel() continuam existindo intactos, ver o comentário delas
+     no JS. */
   /* Pausa: a profissional está livre aqui, então o bloco clareia — mesma
      cor-base do atendimento, só com um véu branco por cima, e o véu entra
-     e sai em fade de 8px nas duas pontas. Bloco de trabalho → transição
+     e sai em fade de 6px nas duas pontas. Bloco de trabalho → transição
      suave → pausa mais clara → transição suave → bloco de trabalho.
      Nada de listra diagonal nem borda tracejada (saíram em 10/08/2026):
      rachurado é linguagem de "área bloqueada / indisponível", e pausa é o
      oposto disso — é justamente o tempo em que cabe encaixar alguém.
      Sem cor nova: o clareamento é a própria cor do card com branco por
-     cima, exatamente como o resto do app deriva tom de um mesmo token. */
+     cima, exatamente como o resto do app deriva tom de um mesmo token.
+
+     É um nó VAZIO (15/08/2026): saiu o `.gap-label` ("⏱ pausa · 70min").
+     A pausa se comunica só pelo fade — sem texto, sem duração, sem
+     horário, sem ícone. Nada de flex/centralização aqui, porque não há
+     mais filho pra centralizar. */
   .appt-gap {
-    position: absolute; left: 0; right: 0; pointer-events: none;
+    /* Começa DEPOIS da barra de destaque: a barra é o que segura a leitura
+       de "uma reserva só" e não pode ser clareada no meio (item de
+       continuidade da Agenda v2). */
+    position: absolute; left: var(--appt-bar-w); right: 0; pointer-events: none;
     background: linear-gradient(
       to bottom,
       rgba(255,255,255,0) 0,
-      rgba(255,255,255,0.52) 8px,
-      rgba(255,255,255,0.52) calc(100% - 8px),
+      rgba(255,255,255,0.52) 6px,
+      rgba(255,255,255,0.52) calc(100% - 6px),
       rgba(255,255,255,0) 100%);
-    display: flex; align-items: center; justify-content: center;
   }
-  /* Rótulo discreto, sem pílula opaca: o fundo é o mesmo --color-bg de
-     antes, só translúcido, pra ele pousar sobre a pausa em vez de recortar
-     um buraco nela. Continua legível — o véu branco já clareou o que está
-     atrás. */
-  .gap-label {
-    display: flex; align-items: center; gap: 3px;
-    font-size: 9.5px; font-weight: 600; letter-spacing: 0.03em;
-    color: var(--color-neutral-600);
-    background: color-mix(in srgb, var(--color-bg) 62%, transparent);
-    padding: 1px 6px; border-radius: var(--radius-full, 999px); white-space: nowrap;
-  }
-  .gap-label svg { width: 9px; height: 9px; flex-shrink: 0; }
 
   /* Bloqueio manual de agenda — entidade própria, não appointment. Rachurado
      é a linguagem certa aqui, ao contrário da pausa (que fica clara, sem
@@ -1009,7 +1063,12 @@
      atenção" (estoque baixo, agenda lotada); um bloqueio é uma decisão da
      própria profissional, não um alerta do sistema. */
   .timeline-block {
-    position: absolute; left: 6px; right: 6px; border-radius: var(--radius-sm, 12px);
+    /* Alinhado ao mesmo eixo esquerdo dos appointments (--tl-card-left) pra
+       harmonizar com a grade nova, mas o resto continua deliberadamente
+       diferente: rachurado, neutro, sem barra de destaque. Bloqueio não é
+       appointment e não pode passar a parecer um. */
+    position: absolute; left: var(--tl-card-left); right: var(--tl-card-right);
+    border-radius: var(--radius-sm, 12px);
     padding: var(--space-2, 8px) var(--space-3, 12px);
     background: repeating-linear-gradient(
       135deg,
@@ -5169,6 +5228,36 @@ function insAnimateChart() {
 const AGENDA_START_HOUR = 5;
 const AGENDA_END_HOUR = 22;
 const HOUR_HEIGHT = 60;
+// A escala ÚNICA da timeline. Toda posição vertical (linha de hora, topo de
+// card, altura de card, faixa de pausa, linha do horário atual) sai daqui —
+// nenhum elemento é posicionado "por aproximação". 09:30 cai exatamente na
+// metade entre 09:00 e 10:00 porque 30 * PX_PER_MINUTE é metade de 60 *
+// PX_PER_MINUTE, e não porque alguém arredondou.
+const PX_PER_MINUTE = HOUR_HEIGHT / 60;
+// Converte "minutos desde AGENDA_START_HOUR" em pixels. Uma função só, usada
+// por todos os desenhos da grade.
+function minutesToPx(mins) { return mins * PX_PER_MINUTE; }
+// Minutos decorridos entre AGENDA_START_HOUR e um Date, em horário LOCAL da
+// agenda (Europe/Dublin no aparelho da Juliane) — nunca via toISOString(),
+// que devolveria UTC e deslocaria a grade inteira no horário de verão.
+function agendaOffsetMinutes(d) {
+  return (d.getHours() - AGENDA_START_HOUR) * 60 + d.getMinutes();
+}
+// Fio de separação entre um card e o que começa no instante seguinte. É uma
+// CONSTANTE em px, não uma fração da duração: o topo continua exato e todos
+// os cards perdem os mesmos 2px no rodapé, então a proporção entre durações
+// fica intacta. 4px antes — dois cards encostados abriam uma fresta visível
+// demais pro padrão de calendário.
+const GRID_HAIRLINE = 2;
+// Piso de altura só pra garantir alvo de toque; NÃO é piso de duração. Em
+// px (14px ≈ 14min na escala atual), abaixo do menor serviço do salão
+// (SLOT_MINUTES = 30), então na prática nunca dispara. A versão anterior
+// forçava `Math.max(20, durMins)` em MINUTOS, o que esticava a duração
+// desenhada de um atendimento curto e mentia sobre a escala.
+const APPT_MIN_HEIGHT = 14;
+// Camadas da timeline — a lista completa está no comentário de .timeline no
+// CSS. Aqui só as que o JS escreve inline.
+const Z_APPT = 10;
 const WEEKDAY_LABELS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
 // Expediente de verdade — o que o agendar.html oferece à cliente. Ocupação e
@@ -5190,16 +5279,23 @@ const AGENDA_FREE_MIN_MINUTES = 45;
 // dois — abaixo/acima de 60min — e deixava 30-59min ilegível, sem
 // duração nem status visíveis):
 //   is-micro    < 30min  — nome curto + duração + ponto de status
-//   is-compact  30-59min — nome + serviço + duração + ponto de status,
+//   is-compact  30-44min — nome + serviço + duração + ponto de status,
 //                          tudo numa linha só (o card mais baixo desse
-//                          tier mede ~26px; duas linhas não cabem)
-//   is-standard 60-119min — layout rico de sempre (avatar, selo VIP,
+//                          tier mede ~28px; duas linhas não cabem)
+//   is-standard 45-119min — layout rico de sempre (avatar, selo VIP,
 //                          selo de status por extenso)
 //   is-expanded >=120min — mesmo layout rico do standard; a altura
 //                          sobrando já é suficiente, não precisa de
 //                          composição própria
 const AGENDA_APPT_MICRO_MAX_MINUTES = 30;
-const AGENDA_APPT_COMPACT_MAX_MINUTES = 60;
+// 60 → 45 (Agenda v2). O limite não é gosto: é o ponto em que o cabeçalho
+// rico passa a caber. Com o padding de calendário (8px), duas linhas de
+// texto medem 8 + 15.6 + 13.2 = 36.8px, e um card de 45min mede
+// 45 * PX_PER_MINUTE − GRID_HAIRLINE = 43px. Com os 12px de padding
+// anteriores a mesma conta dava 40.8px e não cabia — daí os 60min de antes.
+// Efeito prático: um corte de 45min (o encaixe do cenário Camila/Marina)
+// deixa de ser uma linha só e volta a mostrar nome + serviço · duração.
+const AGENDA_APPT_COMPACT_MAX_MINUTES = 45;
 const AGENDA_APPT_STANDARD_MAX_MINUTES = 120;
 
 function sameDay(a, b) {
@@ -5235,15 +5331,23 @@ function segmentsOf(a) {
 // Sobreposição empilhada, como no calendário do iPhone: o atendimento mais
 // longo fica de fundo ocupando a faixa inteira e o encaixe entra por cima,
 // recuado à esquerda. Dividir em colunas espremia os dois e escondia a pausa.
-const NIVEL_RECUO = 18;   // px que cada camada entra pra dentro
-const NIVEL_MAX = 3;      // além disso o bloco ficaria fino demais pra ler
+// Recuo por camada — 8px, não os 18 de antes. Com 18 o encaixe nascia a
+// 24px do início da grade e lia como "card decorativo dentro de outro card";
+// com 8 ele fica a 12px, praticamente no mesmo eixo esquerdo do principal, e
+// lê como um segundo evento ocupando a mesma faixa de tempo (referência:
+// Calendar do iPhone). A borda direita também recua um pouco por camada, pra
+// deixar aparecer uma fatia do card de baixo — é ela que comunica sobreposição
+// sem precisar encolher o encaixe.
+const NIVEL_RECUO = 8;         // px que cada camada entra pela esquerda
+const NIVEL_RECUO_DIR = 8;     // px que cada camada entra pela direita
+const NIVEL_MAX = 3;           // além disso o bloco ficaria fino demais pra ler
 
 // Altura (px) reservada pro título no topo de um card de tier rico. É a
 // regra que garante que o nome da cliente nunca fique encoberto: nada
 // desenhado por cima do card — nem a faixa de pausa dele, nem um encaixe
 // sobreposto — começa antes dessa marca. Espelha --appt-head-h no CSS;
 // mudar um exige mudar o outro.
-const APPT_HEAD_SAFE = 44;
+const APPT_HEAD_SAFE = 40;
 
 function layoutAppts(appts) {
   const itens = appts
@@ -5263,6 +5367,16 @@ function layoutAppts(appts) {
   return itens;
 }
 
+// ── Camada de disponibilidade da Agenda — SEM renderizador hoje ──────────
+// computeFreeGaps() e freeSlotLabel() eram o que alimentava os cards
+// tracejados de "Xh livres" na timeline. Os cards saíram em 15/08/2026 (a
+// ausência de card já significa disponibilidade), mas o CÁLCULO fica: é ele
+// que sabe mesclar atendimentos sobrepostos, tratar bloqueio e hold como
+// intervalo ocupado e ignorar buraco menor que AGENDA_FREE_MIN_MINUTES.
+// Nenhuma regra de conflito, booking ou busy slot passa por aqui — essas
+// vivem no banco (staff_work_blocks / get_busy_slots) e em
+// busyBlocksForStaffOnDate(), todas intactas.
+//
 // Janelas sem nenhum atendimento dentro do expediente real (OPEN_HOUR–
 // CLOSE_HOUR, não a janela de desenho AGENDA_START/END_HOUR — fora do
 // expediente é sempre "livre" e mostrar isso seria ruído). Mescla
@@ -5314,15 +5428,36 @@ function durationLabel(mins) {
   return m === 0 ? `${h}h` : `${h}h${m}`;
 }
 
+// Faixa de horário do atendimento — é o que o card mostra desde 15/08/2026,
+// no lugar da duração ("Coloração · 9:00–11:30", não "Coloração · 2h30").
+// A duração continua legível na própria altura do card, que é o que a grade
+// sabe mostrar bem; o horário de início e fim é o número que só um rótulo
+// pode dar.
+//
+// Formato 24h SEM zero à esquerda — exatamente o dos rótulos da coluna de
+// hora logo à esquerda do card (`9:00`, `12:00`, `16:00`), então os dois lêem
+// como a mesma escala. 12h com AM/PM sairia da referência americana do
+// iPhone e não existe em nenhum outro lugar do painel; a Irlanda escreve
+// horário em 24h e `fmtTime()` já é 24h no app inteiro. Travessão de
+// intervalo (–, en dash), não hífen.
+//
+// Os dois lados saem do mesmo `Date` em horário LOCAL (Europe/Dublin no
+// aparelho da Juliane), nunca de `toISOString()` — a mesma armadilha de fuso
+// que a grade toda evita.
+function apptTimeRange(startIso, endIso) {
+  const hm = d => `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${hm(new Date(startIso))}–${hm(new Date(endIso))}`;
+}
+
 // Posição (px) e rótulo da linha do horário atual dentro da grade, ou null
 // se agora estiver fora da janela desenhada (AGENDA_START_HOUR–END_HOUR).
 function currentTimeInfo() {
   const now = new Date();
-  const minsFromStart = (now.getHours() - AGENDA_START_HOUR) * 60 + now.getMinutes();
+  const minsFromStart = agendaOffsetMinutes(now);
   const totalMins = (AGENDA_END_HOUR - AGENDA_START_HOUR) * 60;
   if (minsFromStart < 0 || minsFromStart > totalMins) return null;
   return {
-    top: (minsFromStart / 60) * HOUR_HEIGHT,
+    top: minutesToPx(minsFromStart),
     label: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
   };
 }
@@ -5363,8 +5498,7 @@ function computeRelevantScrollTop(day, dayAppts) {
   if (dayAppts.length) {
     const first = dayAppts.slice().sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0];
     const fs = new Date(first.starts_at);
-    const startMins = (fs.getHours() - AGENDA_START_HOUR) * 60 + fs.getMinutes();
-    return Math.max(0, (startMins / 60) * HOUR_HEIGHT - HOUR_HEIGHT * 1.5);
+    return Math.max(0, minutesToPx(agendaOffsetMinutes(fs)) - HOUR_HEIGHT * 1.5);
   }
   return Math.max(0, (OPEN_HOUR - AGENDA_START_HOUR) * HOUR_HEIGHT - HOUR_HEIGHT * 0.5);
 }
@@ -5390,7 +5524,10 @@ function scrollTimelineTo(el, top, opts) {
 // wrapper .timeline em volta — extraído pra ser recalculado sozinho quando
 // só o dia muda dentro da mesma semana (renderAgendaGridTransition), sem
 // precisar refazer a faixa de dias e o cabeçalho do mês.
-function buildAgendaGrid(day) {
+// `opts.consumeEntering: false` desliga a única coisa que esta função grava
+// no estado (a marca do agendamento recém-criado). O pager desenha três dias
+// por vez e só a página ATUAL pode gastar essa marca — ver paintAgendaPage().
+function buildAgendaGrid(day, opts) {
   // Cancelado não aparece na agenda operacional — não é trabalho a fazer, e
   // deixar o bloco lá faz a Juliane ler ocupação que não existe. É filtro de
   // RENDER, não de dado: nada é apagado, nada muda de status, o registro
@@ -5415,17 +5552,22 @@ function buildAgendaGrid(day) {
   // Consumida uma vez só: o próximo full render depois de criar um
   // agendamento marca o bloco novo com a animação de entrada, e nenhum
   // render seguinte repete (senão tocaria de novo a cada troca de aba).
-  const enteringId = state.enteringApptId;
-  state.enteringApptId = null;
+  const consumirEntering = !opts || opts.consumeEntering !== false;
+  const enteringId = consumirEntering ? state.enteringApptId : null;
+  if (consumirEntering) state.enteringApptId = null;
 
   const blocksHtml = layoutAppts(dayAppts).map(it => {
     const a = it.a;
     const start = new Date(a.starts_at);
     const end = new Date(a.ends_at);
-    const startMins = (start.getHours() - AGENDA_START_HOUR) * 60 + start.getMinutes();
-    const durMins = Math.max(20, (end - start) / 60000);
-    let top = (startMins / 60) * HOUR_HEIGHT;
-    let height = (durMins / 60) * HOUR_HEIGHT - 4;
+    // Geometria pura: o topo é o instante de início e a altura é a duração,
+    // as duas na escala única (PX_PER_MINUTE). Nada de piso em MINUTOS aqui —
+    // esticar a duração desenhada de um atendimento curto distorceria a
+    // escala do dia inteiro. O único piso é de PIXEL (APPT_MIN_HEIGHT),
+    // aplicado depois, e só pra alvo de toque.
+    const durMins = (end - start) / 60000;
+    let top = minutesToPx(agendaOffsetMinutes(start));
+    let height = Math.max(APPT_MIN_HEIGHT, minutesToPx(durMins) - GRID_HAIRLINE);
     const c = colorForService(a.service?.id);
 
     // Duração real decide o tier — em minutos, não em pixels, independe de
@@ -5437,9 +5579,14 @@ function buildAgendaGrid(day) {
       : 'expanded';
     const richTier = durTier === 'standard' || durTier === 'expanded';
 
-    // Cada camada de sobreposição entra um pouco mais pra dentro; a borda
-    // direita continua alinhada, então o bloco de baixo aparece à esquerda.
-    const recuo = 6 + it.nivel * NIVEL_RECUO;
+    // Cada camada de sobreposição entra um pouco mais pra dentro dos DOIS
+    // lados: pela esquerda o encaixe fica logo ao lado do eixo do principal
+    // (12px contra 4px — indent pequeno, não card centralizado), e pela
+    // direita sobra uma fatia do card de baixo aparecendo. É o que faz o
+    // encaixe ler como evento sobreposto na timeline em vez de card dentro
+    // de card.
+    const recuoEsq = it.nivel * NIVEL_RECUO;
+    const recuoDir = it.nivel * NIVEL_RECUO_DIR;
 
     // Guarda de título do card de baixo: um encaixe nunca COMEÇA dentro da
     // faixa de título do atendimento que ele cobre. Encurta pelo topo e o
@@ -5457,8 +5604,7 @@ function buildAgendaGrid(day) {
     if (base) {
       const baseDur = (base.e - base.s) / 60000;
       if (baseDur >= AGENDA_APPT_COMPACT_MAX_MINUTES) {
-        const bs = new Date(base.s);
-        const baseTop = (((bs.getHours() - AGENDA_START_HOUR) * 60 + bs.getMinutes()) / 60) * HOUR_HEIGHT;
+        const baseTop = minutesToPx(agendaOffsetMinutes(new Date(base.s)));
         const limite = baseTop + APPT_HEAD_SAFE;
         if (top < limite) {
           const fim = top + height;
@@ -5469,50 +5615,58 @@ function buildAgendaGrid(day) {
     }
 
     // Faixa de pausa, quando o serviço tiver uma: é ela que mostra por que
-    // cabe um encaixe no meio de um atendimento longo. Ícone de relógio
-    // reforça "tempo passivo" sem inventar o que a profissional está
-    // fazendo — só o gap.gp é dado real; "aplicação"/"finalização" seriam
-    // suposição sobre um serviço que a gente não modela por etapa.
+    // cabe um encaixe no meio de um atendimento longo.
+    //
+    // SEM RÓTULO NENHUM (15/08/2026). Saiu o "⏱ pausa · 70min": a região é
+    // comunicada só pelo fade sobre a própria cor do card, com a barra
+    // lateral atravessando inteira. Um texto ali brigava com o nome da
+    // cliente pela leitura e, num card com encaixe por cima, ficava escondido
+    // atrás dele metade das vezes — informação que aparece por acaso é pior
+    // que informação nenhuma. A duração da pausa continua no dado
+    // (`segmentsOf()`) e no detalhe do atendimento; a timeline mostra só a
+    // proporção, que é o que ela sabe mostrar bem. Não substituir por outro
+    // texto, ícone ou horário.
     const seg = segmentsOf(a);
     let gapHtml = '';
     if (seg.gp > 0) {
-      const gapTopReal = (seg.wb / 60) * HOUR_HEIGHT;
-      const gapFim = gapTopReal + (seg.gp / 60) * HOUR_HEIGHT;
+      const gapTopReal = minutesToPx(seg.wb);
+      const gapFim = gapTopReal + minutesToPx(seg.gp);
       // Só o TOPO da faixa é aparado pela área de título; o fim continua no
       // instante real — é ele que mostra até onde cabe um encaixe, e mexer
       // nisso mentiria sobre a janela disponível. Com o fade de 8px do CSS
       // o corte não aparece: o que some é a parte mais transparente.
       const gapTop = richTier ? Math.min(Math.max(gapTopReal, APPT_HEAD_SAFE), gapFim) : gapTopReal;
       const gapH = gapFim - gapTop;
-      gapHtml = `<div class="appt-gap" style="top:${gapTop}px; height:${gapH}px;">
-        ${gapH >= 22 ? `<span class="gap-label">${ICONS.clock}pausa · ${seg.gp}min</span>` : ''}
-      </div>`;
+      gapHtml = `<div class="appt-gap" style="top:${gapTop}px; height:${gapH}px;"></div>`;
     }
 
     const clientName = a.client?.name || 'Cliente';
     const firstName = clientName.trim().split(/\s+/)[0];
     const serviceName = a.service?.name || '';
     const durLabel = durationLabel(durMins);
+    const timeLabel = apptTimeRange(a.starts_at, a.ends_at);
     // Só o que foge do esperado vira selo — ver timelineStatusBadge().
     const badgeTxt = timelineStatusBadge(a.status);
     const badgeHtml = badgeTxt ? `<span class="am-status st-urgent">${badgeTxt}</span>` : '';
     // Rótulo acessível completo em todo tier — é o que garante que um card
-    // reduzido a "Maria · 20min" não perca informação nenhuma pra quem usa
-    // leitor de tela. O status entra aqui pela MESMA regra do visual: quando
-    // não há selo é porque não há nada a dizer, e anunciar "Confirmado" em
-    // todo card seria ruído extra justamente pra quem já navega mais devagar.
-    const ariaLabel = `${clientName}, ${serviceName || 'serviço não definido'}, ${fmtTime(a.starts_at)}, ${durLabel}${badgeTxt ? ', ' + badgeTxt : ''}`;
+    // reduzido a "Maria · 9:00–9:20" não perca informação nenhuma pra quem
+    // usa leitor de tela. O status entra aqui pela MESMA regra do visual:
+    // quando não há selo é porque não há nada a dizer, e anunciar
+    // "Confirmado" em todo card seria ruído extra justamente pra quem já
+    // navega mais devagar. A DURAÇÃO fica só aqui, e de propósito: no visual
+    // ela é a altura do card, e quem não vê a altura não tem de onde tirá-la.
+    const ariaLabel = `${clientName}, ${serviceName || 'serviço não definido'}, ${timeLabel}, ${durLabel}${badgeTxt ? ', ' + badgeTxt : ''}`;
 
     // Sem o nome da profissional (10/08/2026): só a Juliane atende, então
     // repetir "Juliane Orenzi" em todo card era ruído puro e roubava a
-    // largura de que o serviço e a duração precisam. A arquitetura
+    // largura de que o serviço e o horário precisam. A arquitetura
     // multi-profissional continua inteira por baixo (staff_id,
     // profissionaisAtivos(), disponibilidade) — isto é só a UI resumida do
     // card. Se uma segunda profissional voltar a atender, este é o ponto
     // pra trazer o nome de volta, provavelmente condicionado à mesma regra
     // que já esconde o campo no modal.
     const subLabel = richTier
-      ? `${esc(serviceName)} · <span class="dur">${durLabel}</span>`
+      ? `${esc(serviceName)} · <span class="hours">${timeLabel}</span>`
       : esc(serviceName);
     const classes = ['timeline-appt', `is-${durTier}`, enteringId === a.id ? 'is-entering' : ''].filter(Boolean).join(' ');
 
@@ -5525,32 +5679,46 @@ function buildAgendaGrid(day) {
     // em todas as categorias.
     const bgStrong = `color-mix(in srgb, ${c.bg} 60%, ${c.border} 40%)`;
     const textStrong = `color-mix(in srgb, ${c.text} 65%, black 35%)`;
+    // Barra de destaque: `c.border` é o membro MAIS saturado do trio da
+    // categoria, então ela é a base — só um toque (15%) do tom escuro da
+    // mesma família pra assentar. Puxar mais pro escuro subiria o contraste
+    // contra o fundo do card, mas dessaturaria justo o que a barra existe
+    // pra fazer: dar identidade viva de categoria. Medido no navegador:
+    // 1,9–2,9:1 contra o fundo do próprio card, dependendo da categoria
+    // (Coloração é o piso — os três tons dela são próximos de propósito).
+    // Fica abaixo dos 3:1 de componente não-textual, e é aceito: a barra é
+    // ênfase, não portadora de informação — a categoria já está no
+    // preenchimento e no texto do card, e contra o fundo da PÁGINA (que é
+    // o vizinho real da barra, na borda esquerda) o contraste é alto.
+    const barColor = `color-mix(in srgb, ${c.border} 85%, ${c.text} 15%)`;
 
     let headHtml;
     if (durTier === 'micro') {
-      // <30min: só o essencial — primeiro nome e duração (nunca some).
-      // Nome completo e serviço ficam só no detalhe (aberto ao tocar o
-      // card, que continua clicável inteiro). O selo só aparece no caso
+      // <30min: só o essencial — primeiro nome e faixa de horário (nunca
+      // some). Nome completo e serviço ficam só no detalhe (aberto ao tocar
+      // o card, que continua clicável inteiro). O selo só aparece no caso
       // excepcional (no-show), e aí ele vale mais que o nome completo:
       // quem trunca é o nome, que já era só o primeiro.
       headHtml = `
         <div class="micro-row" style="color:${textStrong}">
           <span class="micro-name">${esc(firstName)}</span>
           ${badgeHtml}
-          <span class="micro-dur">${durLabel}</span>
+          <span class="micro-hours">${timeLabel}</span>
         </div>
       `;
     } else if (durTier === 'compact') {
-      // 30-59min: nome + serviço + duração numa linha só — o card mais
-      // baixo desse tier (30min) mede ~26px, sem sobra pra uma segunda
+      // 30-44min: nome + serviço + faixa de horário numa linha só — o card
+      // mais baixo desse tier (30min) mede ~28px, sem sobra pra uma segunda
       // linha. Avatar reduzido (o-avatar-2xs, 16px) em vez de sumir —
-      // ainda dá pra reconhecer de relance.
+      // ainda dá pra reconhecer de relance. Quem cede espaço é o serviço
+      // (ellipsis no .compact-info), nunca o horário: a prioridade é nome →
+      // serviço → horário, e o horário é curto e de largura fixa.
       headHtml = `
         <div class="compact-row" style="color:${textStrong}">
           <span class="o-avatar o-avatar-2xs" style="--avatar-bg:${c.border};--avatar-color:${c.bg}" aria-hidden="true">${initials(clientName)}</span>
           <span class="compact-info"><b>${esc(clientName)}</b> · ${esc(serviceName)}</span>
           ${badgeHtml}
-          <span class="compact-dur">${durLabel}</span>
+          <span class="compact-hours">${timeLabel}</span>
         </div>
       `;
     } else {
@@ -5574,7 +5742,7 @@ function buildAgendaGrid(day) {
     // cima, sem precisar de z-index. O selo (quando existe) vive dentro do
     // cabeçalho, não solto por cima do card.
     return `
-      <div class="${classes}" data-appt-id="${a.id}" data-tier="${durTier}" aria-label="${esc(ariaLabel)}" style="top:${top}px; height:${height}px; left:${recuo}px; width:calc(100% - ${recuo + 6}px); right:auto; z-index:${10 + it.nivel}; background:${bgStrong}; border-left:3px solid ${c.border};">
+      <div class="${classes}" data-appt-id="${a.id}" data-tier="${durTier}" aria-label="${esc(ariaLabel)}" style="top:${top}px; height:${height}px; left:calc(var(--tl-card-left) + ${recuoEsq}px); right:calc(var(--tl-card-right) + ${recuoDir}px); z-index:${Z_APPT + it.nivel}; background:${bgStrong}; --appt-bar:${barColor};">
         ${gapHtml}
         ${headHtml}
       </div>
@@ -5590,10 +5758,10 @@ function buildAgendaGrid(day) {
   const scheduleBlocksHtml = partialBlocks.map(b => {
     const start = new Date(b.starts_at);
     const end = new Date(b.ends_at);
-    const startMins = (start.getHours() - AGENDA_START_HOUR) * 60 + start.getMinutes();
-    const durMins = Math.max(20, (end - start) / 60000);
-    const top = (startMins / 60) * HOUR_HEIGHT;
-    const height = (durMins / 60) * HOUR_HEIGHT - 4;
+    // Mesma escala e mesmo fio de separação dos appointments — bloqueio muda
+    // de linguagem visual (rachurado, neutro), nunca de geometria.
+    const top = minutesToPx(agendaOffsetMinutes(start));
+    const height = Math.max(APPT_MIN_HEIGHT, minutesToPx((end - start) / 60000) - GRID_HAIRLINE);
     const timeLabel = `${fmtTime(b.starts_at)}–${fmtTime(b.ends_at)}`;
     const label = b.reason ? esc(b.reason) : 'Bloqueado';
     const ariaLabel = `Bloqueio, ${timeLabel}${b.reason ? ', ' + b.reason : ''}`;
@@ -5605,27 +5773,12 @@ function buildAgendaGrid(day) {
     `;
   }).join('');
 
-  // Holds entram como intervalo ocupado no cálculo de "Xh livres" — o card
-  // não pode oferecer um vão que já está reservado por alguém pagando. Eles
-  // não viram card na timeline (decisão de produto): entram só aqui, pela
-  // mesma porta que `dayBlocks`, que já é uma lista de {starts_at, ends_at}.
-  const dayHolds = (state.paymentHolds || []).filter(h => sameDay(new Date(h.starts_at), day));
-  const freeSlotsHtml = computeFreeGaps(day, dayAppts, dayBlocks.concat(dayHolds)).map(g => {
-    const gStart = new Date(g.s);
-    const startMins = (gStart.getHours() - AGENDA_START_HOUR) * 60 + gStart.getMinutes();
-    const top = (startMins / 60) * HOUR_HEIGHT;
-    const height = (g.mins / 60) * HOUR_HEIGHT;
-    // Arredondado pra CIMA na grade de SLOT_MINUTES (a mesma que o dropdown
-    // de horário do modal usa) — o início real do buraco (ex: 09:45) quase
-    // nunca cai exatamente num múltiplo de 30min, e um horário sugerido que
-    // não existe como opção nunca seria selecionado automaticamente.
-    const suggestedMins = Math.ceil((gStart.getHours() * 60 + gStart.getMinutes()) / SLOT_MINUTES) * SLOT_MINUTES;
-    const hh = String(Math.floor(suggestedMins / 60)).padStart(2, '0');
-    const mm = String(suggestedMins % 60).padStart(2, '0');
-    return `<div class="agenda-free-slot" data-free-date="${dateInputValue(day)}" data-free-time="${hh}:${mm}" data-free-start="${g.s}" data-free-end="${g.e}" style="top:${top}px; height:${height}px;">
-      <span class="fs-plus">+</span><span class="fs-text">${freeSlotLabel(g.mins)}</span>
-    </div>`;
-  }).join('');
+  // Os cards de "Xh livres" foram removidos da grade em 15/08/2026: num
+  // calendário de verdade o vazio não é desenhado, e a ausência de card já
+  // significa disponibilidade. Saiu SÓ o desenho — computeFreeGaps() (com
+  // os holds entrando como intervalo ocupado), freeSlotLabel() e
+  // AGENDA_FREE_MIN_MINUTES continuam de pé, e nenhuma regra de
+  // disponibilidade, conflito ou booking foi tocada.
 
   // "Vazio temporário" (docs/02_DESIGN_PRINCIPLES.md §10): frase curta e
   // neutra, sem ícone, sem ação — o toque em qualquer hora livre da própria
@@ -5654,11 +5807,10 @@ function buildAgendaGrid(day) {
     ${emptyNoteHtml}
     <div class="timeline-body" style="height:${(AGENDA_END_HOUR - AGENDA_START_HOUR) * HOUR_HEIGHT}px;">
       ${hours.map((h, i) => `
-        <div class="hour-row" style="position:absolute; top:${i * HOUR_HEIGHT}px; left:0; right:0; height:${HOUR_HEIGHT}px;">
-          <div class="hour-label">${String(h).padStart(2, '0')}:00</div>
+        <div class="hour-row" style="position:absolute; top:${minutesToPx(i * 60)}px; left:0; right:0; height:${HOUR_HEIGHT}px;">
+          <div class="hour-label">${h}:00</div>
         </div>
       `).join('')}
-      ${freeSlotsHtml}
       ${scheduleBlocksHtml}
       ${blocksHtml}
       ${currentTime ? `
@@ -5704,10 +5856,24 @@ function updateWeekStripSelection(newDay) {
 // de um que encolhe ao rolar. O que foi embora: título grande de data
 // ("Quarta-feira, 5 de agosto de 2026" — a faixa de dias já diz o dia) e o
 // "Hoje" flutuante, que virou pílula aqui na linha.
-// Mês abreviado ("Ago 2026", não "Agosto de 2026") pra caber tudo na mesma
-// linha em 320px.
+// Mês por extenso ("Agosto") no ano corrente; fora dele o ano volta e o mês
+// encolhe junto ("Set 2027"). Antes era sempre abreviado ("Ago 2026") pra
+// caber em 320px — era o ano redundante que comia a largura. Sem ele o nome
+// inteiro cabe (medido: "Setembro" deixa 8px de folga na linha de 320px), e
+// o mês vira o rótulo grande que abre o calendário (Agenda v2, referência
+// Calendar do iPhone). "Setembro 2027" por extenso NÃO cabe, daí a
+// abreviação voltar exatamente no caso em que o ano precisa aparecer.
+// Nunca escrever "Agenda" neste botão: a aba já diz onde a Juliane está, e
+// o botão é sobre QUAL data ela vê.
+function agendaMonthLabel(day) {
+  const anoCorrente = day.getFullYear() === new Date().getFullYear();
+  return anoCorrente
+    ? MONTH_FULL[day.getMonth()]
+    : `${MONTH_ABBR[day.getMonth()]} ${day.getFullYear()}`;
+}
+
 function agendaHeaderHtml(day) {
-  const monthLabel = `${MONTH_ABBR[day.getMonth()]} ${day.getFullYear()}`;
+  const monthLabel = agendaMonthLabel(day);
   const weekStart = startOfWeek(day);
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
@@ -5750,22 +5916,24 @@ function bindAgendaHeader() {
   document.getElementById('openMonthView').onclick = () => openMonthCalendar(day);
   document.getElementById('agendaAddBtn').onclick = openAgendaAddMenu;
   document.getElementById('agendaTodayBtn').onclick = goToToday;
-  // Toque num dia dentro da MESMA semana: a faixa continua com as mesmas 7
-  // datas, só a seleção muda (updateWeekStripSelection, sem refazer o HTML),
-  // e só a grade desliza (renderAgendaGridTransition) — não tem por que
-  // mover o cabeçalho se ele não mudou.
+  bindWeekDayButtons();
+}
+
+// Toque num dia da faixa: passa pelo MESMO motor do gesto (pagerGoTo), então
+// tocar num dia e arrastar até ele têm o mesmo movimento e o mesmo momento de
+// commit. O cabeçalho não é refeito aqui — quem cuida dele é
+// updateAgendaChrome(), depois que a navegação fecha.
+// Extraído de bindAgendaHeader() porque updateAgendaChrome() precisa
+// reamarrar os botões quando a faixa troca de semana.
+function bindWeekDayButtons() {
   app.querySelectorAll('.week-day').forEach(btn => {
     btn.onclick = () => {
-      // Lê state.agendaDate na hora, não a variável `day` capturada aqui:
-      // no caminho leve (mesma semana) esses onclick não são reamarrados a
-      // cada toque, então `day` ficaria presa no dia do último render cheio.
+      // Lê state.agendaDate na hora, não uma variável capturada no render:
+      // estes onclick não são reamarrados a cada toque, então uma data
+      // capturada ficaria presa no dia do último render cheio.
       const novaData = new Date(btn.dataset.date);
-      const diaAtual = state.agendaDate;
-      if (sameDay(novaData, diaAtual)) return;
-      const direction = novaData > diaAtual ? 'forward' : 'back';
-      state.agendaDate = novaData;
-      updateWeekStripSelection(novaData);
-      renderAgendaGridTransition(direction);
+      if (sameDay(novaData, state.agendaDate)) return;
+      pagerGoTo(novaData);
     };
   });
 }
@@ -5789,15 +5957,12 @@ function bindTimelineApptClicks() {
   });
 }
 
-// Toque no card de "Xh livres" abre o wizard de novo agendamento já com o
-// dia certo e o intervalo real do buraco (openNewApptModalAt) — isso pula a
-// etapa Data inteira (wiz.source='free-slot'); o horário exato só se
-// confirma na etapa Horário, depois que o usuário escolhe o serviço.
-function bindFreeSlotClicks() {
-  app.querySelectorAll('.agenda-free-slot[data-free-date]').forEach(el => {
-    el.onclick = () => openNewApptModalAt(el.dataset.freeDate, el.dataset.freeTime, Number(el.dataset.freeStart), Number(el.dataset.freeEnd));
-  });
-}
+// `bindFreeSlotClicks()` saiu em 15/08/2026 junto com os cards de "Xh
+// livres": não existe mais nenhum `.agenda-free-slot` no DOM pra amarrar.
+// `openNewApptModalAt()` continua onde estava, intocada — é caminho do
+// wizard de agendamento (pula a etapa Data com wiz.source='free-slot'), e
+// mexer nela seria mexer em booking. Se um dia voltar uma entrada por vão
+// livre, é ela que o novo gatilho chama.
 
 // Toque num bloqueio (card parcial ou faixa de dia inteiro) abre o sheet de
 // detalhe — não a tela de Appointment Detail, é outra entidade.
@@ -5813,13 +5978,21 @@ function renderAgenda() {
   const day = state.agendaDate;
   const { html: gridHtml, dayAppts } = buildAgendaGrid(day);
 
+  // Três páginas: a atual no fluxo (é ela que dá altura ao trilho) e as
+  // vizinhas absolutas, já deslocadas ±100% pelo CSS. O conteúdo delas é
+  // pintado logo abaixo, em paintAgendaSidePages() — assim o gesto nunca
+  // revela tela vazia.
   app.innerHTML = `
     <div class="agenda-screen" id="agendaScreen">
       ${agendaHeaderHtml(day)}
       <div class="agenda-viewport" id="agendaWeekViewport">
         <div id="agendaWeekPane">
-          <div class="agenda-viewport" id="agendaViewport">
-            <div class="timeline" id="timelineEl">${gridHtml}</div>
+          <div class="agenda-pager" id="agendaViewport">
+            <div class="agenda-pager-track" id="agendaPagerTrack">
+              <div class="timeline agenda-page is-prev" data-page="prev"></div>
+              <div class="timeline agenda-page is-current" data-page="current" data-date="${day.toISOString()}" id="timelineEl">${gridHtml}</div>
+              <div class="timeline agenda-page is-next" data-page="next"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -5827,10 +6000,11 @@ function renderAgenda() {
   `;
 
   bindAgendaHeader();
+  paintAgendaSidePages();
   bindTimelineApptClicks();
-  bindFreeSlotClicks();
   bindTimelineBlockClicks();
-  attachTimelineScrollbarFade(document.getElementById('timelineEl'));
+  bindAgendaPager();
+  app.querySelectorAll('.agenda-page').forEach(attachTimelineScrollbarFade);
   scrollTimelineTo(document.getElementById('timelineEl'), computeRelevantScrollTop(day, dayAppts), { animate: false });
 }
 
@@ -5844,6 +6018,340 @@ function attachTimelineScrollbarFade(el) {
     clearTimeout(hideTimer);
     hideTimer = setTimeout(() => el.classList.remove('is-scrolling'), 1000);
   });
+}
+
+// ── Pager de dias — gesto horizontal (15/08/2026) ────────────────────────
+// Navegação por arrasto entre dias, no modelo de pager nativo: o conteúdo
+// acompanha o dedo em tempo real (não é "swipe detectado → toca animação") e
+// só no soltar decide se completa ou volta.
+//
+// Três decisões que sustentam o resto:
+//
+// 1. `touch-action: pan-y` na .timeline (CSS) entrega o eixo Y ao navegador
+//    e o X aos handlers. Sem isso o pager precisaria de preventDefault, que
+//    mataria o momentum do scroll vertical.
+// 2. A DATA só muda no commit. Durante o arrasto o estado lógico continua no
+//    dia atual — cancelar o gesto não deixa resíduo nenhum, e o cabeçalho
+//    não é reconstruído a cada pixel.
+// 3. As páginas vizinhas já estão desenhadas antes do primeiro movimento
+//    (paintAgendaSidePages), então nada é renderizado durante o gesto.
+
+const PAGER_INTENT_PX = 8;         // antes disso não é gesto, é tremor de dedo
+const PAGER_INTENT_RATIO = 1.2;    // |dx| tem que ganhar de |dy| com folga
+const PAGER_COMMIT_RATIO = 0.22;   // 22% da largura fecha a navegação
+const PAGER_FLICK_VELOCITY = 0.45; // px/ms — um peteleco curto também fecha
+const PAGER_FLICK_MIN_PX = 12;     // ...desde que tenha saído do lugar
+const PAGER_SNAP_MS = 260;
+
+const pagerState = {
+  ativo: false, eixo: null, pointerId: null,
+  x0: 0, y0: 0, dx: 0, largura: 1,
+  amostras: [], animando: false, arrastou: false,
+};
+
+function agendaPageEl(papel) {
+  const track = document.getElementById('agendaPagerTrack');
+  return track ? track.querySelector(`[data-page="${papel}"]`) : null;
+}
+
+function addDaysTo(dia, n) {
+  const d = new Date(dia);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+// Desenha uma página do pager. `consumeEntering: false` é obrigatório nas
+// vizinhas: buildAgendaGrid() zera state.enteringApptId na primeira chamada,
+// e sem isso a animação de entrada do agendamento recém-criado seria gasta
+// numa página que ninguém está vendo.
+function paintAgendaPage(papel, dia, opts) {
+  const el = agendaPageEl(papel);
+  if (!el) return;
+  const { html } = buildAgendaGrid(dia, opts);
+  el.innerHTML = html;
+  el.dataset.date = dia.toISOString();
+}
+
+// As duas vizinhas do dia atual — sempre prontas antes de qualquer gesto.
+// No painel real isso não custa consulta nenhuma: loadAppointments() já traz
+// a agenda inteira pra memória, e buildAgendaGrid() só filtra state. Um dia
+// sem dado carregado desenha a grade vazia na hora, sem travar o gesto.
+function paintAgendaSidePages() {
+  paintAgendaPage('prev', addDaysTo(state.agendaDate, -1), { consumeEntering: false });
+  paintAgendaPage('next', addDaysTo(state.agendaDate, 1), { consumeEntering: false });
+}
+
+// Alinha o scroll vertical das vizinhas ao da página atual, no momento em que
+// o gesto começa. É o que faz o arrasto ler como movimento puramente
+// horizontal: sem isso o dia seguinte entraria numa altura diferente e a tela
+// pareceria pular na diagonal.
+function pagerSyncScroll() {
+  const atual = agendaPageEl('current');
+  if (!atual) return;
+  ['prev', 'next'].forEach(p => {
+    const el = agendaPageEl(p);
+    if (el) el.scrollTop = atual.scrollTop;
+  });
+}
+
+function pagerSetTransform(px) {
+  const track = document.getElementById('agendaPagerTrack');
+  if (track) track.style.transform = px ? `translate3d(${px}px,0,0)` : '';
+}
+
+// Volta o trilho ao repouso sem animação e solta o estado do gesto. Usada no
+// fim de tudo e também como saída de emergência (resize no meio do arrasto).
+function pagerCancelar() {
+  const track = document.getElementById('agendaPagerTrack');
+  if (track) {
+    track.style.transition = 'none';
+    track.style.transform = '';
+    track.classList.remove('is-dragging');
+  }
+  pagerState.ativo = false;
+  pagerState.eixo = null;
+  pagerState.pointerId = null;
+  pagerState.dx = 0;
+  pagerState.amostras.length = 0;
+  pagerState.animando = false;
+}
+
+// Anima o trilho até o destino e, ao chegar, troca o dia de verdade.
+// `destino`: 'prev' | 'next' | null (null = volta pro lugar).
+// `dataDestino` permite pular pra uma data qualquer (toque na faixa de dias),
+// não só pro vizinho imediato.
+function pagerSettle(destino, dataDestino) {
+  const track = document.getElementById('agendaPagerTrack');
+  if (!track) return;
+  const alvo = destino === 'next' ? -pagerState.largura
+    : destino === 'prev' ? pagerState.largura
+    : 0;
+  // Movimento reduzido: o dedo continua arrastando (feedback direto é
+  // acessibilidade, não enfeite), mas o snap é instantâneo — nada de easing
+  // prolongado depois de soltar.
+  const dur = prefersReducedMotion() ? 0 : PAGER_SNAP_MS;
+
+  let encerrado = false;
+  const concluir = () => {
+    if (encerrado) return;
+    encerrado = true;
+    track.removeEventListener('transitionend', aoFim);
+    track.style.transition = 'none';
+    track.style.transform = '';
+    track.classList.remove('is-dragging');
+    pagerState.animando = false;
+    pagerState.dx = 0;
+    if (destino) pagerCommit(dataDestino || addDaysTo(state.agendaDate, destino === 'next' ? 1 : -1));
+  };
+  function aoFim(e) {
+    if (e.target !== track || e.propertyName !== 'transform') return;
+    concluir();
+  }
+
+  pagerState.animando = true;
+  if (dur === 0) { concluir(); return; }
+  track.style.transition = `transform ${dur}ms cubic-bezier(.22,.61,.36,1)`;
+  pagerSetTransform(alvo);
+  track.addEventListener('transitionend', aoFim);
+  // Rede de segurança pelo mesmo motivo já documentado no resto do arquivo:
+  // sem composição de frames (aba em segundo plano) o transitionend nunca
+  // dispara, e o trilho ficaria preso em translateX pra sempre.
+  setTimeout(concluir, dur + 240);
+}
+
+// Efetiva a troca: a partir daqui o dia novo é o dia atual. É só aqui que a
+// data, a faixa de dias e o mês do cabeçalho mudam.
+function pagerCommit(novaData) {
+  const anterior = state.agendaDate;
+  const entrou = novaData > anterior ? agendaPageEl('next') : agendaPageEl('prev');
+  const scroll = entrou ? entrou.scrollTop : 0;
+  state.agendaDate = novaData;
+  paintAgendaPage('current', novaData);
+  paintAgendaSidePages();
+  const atual = agendaPageEl('current');
+  if (atual) atual.scrollTop = scroll;
+  pagerSyncScroll();
+  updateAgendaChrome(anterior, novaData);
+  bindTimelineApptClicks();
+  bindTimelineBlockClicks();
+}
+
+// Cabeçalho DEPOIS do commit (nunca durante o arrasto). Se o dia novo caiu na
+// mesma semana, só a seleção muda — a faixa continua sendo os mesmos botões,
+// que é o que deixa a transição de .week-day animar. Se mudou de semana (ou
+// de mês, atravessando 31/08 → 01/09), a faixa é refeita e o rótulo do mês
+// acompanha.
+function updateAgendaChrome(diaAntigo, diaNovo) {
+  const lbl = document.querySelector('.month-pill .day-label');
+  if (lbl) lbl.textContent = agendaMonthLabel(diaNovo);
+  const strip = document.getElementById('weekStrip');
+  const mesmaSemana = startOfWeek(diaAntigo).getTime() === startOfWeek(diaNovo).getTime();
+  if (strip && !mesmaSemana) {
+    const ini = startOfWeek(diaNovo);
+    strip.innerHTML = Array.from({ length: 7 }, (_, i) => weekDayButtonHtml(addDaysTo(ini, i), diaNovo)).join('');
+    bindWeekDayButtons();
+  } else {
+    updateWeekStripSelection(diaNovo);
+  }
+}
+
+// Navega pra uma data qualquer com o mesmo motion do gesto — usada pelo toque
+// na faixa de dias. A página vizinha do lado certo é repintada com a data
+// escolhida (que pode não ser o vizinho imediato) antes de deslizar.
+function pagerGoTo(novaData) {
+  const viewport = document.getElementById('agendaViewport');
+  const track = document.getElementById('agendaPagerTrack');
+  if (!viewport || !track || pagerState.animando) return;
+  if (sameDay(novaData, state.agendaDate)) return;
+  const destino = novaData > state.agendaDate ? 'next' : 'prev';
+  paintAgendaPage(destino, novaData, { consumeEntering: false });
+  bindTimelineApptClicks();
+  bindTimelineBlockClicks();
+  pagerSyncScroll();
+  pagerState.largura = viewport.clientWidth || 1;
+  track.style.transition = 'none';
+  track.classList.add('is-dragging');
+  // Reflow síncrono antes de ligar a transição: sem ele o navegador pode
+  // juntar o `transition: none` e o transform de destino no mesmo estilo
+  // calculado e a folha chegaria pronta, sem animar. É a mesma técnica (e o
+  // mesmo motivo) do dropdown do diagnóstico da cliente — e é síncrona de
+  // propósito, porque requestAnimationFrame não dispara sem composição.
+  void track.offsetWidth;
+  pagerSettle(destino, novaData);
+}
+
+let pagerResizeLigado = false;
+
+// #agendaViewport nasce de novo a cada renderAgenda(), então estes listeners
+// vêm junto com ele — nada se acumula entre renders. Só o resize é global, e
+// esse é registrado uma vez só (pagerResizeLigado).
+function bindAgendaPager() {
+  const viewport = document.getElementById('agendaViewport');
+  const track = document.getElementById('agendaPagerTrack');
+  if (!viewport || !track) return;
+
+  viewport.addEventListener('pointerdown', e => {
+    if (pagerState.animando) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    pagerState.ativo = true;
+    pagerState.eixo = null;
+    pagerState.arrastou = false;
+    pagerState.pointerId = e.pointerId;
+    pagerState.x0 = e.clientX;
+    pagerState.y0 = e.clientY;
+    pagerState.dx = 0;
+    pagerState.largura = viewport.clientWidth || 1;
+    pagerState.amostras = [{ x: e.clientX, t: e.timeStamp }];
+  });
+
+  viewport.addEventListener('pointermove', e => {
+    if (!pagerState.ativo || e.pointerId !== pagerState.pointerId) return;
+    const dx = e.clientX - pagerState.x0;
+    const dy = e.clientY - pagerState.y0;
+
+    // Direction lock: enquanto o gesto não se declarou, nada acontece. Só
+    // vira pager se a intenção horizontal for clara (|dx| ganha de |dy| com
+    // margem); se o dedo foi pra vertical primeiro, o gesto é abandonado e o
+    // scroll nativo segue intacto até o dedo levantar.
+    if (pagerState.eixo === null) {
+      if (Math.abs(dx) < PAGER_INTENT_PX && Math.abs(dy) < PAGER_INTENT_PX) return;
+      if (Math.abs(dx) > Math.abs(dy) * PAGER_INTENT_RATIO) {
+        pagerState.eixo = 'h';
+        pagerSyncScroll();
+        track.style.transition = 'none';
+        track.classList.add('is-dragging');
+        try { viewport.setPointerCapture(e.pointerId); } catch (_) { /* mouse fora da tela */ }
+      } else {
+        pagerState.eixo = 'v';
+        pagerState.ativo = false;
+        return;
+      }
+    }
+    if (pagerState.eixo !== 'h') return;
+
+    // A partir daqui o toque virou arrasto: o click que o navegador emitiria
+    // no fim precisa ser engolido, senão soltar o dedo em cima de um card
+    // abriria o atendimento.
+    pagerState.arrastou = true;
+    pagerState.dx = dx;
+    pagerState.amostras.push({ x: e.clientX, t: e.timeStamp });
+    if (pagerState.amostras.length > 6) pagerState.amostras.shift();
+    // Escreve o transform direto, sem passar por requestAnimationFrame. O
+    // navegador já entrega pointermove no ritmo do frame (e coalesce o
+    // excedente), e escrever `transform` não força layout nem paint
+    // sincronizado — o custo de agendar um rAF por movimento seria maior que
+    // o que ele economizaria. Mais importante: rAF não dispara sem composição
+    // de frames (armadilha já documentada neste arquivo), e ali ficaria um
+    // `frame` pendente segurando os movimentos seguintes. Sem rAF não existe
+    // esse estado pra travar.
+    pagerSetTransform(dx);
+  });
+
+  const soltar = e => {
+    if (!pagerState.ativo || (e.pointerId != null && e.pointerId !== pagerState.pointerId)) return;
+    const eraHorizontal = pagerState.eixo === 'h';
+    pagerState.ativo = false;
+    pagerState.eixo = null;
+    try { viewport.releasePointerCapture(pagerState.pointerId); } catch (_) { /* já solto */ }
+    if (!eraHorizontal) return;
+
+    const dx = pagerState.dx;
+    const largura = pagerState.largura;
+
+    // Velocidade da ÚLTIMA fração do gesto (~120ms), não do gesto inteiro:
+    // é o que separa "arrastou devagar e parou" de "deu um peteleco".
+    let v = 0;
+    const s = pagerState.amostras;
+    if (s.length >= 2) {
+      const fim = s[s.length - 1];
+      let ini = s[0];
+      for (let i = s.length - 1; i >= 0; i--) {
+        if (fim.t - s[i].t <= 120) ini = s[i]; else break;
+      }
+      const dt = fim.t - ini.t;
+      if (dt > 0) v = (fim.x - ini.x) / dt;
+    }
+
+    const porDistancia = Math.abs(dx) > largura * PAGER_COMMIT_RATIO;
+    // Peteleco: rápido, na mesma direção do deslocamento, e que ao menos
+    // saiu do lugar. Sem o teste de direção, desacelerar voltando cancelaria
+    // um arrasto que já tinha passado do limite.
+    const porVelocidade = Math.abs(v) > PAGER_FLICK_VELOCITY
+      && Math.abs(dx) > PAGER_FLICK_MIN_PX
+      && Math.sign(v) === Math.sign(dx);
+
+    if (porDistancia || porVelocidade) pagerSettle(dx < 0 ? 'next' : 'prev', null);
+    else pagerSettle(null, null);
+  };
+
+  viewport.addEventListener('pointerup', soltar);
+  viewport.addEventListener('pointercancel', e => {
+    if (!pagerState.ativo) return;
+    pagerState.ativo = false;
+    pagerState.eixo = null;
+    pagerSettle(null, null);
+  });
+
+  // Engole o click que fecha um arrasto. Fase de captura, pra chegar antes
+  // do onclick do card. Um toque limpo (sem arrasto) nunca marca `arrastou`,
+  // então abrir o atendimento continua funcionando normalmente.
+  viewport.addEventListener('click', e => {
+    if (!pagerState.arrastou) return;
+    pagerState.arrastou = false;
+    e.stopPropagation();
+    e.preventDefault();
+  }, true);
+
+  if (!pagerResizeLigado) {
+    pagerResizeLigado = true;
+    // Rotação de tela / resize no meio do arrasto: a largura de referência
+    // deixou de valer, então o gesto é abortado e o trilho recentralizado —
+    // nunca preso num translateX de uma largura que não existe mais.
+    window.addEventListener('resize', () => {
+      if (!pagerState.ativo && !pagerState.animando) return;
+      pagerCancelar();
+    });
+  }
 }
 
 // Motor genérico do slide: clona o painel antigo (por id), deixa uma função
@@ -5917,20 +6425,11 @@ function renderAgendaTransition(direction) {
   slidePane(direction, 'agendaWeekViewport', 'agendaWeekPane', renderAgenda);
 }
 
-// Toque num dia dentro da mesma semana: só a grade precisa deslizar — a
-// faixa de dias já foi atualizada no lugar por updateWeekStripSelection().
-function renderAgendaGridTransition(direction) {
-  slidePane(direction, 'agendaViewport', 'timelineEl', () => {
-    const day = state.agendaDate;
-    const { html, dayAppts } = buildAgendaGrid(day);
-    const el = document.getElementById('timelineEl');
-    el.innerHTML = html;
-    bindTimelineApptClicks();
-    bindFreeSlotClicks();
-    bindTimelineBlockClicks();
-    scrollTimelineTo(el, computeRelevantScrollTop(day, dayAppts), { animate: false });
-  });
-}
+// `renderAgendaGridTransition()` saiu em 15/08/2026: quem desliza a grade de
+// um dia pro outro agora é o pager (pagerGoTo / pagerSettle), que serve tanto
+// o gesto quanto o toque na faixa de dias com o mesmo motion. `slidePane()`
+// continua sendo o motor da troca de SEMANA (renderAgendaTransition), que é
+// outro nível — lá a faixa de dias inteira muda de data e desliza junto.
 
 function openMonthCalendar(initialDate) {
   let viewDate = new Date(initialDate);

@@ -109,12 +109,13 @@ Os valores podem ser gravados no próprio agendamento e sobrescrevem o padrão d
 serviço. Leitura sempre `a.campo ?? s.campo ?? default`.
 
 Na timeline a pausa aparece como faixa **mais clara** dentro do bloco (véu
-branco sobre a própria cor do card, com fade de 8px nas duas pontas), e o
-encaixe entra por cima recuado à esquerda (`layoutAppts()` empilha por nível,
-estilo calendário do iPhone). Dividir em colunas espremia os dois e escondia a
-pausa. A listra diagonal saiu em 10/08/2026: rachurado lê como "área
-bloqueada", e pausa é o contrário disso — é o tempo em que cabe encaixar
-alguém.
+branco sobre a própria cor do card, com fade de 6px nas duas pontas) e **sem
+rótulo nenhum**, e o encaixe entra por cima recuado à esquerda
+(`layoutAppts()` empilha por nível, estilo calendário do iPhone). Dividir em
+colunas espremia os dois e escondia a pausa. A listra diagonal saiu em
+10/08/2026: rachurado lê como "área bloqueada", e pausa é o contrário disso —
+é o tempo em que cabe encaixar alguém. O texto "pausa · Nmin" saiu em
+15/08/2026 — ver "Agenda v2" abaixo.
 
 **Faixa de título reservada (`APPT_HEAD_SAFE` = 44px, espelhado em
 `--appt-head-h` no CSS).** Nada desenhado por cima de um card de tier rico
@@ -257,11 +258,13 @@ qualquer `STRIPE_SECRET_KEY` que não comece com `sk_test_`.
   própria agenda.
 - **Hold NÃO aparece na agenda** (decisão de produto): `loadAppointments()`
   separa em `state.paymentHolds` e `state.appointments`. Todo o resto do painel
-  continua sem saber que hold existe. Só dois pontos precisam saber, e os dois
-  são sobre **disponibilidade**: `busyBlocksForStaffOnDate()` (o modal de novo
-  agendamento não pode oferecer horário reservado) e o "Xh livres" de
-  `buildAgendaGrid()`. Hold vencido não entra nem em `state.paymentHolds` — a
-  tela tem que concordar com o banco.
+  continua sem saber que hold existe. O ponto que precisa saber é
+  `busyBlocksForStaffOnDate()`, e é sobre **disponibilidade**: o modal de novo
+  agendamento não pode oferecer horário reservado. (`computeFreeGaps()`
+  também trata hold como ocupado, mas desde 15/08/2026 ela não tem mais
+  renderizador — os cards de "Xh livres" saíram da timeline.) Hold vencido
+  não entra nem em `state.paymentHolds` — a tela tem que concordar com o
+  banco.
 - **Confirmação é do servidor, nunca do browser.** `stripe.confirmPayment()`
   resolver sem erro não é "confirmado": quem confirma é o webhook, dentro de
   uma transação (`handle_stripe_event`). O browser faz polling de
@@ -370,6 +373,164 @@ lacuna: a auditoria de 14/08 mostrou uso funcional zero e o pedido foi
   `.limit()`/`.maybeSingle()`. Camila tem questionário de exemplo (em
   inglês, com duas referências); Marina não tem, de propósito — é o estado
   vazio, que deixou de ser toast e virou tela.
+
+### Agenda v2 — geometria da grade (15/08/2026)
+
+Redesign **só visual** da timeline (referência estrutural: Calendar do
+iPhone; identidade, cor e tipografia continuam Orenzi). Nenhuma regra de
+negócio mudou: conflito, disponibilidade, gaps, `schedule_blocks`, booking,
+Stripe, Questionário, Clientes e Insights não foram tocados.
+
+- **Uma escala só, `PX_PER_MINUTE` (= `HOUR_HEIGHT / 60`).** Todo `top` e
+  toda `height` da grade passam por `minutesToPx()` e
+  `agendaOffsetMinutes()`. Nada é posicionado por aproximação — verificado
+  no navegador: 09:30 cai em 0,5000 entre as linhas de 09:00 e 10:00, 09:40
+  em 0,6667, 10:35 em 0,5833, 12:30 em 0,5000.
+- **Altura vem só da duração.** Saiu o `Math.max(20, durMins)`, que era piso
+  em **minutos** e esticava a duração desenhada de um atendimento curto. O
+  piso hoje é `APPT_MIN_HEIGHT` (14px, só alvo de toque) e o fio de
+  separação é `GRID_HAIRLINE` (2px, constante — não escala com a duração, o
+  topo continua exato).
+- **Gutter e eixo esquerdo.** `--tl-gutter: 40px` (só rótulos de hora, no
+  formato `9:00`, sem zero à esquerda) e o card começa em
+  `--tl-card-left: 4px`. Antes era 52 + 6 = 58px. Encaixe = `+8px` por
+  nível (`NIVEL_RECUO`), não mais 18 — a 24px ele lia como card decorativo
+  dentro de outro card. A direita também recua 8px por nível
+  (`NIVEL_RECUO_DIR`), pra aparecer a fatia do card de baixo.
+- **Barra de destaque (`.timeline-appt::before`, `--appt-bar-w: 5px`)**
+  trocou o `border-left: 3px`. Cor = `c.border` com 15% de `c.text` (o
+  membro mais saturado do trio; puxar mais pro escuro dessaturaria). Corre
+  a **altura inteira**, atravessando a pausa — é ela que faz
+  `work_before + gap + work_after` lerem como uma reserva só, e por isso
+  `.appt-gap` começa em `left: var(--appt-bar-w)`. Contraste medido contra
+  o fundo do próprio card: 1,9–2,9:1, abaixo dos 3:1 de componente
+  não-textual e **aceito de propósito** — a barra é ênfase, não portadora
+  de informação (categoria já está no preenchimento e no texto).
+- **Densidade.** Padding do card 12/14px → `8px 10px` (mais
+  `--appt-bar-w + 9px` à esquerda). Padding não altera altura (ela é px),
+  mas afrouxava o topo e roubava a segunda linha de texto. Consequências
+  encadeadas, e as três precisam mudar juntas: `--appt-head-h` e
+  `APPT_HEAD_SAFE` 44 → **40**, e `AGENDA_APPT_COMPACT_MAX_MINUTES`
+  60 → **45** (com 8px de padding as duas linhas medem 36,8px e cabem num
+  card de 45min, que mede 43px — com 12px não cabiam).
+- **Camadas.** Lista única no comentário de `.timeline` no CSS:
+  0 linhas · 1 `.agenda-free-slot` · 4 `.timeline-block` · 10 appointment
+  (+1 por nível, `Z_APPT`) · 30 linha do horário atual · 200 overlays.
+- **O card mostra a FAIXA DE HORÁRIO, não a duração** (`apptTimeRange()`):
+  "Coloração · 9:00–11:30", nunca "Coloração · 2h30". A duração já é a
+  altura do card — o horário de início e fim é o número que só um rótulo
+  pode dar. Formato 24h **sem zero à esquerda**, igual aos rótulos da coluna
+  de hora logo à esquerda (`9:00`, `12:00`), e travessão de intervalo (–).
+  12h com AM/PM seria a referência americana do iPhone e não existe em
+  lugar nenhum do painel; `fmtTime()` é 24h no app inteiro. Vale nos três
+  tiers (`.hours`, `.micro-hours`, `.compact-hours` — as antigas `.dur`,
+  `.micro-dur` e `.compact-dur`). A duração sobrevive **só no
+  `aria-label`**, de propósito: quem não vê a altura do card não tem de
+  onde tirá-la. `.tb-time` do bloqueio manual continua em `fmtTime()`
+  (`14:00–16:00`, com zero) — não foi tocado por escopo.
+- **Pager de dias: arrasto horizontal** (`bindAgendaPager()`,
+  `pagerSettle()`, `pagerCommit()`, `pagerGoTo()`). Não é "swipe detectado →
+  toca animação": o trilho acompanha o dedo 1:1 durante o gesto e só decide
+  no soltar. Cinco coisas sustentam isso, e mexer numa quebra as outras:
+  1. **`touch-action: pan-y` na `.timeline`.** O navegador continua dono do
+     eixo Y (com momentum) e devolve o X pros handlers de pointer. É o que
+     dispensa `preventDefault`, que mataria o scroll.
+  2. **Três páginas irmãs** (`[data-page="prev|current|next"]`) num trilho.
+     Só a atual fica no fluxo (dá a altura); as vizinhas são absolutas em
+     ±100% e **já vêm desenhadas** (`paintAgendaSidePages()`), então o gesto
+     nunca revela tela vazia e nada é renderizado por pixel. No painel real
+     não custa consulta: `loadAppointments()` já traz a agenda inteira.
+  3. **A data só muda no commit.** Durante o arrasto o estado lógico
+     continua no dia atual — cancelar não deixa resíduo, e o cabeçalho não é
+     reconstruído a cada pixel. `updateAgendaChrome()` roda depois: troca o
+     rótulo do mês e, se mudou de semana, refaz a faixa de dias e
+     **reamarra os botões** (`bindWeekDayButtons()`).
+  4. **Direction lock antes de qualquer movimento.** Nada acontece antes de
+     `PAGER_INTENT_PX` (8px); depois disso só vira pager se
+     `|dx| > |dy| * 1.2`. Se o dedo foi pra vertical, o gesto é abandonado
+     até levantar. Um tremor de 5px em cima de um card continua abrindo o
+     atendimento; um arrasto confirmado marca `pagerState.arrastou` e o
+     click é engolido em **fase de captura** no viewport, antes do `onclick`
+     do card.
+  5. **Commit por distância OU velocidade**: 22% da largura
+     (`PAGER_COMMIT_RATIO`) ou 0,45 px/ms (`PAGER_FLICK_VELOCITY`) medidos
+     nos últimos ~120ms **na mesma direção do deslocamento** — sem o teste de
+     direção, desacelerar voltando cancelaria um arrasto que já tinha
+     passado do limite.
+
+  Detalhes que já morderam ou morderiam: o transform é escrito **direto no
+  `pointermove`, sem `requestAnimationFrame`** — rAF não dispara sem
+  composição de frames (armadilha já documentada aqui) e deixaria um frame
+  pendente segurando os movimentos seguintes; `pagerSettle()` tem
+  `transitionend` **mais** rede de segurança por `setTimeout`, pelo mesmo
+  motivo; `buildAgendaGrid(day, {consumeEntering:false})` existe porque a
+  função zera `state.enteringApptId` e só a página ATUAL pode gastar essa
+  marca; `resize` no meio do arrasto chama `pagerCancelar()`, senão o trilho
+  ficaria preso num `translateX` de uma largura que não existe mais.
+  `prefers-reduced-motion`: o dedo continua sendo acompanhado (feedback
+  direto é acessibilidade), só o snap vira instantâneo.
+
+  **`renderAgendaGridTransition()` morreu**: o toque na faixa de dias passa
+  pelo mesmo motor do gesto (`pagerGoTo()`), então tocar num dia e arrastar
+  até ele têm o mesmo movimento. `slidePane()` continua sendo o motor da
+  troca de **semana** (`renderAgendaTransition`), que é outro nível.
+- **Cabeçalho.** O botão da esquerda mostra o **mês por extenso**
+  (`Agosto`) com chevron e abre o calendário; fora do ano corrente volta
+  abreviado com ano (`Set 2027`), que é o único jeito de caber em 320px.
+  Nunca escrever "Agenda" nesse botão. `Hoje` e `+` seguem à direita, com o
+  fluxo de sempre; as setas ‹ › de semana continuam onde estavam.
+- **Bloqueio manual** ganhou o mesmo eixo esquerdo e a mesma escala, e só
+  isso: segue rachurado, neutro e **sem barra de destaque**. Pausa clareia
+  (cabe encaixar alguém), bloqueio hachura (o oposto) — a distinção de
+  10/08/2026 continua valendo.
+- **A pausa não tem rótulo nenhum.** Saiu o `.gap-label`
+  ("⏱ pausa · 70min"): a região é comunicada **só** pelo fade sobre a
+  própria cor do card, com a barra lateral atravessando inteira. Sem
+  texto, sem duração, sem horário, sem ícone — e não se substitui por
+  outro texto. O motivo é de leitura: o rótulo brigava com o nome da
+  cliente e, num card com encaixe por cima, ficava escondido metade das
+  vezes; informação que aparece por acaso é pior que informação nenhuma.
+  A duração da pausa continua em `segmentsOf()` e no detalhe do
+  atendimento. `.appt-gap` é um **nó vazio** — nada de flex ali dentro.
+- **A grade não desenha o vazio.** Os cards tracejados de "Xh livres"
+  (`.agenda-free-slot`) saíram da timeline: a ausência de card já
+  significa disponibilidade, e num calendário de verdade ninguém pinta o
+  buraco. Saiu **só o desenho** — `computeFreeGaps()`, `freeSlotLabel()`
+  e `AGENDA_FREE_MIN_MINUTES` continuam intactos (com os holds entrando
+  como intervalo ocupado), e `openNewApptModalAt()` também, porque é
+  caminho do wizard de agendamento. O que morreu foi
+  `bindFreeSlotClicks()`, que não tinha mais elemento pra amarrar.
+  Nenhuma regra de disponibilidade, conflito, gap, busy slot ou booking
+  foi tocada. Depois disso a grade contém **apenas**: linhas de hora,
+  appointments, pausa faded, encaixes, `schedule_blocks` e a linha do
+  horário atual.
+- **Três cenários de encaixe no demo** (`demoSalao()`, só em
+  `painel_demo.html`), pra comparar composições diferentes lado a lado:
+
+  | dia | principal | pausa | encaixe |
+  |---|---|---|---|
+  | 1º aberto | Camila Rocha · Coloração 09:00–11:30 (40/70/40) | 70min | Marina Costa · Corte 09:50–10:35 (45min, tier rico) |
+  | 3º aberto | Helena Braga · Coloração 10:00–13:00 (60/60/60) | 60min | Sofia Nunes · Escova 11:10–11:50 (40min, tier compacto) |
+  | 5º aberto | Beatriz Lopes · Mechas 12:00–16:00 (60/120/60) | 120min | Teresa Vilar · Hidratação 13:30–14:30 (60min) |
+
+  No 1º dia entra também **Ana Reis · Mechas 12:30–16:00**, card
+  separado — é o teste de precisão da grade (12:30 na metade exata entre
+  as linhas de 12:00 e 13:00, fim exato na linha das 16:00).
+
+  Três regras que valem pra qualquer cenário novo aqui:
+  1. **Os dias são os 1º/3º/5º ABERTOS a partir de amanhã**, contando
+     dias abertos — nunca datas de calendário cravadas (`new Date(2026,
+     7, 18)` deixaria o demo abrindo num dia vazio em setembro) e nunca
+     diferença em milissegundos (na semana de virada do horário de verão
+     dois dias civis distam 47h ou 49h).
+  2. **O encaixe cabe inteiro na pausa** (`start >= gap.start` e
+     `end <= gap.end`), com folga dos dois lados. Encostar em
+     `work_before`/`work_after` seria estado que o guard de conflito real
+     recusa, e demo que mostra estado inválido não serve pra decidir nada.
+  3. **Os bloqueios manuais de exemplo ficam nos dias 2º e 4º abertos**
+     (`diasAbertos[1]` e `[3]`), justamente pra não caírem em cima de um
+     cenário — antes eram `hoje + 3` / `hoje + 6` e, dependendo do dia da
+     semana, pousavam no mesmo dia do encaixe.
 
 ### Status na timeline (10/08/2026)
 
