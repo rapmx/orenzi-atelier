@@ -1,11 +1,11 @@
-# Graph Report - PROJECT ORENZI  (2026-08-15)
+# Graph Report - PROJECT ORENZI  (2026-08-16)
 
 ## Corpus Check
-- 32 files · ~193,981 words
+- 32 files · ~194,682 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 754 nodes · 1957 edges · 29 communities (24 shown, 5 thin omitted)
+- 754 nodes · 1959 edges · 29 communities (24 shown, 5 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 52 edges (avg confidence: 0.52)
 - Token cost: 70,960 input · 3,496 output
 
@@ -46,8 +46,8 @@
 6. `renderHome()` - 20 edges
 7. `prefersReducedMotion()` - 19 edges
 8. `insContentHtml()` - 19 edges
-9. `paintWizStep()` - 19 edges
-10. `esc()` - 18 edges
+9. `renderClientDetail()` - 19 edges
+10. `paintWizStep()` - 19 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Orenzi Logo Icon` --conceptually_related_to--> `Admin Panel`  [INFERRED]
