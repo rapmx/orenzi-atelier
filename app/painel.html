@@ -3102,7 +3102,7 @@ function showToast(text) {
 const APPTS_PAGINA = 1000;
 async function loadAppointments() {
   const campos = `
-      id, starts_at, ends_at, status, notes, technique, product_used, oxidant_used, pause_time, color_formula, created_at, source, hold_expires_at,
+      id, starts_at, ends_at, status, notes, technique, product_used, oxidant_used, pause_time, color_formula, created_at, source, total_price, hold_expires_at,
       client:client_id ( id, name, phone ),
       staff:staff_id ( id, name ),
       service:service_id ( id, name, price )
@@ -3351,16 +3351,34 @@ function formatCurrency(n) {
 }
 
 // ── D1 · leitura financeira centralizada ──────────────────────
-// Ponto ÚNICO de leitura do valor de um atendimento. Hoje só existe
-// `service.price`, que é o preço de tabela ATUAL: mudar o preço de um
-// serviço reescreve retroativamente todo o histórico de Insights.
-// Limitação conhecida, registrada, sem correção neste PR. Quando
-// `appointments.price` (preço congelado no atendimento) existir, muda
-// só a primeira expressão daqui — nenhuma migration entra agora.
+// Ponto ÚNICO de leitura do valor de um atendimento:
+//
+//     appointmentRevenue(a) = a.total_price ?? a.service.price ?? 0
+//
+// `appointments.total_price` é o total CONGELADO no instante da reserva (a
+// soma dos `price_snapshot` de `appointment_services`), gravado por todos os
+// caminhos da Booking V2. É a fonte correta por dois motivos independentes:
+// mudar o preço de um serviço deixa de reescrever retroativamente o
+// histórico, e um atendimento multi-serviço deixa de valer só o preço do
+// `service_id` legado (que guarda um serviço só).
+//
+// O fallback é `services.price` — preço de TABELA ATUAL, com a limitação
+// retroativa acima. Vale para os atendimentos criados manualmente no painel,
+// que não gravam `total_price` e para os quais não existe de onde
+// reconstruir o preço praticado. Dívida: o INSERT manual deveria gravar
+// `total_price`; é a origem do fallback, e não entra neste PR.
+//
+// ⚠ Comparação contra `null`, nunca `||`: `total_price = 0` é valor legítimo
+// (o CHECK do banco aceita >= 0) e não pode cair no fallback.
+//
+// ⚠ `appointments.price` NÃO EXISTE — a coluna nunca foi criada. O caminho
+// que lia `a.price` era morto duas vezes: coluna inexistente E ausente do
+// `select` de loadAppointments(). O resultado nunca mudou por causa disso.
 function appointmentRevenue(a) {
   if (!a) return 0;
-  const congelado = a.price;
-  return Number(congelado != null ? congelado : (a.service && a.service.price) || 0);
+  const congelado = Number(a.total_price);
+  if (a.total_price != null && isFinite(congelado)) return congelado;
+  return Number((a.service && a.service.price) || 0);
 }
 
 function serviceDurationMinutes(serviceId) {
@@ -6783,7 +6801,10 @@ function clientStats(clientId) {
     .filter(a => a.client?.id === clientId)
     .sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at));
   const visits = history.length;
-  const spent = history.reduce((sum, a) => sum + Number(a.service?.price || 0), 0);
+  // Valor sempre por appointmentRevenue() — fonte canônica única. Somar
+  // `service.price` cru aqui fazia o perfil discordar da Insights num
+  // atendimento multi-serviço (o `service_id` legado guarda um serviço só).
+  const spent = history.reduce((sum, a) => sum + appointmentRevenue(a), 0);
   const lastVisit = history[0] ? fmtDate(history[0].starts_at) : '—';
   const lastVisitIso = history[0]?.starts_at || null;
   const isVip = !!client?.vip;
@@ -7382,7 +7403,7 @@ function renderClientDetail() {
                 <div class="ti-service">${a.service?.name || ''}</div>
                 <div class="ti-staff">${a.staff?.name || ''}</div>
               </div>
-              <div class="ti-price">€${Number(a.service?.price || 0).toFixed(0)}</div>
+              <div class="ti-price">€${appointmentRevenue(a).toFixed(0)}</div>
             </div>
           `;
           }).join('')}

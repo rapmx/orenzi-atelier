@@ -10,7 +10,7 @@
 | `deposit_for_services()` — 20% do valor base | em produção, **sandbox** |
 | `payments` | em produção, **sandbox** |
 | `cancellation_policies` | tabela existe; a **policy v1** está em produção |
-| receita nos Insights | derivada de `services.price` |
+| receita nos Insights | `total_price ?? services.price` desde 16/08/2026 |
 
 ## Três coisas que precisam ser decididas antes de qualquer tela financeira
 

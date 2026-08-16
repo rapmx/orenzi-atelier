@@ -329,6 +329,49 @@ qualquer `STRIPE_SECRET_KEY` que não comece com `sk_test_`.
   `sk_test_` e `whsec_` só como secrets das Edge Functions. `client_secret`
   vai ao browser mas **nunca** é gravado nem logado.
 
+### Valor de um atendimento (16/08/2026)
+
+`appointmentRevenue(a)` é o **ponto único** de leitura de dinheiro por
+atendimento, e a regra é:
+
+```
+appointmentRevenue(a) = a.total_price ?? a.service.price ?? 0
+```
+
+- **`appointments.total_price`** é o total **congelado** no instante da reserva
+  (soma dos `price_snapshot` de `appointment_services`), gravado por todos os
+  caminhos da Booking V2. Carregado por `loadAppointments()` desde 16/08/2026.
+- **`services.price`** é o fallback — preço de **tabela atual**. Vale para os
+  atendimentos criados manualmente no painel, que **não gravam `total_price`**
+  e para os quais não existe de onde reconstruir o preço praticado. Enquanto
+  um atendimento depende do fallback, mudar o preço do serviço **reescreve
+  retroativamente** o valor dele.
+- ⚠ **Comparação contra `null`, nunca `||`:** `total_price = 0` é valor
+  legítimo (o CHECK do banco aceita `>= 0`) e não pode cair no fallback.
+- ⚠ **`appointments.price` NÃO EXISTE** — a coluna nunca foi criada. Até
+  16/08/2026 a função lia `a.price`, um caminho morto duas vezes (coluna
+  inexistente **e** ausente do `select`). Se aparecer referência a
+  `appointments.price` em documento antigo, é engano.
+- ⚠ **9 dos 15 serviços têm `price_varies`**: para eles o preço é o **piso**,
+  não o cobrado — inclusive dentro do `total_price`, que congela o valor base.
+  Copy que expõe esses valores diz "valor base", nunca "valor final".
+**Não existe segunda fórmula de valor.** Todo lugar que representa o valor de
+um atendimento chama `appointmentRevenue(a)` — se aparecer
+`Number(a.service?.price || 0)` numa conta de dinheiro, é regressão. Até
+16/08/2026 duas contas do perfil da cliente faziam a soma crua e discordavam
+da Insights num atendimento multi-serviço (o `service_id` legado guarda **um**
+serviço só, então um atendimento de €155 aparecia como €70 no perfil).
+
+Quem consome:
+
+| Tela | Função |
+|---|---|
+| Insights — Hero, Tendência, deltas, ticket | `insSumRevenue()` |
+| Insights — "Onde está o dinheiro" e o €/h | `insServicos()` |
+| Insights — impacto estimado das Sugestões | `insClientesAtrasadas()` |
+| Perfil da cliente — "Total investido" | `clientStats()` |
+| Perfil da cliente — valor por visita (`.ti-price`) | markup de `renderClientDetail()` |
+
 ### Questionário V2 (15/08/2026)
 
 **O produto é simples de propósito e deve continuar simples.** A Juliane
