@@ -62,9 +62,13 @@ edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
 | Splash e boot | `// ── SPLASH — CICLO DE VIDA` (fim do script), `markReady()`, `splashBoot()`, `#splash` no `<style>` |
 | Qual tela aparece | `render()` |
 
-Abas da nav: **Início · Insights · Agenda · Clientes · Estoque · Questionário**.
+Abas da nav: **Início · Insights · Agenda · Clientes · Estoque**.
 Estoque ocupou o lugar de Equipe em 02/08/2026 — com uma profissional só,
 "Profissionais" era uma tela de uma linha.
+
+⚠ **Questionário saiu do rodapé em 17/08/2026.** Deixou de ser destino de
+primeiro nível e virou **capability contextual de Clientes**. O fluxo não
+mudou em nada — só a porta. Ver "Questionário: onde ele mora" abaixo.
 
 ## Banco (Supabase, projeto `gsagtsxkhqlpxuvrijgw`)
 
@@ -431,6 +435,68 @@ Quem consome:
 | Perfil da cliente — "Total investido" | `clientStats()` |
 | Perfil da cliente — valor por visita (`.ti-price`) | markup de `renderClientDetail()` |
 | Detalhe do atendimento — bloco de valor | `apptValorSectionHtml()` |
+
+### Questionário: onde ele mora (17/08/2026)
+
+**O Questionário não é mais navegação de primeiro nível.** É uma capability
+de Clientes.
+
+```
+entrada principal:  Clientes → Perfil da cliente → Questionário
+```
+
+- **`state.tab = 'questionario'` continua existindo como ROTA INTERNA.** A
+  aba saiu do rodapé, não do roteador — duplicar o fluxo numa segunda tela
+  manteria dois questionários vivos, que é exatamente o que não se quer.
+  `render()` ainda despacha para `renderQuestionario()`.
+- **`clientQuizSectionHtml(c)`** desenha a seção no perfil. Dois estados:
+  sem questionário convida a começar; com questionário, o último vira o
+  assunto (data + "Ver questionário") e "Novo questionário" desce a link
+  secundário. Substituiu a linha `action-row` "Infos do questionário".
+- **`loadClientQuestionnaires(clientId)`** carrega as linhas inteiras da
+  cliente ao abrir o perfil, mesmo padrão de `loadClientPhotos()`. Traz
+  tudo porque a tabela é append-only e uma cliente tem punhado de
+  registros — é isso que permite abrir um questionário antigo sem segunda
+  consulta.
+- **Histórico preservado.** A tabela continua append-only (um INSERT por
+  resposta, sem UPDATE). Quando há mais de um, aparece "Ver anteriores (N)"
+  que expande a lista de datas inline; tocar numa abre aquela. Nada foi
+  reduzido a "um questionário por cliente".
+
+#### Origem e retorno
+
+`state.quiz.origin` / `state.quiz.originClientId` guardam de onde o fluxo
+foi aberto. **`quizSair()` é a saída única** — CTA do Sucesso, "Sair" do
+cabeçalho e "Voltar" da tela de idioma passam os três por ela, que é o que
+garante que concordem.
+
+| origem | para onde volta |
+|---|---|
+| `'client-profile'` | perfil da mesma cliente, via `abrirCliente()` |
+| `null` (legado) | escolha de cliente, como sempre foi |
+
+- ⚠ **`quizSair()` lê a origem ANTES de `quizResetAll()`** — depois ela não
+  existe mais, e o painel voltaria ao lugar errado sem nenhum erro visível.
+- ⚠ **Volta por `abrirCliente()`, não por `render()`.** É `abrirCliente()`
+  que recarrega os questionários; sem isso, ao voltar de um questionário
+  recém-salvo o perfil mostraria o anterior como último — ou nenhum.
+- ⚠ **`quizSave()` invalida `state.clientQuestionnaires[clientId]`** no
+  sucesso. A lista em memória fica velha no instante do INSERT.
+- ⚠ **As saídas NÃO passam por `quizGo()`**, que chama `renderQuestionario()`
+  e devolveria a tela do quiz por cima do perfil.
+
+#### O que não mudou
+
+Kiosk, três idiomas, perguntas, química, objetivo, referências, revisão,
+persistência e sucesso: **intactos**. A cliente continua recebendo o tablet;
+o reposicionamento é administrativo, e o Questionário **não** virou
+formulário comum dentro do perfil. Ao abrir pelo perfil o `client_id` vem do
+perfil (nunca do nome exibido) e o fluxo começa direto no idioma — a Juliane
+não escolhe a cliente de novo.
+
+**Sem atalho na lista de Clientes.** O FAB `+` de Clientes tem hoje um
+significado só ("Novo cliente"); acrescentar "Novo questionário" exigiria
+menu de FAB, que é UI nova para uma entrada secundária. A entrada é o perfil.
 
 ### Questionário V2 (15/08/2026)
 

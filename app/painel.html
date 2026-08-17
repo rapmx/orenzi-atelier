@@ -2445,6 +2445,48 @@
 
   /* Folha de opções (ordenação, novo cliente) — reaproveita .modal-overlay/
      .modal-sheet, só acrescenta a lista de opções. */
+  /* ── Questionário no perfil da cliente (17/08/2026) ─────────────
+     Seção compacta dentro do perfil, não card destacado: é uma
+     ferramenta do perfil, não um assunto concorrente. Reaproveita
+     .profile-section / .action-row / .o-btn — nada de componente novo. */
+  .cq-sec .cq-empty {
+    font-size: 13px; color: var(--color-neutral-600);
+    margin: 0 0 12px; line-height: 1.4;
+  }
+  .cq-last { margin-bottom: 12px; }
+  .cq-last-lbl { font-size: 12px; color: var(--color-neutral-600); }
+  .cq-last-date {
+    font-family: var(--font-heading); font-size: 15px; font-weight: 600;
+    margin-top: 2px; font-variant-numeric: tabular-nums;
+  }
+  /* Ação secundária em texto: "novo questionário" não pode competir com
+     "ver o que já existe", que é o que a Juliane faz mais vezes. */
+  .cq-link {
+    display: inline-flex; align-items: center; min-height: 44px;
+    margin-top: 4px; padding: 0; background: none; border: none;
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    color: var(--color-accent-700); cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .12s var(--ease-standard);
+  }
+  .cq-link:active { transform: scale(0.98); }
+  .cq-link:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+  .cq-cta { width: 100%; }
+  .cq-older { margin-top: 2px; }
+  .cq-older-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; min-height: 44px; padding: 8px 0;
+    background: none; border: none; border-top: 1px solid var(--color-divider);
+    font-family: var(--font-body); font-size: 13px; color: var(--color-text);
+    cursor: pointer; font-variant-numeric: tabular-nums;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cq-older-row .ar-chevron { display: flex; color: var(--color-neutral-600); }
+  .cq-older-row .ar-chevron svg { width: 16px; height: 16px; }
+  @media (prefers-reduced-motion: reduce) {
+    .cq-link:active { transform: none; }
+  }
+
   /* ── Valor do atendimento (17/08/2026) ──────────────────────────
      Só tokens existentes. Nenhuma cor de estado: nem ter valor final
      nem não ter é problema, e pintar isso de verde/vermelho inventaria
@@ -3061,10 +3103,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8 12 4l8.5 4L12 12 3.5 8Z"/><path d="M3.5 8v8.7L12 20.5l8.5-3.8V8"/><path d="M12 12v8.5"/></svg>
     <span>Estoque</span>
   </button>
-  <button data-tab="questionario">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4.2" width="12" height="16.8" rx="2"/><rect x="9.2" y="2.5" width="5.6" height="3" rx="1"/><path d="M9 11.5h6M9 15.3h6"/></svg>
-    <span>Questionário</span>
-  </button>
 </nav>
 
 <script src="shared/salon.js"></script>
@@ -3076,7 +3114,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', booting: false, painelAtivo: false, appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', booting: false, painelAtivo: false, appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, clientQuestionnaires: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -3256,6 +3294,22 @@ async function loadClientPhotos(clientId) {
     .from('client_photos').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
   if (error) { console.error(error); return; }
   state.clientPhotos[clientId] = data;
+}
+
+// Questionários da cliente, do mais recente para o mais antigo (17/08/2026).
+// Carregado por cliente ao abrir o perfil, mesmo padrão de loadClientPhotos()
+// — não entra em loadAll() porque só o perfil precisa disso.
+//
+// ⚠ Traz as LINHAS INTEIRAS de propósito. A tabela é append-only e uma
+// cliente tem punhado de registros, e ter tudo em memória é o que permite
+// abrir um questionário antigo sem uma segunda consulta. Se um dia virar
+// lista longa, isto vira paginação — não um `select` de resumo.
+async function loadClientQuestionnaires(clientId) {
+  const { data, error } = await sb
+    .from('client_questionnaires').select('*').eq('client_id', clientId)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('client_questionnaires.select', error); return; }
+  state.clientQuestionnaires[clientId] = data || [];
 }
 
 // Redimensiona pra no máximo 1600px no lado maior e converte pra JPEG (qualidade 82%) —
@@ -7096,6 +7150,7 @@ async function abrirCliente(clientId, avatarEl) {
   state.clientHistoryExpanded = false;
   state.clientDiagCollapsed = true;
   if (!state.clientPhotos[clientId]) await loadClientPhotos(clientId);
+  if (!state.clientQuestionnaires[clientId]) await loadClientQuestionnaires(clientId);
   render();
   window.scrollTo(0, 0);
 
@@ -7404,11 +7459,7 @@ function renderClientDetail() {
       ${c.phone ? `<a href="tel:+${waPhone}">${ICONS.phone}<span>Ligar</span></a>` : ''}
       ${c.phone ? `<a href="https://wa.me/${waPhone}" target="_blank" rel="noopener">${ICONS.chat}<span>WhatsApp</span></a>` : ''}
     </div>
-    <button class="action-row" id="viewQuestionnaireBtn">
-      <span class="ar-icon">${ICONS.clipboard}</span>
-      <span class="ar-text">Infos do questionário</span>
-      <span class="ar-chevron">${ICONS.chevron}</span>
-    </button>
+    ${clientQuizSectionHtml(c)}
     <div class="stat-row">
       <div class="stat"><span class="stat-icon">${ICONS.bag}</span><div class="val">${visits}</div><div class="lbl">Visitas</div></div>
       <div class="divider"></div>
@@ -7527,14 +7578,51 @@ function renderClientDetail() {
     render();
   };
 
-  document.getElementById('viewQuestionnaireBtn').onclick = async () => {
-    const { data, error } = await sb
-      .from('client_questionnaires').select('*').eq('client_id', c.id)
-      .order('created_at', { ascending: false }).limit(1).maybeSingle();
-    if (error) { console.error('client_questionnaires.select', error); showToast('Não foi possível carregar o questionário.'); return; }
-    // Estado vazio é tela, não toast: um aviso que some sozinho e não muda
-    // nada na tela era indistinguível de botão quebrado.
-    state.viewQuestionnaire = data || { __empty: true };
+  // Leitura: a lista já está em memória (loadClientQuestionnaires), então
+  // abrir um questionário — o último ou um antigo — não custa consulta.
+  // O leitor (`state.viewQuestionnaire`) aceita qualquer linha; é o mesmo
+  // de sempre, e continua em pt-BR mesmo quando a cliente respondeu em
+  // outro idioma (o valor gravado é canônico, a tradução é de apresentação).
+  app.querySelectorAll('[data-quiz]').forEach(btn => {
+    btn.onclick = () => {
+      const lista = state.clientQuestionnaires[c.id] || [];
+      const alvo = lista.find(q => q.id === btn.dataset.quiz);
+      // Estado vazio é tela, não toast: um aviso que some sozinho e não
+      // muda nada era indistinguível de botão quebrado.
+      state.viewQuestionnaire = alvo || { __empty: true };
+      render();
+    };
+  });
+
+  const cqOlder = document.getElementById('cqOlder');
+  if (cqOlder) cqOlder.onclick = () => {
+    const lista = document.getElementById('cqOlderList');
+    const aberto = !lista.hidden;
+    lista.hidden = aberto;
+    cqOlder.setAttribute('aria-expanded', String(!aberto));
+    cqOlder.textContent = aberto
+      ? `Ver anteriores (${(state.clientQuestionnaires[c.id] || []).length - 1})`
+      : 'Ocultar anteriores';
+  };
+
+  // ── Entrada do fluxo, com a cliente JÁ definida ──
+  // A Juliane não escolhe a cliente de novo: o `client_id` vem do perfil
+  // aberto, nunca do nome exibido. O fluxo começa direto no idioma, que
+  // é a primeira tela que pertence à cliente — e é aí que o quiosque
+  // liga, exatamente como já era quando a escolha vinha da aba.
+  const cqStart = document.getElementById('cqStart');
+  if (cqStart) cqStart.onclick = () => {
+    quizStopWelcomeLoop();
+    state.quiz = quizFreshState();
+    state.quiz.clientId = c.id;
+    state.quiz.phase = 'lang';
+    state.quiz.origin = 'client-profile';
+    state.quiz.originClientId = c.id;
+    // `state.tab` continua sendo a rota interna do fluxo. A aba saiu do
+    // rodapé, não do roteador — duplicar o Questionário numa segunda tela
+    // seria manter dois questionários vivos.
+    state.tab = 'questionario';
+    state.clientsScrollTop = 0;
     render();
   };
 
@@ -7648,6 +7736,56 @@ function apptPhotoSectionHtml(label, kind, photos) {
       `).join('')}
     </div>
   `;
+}
+
+// ── Questionário no perfil da cliente (17/08/2026) ───────────
+// O Questionário deixou de ser aba do rodapé e virou capability de
+// Clientes. Isto aqui é a entrada PRINCIPAL — a única, na prática.
+//
+// A seção reflete o estado real: sem questionário, convida a começar;
+// com questionário, o último vira o assunto e "novo" desce a secundário.
+// Nenhuma cor de estado: ter ou não ter questionário não é acerto nem
+// erro, e pintar de verde/vermelho inventaria um julgamento que o
+// produto não faz.
+//
+// ⚠ Nada aqui deriva regra do questionário — sem alerta, sem score, sem
+// recomendação, sem tocar em appointment. Continua sendo consulta manual
+// (ADR 0010), e esta rodada foi de lugar, não de escopo.
+function clientQuizSectionHtml(c) {
+  const lista = state.clientQuestionnaires[c.id] || [];
+  const ultimo = lista[0] || null;
+  return `
+    <div class="profile-section cq-sec">
+      <div class="profile-section-title"><span class="pst-left">
+        <span class="pst-icon">${ICONS.clipboard}</span>Questionário
+      </span></div>
+      ${ultimo ? `
+        <div class="cq-last">
+          <div class="cq-last-lbl">Último questionário</div>
+          <div class="cq-last-date">${fmtDate(ultimo.created_at)}</div>
+        </div>
+        <button type="button" class="action-row" id="cqView" data-quiz="${ultimo.id}">
+          <span class="ar-icon">${ICONS.clipboard}</span>
+          <span class="ar-text">Ver questionário</span>
+          <span class="ar-chevron">${ICONS.chevron}</span>
+        </button>
+        ${lista.length > 1 ? `
+          <button type="button" class="cq-link" id="cqOlder" aria-expanded="false" aria-controls="cqOlderList">
+            Ver anteriores (${lista.length - 1})
+          </button>
+          <div class="cq-older" id="cqOlderList" hidden>
+            ${lista.slice(1).map(q => `
+              <button type="button" class="cq-older-row" data-quiz="${q.id}">
+                <span>${fmtDate(q.created_at)}</span>
+                <span class="ar-chevron">${ICONS.chevron}</span>
+              </button>`).join('')}
+          </div>` : ''}
+        <button type="button" class="cq-link" id="cqStart">Novo questionário</button>
+      ` : `
+        <p class="cq-empty">Nenhum questionário preenchido ainda.</p>
+        <button type="button" class="o-btn o-btn-secondary cq-cta" id="cqStart">Iniciar questionário</button>
+      `}
+    </div>`;
 }
 
 // ── Valor do atendimento (17/08/2026) ────────────────────────
@@ -8106,6 +8244,11 @@ function quizFreshState() {
   return {
     phase: 'client', index: 0, language: null, welcomeIndex: 0, welcomeTimer: null,
     clientId: null, clientQuery: '', answers: {}, refs: [], saving: false,
+    // De onde o fluxo foi aberto, e para onde ele devolve o painel.
+    // 'client-profile' = veio do perfil da cliente (entrada principal desde
+    // 17/08/2026) e volta para lá. `null` = caminho legado, que volta para
+    // a escolha de cliente. Um fluxo só, dois pontos de entrada e saída.
+    origin: null, originClientId: null,
     // Ligado quando o passo foi aberto pelo "Alterar" da revisão: corrigir
     // uma resposta tem que devolver pra revisão, não recomeçar a fila.
     returnToReview: false,
@@ -8155,6 +8298,33 @@ function quizStopWelcomeLoop() {
 function quizResetAll() {
   quizStopWelcomeLoop();
   state.quiz = quizFreshState();
+}
+
+// Saída contextual do fluxo. Lê a origem ANTES de zerar o state — depois
+// de `quizResetAll()` ela não existe mais, e o painel voltaria para o
+// lugar errado sem nenhum erro visível.
+//
+// Vale para as três saídas: o CTA do Sucesso, o "Sair" do cabeçalho e o
+// "Voltar" da tela de idioma. Ter uma função só é o que garante que as
+// três concordem.
+function quizSair() {
+  const origem = state.quiz.origin;
+  const clienteId = state.quiz.originClientId;
+  quizResetAll();
+  setKioskMode(false);
+  state.viewQuestionnaire = null;
+  if (origem === 'client-profile' && clienteId) {
+    state.tab = 'clients';
+    // ⚠ Renderiza por `abrirCliente()`, e nao por `render()` direto: e ela
+    // que RECARREGA os questionarios da cliente. Sem isso, ao voltar de um
+    // questionario recem-salvo o perfil mostraria o ANTERIOR como ultimo,
+    // ou nenhum — a tela mentiria sobre algo que a Juliane acabou de fazer.
+    abrirCliente(clienteId, null);
+    return;
+  }
+  // Caminho legado: devolve a escolha de cliente, como sempre foi.
+  state.tab = 'questionario';
+  renderQuestionario();
 }
 
 function quizGo(mutateFn) {
@@ -8218,7 +8388,7 @@ function quizConfirmExit() {
     cancelLabel: qt('exitCancel'),
     successLabel: qt('exitDone'),
     destructive: true,
-    onConfirm: () => { quizGo(quizResetAll); },
+    onConfirm: () => { quizSair(); },
   });
 }
 
@@ -8260,10 +8430,16 @@ function quizRenderLanguage() {
 
   // Voltar daqui devolve o tablet para a Juliane (sai do quiosque) e zera o
   // idioma: quem escolhe é a cliente, e a próxima pode não ser a mesma.
-  quizBindShell({ onBack: () => quizGo(() => {
-    state.quiz.language = null;
-    state.quiz.phase = 'client';
-  }) });
+  quizBindShell({ onBack: () => {
+    // Aberto pelo perfil, voltar daqui sai do fluxo e devolve o perfil —
+    // mandar para a escolha de cliente levaria a Juliane a uma tela que
+    // nao foi por onde ela entrou.
+    if (state.quiz.origin === 'client-profile') return quizSair();
+    quizGo(() => {
+      state.quiz.language = null;
+      state.quiz.phase = 'client';
+    });
+  } });
 
   app.querySelectorAll('[data-lang]').forEach(btn => {
     btn.onclick = () => quizGo(() => {
@@ -8636,6 +8812,11 @@ async function quizSave(btn) {
 
   await orenziUI.setButtonSuccess(btn, qt('saved'));
   state.quiz.saving = false;
+  // A lista em memória do perfil ficou velha no instante deste INSERT.
+  // Invalidar é obrigatório: sem isto a Juliane volta ao perfil e vê o
+  // questionário ANTERIOR como "último" — a tela mentiria sobre algo que
+  // ela acabou de fazer. Apagar a chave faz o perfil recarregar sozinho.
+  if (state.quiz.clientId) delete state.clientQuestionnaires[state.quiz.clientId];
   quizGo(() => { state.quiz.phase = 'success'; });
 }
 
@@ -8651,10 +8832,11 @@ function quizRenderSuccess() {
       </div>`,
     footer: `<button type="button" class="o-btn o-btn-primary" id="quizDone">${esc(qt('successCta'))}</button>`,
   });
-  // O CTA devolve o painel para a Juliane — volta para a escolha de cliente,
-  // fora do quiosque, sem cliente, idioma, respostas ou referências da
-  // sessão anterior em memória (quizResetAll).
-  document.getElementById('quizDone').onclick = () => quizGo(quizResetAll);
+  // O CTA devolve o painel para a Juliane, fora do quiosque e sem cliente,
+  // idioma, respostas ou referências da sessão anterior em memória. PARA
+  // ONDE ele devolve depende da origem: aberto pelo perfil, volta ao perfil
+  // da mesma cliente; pelo caminho legado, volta à escolha de cliente.
+  document.getElementById('quizDone').onclick = () => quizSair();
   quizFocusStep();
 }
 
