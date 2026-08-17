@@ -53,7 +53,13 @@ Detalhe em [[Waiting on Juliane]].
 iniciada" (03/08). Isso está **desatualizado**: PR1 e PR2 do Design System
 foram entregues, `app/ds/*.css` existe e é carregado. Ver [[Source of Truth]].
 
+## Último handoff
+
+`160856b` (17/08/2026) — valor final do atendimento e Questionário movido para
+dentro de Clientes. Próximo bloco: **RBAC**.
+Ver [[Handoff 2026-08-17 Valor Final e Questionario em Clientes]].
+
 ## Links
 
 [[Orenzi Overview]] · [[Production Blockers]] · [[Technical Debt]] ·
-[[Product Backlog]]
+[[Product Backlog]] · [[Handoff 2026-08-17 Valor Final e Questionario em Clientes]]
