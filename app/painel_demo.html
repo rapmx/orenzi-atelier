@@ -566,6 +566,27 @@ window.supabase = {
           const existente = mockData('clients').find(c => c.phone === params.p_phone);
           return Promise.resolve({ data: existente ? existente.id : 'demo-client-novo', error: null });
         }
+        // O valor final precisa de eco no demo: a tela copia o state DA
+        // LINHA DEVOLVIDA, não do que enviou. Sem este ramo, o retorno
+        // `null` faria a folha gravar `undefined` e o número sumir.
+        // O mock devolve o mesmo contrato da RPC real (uma linha com as
+        // quatro colunas) e valida o negativo do mesmo jeito, para o
+        // demo exercitar o caminho de erro sem banco.
+        if (fnName === 'set_appointment_final_price') {
+          if (params.p_final_price != null && Number(params.p_final_price) < 0) {
+            return Promise.resolve({ data: null, error: { message: 'FINAL_PRICE_NEGATIVE' } });
+          }
+          const alvo = (state.appointments || []).find(x => x.id === params.p_appointment_id);
+          return Promise.resolve({
+            data: [{
+              id: params.p_appointment_id,
+              final_price: params.p_final_price,
+              final_price_updated_at: params.p_final_price == null ? null : new Date().toISOString(),
+              total_price: alvo ? (alvo.total_price ?? null) : null,
+            }],
+            error: null,
+          });
+        }
         return Promise.resolve({ data: null, error: null });
       },
       // Upload no demo não sai daqui: devolve sucesso sem URL, e o painel avisa
@@ -3086,6 +3107,74 @@ window.supabase = {
 
   /* Folha de opções (ordenação, novo cliente) — reaproveita .modal-overlay/
      .modal-sheet, só acrescenta a lista de opções. */
+  /* ── Valor do atendimento (17/08/2026) ──────────────────────────
+     Só tokens existentes. Nenhuma cor de estado: nem ter valor final
+     nem não ter é problema, e pintar isso de verde/vermelho inventaria
+     um julgamento que o produto não faz. */
+  .appt-valor {
+    margin-bottom: 20px; padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-divider);
+  }
+  .av-num {
+    font-family: var(--font-heading); font-size: 26px; font-weight: 600;
+    line-height: 1.2; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  }
+  .av-tag { font-size: 12px; color: var(--color-neutral-600); margin-top: 2px; }
+  .av-orig { font-size: 12px; color: var(--color-neutral-600); margin-top: 6px; font-variant-numeric: tabular-nums; }
+  /* Convite discreto: texto, não botão preenchido. Alvo de 44px pela
+     altura real, sem engordar o desenho. */
+  .av-btn {
+    display: inline-flex; align-items: center; min-height: 44px;
+    margin-top: 4px; padding: 0; background: none; border: none;
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    color: var(--color-accent-700); cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .12s var(--ease-standard);
+  }
+  .av-btn:active { transform: scale(0.98); }
+  .av-btn:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+
+  .av-field {
+    display: flex; align-items: center; gap: 8px; margin-top: 4px;
+    background: var(--color-surface); border: 1px solid var(--color-divider);
+    border-radius: var(--radius-sm); padding: 0 14px;
+  }
+  .av-cur { font-family: var(--font-heading); font-size: 18px; font-weight: 600; color: var(--color-neutral-600); }
+  /* ⚠ DUAS armadilhas neste seletor, e as duas já morderam antes.
+     1. `input[type=text]` (linha ~1558) é seletor de ATRIBUTO e vence
+        `.av-input` na especificidade — exatamente o que a nota do Login
+        V2 descreve sobre `input[type=email]`. Por isso o seletor aqui é
+        `.av-field input.av-input`, e por isso a regra reanula
+        explicitamente `border-radius`, `background`, `padding`,
+        `border` e `margin-bottom`, que viriam da regra global.
+     2. Sem isso o campo herdava `font-size: 14px`, e abaixo de 16px o
+        Safari do iPhone dá ZOOM ao focar — a folha sai do lugar com o
+        teclado aberto. 22px é folgado acima do piso. */
+  .av-field input.av-input {
+    flex: 1; min-width: 0; width: auto;
+    border: none; border-radius: 0; background: none; outline: none;
+    margin-bottom: 0;
+    font-family: var(--font-heading); font-size: 22px; font-weight: 600;
+    color: var(--color-text); padding: 14px 0; font-variant-numeric: tabular-nums;
+  }
+  .av-input::placeholder { color: var(--color-neutral-300); font-weight: 400; }
+  .av-field:focus-within { border-color: var(--color-accent); box-shadow: var(--focus-ring); }
+  .av-hint { font-size: 12px; color: var(--color-neutral-600); margin: 10px 0 0; font-variant-numeric: tabular-nums; }
+  .av-error { font-size: 12px; color: var(--color-accent-2-700); margin: 8px 0 0; }
+  /* Reset não é ação destrutiva — nada se perde e é reversível. Sem
+     vermelho, sem confirmação. */
+  .av-reset {
+    display: block; width: 100%; min-height: 44px; margin-top: 4px;
+    background: none; border: none; font-family: var(--font-body);
+    font-size: 13px; font-weight: 600; color: var(--color-neutral-700); cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .av-reset:active { transform: scale(0.98); }
+  .av-reset:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+  @media (prefers-reduced-motion: reduce) {
+    .av-btn:active, .av-reset:active { transform: none; }
+  }
+
   .sheet-option {
     display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 4px;
     background: none; border: none; border-bottom: 1px solid var(--color-divider);
@@ -3742,7 +3831,7 @@ function showToast(text) {
 const APPTS_PAGINA = 1000;
 async function loadAppointments() {
   const campos = `
-      id, starts_at, ends_at, status, notes, technique, product_used, oxidant_used, pause_time, color_formula, created_at, source, total_price, hold_expires_at,
+      id, starts_at, ends_at, status, notes, technique, product_used, oxidant_used, pause_time, color_formula, created_at, source, total_price, final_price, final_price_updated_at, hold_expires_at,
       client:client_id ( id, name, phone ),
       staff:staff_id ( id, name ),
       service:service_id ( id, name, price )
@@ -3985,7 +4074,23 @@ function formatCurrency(n) {
 // ── D1 · leitura financeira centralizada ──────────────────────
 // Ponto ÚNICO de leitura do valor de um atendimento:
 //
-//     appointmentRevenue(a) = a.total_price ?? a.service.price ?? 0
+//     appointmentRevenue(a) = a.final_price ?? a.total_price ?? a.service.price ?? 0
+//
+// `appointments.final_price` (17/08/2026) é o valor que a Juliane define
+// à mão depois de avaliar o cabelo na cadeira. É a única camada que
+// conhece o preço REAL de um serviço de preço variável — Highlights
+// entra no booking por €290 (o piso) e pode sair por €370. Enquanto for
+// NULL, o valor canônico cai para o snapshot do agendamento, sozinho.
+// Escrita só por `set_appointment_final_price()`; nunca por UPDATE
+// direto, para `total_price` não poder ser atingido de raspão.
+//
+// `appointments.total_price` é o total CONGELADO no instante da reserva (a
+// soma dos `price_snapshot` de `appointment_services`), gravado por todos os
+// caminhos da Booking V2. É a fonte correta por dois motivos independentes:
+// mudar o preço de um serviço deixa de reescrever retroativamente o
+// histórico, e um atendimento multi-serviço deixa de valer só o preço do
+// `service_id` legado (que guarda um serviço só).
+//
 //
 // `appointments.total_price` é o total CONGELADO no instante da reserva (a
 // soma dos `price_snapshot` de `appointment_services`), gravado por todos os
@@ -4010,11 +4115,32 @@ function formatCurrency(n) {
 // O mock deste demo não gera `total_price` — todo atendimento daqui cai no
 // fallback, de propósito: o demo não deve inventar um snapshot que a
 // produção não tem.
+// Um degrau da cadeia: devolve o número se o campo estiver preenchido e
+// for finito, senão `null` para o próximo degrau decidir. Existe para a
+// regra `?? ` não virar três `if` copiados — e para `0` nunca escorregar
+// por truthiness, que é o erro que esta função existe para não cometer.
+function valorSeDefinido(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return isFinite(n) ? n : null;
+}
+
 function appointmentRevenue(a) {
   if (!a) return 0;
-  const congelado = Number(a.total_price);
-  if (a.total_price != null && isFinite(congelado)) return congelado;
-  return Number((a.service && a.service.price) || 0);
+  const final = valorSeDefinido(a.final_price);
+  if (final !== null) return final;
+  const congelado = valorSeDefinido(a.total_price);
+  if (congelado !== null) return congelado;
+  return valorSeDefinido(a.service && a.service.price) || 0;
+}
+
+// Quanto o agendamento previa, ignorando o valor final. Usado SÓ pela
+// tela que mostra os dois lado a lado — nenhuma soma passa por aqui.
+function appointmentBookedValue(a) {
+  if (!a) return 0;
+  const congelado = valorSeDefinido(a.total_price);
+  if (congelado !== null) return congelado;
+  return valorSeDefinido(a.service && a.service.price) || 0;
 }
 
 function serviceDurationMinutes(serviceId) {
@@ -8189,6 +8315,128 @@ function apptPhotoSectionHtml(label, kind, photos) {
   `;
 }
 
+// ── Valor do atendimento (17/08/2026) ────────────────────────
+// O bloco vive AQUI, no atendimento dentro do perfil da cliente, e não
+// numa tela nova nem na Agenda: definir o valor é algo que acontece com
+// a cliente na cadeira, olhando o cabelo, e este é o único lugar do app
+// que já é sobre um atendimento específico.
+//
+// Dois estados. Sem valor final, o número é o do agendamento e o convite
+// é discreto; com valor final, ele vira o número principal e o snapshot
+// desce a linha secundária. Nenhum dos dois usa cor de alerta — não há
+// nada errado em qualquer um dos casos.
+//
+// A ação existe para QUALQUER atendimento, não só para `price_varies`:
+// atendimento antigo sem snapshot, multi-serviço cujo `service_id`
+// legado guarda um serviço só, e ajuste excepcional são todos motivos
+// legítimos, e nenhum deles depende do serviço variar de preço.
+function apptValorSectionHtml(a) {
+  const temFinal = valorSeDefinido(a.final_price) !== null;
+  const valor = appointmentRevenue(a);
+  const agendado = appointmentBookedValue(a);
+  return `
+    <div class="appt-valor" id="apptValorBloco">
+      <div class="section-label" style="margin-bottom:4px;">VALOR DO ATENDIMENTO</div>
+      <div class="av-num">${formatCurrency(valor)}</div>
+      <div class="av-tag">${temFinal ? 'Valor final' : 'Valor do agendamento'}</div>
+      ${temFinal ? `<div class="av-orig">Valor no agendamento: ${formatCurrency(agendado)}</div>` : ''}
+      <button type="button" class="av-btn" id="apptValorBtn">
+        ${temFinal ? 'Editar valor' : 'Definir valor final'}
+      </button>
+    </div>`;
+}
+
+// Folha curta, não tela cheia: é um campo só. A regra do DS é a de
+// sempre — fluxo de várias etapas ou formulário longo é tela; uma
+// escolha ou um campo é folha (docs/04 §BottomSheet).
+function openApptValorSheet(apptId) {
+  const a = state.appointments.find(x => x.id === apptId);
+  if (!a) return;
+  const temFinal = valorSeDefinido(a.final_price) !== null;
+  const agendado = appointmentBookedValue(a);
+  const atual = temFinal ? valorSeDefinido(a.final_price) : '';
+
+  modalContainer.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-sheet">
+        <h2>Valor final do atendimento</h2>
+        <div class="av-field">
+          <span class="av-cur" aria-hidden="true">€</span>
+          <input id="avInput" class="av-input" type="text" inputmode="decimal"
+            autocomplete="off" enterkeyhint="done"
+            aria-label="Valor final do atendimento, em euros"
+            placeholder="${agendado}" value="${atual === '' ? '' : atual}">
+        </div>
+        <p class="av-hint">Valor considerado no agendamento: ${formatCurrency(agendado)}</p>
+        <p class="av-error" id="avError" role="alert" hidden></p>
+        <button class="btn btn-primary" id="avSave">Salvar valor</button>
+        ${temFinal ? '<button type="button" class="av-reset" id="avReset">Usar valor do agendamento</button>' : ''}
+      </div>
+    </div>`;
+
+  const input = document.getElementById('avInput');
+  const erroEl = document.getElementById('avError');
+  const btnSalvar = document.getElementById('avSave');
+
+  document.getElementById('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
+  // Foco só depois da entrada da folha: focar durante a animação faz o
+  // teclado do iPhone subir junto e a folha chegar torta.
+  setTimeout(() => { input.focus(); input.select(); }, 260);
+
+  function erro(msg) {
+    erroEl.textContent = msg;
+    erroEl.hidden = false;
+    input.setAttribute('aria-invalid', 'true');
+    input.focus();
+  }
+
+  async function gravar(valor, btn) {
+    orenziUI.setButtonBusy(btn);
+    // Escrita pela RPC, nunca por `update()` direto: é ela que garante
+    // que `total_price` não é tocado e que o negativo morre no servidor.
+    const { data, error } = await sb.rpc('set_appointment_final_price', {
+      p_appointment_id: apptId,
+      p_final_price: valor,
+    });
+    if (error) {
+      console.error('set_appointment_final_price', error);
+      orenziUI.resetButton(btn);
+      showToast(error.message && error.message.includes('AUTH_REQUIRED')
+        ? 'Sessão expirada — faça login novamente.'
+        : 'Não foi possível salvar o valor. Tente de novo.');
+      return;
+    }
+    // A linha devolvida pela RPC é a verdade; o state copia dela, não do
+    // que foi enviado. Se o banco tiver arredondado ou recusado em
+    // silêncio, a tela concorda com o banco em vez de com o formulário.
+    const linha = Array.isArray(data) ? data[0] : data;
+    a.final_price = linha ? linha.final_price : valor;
+    a.final_price_updated_at = linha ? linha.final_price_updated_at : null;
+    closeModal();
+    renderApptDetail();
+    showToast(valor === null ? 'Voltou ao valor do agendamento' : 'Valor final salvo');
+  }
+
+  btnSalvar.onclick = () => {
+    // Aceita "370", "370,50" e "370.50" — a vírgula é o separador que a
+    // Juliane digita, e o teclado decimal do iPhone entrega vírgula.
+    const bruto = String(input.value).trim().replace(/\s/g, '').replace(',', '.');
+    if (bruto === '') return erro('Digite um valor, ou toque em "Usar valor do agendamento".');
+    const n = Number(bruto);
+    if (!isFinite(n)) return erro('Valor inválido. Use apenas números.');
+    if (n < 0) return erro('O valor não pode ser negativo.');
+    gravar(n, btnSalvar);
+  };
+  input.oninput = () => { erroEl.hidden = true; input.removeAttribute('aria-invalid'); };
+  input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); btnSalvar.click(); } };
+
+  const btnReset = document.getElementById('avReset');
+  // Reset NÃO é destrutivo e não pede confirmação: nada se perde, o
+  // `total_price` continua onde sempre esteve e a ação é reversível
+  // digitando o valor de novo. Por isso não é vermelha nem tem diálogo.
+  if (btnReset) btnReset.onclick = () => gravar(null, btnReset);
+}
+
 function renderApptDetail() {
   const a = state.appointments.find(ap => ap.id === state.selectedApptId);
   if (!a) { state.selectedApptId = null; renderClientDetail(); return; }
@@ -8209,6 +8457,8 @@ function renderApptDetail() {
       <div class="section-label" style="margin-bottom:4px;">SERVIÇO REALIZADO</div>
       <div style="font-size:14px;font-weight:700;">${a.service?.name || '—'}</div>
     </div>
+
+    ${apptValorSectionHtml(a)}
 
     ${apptPhotoSectionHtml('FOTO ANTES', 'before', photos)}
     ${apptPhotoSectionHtml('FOTO DEPOIS', 'after', photos)}
@@ -8236,6 +8486,9 @@ function renderApptDetail() {
 
     <button class="btn btn-primary" id="apptSave">Salvar</button>
   `;
+
+  const valorBtn = document.getElementById('apptValorBtn');
+  if (valorBtn) valorBtn.onclick = () => openApptValorSheet(a.id);
 
   document.getElementById('backToClientDetail').onclick = () => {
     state.selectedApptId = null;

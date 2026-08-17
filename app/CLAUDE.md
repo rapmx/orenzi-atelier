@@ -91,6 +91,9 @@ aproximações escritas à mão e não batem com as versões aplicadas.
 (v8, recuperada em 15/08/2026; é a que `trg_notify_new_appointment` aciona e
 formata o e-mail no fuso do salão, não no do servidor).
 
+`appointments.final_price` / `final_price_updated_at` (17/08/2026) e a RPC
+`set_appointment_final_price()` — ver "Valor de um atendimento" acima.
+
 `payments` e `stripe_webhook_events` (14/08/2026) são do depósito de 20% —
 ver seção própria em "Regras do domínio". RLS ligada e **sem policy nenhuma**:
 só `service_role` (que ignora RLS) alcança. Testado pela superfície PostgREST
@@ -329,18 +332,71 @@ qualquer `STRIPE_SECRET_KEY` que não comece com `sk_test_`.
   `sk_test_` e `whsec_` só como secrets das Edge Functions. `client_secret`
   vai ao browser mas **nunca** é gravado nem logado.
 
-### Valor de um atendimento (16/08/2026)
+### Valor de um atendimento (16–17/08/2026)
 
 `appointmentRevenue(a)` é o **ponto único** de leitura de dinheiro por
 atendimento, e a regra é:
 
 ```
-appointmentRevenue(a) = a.total_price ?? a.service.price ?? 0
+appointmentRevenue(a) = a.final_price ?? a.total_price ?? a.service.price ?? 0
 ```
 
-- **`appointments.total_price`** é o total **congelado** no instante da reserva
-  (soma dos `price_snapshot` de `appointment_services`), gravado por todos os
-  caminhos da Booking V2. Carregado por `loadAppointments()` desde 16/08/2026.
+Três camadas, da mais específica para a mais genérica:
+
+| Camada | O que é | Quem escreve |
+|---|---|---|
+| **`final_price`** | valor **real**, definido à mão depois da avaliação presencial | `set_appointment_final_price()` |
+| **`total_price`** | **snapshot** do que foi combinado no agendamento | RPCs da Booking V2, no INSERT |
+| `services.price` | preço de **tabela atual** — fallback legado | ninguém; é leitura |
+
+#### `final_price` (17/08/2026)
+
+A Juliane avalia o cabelo quando a cliente chega e define quanto aquele
+atendimento vai custar. É a única camada que conhece o preço real de um
+serviço de preço variável: Highlights entra no booking por €290 (o piso) e
+pode sair por €370.
+
+- **`total_price` NUNCA é sobrescrito.** Ele é o registro do que foi
+  combinado, e é ele que sustenta o depósito já cobrado pelo Stripe —
+  perdê-lo quebraria a conciliação de um pagamento que já aconteceu.
+- **Reset é `final_price = NULL`**, e o valor canônico volta sozinho ao
+  snapshot. Nunca copiar `total_price` para `final_price`.
+- **`final_price_updated_at` vai a NULL junto** no reset: manter a data de
+  um valor que deixou de existir descreveria algo que não está mais lá.
+- **`0` é valor legítimo** (cortesia, retoque sem cobrança). O CHECK do banco
+  é `>= 0`, e o JS compara contra `null` — `valorSeDefinido()` existe para
+  `0` nunca escorregar por truthiness.
+- **Escrita só pela RPC `set_appointment_final_price(uuid, numeric)`**
+  (`SECURITY DEFINER`, `GRANT EXECUTE` só para `authenticated`). Não é por
+  falta de permissão: `authenticated` **já tem UPDATE** em `appointments`
+  (policy `authenticated update appointments`, sem WITH CHECK) e o detalhe
+  do atendimento já usa isso. É justamente por isso que a RPC importa —
+  pelo caminho direto o browser pode escrever qualquer coluna, inclusive
+  `total_price`, `status` e os campos do Stripe. A RPC toca **duas colunas**
+  e mais nada.
+- **Sem RBAC e sem hardcode de e-mail.** O modelo em vigor é
+  "autenticado = a Juliane"; papéis vêm depois.
+- **UI**: Clientes → perfil → atendimento (`apptValorSectionHtml()`,
+  `openApptValorSheet()`). Não existe na Agenda nem em tela global — definir
+  valor é algo que acontece com a cliente na cadeira.
+- ⚠ **V1 é TOTAL POR APPOINTMENT.** Num multi-serviço, `final_price`
+  substitui a soma inteira; a diferença **não** é redistribuída entre as
+  linhas de `appointment_services`. Decomposição por item fica para quando
+  houver demanda real.
+- ⚠ **O Stripe não lê `final_price`.** Depósito, PaymentIntent, refund e
+  saldo continuam saindo de `deposit_for_services()`/`total_price`. Definir
+  €370 num atendimento cujo sinal foi calculado sobre €290 **não** recalcula
+  nada — é dívida conhecida, para a rodada de arquitetura financeira.
+- ⚠ **`formatCurrency()` arredonda centavos.** `final_price = 370.50` é
+  gravado certo e aparece como **€371**. O valor guardado é exato; só a
+  exibição arredonda. Ver `docs/06 §24`, que pede vírgula decimal quando há
+  centavos — divergência entre doc e código, anterior a esta rodada.
+
+#### `total_price`
+
+- É o total **congelado** no instante da reserva (soma dos `price_snapshot`
+  de `appointment_services`), gravado por todos os caminhos da Booking V2.
+  Carregado por `loadAppointments()` desde 16/08/2026.
 - **`services.price`** é o fallback — preço de **tabela atual**. Vale para os
   atendimentos criados manualmente no painel, que **não gravam `total_price`**
   e para os quais não existe de onde reconstruir o preço praticado. Enquanto
@@ -357,7 +413,10 @@ appointmentRevenue(a) = a.total_price ?? a.service.price ?? 0
   Copy que expõe esses valores diz "valor base", nunca "valor final".
 **Não existe segunda fórmula de valor.** Todo lugar que representa o valor de
 um atendimento chama `appointmentRevenue(a)` — se aparecer
-`Number(a.service?.price || 0)` numa conta de dinheiro, é regressão. Até
+`Number(a.service?.price || 0)` ou `a.final_price || a.total_price` numa conta
+de dinheiro, é regressão. A única exceção é `appointmentBookedValue(a)`, que
+**ignora `final_price` de propósito** e existe só para a tela que mostra os
+dois lado a lado; nenhuma soma passa por ela. Até
 16/08/2026 duas contas do perfil da cliente faziam a soma crua e discordavam
 da Insights num atendimento multi-serviço (o `service_id` legado guarda **um**
 serviço só, então um atendimento de €155 aparecia como €70 no perfil).
@@ -371,6 +430,7 @@ Quem consome:
 | Insights — impacto estimado das Sugestões | `insClientesAtrasadas()` |
 | Perfil da cliente — "Total investido" | `clientStats()` |
 | Perfil da cliente — valor por visita (`.ti-price`) | markup de `renderClientDetail()` |
+| Detalhe do atendimento — bloco de valor | `apptValorSectionHtml()` |
 
 ### Questionário V2 (15/08/2026)
 
