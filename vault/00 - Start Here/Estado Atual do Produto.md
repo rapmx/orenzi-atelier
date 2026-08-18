@@ -79,9 +79,21 @@ Os dois previews aprovados foram portados; **não há preview pendente**.
 Ver [[Handoff 2026-08-18 Insights pos-Financeiro]] e
 [[Handoff 2026-08-18 Financeiro V1]].
 
+## Próxima iniciativa
+
+**Booking Polish V3** — visual, UX e motion de `app/agendar.html`, com
+`gerenciar.html` só onde a jornada exigir. Objetivo: elevar a sensação premium
+**sem alterar regra funcional**. Multi-serviço, self-service, pagamento, manage
+token e arquitetura de booking ficam congelados.
+
+⚠ A primeira etapa é **auditoria visual, não alteração de código**. Validação
+mobile-first, especialmente iPhone.
+Ver [[Handoff 2026-08-18 Encerramento e Booking Polish V3]].
+
 ## Links
 
 [[Orenzi Overview]] · [[Production Blockers]] · [[Technical Debt]] ·
 [[Product Backlog]] · [[Financeiro]] · [[Insights]] · [[RBAC]] ·
+[[Handoff 2026-08-18 Encerramento e Booking Polish V3]] ·
 [[Handoff 2026-08-18 Insights pos-Financeiro]] ·
-[[Handoff 2026-08-18 Financeiro V1]]
+[[Handoff 2026-08-18 Financeiro V1]] · [[Booking Experience]]
