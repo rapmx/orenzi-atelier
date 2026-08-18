@@ -517,6 +517,242 @@
     .ins-help-card { transition: none; transform: none !important; }
   }
 
+
+  /* ══ FINANCEIRO · V1 (18/08/2026) ══════════════════════════════
+     Portado de preview/financeiro-v1.html, variação Analytical.
+
+     A aba reaproveita a família visual da Insights inteira — mesmo
+     seletor de período (.ins-period), mesmo Hero (.ins-answer), mesmos
+     KPIs (.ins-kpis), mesma linha de serviço (.ins-svc), mesmo cartão
+     de gráfico (.ins-chart-card). O que entra aqui é só o que NÃO
+     existia: o subtítulo de seção, o bloco Analytical, os marcadores de
+     valor estimado/final e o histórico expansível.
+
+     Nenhum hex, raio, sombra ou duração nova. `k` no eixo Y é a única
+     exceção de formatação de dinheiro, e é local ao eixo (ver finTick).
+     ────────────────────────────────────────────────────────────── */
+
+  /* Cada seção do Financeiro tem título + subtítulo, então o título
+     encosta no subtítulo e é o SUBTÍTULO que abre o espaço até o
+     conteúdo. Escopado: na Insights o título continua com --space-3. */
+  #finContent .ins-title { margin-bottom: var(--space-1); }
+  .fin-sub { font-size: var(--text-caption-size); color: var(--color-neutral-600); margin: 0 0 var(--space-3-5); }
+  #finContent { min-height: 40px; }
+
+  /* Nota de honestidade do valor — uma linha no rodapé do Hero, nunca
+     asterisco no número grande (serviço de preço variável entra pelo
+     valor base enquanto não tem valor final). */
+  .fin-caveat { font-size: 12px; line-height: var(--leading-normal); color: var(--color-neutral-600); margin: var(--space-3) 0 0; }
+
+  /* Participação do serviço no período. Mesma anatomia de .ins-svc-hour
+     (que fica na Insights, porque €/h é eficiência e não valor). */
+  .ins-svc-pct {
+    display: inline-block; margin-top: 4px; font-size: var(--text-micro-size); font-weight: var(--text-micro-weight);
+    padding: 2px 7px; border-radius: var(--radius-full); font-variant-numeric: tabular-nums;
+    background: var(--color-neutral-200); color: var(--color-neutral-700);
+  }
+
+  /* Dois marcadores de texto, nenhum é badge colorido — a distinção é de
+     PESO e tom, não de cor: nem "estimado" nem "final" é estado de
+     alerta, e cor aqui viraria semáforo onde não há problema nenhum.
+       .fin-from   "a partir de" — preço de tabela de serviço variável, o
+                   piso; o valor final ainda não foi definido.
+       .fin-final  "Valor final" — alguém definiu o valor depois do
+                   atendimento, e ele vence o preço de tabela. */
+  .fin-from, .fin-final {
+    display: inline-block; font-size: var(--text-micro-size);
+    font-weight: var(--text-micro-weight); vertical-align: 1px; white-space: nowrap;
+  }
+  .fin-from { margin-left: 6px; color: var(--color-neutral-600); }
+  .fin-final { margin-left: 6px; color: var(--color-neutral-700); }
+
+  /* ── Distribuição · Analytical ─────────────────────────────────
+     Linguagem de terminal financeiro na paleta clara do Orenzi. NADA
+     de tema escuro, nada de cor nova — o que muda é a GRAMÁTICA:
+       • escala com topo arredondado e eixo Y com ticks, em vez de
+         "a maior barra = 100%";
+       • baseline explícita e gridlines nos ticks;
+       • barras finas (máx. 26px), retas, radius 0, gap de 2px;
+       • zero rótulo permanente sobre as barras — o número exato vive
+         no readout, que atualiza no toque/hover/foco;
+       • período corrente marcado por um tick de 2px sob o eixo, nunca
+         por anel ou halo;
+       • sem sombra, sem gradiente, sem glow, sem curva elástica. */
+  .fin-an { --an-plot-h: 128px; --an-bar-max: 26px; }
+
+  /* Readout — o "cabeçalho de leitura" do terminal. Altura mínima fixa:
+     se crescesse com a composição, o gráfico pularia a cada toque. */
+  .fin-an-readout {
+    display: grid; grid-template-columns: 1fr auto; align-items: baseline;
+    column-gap: var(--space-3); row-gap: 2px;
+    padding-bottom: var(--space-2-5); margin-bottom: var(--space-2-5);
+    border-bottom: var(--border-width) solid var(--color-divider);
+    min-height: 42px;
+  }
+  .fin-an-ro-lbl {
+    font-size: var(--text-caption-size); color: var(--color-neutral-700);
+    font-variant-numeric: tabular-nums;
+    transition: opacity var(--motion-fast) var(--ease-out);
+  }
+  .fin-an-ro-total {
+    font-family: var(--font-heading); font-size: var(--text-title-3-size); font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .fin-an-ro-comp {
+    grid-column: 1 / -1; font-size: var(--text-micro-size); font-weight: 400;
+    color: var(--color-neutral-600); font-variant-numeric: tabular-nums;
+    transition: opacity var(--motion-fast) var(--ease-out);
+  }
+  .fin-an-ro-comp b { font-weight: 700; color: var(--color-neutral-700); }
+  .fin-an-ro-comp .an-off { display: none; }
+
+  /* ── Reserva de largura por sizer ──────────────────────────────
+     Um irmão invisível com a MAIOR string possível do período ocupa a
+     mesma célula de grade do valor. A caixa passa a medir pelo pior
+     caso e para de mudar de largura quando o número rola — é o que
+     elimina layout shift sem chutar largura em `ch` (que erra, porque
+     o símbolo e o separador não medem o mesmo que um dígito nem em
+     tabular). */
+  .an-medida { display: grid; }
+  .an-medida > * { grid-area: 1 / 1; }
+  .an-medida.is-dir { justify-items: end; }
+  .an-sizer { visibility: hidden; pointer-events: none; }
+
+  /* Grade: eixo Y à esquerda, área de plotagem à direita, eixo X
+     embaixo e alinhado com as colunas (mesmo flex, mesmo gap). */
+  .fin-an-body {
+    display: grid; grid-template-columns: max-content 1fr;
+    column-gap: 10px; row-gap: 4px;
+    /* O tick do topo é centrado NA linha do topo (translateY(50%)), então
+       metade dele fica acima da área de plotagem. Sem esta folga ele
+       encostaria na régua do readout. */
+    padding-top: 7px;
+  }
+
+  /* ⚠ A coluna do eixo Y só tem largura porque existe o `.an-sizer`
+     DENTRO dela, em fluxo normal, com o rótulo mais largo do período.
+     Todos os ticks são `position: absolute` (precisam ser, para caírem
+     na altura do próprio valor), e uma caixa cujos filhos são todos
+     absolutos mede ZERO — era isso que jogava o tick mais largo para
+     fora do `main` e o fazia ser cortado pela borda da tela. Não é
+     padding: é a coluna reservando a largura do pior caso, medida pelo
+     browser. */
+  .fin-an-yaxis { position: relative; height: var(--an-plot-h); }
+  .fin-an-yaxis .an-sizer {
+    display: block; font-size: 10px; font-weight: 400;
+    font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1;
+  }
+  .fin-an-yaxis .an-tick {
+    position: absolute; right: 0; transform: translateY(50%);
+    font-size: 10px; font-weight: 400; color: var(--color-neutral-600);
+    font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1;
+  }
+  .fin-an-plot {
+    position: relative; height: var(--an-plot-h);
+    border-bottom: 1.5px solid var(--color-neutral-600);   /* baseline explícita */
+  }
+  .fin-an-grid { position: absolute; inset: 0; pointer-events: none; }
+  .fin-an-grid i {
+    position: absolute; left: 0; right: 0; height: 1px;
+    background: var(--color-divider); opacity: .5;
+  }
+  .fin-an-cols { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 2px; }
+  .fin-an-col {
+    flex: 1 1 0; min-width: 0; height: 100%; padding: 0; border: none; background: none;
+    display: flex; align-items: flex-end; justify-content: center; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .fin-an-col:focus-visible { outline: 2px solid var(--color-accent-700); outline-offset: 1px; }
+  .fin-an-stack {
+    width: 100%; max-width: var(--an-bar-max); height: 0;
+    display: flex; flex-direction: column; border-radius: 0;
+    transition: height var(--motion-route) var(--ease-out);   /* nunca curva elástica */
+  }
+  .fin-an-seg { width: 100%; }
+  .fin-an-seg.is-feito { background: var(--color-accent-700); flex: 1 1 auto; }
+  /* Sólido, não translúcido: é o que tira o ar pastel. O fio de 1px na
+     cor do fundo separa os dois segmentos sem introduzir cor nova. */
+  .fin-an-seg.is-agendado { background: var(--color-accent); border-bottom: 1px solid var(--color-bg); }
+  /* Coluna sob leitura — contorno de 1px, sem anel, sem sombra. */
+  .fin-an-col.is-sel .fin-an-stack { outline: 1px solid var(--color-text); outline-offset: 1px; }
+  /* Coluna de valor zero ainda precisa ser alvo de toque sem desenhar
+     nada: o traço de 1px na baseline é o "existe e vale zero". */
+  .fin-an-col.is-vazio .fin-an-stack { height: 1px !important; background: var(--color-neutral-300); }
+
+  .fin-an-xaxis { display: flex; gap: 2px; }
+  .fin-an-x {
+    flex: 1 1 0; min-width: 0; text-align: center; padding-top: 4px;
+    font-size: 10px; font-weight: 400; color: var(--color-neutral-600);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  /* Período corrente: tick de 2px sob o eixo + rótulo enfatizado.
+     Nenhum halo, nenhum arredondamento. */
+  .fin-an-x.is-current { color: var(--color-text); font-weight: 700; box-shadow: inset 0 2px 0 var(--color-accent-700); }
+
+  /* Legenda — ponto SEMPRE com rótulo em texto (docs/07 §12). */
+  .fin-legend {
+    display: flex; flex-wrap: wrap; gap: var(--space-3-5);
+    margin-top: var(--space-3); padding-top: var(--space-3);
+    border-top: var(--border-width) solid var(--color-divider);
+    font-size: 12px; color: var(--color-neutral-600);
+  }
+  .fin-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .fin-legend i { width: 9px; height: 9px; border-radius: var(--radius-full); flex-shrink: 0; }
+  .fin-legend i.is-feito { background: var(--color-accent-700); }
+  .fin-legend i.is-agendado { background: var(--color-accent); }
+
+  /* ── Histórico de atendimentos ─────────────────────────────────── */
+  .fin-hist-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) 0; }
+  .fin-hist-row + .fin-hist-row { border-top: var(--border-width) solid var(--color-divider); }
+  .fin-hist-date {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex: 0 0 42px; width: 42px; line-height: 1.1;
+  }
+  .fin-hist-day {
+    font-family: var(--font-heading); font-size: var(--text-body-strong-size); font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .fin-hist-mon {
+    font-size: var(--text-micro-size); font-weight: var(--text-micro-weight);
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-neutral-600);
+  }
+  .fin-hist-body { flex: 1; min-width: 0; }
+  .fin-hist-name { font-size: var(--text-body-strong-size); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fin-hist-svc { font-size: 12px; color: var(--color-neutral-600); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fin-hist-val {
+    font-family: var(--font-heading); font-size: var(--text-body-strong-size); font-weight: 600;
+    font-variant-numeric: tabular-nums; text-align: right; flex-shrink: 0; white-space: nowrap;
+  }
+  .fin-hist-val .fin-from,
+  .fin-hist-val .fin-final { display: block; margin: 1px 0 0; text-align: right; }
+
+  /* Expansão inline — altura + opacidade, nunca modal nem página nova. */
+  .fin-hist-more {
+    overflow: hidden; height: 0; opacity: 0;
+    transition: height var(--motion-route) var(--ease-standard), opacity var(--motion-fast) var(--ease-standard);
+  }
+  .fin-hist-more.is-open { opacity: 1; }
+  .fin-see-more {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; min-height: var(--touch-target-min); margin-top: var(--space-2);
+    background: none; border: none; border-top: var(--border-width) solid var(--color-divider);
+    font-family: var(--font-body); font-size: var(--text-caption-size); font-weight: 600;
+    color: var(--color-accent-700); cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--motion-instant) var(--ease-standard);
+  }
+  .fin-see-more:active { transform: scale(0.98); }
+  .fin-see-more:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+  .fin-see-more svg { width: 15px; height: 15px; transition: transform var(--motion-standard) var(--ease-standard); }
+  .fin-see-more.is-less svg { transform: rotate(180deg); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fin-an-stack, .fin-an-ro-lbl, .fin-an-ro-comp, .fin-hist-more, .fin-see-more, .fin-see-more svg { transition: none; }
+    .fin-see-more:active { transform: none; }
+    #finContent { transition: none !important; transform: none !important; }
+  }
+
   /* ── Clientes: filtro contextual vindo do drill-through de Insights ── */
   .cli-context-banner {
     display: flex; align-items: center; gap: var(--space-3);
@@ -576,6 +812,16 @@
   nav button:active { transform: scale(0.98); }
   nav button svg { width: 21px; height: 21px; flex-shrink: 0; }
   nav button.active { color: var(--color-accent-700); font-weight: 700; }
+  /* Seis abas (owner) contra quatro (staff): o rodapé passou a ter dois
+     tamanhos de população desde o RBAC, e "Financeiro" é o rótulo mais
+     longo do app. `flex: 1 1 0` divide a largura em partes iguais — o que
+     encolhe é a coluna, nunca a caixa — e o corpo do rótulo baixa por
+     degraus só nas larguras em que ele deixaria de caber. Com quatro abas
+     nenhum degrau chega a disparar: o gatilho é a largura da tela, e a
+     folga de `space-around` absorve a diferença. */
+  nav button { flex: 1 1 0; min-width: 0; }
+  @media (max-width: 400px) { nav button { font-size: 9.5px; padding: 5px 2px; letter-spacing: -0.01em; } }
+  @media (max-width: 350px) { nav button { font-size: 9px; padding: 5px 1px; } nav button svg { width: 20px; height: 20px; } }
   #toast {
     position: fixed; top: 14px; left: 50%; transform: translateX(-50%) translateY(-60px);
     background: var(--color-accent); color: #fff; padding: 12px 18px; border-radius: 999px;
@@ -3087,10 +3333,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9"/><path d="M10 20v-6h4v6"/></svg>
     <span>Início</span>
   </button>
-  <button data-tab="insights">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11"/><path d="M12 20V5"/><path d="M19 20v-6"/></svg>
-    <span>Insights</span>
-  </button>
   <button data-tab="agenda">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="2.2"/><path d="M8 3.5v4M16 3.5v4M4 10h16"/></svg>
     <span>Agenda</span>
@@ -3098,6 +3340,14 @@
   <button data-tab="clients">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.3" r="3"/><path d="M3.7 19.5c.3-3.2 2.6-5.5 5.3-5.5s5 2.3 5.3 5.5"/><circle cx="16.7" cy="9" r="2.2"/><path d="M15.3 14.3c2.2.4 3.9 2.4 4.1 4.7"/></svg>
     <span>Clientes</span>
+  </button>
+  <button data-tab="insights">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V11"/><path d="M12 20V5"/><path d="M19 20v-6"/></svg>
+    <span>Insights</span>
+  </button>
+  <button data-tab="financeiro">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6.5" width="18" height="12" rx="2.5"/><circle cx="12" cy="12.5" r="2.6"/><path d="M6.6 12.5h.01M17.4 12.5h.01"/></svg>
+    <span>Financeiro</span>
   </button>
   <button data-tab="estoque">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8 12 4l8.5 4L12 12 3.5 8Z"/><path d="M3.5 8v8.7L12 20.5l8.5-3.8V8"/><path d="M12 12v8.5"/></svg>
@@ -3114,7 +3364,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', role: undefined, booting: false, painelAtivo: false, appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, clientQuestionnaires: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', role: undefined, booting: false, painelAtivo: false, appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, clientQuestionnaires: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, financeiroPeriod: 'mes', financeiroChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
 
 // ── RBAC V1 · papel e capabilities (18/08/2026) ───────────────
 // Dois papéis: `owner` (a Juliane) e `staff` (a assistente). A assistente
@@ -3142,20 +3392,23 @@ const ROLE_CAPABILITIES = {
 // 17/08/2026. Sem ela, o guard recusaria justamente o fluxo que a
 // assistente mais usa.
 //
-// `financeiro` é autorização nascendo ANTES da tela: quando o Financeiro
-// existir, ele já encontra o papel resolvido e o guard de pé, em vez de
-// precisar de retrofit de RBAC. Não desenha aba nenhuma hoje — o rodapé só
-// mostra o que tem tela.
+// `financeiro` nasceu aqui ANTES da tela, para o Financeiro já encontrar o
+// papel resolvido e o guard de pé em vez de precisar de retrofit de RBAC.
+// Desde 18/08/2026 ele tem tela e aba — e a aba some para `staff` pelo
+// mesmo caminho declarativo, sem nenhuma condicional nova.
 function canAccess(cap) {
   const caps = ROLE_CAPABILITIES[state.role];
   return !!caps && caps.indexOf(cap) !== -1;
 }
 
-// Nem toda capability e rota. `financeiro` ainda nao tem tela e
-// `client.lifetime_value` nunca sera uma — sao permissao, nao destino. Esta
-// lista existe para o fallback do guard nunca mandar a tela para um lugar
-// que render() nao sabe desenhar.
-const TABS_ROTEAVEIS = ['inicio', 'agenda', 'clients', 'estoque', 'insights', 'questionario'];
+// Nem toda capability e rota. `client.lifetime_value` nunca sera uma — e
+// permissao, nao destino. Esta lista existe para o fallback do guard nunca
+// mandar a tela para um lugar que render() nao sabe desenhar.
+//
+// `financeiro` entrou aqui em 18/08/2026, junto com a tela. A capability ja
+// existia desde a fundacao do RBAC, justamente para o Financeiro nascer
+// autorizado em vez de precisar de retrofit — o que faltava era o destino.
+const TABS_ROTEAVEIS = ['inicio', 'agenda', 'clients', 'estoque', 'insights', 'financeiro', 'questionario'];
 
 // Destino quando o guard recusa a aba corrente. `inicio` e o destino natural
 // (e a tela de abertura dos dois papeis); a varredura existe so para um papel
@@ -4427,7 +4680,15 @@ function insTrendSeries(kind) {
 }
 
 const INS_CHART = { W: 320, H: 132, PT: 30, PB: 22, PL: 10, PR: 10 };
-function insTrendSvg(serie) {
+// Um desenho só para as duas abas: mesma geometria, mesma leitura. O que
+// muda é o SUBSTANTIVO do aria-label ("Receita" na Insights, "Valor" no
+// Financeiro) e o id da linha, porque cada aba anima o traço no seu
+// próprio momento de entrada e dois `id` iguais no mesmo documento
+// fariam uma animar a linha da outra.
+function insTrendSvg(serie, opts) {
+  const o = opts || {};
+  const lineId = o.lineId || 'insTrendLine';
+  const noun = o.noun || 'Receita';
   const { W, H, PT, PB, PL, PR } = INS_CHART;
   const n = serie.length;
   const vals = serie.map(p => p.total);
@@ -4459,9 +4720,9 @@ function insTrendSvg(serie) {
 
   const resumo = serie.map(p => `${p.label}: ${formatCurrency(p.total)}`).join('. ');
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img"
-      aria-label="Receita por período fechado. ${esc(resumo)}. Melhor: ${esc(serie[iMax].label)}.">
+      aria-label="${esc(noun)} por período fechado. ${esc(resumo)}. Melhor: ${esc(serie[iMax].label)}.">
     <path d="${area}" fill="var(--color-accent-100)" opacity=".5"/>
-    <path id="insTrendLine" d="${d}" fill="none" stroke="var(--color-accent-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path id="${lineId}" d="${d}" fill="none" stroke="var(--color-accent-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     ${pontos}${rotulos}${eixo}
   </svg>`;
 }
@@ -5733,6 +5994,887 @@ function insAnimateChart() {
     path.style.transition = 'stroke-dashoffset var(--motion-route) var(--ease-out)';
     path.style.strokeDashoffset = '0';
   }));
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// FINANCEIRO · V1 (18/08/2026)
+//
+// A pergunta da aba é UMA: "quanto vale a agenda, e como esse valor
+// está mudando ao longo do tempo?"
+//
+// O que o Financeiro NÃO é, e a distinção não é de vocabulário: caixa,
+// contabilidade, conciliação bancária, recebimento, lucro, margem,
+// comissão. Nenhum número desta tela sai de `payments` nem do Stripe —
+// tudo vem de `state.appointments`, que é a AGENDA. Por isso a copy
+// inteira fala em "valor", "já atendidos", "ainda agendado" e "total do
+// período", e nunca em "recebido" ou "pago": o app não sabe o que
+// entrou na conta, sabe o que foi marcado e o que foi cobrado.
+//
+// Divisão com a Insights, para as duas não virarem a mesma tela:
+//
+//     Insights   = diagnóstico operacional (ocupação, ritmo, €/h)
+//     Financeiro = evolução do valor monetário (€ absoluto, ticket, mix)
+//
+// Consequência prática: "Valor por serviço" mostra € e participação, e
+// o €/h continua sendo da Insights. Um é "quanto vale", o outro é
+// "quanto rende por hora de cadeira".
+//
+// RBAC: `financeiro` é capability owner-only, já declarada em
+// ROLE_CAPABILITIES desde a fundação do RBAC. Quem protege é o guard
+// central de render(), não o rodapé. Nada aqui abre grant novo: cada
+// número sai de dado que a Agenda e a Home já precisam ler.
+// ══════════════════════════════════════════════════════════════
+
+// Seletor próprio, estado próprio. O da Insights NÃO é reaproveitado:
+// duas abas com o mesmo período em memória fariam a troca numa mexer
+// silenciosamente na outra, e as duas respondem perguntas diferentes.
+const FIN_PERIODS = [
+  { key: 'semana', label: 'Semana' },
+  { key: 'mes', label: 'Mês' },
+  { key: 'ano', label: 'Ano' },
+];
+
+// Prévia do histórico + teto do recorte. Acima de FIN_HIST_MAX a lista
+// vira carregamento progressivo (docs/09) — a V1 mostra os mais
+// recentes e DIZ que é um recorte, em vez de prometer um botão que
+// entregaria centenas de linhas de uma vez.
+const FIN_HIST_PREVIEW = 3;
+const FIN_HIST_MAX = 30;
+
+// `ICONS.chevron` aponta para a DIREITA (é o affordance de "entra
+// aqui", usado nas listas). "Ver mais" abre para baixo e gira 180° ao
+// abrir, então precisa do chevron descendente — mesmo traço, mesma
+// espessura, só a direção muda.
+const FIN_CHEVRON_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+
+const FIN_MES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const FIN_MES_NOME = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const FIN_DIA_NOME = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+// ── Valor estimado ────────────────────────────────────────────
+// "a partir de" só acende quando o valor ainda PODE mudar: não existe
+// valor final definido E o serviço é de preço variável. Um corte de
+// preço fixo sem valor final não é estimativa, é o preço.
+function finValorEstimado(a) {
+  if (!a || valorSeDefinido(a.final_price) !== null) return false;
+  const id = a.service && a.service.id;
+  const svc = id && state.services.find(s => s.id === id);
+  return !!(svc && svc.price_varies);
+}
+function finTemValorFinal(a) {
+  return !!a && valorSeDefinido(a.final_price) !== null;
+}
+
+// ── Buckets da Distribuição ───────────────────────────────────
+// Cada nível mostra a decomposição imediatamente inferior — a mesma
+// ideia fractal de "Onde há espaço" na Insights:
+//     Semana → 7 dias      Mês → semanas do mês      Ano → 12 meses
+//
+// `l` é o rótulo cheio (readout e aria-label), `la` é o rótulo seco do
+// eixo X, que é curto por desenho: com 12 colunas a 320px sobram ~21px
+// por coluna e nada além de uma inicial cabe.
+function finBuckets(kind, janela) {
+  const out = [];
+  const agora = new Date();
+  const marcaAtual = b => (agora >= b.ini && agora < b.fim);
+
+  if (kind === 'semana') {
+    for (let i = 0; i < 7; i++) {
+      const ini = new Date(janela.start); ini.setDate(ini.getDate() + i); ini.setHours(0, 0, 0, 0);
+      const fim = new Date(ini); fim.setDate(fim.getDate() + 1);
+      out.push({ l: FIN_DIA_NOME[ini.getDay()], la: WEEKDAY_LABELS_3[ini.getDay()], ini, fim });
+    }
+  } else if (kind === 'mes') {
+    // A primeira e a última semana do mês podem ser parciais — a fatia
+    // é sempre a interseção da semana com o mês, nunca a semana cheia,
+    // senão o total da distribuição estouraria o total do período.
+    let cursor = new Date(janela.start);
+    while (cursor < janela.end) {
+      const proximaSegunda = startOfWeekMonday(cursor);
+      proximaSegunda.setDate(proximaSegunda.getDate() + 7);
+      const fim = proximaSegunda < janela.end ? proximaSegunda : new Date(janela.end);
+      const ultimoDia = new Date(fim.getTime() - 1);
+      out.push({
+        l: `${cursor.getDate()} – ${ultimoDia.getDate()} ${FIN_MES_ABREV[cursor.getMonth()]}`,
+        la: String(cursor.getDate()),
+        ini: new Date(cursor), fim: new Date(fim),
+      });
+      cursor = new Date(fim);
+    }
+  } else {
+    const ano = janela.start.getFullYear();
+    for (let m = 0; m < 12; m++) {
+      const ini = new Date(ano, m, 1);
+      const fim = new Date(ano, m + 1, 1);
+      out.push({ l: FIN_MES_NOME[m], la: FIN_MES_NOME[m].charAt(0), ini, fim });
+    }
+  }
+  out.forEach(b => { b.feito = 0; b.agendado = 0; if (marcaAtual(b)) b.atual = true; });
+  return out;
+}
+
+// ── Classificação temporal ────────────────────────────────────
+// "Já atendido" vs "ainda agendado" sai de `starts_at` contra agora, NÃO
+// de status: o produto não tem fluxo para marcar concluído/não
+// compareceu, e inventar isso a partir de `confirmed` seria mentir. Os
+// cancelados já saíram na leitura (loadAppointments filtra `cancelled`),
+// e o hold de pagamento nunca entrou em `state.appointments`.
+//
+// `janela.cut` é o MESMO instante usado por insApptsBetween() para
+// separar realizados de agendados, e é isso que faz a soma da
+// distribuição fechar exatamente com o Hero.
+function finDistribuicao(kind, janela) {
+  const buckets = finBuckets(kind, janela);
+  const corte = janela.cut.getTime();
+  insApptsBetween(janela.start, janela.end).forEach(a => {
+    const t = new Date(a.starts_at).getTime();
+    const b = buckets.find(x => t >= x.ini.getTime() && t < x.fim.getTime());
+    if (!b) return;
+    if (t < corte) b.feito += appointmentRevenue(a);
+    else b.agendado += appointmentRevenue(a);
+  });
+  return buckets;
+}
+
+// ── Valor por serviço ─────────────────────────────────────────
+// ⚠ LIMITAÇÃO CONHECIDA, e ela é de DADO, não de tela.
+//
+// O valor canônico de um atendimento é do atendimento INTEIRO
+// (`final_price` é total por appointment, e `total_price` é a soma dos
+// snapshots). A decomposição por serviço vive em `appointment_services`,
+// que tem `REVOKE ALL ... FROM anon, authenticated` desde
+// booking_v2_harden_grants — o browser não a alcança, nem para o owner.
+//
+// Então o agrupamento é pelo `service_id` legado, que a Booking V2 grava
+// como `p_service_ids[1]`: o PRIMEIRO serviço do agendamento. Num
+// multi-serviço, o valor inteiro cai no primeiro serviço.
+//
+// Foi decidido NÃO dividir proporcionalmente: sem os snapshots não há
+// como fazer isso sem inventar precisão, e uma divisão silenciosa seria
+// pior que uma atribuição declaradamente grosseira. Também foi decidido
+// não abrir grant em `appointment_services` só para desenhar um bloco —
+// o total do período continua correto porque soma appointments, não
+// serviços; é o RANKING que pode não reconciliar. Ver app/CLAUDE.md.
+function finServicos(list) {
+  const mapa = new Map();
+  list.forEach(a => {
+    const nome = (a.service && a.service.name) || 'Outro';
+    if (!mapa.has(nome)) mapa.set(nome, { nome, valor: 0, qtd: 0, estimado: false });
+    const r = mapa.get(nome);
+    r.valor += appointmentRevenue(a);
+    r.qtd += 1;
+    if (finValorEstimado(a)) r.estimado = true;
+  });
+  return Array.from(mapa.values()).sort((a, b) => b.valor - a.valor);
+}
+
+// ── Escala "nice" do eixo Y ───────────────────────────────────
+// Esta é a diferença MATEMÁTICA entre a Analytical e uma barra comum.
+// Normalizar pelo maior dado (maior = 100%) faz a maior barra sempre
+// encostar no teto e tira a unidade da altura — só compara colunas
+// entre si. Aqui o máximo é arredondado para cima até um passo redondo
+// (1, 2, 2,5 ou 5 × 10ⁿ) e as barras são desenhadas contra ESSE topo:
+//   • a maior barra quase nunca encosta no teto;
+//   • a altura passa a ter unidade monetária — dá para ler sem tocar;
+//   • períodos que caem na mesma escala viram comparáveis.
+function finEscalaNice(max, alvoIntervalos) {
+  const alvo = alvoIntervalos || 4;
+  if (!(max > 0)) return { topo: 100, passo: 50, ticks: [0, 50, 100] };
+  const bruto = max / alvo;
+  const mag = Math.pow(10, Math.floor(Math.log10(bruto)));
+  const norm = bruto / mag;
+  let passo;
+  if (norm <= 1) passo = 1;
+  else if (norm <= 2) passo = 2;
+  else if (norm <= 2.5) passo = 2.5;
+  else if (norm <= 5) passo = 5;
+  else passo = 10;
+  passo *= mag;
+  const topo = Math.ceil(max / passo) * passo;
+  const ticks = [];
+  for (let v = 0; v <= topo + 1e-9; v += passo) ticks.push(Math.round(v * 100) / 100);
+  return { topo, passo, ticks };
+}
+
+// Rótulo de tick. O `k` é EXCEÇÃO deliberada e local ao eixo: docs/06
+// §24 proíbe abreviar dinheiro, e a proibição continua valendo em todo
+// valor que a Juliane lê como quantia (Hero, KPIs, readout, histórico,
+// valor por serviço). Aqui é RÉGUA, não quantia.
+function finTick(v) {
+  if (v === 0) return '€0';
+  if (v < 1000) return '€' + v;
+  const k = v / 1000;
+  return '€' + (Number.isInteger(k) ? k : String(k).replace('.', ',')) + 'k';
+}
+
+// ── Dados do período ──────────────────────────────────────────
+// Um único objeto alimenta a tela inteira, como em insComputePeriod().
+// As janelas, a soma e o delta são os MESMOS helpers da Insights — a
+// separação entre as abas é de conteúdo, não de matemática, e duas
+// implementações de "quanto vale este mês" divergiriam em silêncio.
+function finComputePeriod(kind) {
+  const atual = insWindow(kind, 0);
+  const anterior = insWindow(kind, 1);
+
+  const atendidos = insApptsBetween(atual.start, atual.cut);
+  const agendados = insApptsBetween(atual.cut, atual.end);
+  const antAtendidos = insApptsBetween(anterior.start, anterior.cut);
+  const antAgendados = insApptsBetween(anterior.cut, anterior.end);
+
+  const atendido = insSumRevenue(atendidos);
+  const agendado = insSumRevenue(agendados);
+  const antAtendido = insSumRevenue(antAtendidos);
+
+  return {
+    kind, atual, anterior, atendidos, agendados, antAtendidos,
+    atendido, agendado,
+    total: atendido + agendado,
+    antAtendido,
+    antTotal: antAtendido + insSumRevenue(antAgendados),
+    atendimentos: atendidos.length,
+    antAtendimentos: antAtendidos.length,
+    ticket: atendidos.length ? atendido / atendidos.length : null,
+    antTicket: antAtendidos.length ? antAtendido / antAtendidos.length : null,
+    dist: finDistribuicao(kind, atual),
+    servicos: finServicos(atendidos),
+    labels: insPeriodLabels(kind),
+  };
+}
+
+function finDistTitulo(kind) {
+  if (kind === 'semana') return 'Como o valor se distribui ao longo da semana';
+  if (kind === 'mes') return 'Como o valor se distribui ao longo do mês';
+  return 'Como o valor se distribui ao longo do ano';
+}
+function finEvoSub(kind, n) {
+  if (kind === 'semana') return `Últimas ${n} semanas fechadas`;
+  if (kind === 'mes') return `Últimos ${n} meses fechados`;
+  return `Últimos ${n} anos fechados`;
+}
+
+// ── Composição do readout ─────────────────────────────────────
+// Uma única fonte para o texto da composição, usada pelo readout E pelo
+// aria-label da coluna. Enquanto fossem duas, o leitor de tela ouviria
+// "€0 atendidos e €480 agendados" numa fatia só de futuro, e a tela
+// diria só "€480 agendados" — a versão pior seria a que ninguém vê.
+function finComposicaoTexto(r) {
+  if (r.feito > 0 && r.agendado > 0) return `${formatCurrency(r.feito)} atendidos e ${formatCurrency(r.agendado)} agendados`;
+  if (r.agendado > 0) return `${formatCurrency(r.agendado)} agendados`;
+  if (r.feito > 0) return `${formatCurrency(r.feito)} atendidos`;
+  return 'sem atendimento';
+}
+
+// ── Bloco Analytical ──────────────────────────────────────────
+// Sem rótulo permanente sobre as barras: com 12 colunas eles não cabem,
+// e com 5 competem com o eixo Y, que já dá a grandeza. O número exato
+// vive no readout, que atualiza no toque, no hover e no foco de teclado.
+function finAnalyticalHtml(P) {
+  const totais = P.dist.map(r => r.feito + r.agendado);
+  const escala = finEscalaNice(Math.max(...totais), P.dist.length > 8 ? 4 : 3);
+
+  // O sizer carrega o rótulo mais LARGO, não o maior valor: "€1,5k" é
+  // mais largo que "€2k". Medido por contagem de caracteres, que basta
+  // porque todos usam a mesma fonte e o mesmo corpo.
+  const rotulosTick = escala.ticks.map(finTick);
+  const tickMaisLargo = rotulosTick.reduce((a, b) => (b.length > a.length ? b : a), '');
+  const yaxis = `<span class="an-sizer" aria-hidden="true">${esc(tickMaisLargo)}</span>` +
+    escala.ticks.map((t, k) =>
+      `<span class="an-tick" style="bottom:${(t / escala.topo * 100).toFixed(3)}%">${esc(rotulosTick[k])}</span>`).join('');
+  // A linha do zero é a própria baseline — não se desenha gridline nela.
+  const grid = escala.ticks.filter(t => t > 0).map(t =>
+    `<i style="bottom:${(t / escala.topo * 100).toFixed(3)}%"></i>`).join('');
+
+  const colunas = P.dist.map((r, i) => {
+    const soma = r.feito + r.agendado;
+    const h = (soma / escala.topo * 100).toFixed(3);
+    const fatiaAgendado = soma > 0 ? (r.agendado / soma * 100).toFixed(3) : 0;
+    const aria = `${r.l}: ${formatCurrency(soma)}, ${finComposicaoTexto(r)}`;
+    return `
+      <button type="button" class="fin-an-col${soma === 0 ? ' is-vazio' : ''}"
+        data-i="${i}" aria-label="${esc(aria)}">
+        <span class="fin-an-stack" data-h="${soma === 0 ? 0 : h}">
+          ${r.agendado > 0 ? `<span class="fin-an-seg is-agendado" style="flex:0 0 ${fatiaAgendado}%"></span>` : ''}
+          ${r.feito > 0 ? '<span class="fin-an-seg is-feito"></span>' : ''}
+        </span>
+      </button>`;
+  }).join('');
+
+  const xaxis = P.dist.map(r =>
+    `<span class="fin-an-x${r.atual ? ' is-current' : ''}">${esc(r.la || r.l)}</span>`).join('');
+
+  // ── Readout com nós ESTÁVEIS ────────────────────────────────
+  // Montado UMA vez por repintura. finPintarReadout() nunca mais toca
+  // em innerHTML — destruir e recriar os nós a cada toque reinicia
+  // qualquer transição e força o navegador a repintar o bloco inteiro,
+  // que é exatamente o "blink" que este desenho evita.
+  // Cada número tem um sizer com o pior caso DESTE período, então a
+  // caixa não muda de largura quando o valor rola.
+  const maxTotal = Math.max(...totais);
+  const maxFeito = Math.max(...P.dist.map(r => r.feito));
+  const maxAgend = Math.max(...P.dist.map(r => r.agendado));
+  const rotuloMaisLargo = P.dist.reduce((a, r) => (r.l.length > a.length ? r.l : a), '');
+
+  const readout = `
+    <span class="fin-an-ro-lbl an-medida" id="finAnLbl">
+      <span class="an-sizer" aria-hidden="true">${esc(rotuloMaisLargo)}</span>
+      <span data-txt></span>
+    </span>
+    <span class="fin-an-ro-total an-medida is-dir" id="finAnTotal">
+      <span class="an-sizer" aria-hidden="true">${formatCurrency(maxTotal)}</span>
+      <span data-num></span>
+    </span>
+    <span class="fin-an-ro-comp" id="finAnComp"><span class="an-part" data-part="feito"><b class="an-medida" style="display:inline-grid"><span class="an-sizer" aria-hidden="true">${formatCurrency(maxFeito)}</span><span data-num></span></b> atendidos</span><span class="an-sep"> · </span><span class="an-part" data-part="agendado"><b class="an-medida" style="display:inline-grid"><span class="an-sizer" aria-hidden="true">${formatCurrency(maxAgend)}</span><span data-num></span></b> agendados</span><span class="an-part" data-part="vazio">sem atendimento</span></span>`;
+
+  return `
+    <div class="fin-an" id="finAn">
+      <div class="fin-an-readout" id="finAnReadout" aria-live="polite">${readout}</div>
+      <div class="fin-an-body">
+        <div class="fin-an-yaxis">${yaxis}</div>
+        <div class="fin-an-plot">
+          <div class="fin-an-grid">${grid}</div>
+          <div class="fin-an-cols">${colunas}</div>
+        </div>
+        <div></div>
+        <div class="fin-an-xaxis">${xaxis}</div>
+      </div>
+    </div>`;
+}
+
+// ── Roll numérico (odômetro) ──────────────────────────────────
+// Conta do valor QUE ESTÁ NA TELA até o novo, com easeOutCubic — sem
+// overshoot e sem embaralhar dígito aleatório (isso lê como cassino; um
+// instrumento analítico assenta, não sorteia).
+//
+// Retarget é a parte que importa: tocar rápido de uma barra para outra
+// cancela o rAF pendente e recomeça a partir do valor EXIBIDO, nunca do
+// destino anterior. Sem isso as animações se acumulam — cada uma
+// escrevendo no mesmo nó em frames alternados, que é o "tremido".
+// `_cur` guarda o exibido e `_raf` o handle, ambos no próprio nó, e é
+// isso que garante que dois números diferentes não disputem estado.
+const FIN_ROLL_MS = 260;
+
+function finPararRoll(el) {
+  if (el._raf) { cancelAnimationFrame(el._raf); el._raf = 0; }
+  if (el._rollT) { clearTimeout(el._rollT); el._rollT = 0; }
+}
+
+function finRolar(el, alvo) {
+  if (!el) return;
+  finPararRoll(el);
+  const de = (typeof el._cur === 'number') ? el._cur : alvo;
+  if (prefersReducedMotion() || de === alvo) {
+    el._cur = alvo; el.textContent = formatCurrency(alvo);
+    return;
+  }
+  const t0 = performance.now();
+  function assentar() {
+    finPararRoll(el);
+    el._cur = alvo;
+    el.textContent = formatCurrency(alvo);
+  }
+  function frame(agora) {
+    const p = Math.min(1, (agora - t0) / FIN_ROLL_MS);
+    const e = 1 - Math.pow(1 - p, 3);
+    const v = Math.round(de + (alvo - de) * e);
+    el._cur = v;
+    el.textContent = formatCurrency(v);
+    if (p < 1) el._raf = requestAnimationFrame(frame);
+    else assentar();
+  }
+  el._raf = requestAnimationFrame(frame);
+  // ⚠ REDE DE SEGURANÇA, não zelo: requestAnimationFrame NÃO dispara
+  // numa aba sem composição de frames (segundo plano, painel oculto,
+  // aparelho economizando bateria). Sem isto o número congela no valor
+  // ANTIGO com o rAF pendente para sempre — a mesma armadilha que
+  // morphAvatar(), splashBoot() e insShowHelp() já tratam. O timer
+  // assenta no destino e cancela o frame órfão; se o rAF correr
+  // normalmente, ele chega antes e o timer é limpo em assentar().
+  el._rollT = setTimeout(assentar, FIN_ROLL_MS + 80);
+}
+
+// Troca de texto sem piscar: mergulha a opacidade, troca no vale, volta.
+// O timer anterior é cancelado a cada chamada — trocar de barra três
+// vezes em 200ms não deixa três trocas pendentes brigando pelo mesmo nó.
+function finTrocarTexto(el, texto) {
+  if (!el) return;
+  const alvo = el.querySelector('[data-txt]') || el;
+  if (alvo.textContent === texto) return;
+  if (prefersReducedMotion()) { alvo.textContent = texto; el.style.opacity = ''; return; }
+  if (el._t) clearTimeout(el._t);
+  el.style.opacity = '0.35';
+  el._t = setTimeout(() => { alvo.textContent = texto; el.style.opacity = '1'; el._t = 0; }, 110);
+}
+
+// Assinatura da composição: QUAIS partes existem. Só quando ela muda é
+// que a linha faz o settle de opacidade — troca de valor puro rola sem
+// fade nenhum, e é isso que faz parecer instrumento em vez de card.
+function finAssinatura(r) {
+  return (r.feito > 0 ? 'F' : '') + (r.agendado > 0 ? 'A' : '') || 'Z';
+}
+
+function finPintarReadout(P, i) {
+  const comp = document.getElementById('finAnComp');
+  if (!comp) return;
+  const r = P.dist[i];
+
+  finTrocarTexto(document.getElementById('finAnLbl'), r.l);
+  finRolar(document.querySelector('#finAnTotal [data-num]'), r.feito + r.agendado);
+
+  const assin = finAssinatura(r);
+  const mudouEstrutura = comp._assin !== undefined && comp._assin !== assin;
+  comp._assin = assin;
+
+  const partes = {
+    feito: r.feito > 0, agendado: r.agendado > 0,
+    vazio: r.feito === 0 && r.agendado === 0,
+  };
+  comp.querySelectorAll('.an-part').forEach(p => p.classList.toggle('an-off', !partes[p.dataset.part]));
+  // O separador só existe quando há dois lados para separar.
+  comp.querySelector('.an-sep').classList.toggle('an-off', !(partes.feito && partes.agendado));
+
+  if (r.feito > 0) finRolar(comp.querySelector('[data-part="feito"] [data-num]'), r.feito);
+  if (r.agendado > 0) finRolar(comp.querySelector('[data-part="agendado"] [data-num]'), r.agendado);
+
+  if (mudouEstrutura && !prefersReducedMotion()) {
+    if (comp._t) clearTimeout(comp._t);
+    comp.style.opacity = '0.4';
+    comp._t = setTimeout(() => { comp.style.opacity = '1'; comp._t = 0; }, 20);
+  } else if (prefersReducedMotion()) {
+    comp.style.opacity = '1';
+  }
+}
+
+// Índice de repouso do readout: a fatia corrente; sem ela, a última com
+// movimento. O readout nunca fica vazio — caixa vazia num terminal lê
+// como dado faltando, não como "nada aconteceu".
+function finIndicePadrao(P) {
+  const iAtual = P.dist.findIndex(r => r.atual);
+  if (iAtual >= 0) return iAtual;
+  for (let i = P.dist.length - 1; i >= 0; i--) if (P.dist[i].feito + P.dist[i].agendado > 0) return i;
+  return 0;
+}
+
+function finLigarAnalytical(P) {
+  const wrap = document.getElementById('finAn');
+  if (!wrap) return;
+  const cols = Array.from(wrap.querySelectorAll('.fin-an-col'));
+  const padrao = finIndicePadrao(P);
+
+  function selecionar(i) {
+    cols.forEach((c, k) => c.classList.toggle('is-sel', k === i));
+    finPintarReadout(P, i);
+  }
+  cols.forEach((c, i) => {
+    // pointerenter cobre mouse; click cobre toque; focus cobre teclado.
+    c.addEventListener('pointerenter', () => selecionar(i));
+    c.addEventListener('click', () => selecionar(i));
+    c.addEventListener('focus', () => selecionar(i));
+  });
+  // Sair da área devolve o repouso — sem isto o readout ficaria preso na
+  // última coluna tocada e pareceria o estado corrente.
+  const plot = wrap.querySelector('.fin-an-plot');
+  if (plot) plot.addEventListener('pointerleave', () => selecionar(padrao));
+  selecionar(padrao);
+}
+
+// Barras nascem em 0 e crescem — mesma ideia de animateFills(), que só
+// sabe animar largura. Sem isto, trocar de período trocaria alturas de
+// repente.
+function finAnimarBarras(root) {
+  const alturas = Array.from(root.querySelectorAll('.fin-an-stack[data-h]'));
+  const aplicar = () => alturas.forEach(el => { el.style.height = el.dataset.h + '%'; });
+  if (prefersReducedMotion()) {
+    alturas.forEach(el => { el.style.transition = 'none'; });
+    aplicar();
+    return;
+  }
+  requestAnimationFrame(() => requestAnimationFrame(aplicar));
+  // Mesma rede de segurança de finRolar(): numa aba sem composição de
+  // frames o rAF nunca corre, e sem isto as barras ficariam em altura
+  // ZERO — um gráfico vazio, que é pior que um gráfico sem animação.
+  // Reaplicar depois é inofensivo: a largura/altura de destino é a
+  // mesma, e o browser ignora a segunda escrita idêntica.
+  setTimeout(aplicar, 320);
+}
+
+// ── Histórico ─────────────────────────────────────────────────
+function finHistorico(list) {
+  return list.slice().sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at)).slice(0, FIN_HIST_MAX);
+}
+
+function finHistLinha(a) {
+  const d = new Date(a.starts_at);
+  const valor = appointmentRevenue(a);
+  const cliente = (a.client && a.client.name) || 'Cliente';
+  const servico = (a.service && a.service.name) || 'Atendimento';
+  return `
+    <div class="fin-hist-row">
+      <div class="fin-hist-date">
+        <span class="fin-hist-day">${d.getDate()}</span>
+        <span class="fin-hist-mon">${esc(FIN_MES_ABREV[d.getMonth()])}</span>
+      </div>
+      <div class="fin-hist-body">
+        <div class="fin-hist-name">${esc(cliente)}</div>
+        <div class="fin-hist-svc">${esc(servico)}</div>
+      </div>
+      <div class="fin-hist-val">
+        ${finValorEstimado(a) ? '<span class="fin-from">a partir de</span>' : ''}${formatCurrency(valor)}${finTemValorFinal(a) ? '<span class="fin-final">Valor final</span>' : ''}
+      </div>
+    </div>`;
+}
+
+// ── Conteúdo ──────────────────────────────────────────────────
+// Ordem fixa: Hero → Indicadores → Evolução → Distribuição → Valor por
+// serviço → Histórico. Evolução vem ANTES de Distribuição de propósito:
+// a pergunta da aba é "quanto vale e está subindo?", e a trajetória
+// precede a leitura interna do período. NÃO existe bloco de
+// comparativos — Hero, KPIs e Evolução já respondem isso três vezes.
+function finContentHtml(P) {
+  const dHero = insDelta(P.atendido, P.antAtendido, 'pct');
+  const serie = insTrendSeries(P.kind);
+  const temSerie = serie.some(p => p.total > 0);
+
+  const kpis = [
+    { l: 'Atendimentos', v: String(P.atendimentos), d: insDelta(P.atendimentos, P.antAtendimentos, 'abs') },
+    { l: 'Ticket médio', v: P.ticket === null ? '—' : formatCurrency(P.ticket), d: insDelta(P.ticket, P.antTicket, 'pct'),
+      help: 'Valor médio por atendimento no período: o valor já atendido dividido pelo número de atendimentos. Onde o valor final já foi definido, é ele que conta; o resto entra pelo valor base do serviço.' },
+    { l: 'Ainda agendado', v: formatCurrency(P.agendado), d: null,
+      help: 'Soma do valor dos atendimentos que ainda vão acontecer dentro deste período. Não é valor já realizado — é compromisso marcado na agenda.' },
+    { l: 'Total do período', v: formatCurrency(P.total), d: insDelta(P.total, P.antTotal, 'pct') },
+  ];
+
+  const totalSvc = P.servicos.reduce((s, x) => s + x.valor, 0);
+  const maxSvc = Math.max(1, ...P.servicos.map(s => s.valor));
+  const temAgendado = P.dist.some(r => r.agendado > 0);
+
+  const hist = finHistorico(P.atendidos);
+  const visiveis = hist.slice(0, FIN_HIST_PREVIEW);
+  const ocultos = hist.slice(FIN_HIST_PREVIEW);
+  const histNota = P.atendimentos > FIN_HIST_MAX
+    ? `Os ${hist.length} atendimentos mais recentes de ${P.atendimentos} no período`
+    : 'Os atendimentos já realizados no período';
+
+  return `
+    <section class="ins-answer" aria-label="Valor do período">
+      <p class="ins-eyebrow">${esc(P.labels.eyebrow)}</p>
+      <div class="ins-answer-row">
+        <span class="ins-answer-value">${formatCurrency(P.atendido)}</span>
+        <span class="ins-answer-word">em atendimentos</span>
+        ${insDeltaHtml(dHero, 'ins-delta')}
+      </div>
+      ${dHero ? `<p class="ins-answer-vs">${formatCurrency(P.antAtendido)} ${esc(P.labels.vs)}</p>` : ''}
+      ${P.agendado > 0 ? `
+        <div class="ins-answer-ahead">
+          <span class="ins-ahead-ic" aria-hidden="true">${ICONS.calendar}</span>
+          <span><strong>${formatCurrency(P.agendado)}</strong> ainda agendados ${esc(P.labels.restante)}</span>
+        </div>` : ''}
+      <p class="fin-caveat">Onde o valor final já foi definido, é ele que conta. O resto entra pelo valor base do serviço.</p>
+    </section>
+
+    <section class="ins-floor">
+      <h2 class="ins-title">Indicadores</h2>
+      <p class="fin-sub">Comparados ${esc(P.labels.vs)}</p>
+      <div class="ins-kpis">
+        ${kpis.map(k => `
+          <div class="ins-kpi">
+            <div class="ins-kpi-lbl">${esc(k.l)}${k.help ? ` <button type="button" class="ins-kpi-help"
+              data-help-label="${esc(k.l)}" data-help-text="${esc(k.help)}"
+              aria-label="O que é ${esc(k.l)}">?</button>` : ''}</div>
+            <div class="ins-kpi-row">
+              <span class="ins-kpi-val">${esc(k.v)}</span>
+              ${insDeltaHtml(k.d, 'ins-kpi-delta')}
+            </div>
+          </div>`).join('')}
+      </div>
+    </section>
+
+    <section class="ins-floor">
+      <h2 class="ins-title">Evolução</h2>
+      <p class="fin-sub">${esc(finEvoSub(P.kind, serie.length))}</p>
+      ${temSerie ? `
+        <div class="ins-chart-card">
+          <div id="finChartWrap">${insTrendSvg(serie, { lineId: 'finTrendLine', noun: 'Valor' })}</div>
+          <p class="ins-chart-foot">
+            ${esc(insEmCursoLabel(P.kind))} em andamento: <strong>${formatCurrency(P.total)}</strong> total previsto
+          </p>
+        </div>` : emptyStateHtml({
+          icon: ICONS.bars, compact: true,
+          title: 'Sem histórico suficiente para comparar.',
+          caption: 'A evolução aparece quando houver períodos fechados com atendimento.',
+        })}
+    </section>
+
+    <section class="ins-floor">
+      <h2 class="ins-title">Distribuição</h2>
+      <p class="fin-sub">${esc(finDistTitulo(P.kind))}</p>
+      ${finAnalyticalHtml(P)}
+      ${temAgendado ? `
+        <div class="fin-legend">
+          <span><i class="is-feito"></i>já atendido</span>
+          <span><i class="is-agendado"></i>ainda agendado</span>
+        </div>` : ''}
+    </section>
+
+    <section class="ins-floor">
+      <h2 class="ins-title">Valor por serviço</h2>
+      <p class="fin-sub">Quanto cada serviço representa no período</p>
+      ${P.servicos.length ? P.servicos.map(s => `
+        <div class="ins-svc">
+          <div class="ins-svc-body">
+            <div class="ins-svc-name">${esc(s.nome)}${s.estimado ? '<span class="fin-from">a partir de</span>' : ''}</div>
+            <span class="ins-svc-track"><span class="ins-svc-fill" data-target-width="${Math.round(s.valor / maxSvc * 100)}"></span></span>
+            <div class="ins-svc-meta">${s.qtd} atendimento${s.qtd === 1 ? '' : 's'}</div>
+          </div>
+          <div class="ins-svc-right">
+            <div class="ins-svc-rev">${formatCurrency(s.valor)}</div>
+            <span class="ins-svc-pct">${totalSvc ? Math.round(s.valor / totalSvc * 100) : 0}%</span>
+          </div>
+        </div>`).join('') : emptyStateHtml({
+          icon: ICONS.money, compact: true,
+          title: 'Nenhum atendimento neste período.',
+          caption: 'O valor por serviço aparece com o primeiro atendimento.',
+        })}
+    </section>
+
+    <section class="ins-floor">
+      <h2 class="ins-title">Histórico de atendimentos</h2>
+      <p class="fin-sub">${esc(histNota)}</p>
+      ${hist.length ? `
+        ${visiveis.map(finHistLinha).join('')}
+        <div class="fin-hist-more" id="finHistMore"><div id="finHistMoreInner">${ocultos.map(finHistLinha).join('')}</div></div>
+        ${ocultos.length ? `
+          <button type="button" class="fin-see-more" id="finSeeMore"
+            aria-expanded="false" aria-controls="finHistMore">
+            <span id="finSeeMoreLabel">Ver mais (${ocultos.length})</span>${FIN_CHEVRON_DOWN}
+          </button>` : ''}
+      ` : emptyStateHtml({
+          icon: ICONS.history, compact: true,
+          title: 'Nenhum atendimento neste período.',
+          caption: 'O histórico começa com o primeiro atendimento realizado.',
+        })}
+    </section>
+  `;
+}
+
+// ── Render ────────────────────────────────────────────────────
+function renderFinanceiro() {
+  document.getElementById('greeting').textContent = 'Financeiro';
+  const P = finComputePeriod(state.financeiroPeriod);
+  document.getElementById('greetingSub').textContent = P.labels.header;
+
+  app.innerHTML = `
+    <div class="ins-period" role="group" aria-label="Período" id="finPeriod">
+      <span class="ins-period-pill" id="finPeriodPill" aria-hidden="true"></span>
+      ${FIN_PERIODS.map(p => `<button type="button" data-period="${p.key}"
+        aria-pressed="${state.financeiroPeriod === p.key}">${p.label}</button>`).join('')}
+    </div>
+    <div id="finContent">${finContentHtml(P)}</div>
+  `;
+
+  finPositionPill(state.financeiroPeriod, false);
+  finBindPeriod();
+  finRenderContentExtras(P);
+}
+
+function finRenderContentExtras(P) {
+  const root = document.getElementById('finContent') || app;
+  animateFills(root);          // barras de "Valor por serviço" (largura)
+  finAnimarBarras(root);       // colunas da Analytical (altura)
+  finLigarAnalytical(P);
+  finBindHelp();
+  finBindHistorico();
+  finAnimateChart();
+}
+
+function finBindHelp() {
+  document.querySelectorAll('#finContent .ins-kpi-help').forEach(btn => {
+    btn.onclick = () => insShowHelp(btn.dataset.helpLabel, btn.dataset.helpText, btn);
+  });
+}
+
+// Expansão INLINE do histórico — nunca modal, nunca página nova, nunca
+// toast. Altura em px para poder animar, solta em `auto` no fim: presa
+// em px o bloco cortaria se o texto quebrasse em mais linhas (rotação,
+// fonte grande do sistema).
+function finBindHistorico() {
+  const btn = document.getElementById('finSeeMore');
+  const wrap = document.getElementById('finHistMore');
+  const inner = document.getElementById('finHistMoreInner');
+  const label = document.getElementById('finSeeMoreLabel');
+  if (!btn || !wrap || !inner) return;
+  const total = inner.children.length;
+  let aberto = false;
+
+  btn.onclick = () => {
+    aberto = !aberto;
+    btn.setAttribute('aria-expanded', String(aberto));
+    btn.classList.toggle('is-less', aberto);
+    label.textContent = aberto ? 'Ver menos' : `Ver mais (${total})`;
+
+    if (aberto) {
+      wrap.classList.add('is-open');
+      wrap.style.height = inner.offsetHeight + 'px';
+      const solta = () => { if (aberto) wrap.style.height = 'auto'; };
+      wrap.addEventListener('transitionend', solta, { once: true });
+      setTimeout(solta, 400); // rede de segurança: sem composição de
+                              // frames o transitionend não dispara
+    } else {
+      wrap.style.height = inner.offsetHeight + 'px';
+      void wrap.offsetHeight;            // reflow SÍNCRONO de propósito
+      wrap.classList.remove('is-open');
+      wrap.style.height = '0px';
+    }
+  };
+}
+
+function finAnimateChart() {
+  const path = document.getElementById('finTrendLine');
+  if (!path) return;
+  if (state.financeiroChartEntered || prefersReducedMotion()) return;
+  state.financeiroChartEntered = true;
+  const len = path.getTotalLength();
+  path.style.transition = 'none';
+  path.style.strokeDasharray = String(len);
+  path.style.strokeDashoffset = String(len);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    path.style.transition = 'stroke-dashoffset var(--motion-route) var(--ease-out)';
+    path.style.strokeDashoffset = '0';
+  }));
+}
+
+// A barra de período é montada só na entrada de aba — os botões e a
+// cápsula persistem como os MESMOS nós entre trocas, e é isso que
+// permite a cápsula deslizar em vez de reaparecer.
+function finBindPeriod() {
+  document.querySelectorAll('#finPeriod button').forEach(b => {
+    b.onclick = () => {
+      const novo = b.dataset.period;
+      if (novo === state.financeiroPeriod) return;
+      document.querySelectorAll('#finPeriod button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      finPositionPill(novo, true);
+      finTransitionContent(novo);
+    };
+  });
+}
+
+function finPositionPill(kind, animar) {
+  const pill = document.getElementById('finPeriodPill');
+  if (!pill) return;
+  const i = FIN_PERIODS.findIndex(p => p.key === kind);
+  if (!animar || prefersReducedMotion()) {
+    pill.style.transition = 'none';
+    pill.style.transform = `translateX(${i * 100}%)`;
+    void pill.offsetHeight;
+    pill.style.transition = '';
+  } else {
+    pill.style.transform = `translateX(${i * 100}%)`;
+  }
+}
+
+// Troca de conteúdo sem blink: sai com fade e deslocamento mínimo, troca
+// o HTML já pronto (o cálculo é local e síncrono — não há "carregando"
+// para esconder), entra do lado oposto. Mesma técnica de
+// insTransitionContent(), inclusive a rede de segurança do timeout.
+function finTransitionContent(novoPeriodo) {
+  const idxAtual = FIN_PERIODS.findIndex(p => p.key === state.financeiroPeriod);
+  const idxNovo = FIN_PERIODS.findIndex(p => p.key === novoPeriodo);
+  const dir = idxNovo > idxAtual ? 1 : -1;
+  state.financeiroPeriod = novoPeriodo;
+  // O traço do gráfico só se desenha na ENTRADA da aba: repetir a cada
+  // troca de período viraria maneirismo.
+  state.financeiroChartEntered = true;
+
+  const P = finComputePeriod(novoPeriodo);
+  document.getElementById('greetingSub').textContent = P.labels.header;
+  const content = document.getElementById('finContent');
+
+  if (!content || prefersReducedMotion()) {
+    if (content) content.innerHTML = finContentHtml(P);
+    finRenderContentExtras(P);
+    return;
+  }
+
+  const AMPL = 8; // px — mínima, não é slide de apresentação
+  let trocado = false;
+  const trocar = () => {
+    if (trocado) return;
+    trocado = true;
+    content.removeEventListener('transitionend', trocar);
+    content.innerHTML = finContentHtml(P);
+    content.style.transition = 'none';
+    content.style.opacity = '0';
+    content.style.transform = `translateX(${dir * AMPL}px)`;
+    void content.offsetHeight;
+    requestAnimationFrame(() => {
+      content.style.transition = 'opacity var(--motion-standard) var(--ease-standard), transform var(--motion-standard) var(--ease-standard)';
+      content.style.opacity = '1';
+      content.style.transform = 'translateX(0)';
+    });
+    finRenderContentExtras(P);
+  };
+  content.style.transition = 'opacity var(--motion-standard) var(--ease-standard), transform var(--motion-standard) var(--ease-standard)';
+  content.style.opacity = '0';
+  content.style.transform = `translateX(${-dir * AMPL}px)`;
+  content.addEventListener('transitionend', trocar);
+  setTimeout(trocar, 260);
+}
+
+// ── Invariantes ───────────────────────────────────────────────
+// Escrevem no console, não na tela. Existem porque esta aba é feita de
+// somas que TÊM que fechar entre si: se a distribuição parar de somar o
+// total, o app denuncia em vez de mentir bonito. Chamado por
+// `finValidar()` no console do painel.
+function finValidar() {
+  const linhas = [];
+  let falhas = 0;
+  const ok = (cond, rotulo, obtido) => {
+    if (!cond) falhas++;
+    linhas.push(`${cond ? 'ok   ' : 'FALHA'} ${rotulo}${cond ? '' : ' → ' + obtido}`);
+  };
+  const q = n => Math.round(n * 100) / 100;
+
+  FIN_PERIODS.forEach(({ key }) => {
+    const P = finComputePeriod(key);
+    linhas.push(`── ${key} ──`);
+    ok(q(P.total) === q(P.atendido + P.agendado), 'total = atendido + agendado', `${P.total} ≠ ${P.atendido + P.agendado}`);
+    const somaFeito = P.dist.reduce((s, r) => s + r.feito, 0);
+    const somaAgend = P.dist.reduce((s, r) => s + r.agendado, 0);
+    ok(q(somaFeito) === q(P.atendido), 'Σ distribuição.feito = atendido', `${somaFeito} ≠ ${P.atendido}`);
+    ok(q(somaAgend) === q(P.agendado), 'Σ distribuição.agendado = agendado', `${somaAgend} ≠ ${P.agendado}`);
+    ok(P.ticket === null || q(P.ticket * P.atendimentos) === q(P.atendido), 'ticket × atendimentos = atendido', String(P.ticket));
+
+    // Ranking por serviço: pode não reconciliar com o total quando um
+    // multi-serviço tem valor final, porque o valor inteiro cai no
+    // primeiro serviço. É EXCEÇÃO CONHECIDA — reportada, nunca
+    // silenciada, e nunca "corrigida" por heurística.
+    const somaSvc = P.servicos.reduce((s, x) => s + x.valor, 0);
+    linhas.push(`${q(somaSvc) === q(P.atendido) ? 'ok   ' : 'nota '} Σ serviços = atendido → ${somaSvc} vs ${P.atendido}` +
+      (q(somaSvc) === q(P.atendido) ? '' : '  (exceção conhecida: multi-serviço atribui ao primeiro serviço)'));
+
+    const totais = P.dist.map(r => r.feito + r.agendado);
+    const escala = finEscalaNice(Math.max(...totais), P.dist.length > 8 ? 4 : 3);
+    ok(escala.topo >= Math.max(...totais), 'topo da escala ≥ maior barra', `${escala.topo} < ${Math.max(...totais)}`);
+    ok(escala.ticks[0] === 0, 'eixo começa em 0', String(escala.ticks[0]));
+    ok(escala.ticks[escala.ticks.length - 1] === escala.topo, 'último tick = topo', String(escala.ticks[escala.ticks.length - 1]));
+    ok(escala.ticks.length >= 3 && escala.ticks.length <= 6, 'entre 3 e 6 ticks', String(escala.ticks.length));
+
+    // A série só pode conter período FECHADO: o último ponto tem que
+    // terminar no instante em que o período em curso começa. Um período
+    // parcial ao lado de períodos inteiros desenha uma queda que não
+    // aconteceu — ele vive em texto, no rodapé do card.
+    const serie = insTrendSeries(key);
+    const inicioAtual = insPeriodStart(new Date(), key);
+    const ultimoFechado = insPeriodStart(insShiftBack(new Date(), key, 1), key);
+    ok(serie.length >= 4, 'evolução tem pelo menos 4 períodos', String(serie.length));
+    ok(insPeriodEnd(ultimoFechado, key) <= inicioAtual, 'evolução usa só períodos fechados',
+      'o último ponto invade o período em curso');
+  });
+
+  linhas.push(`\npapel: ${state.role || '(sem papel)'} · canAccess("financeiro") = ${canAccess('financeiro')}`);
+  linhas.push(falhas ? `\n${falhas} FALHA(S)` : '\ntodos os invariantes fecharam');
+  console.log(linhas.join('\n'));
+  return falhas === 0;
 }
 
 const AGENDA_START_HOUR = 5;
@@ -10188,6 +11330,7 @@ function render() {
   if (state.selectedApptId) { renderApptDetail(); return; }
   if (state.tab === 'inicio') renderHome();
   else if (state.tab === 'insights') renderInsights();
+  else if (state.tab === 'financeiro') renderFinanceiro();
   else if (state.tab === 'agenda') renderAgenda();
   else if (state.tab === 'clients') renderClients();
   else if (state.tab === 'estoque') renderStock();
