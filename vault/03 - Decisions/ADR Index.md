@@ -22,6 +22,7 @@ Decisões congeladas. **Não reabrir sem o Raphael pedir.**
 - [[ADR 0010 - Questionario e consulta manual]] — 15/08 · não deriva regra nenhuma, de propósito
 - [[ADR 0014 - Graphify reaberto com escopo enxuto]] — 15/08 · **substitui a recusa de 02/08**
 - [[ADR 0015 - RBAC V1 - staff opera tudo, owner ve o negocio]] — 18/08 · staff opera o salão inteiro; Insights e Financeiro são de owner
+- [[ADR 0016 - Financeiro V1 e o valor da agenda]] — 18/08 · Financeiro é valor da agenda, não caixa; nenhum número vem do Stripe
 
 Todos com status **aceito**.
 

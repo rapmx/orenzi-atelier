@@ -51,12 +51,13 @@ status · histórico relevante · ações disponíveis · hierarquia visual · U
 
 Toca a auditoria de Appointment Detail — as duas frentes se encostam.
 
-### Valor do atendimento editável — adiado (D2)
+### ~~Valor do atendimento editável~~ — entregue em 17/08/2026
 
-Exigiria coluna `appointments.price` (vazia = usa o preço do serviço). É o
-**maior alcance da lista**: toda conta de receita (gasto da cliente, gráfico de
-evolução, indicadores de Insights) passaria a ler `a.price ?? s.price`.
-Ver [[Financeiro - futuro]].
+Adiado em 03/08 como D2, e a previsão da época era `appointments.price`. O que
+foi implementado é **`final_price`** — ajuste manual posterior, escrito só pela
+RPC `set_appointment_final_price()`, com `NULL` devolvendo o valor ao snapshot
+do booking. O alcance previsto se confirmou: toda conta de valor passou a ler
+`appointmentRevenue()`, ponto único. Ver [[Financeiro]] e `app/CLAUDE.md`.
 
 ### Estoque no Design System — planejado, parado
 

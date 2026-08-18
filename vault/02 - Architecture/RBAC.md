@@ -73,6 +73,7 @@ operacional, analisar o acumulado não é.
 | `final_price` e a RPC que o escreve | operacional |
 | "Total investido", `€ gasto` no cartão da lista, ordenação "Maior gasto" | gerencial — **owner-only desde 18/08/2026** |
 | Insights (receita, ticket, €/h, sugestões) | gerencial |
+| Financeiro inteiro (valor da agenda, ticket, mix, evolução) | gerencial — **owner-only desde 18/08/2026**, tela e rota |
 | `booking_visits` | gerencial, e **exclusivo da Insights** — fechado na RLS |
 | Escrita de `services`/`staff`/`staff_services` | administrativo — não existe tela no painel |
 
@@ -98,20 +99,30 @@ Insights o consome (bloco "Canais"). Policy de SELECT agora é `is_owner()`.
 
 ## Navegação
 
-| Papel | Rodapé real hoje |
+| Papel | Rodapé real desde 18/08/2026 |
 |---|---|
-| owner | Início · Insights · Agenda · Clientes · Estoque |
+| owner | Início · Agenda · Clientes · Insights · Financeiro · Estoque |
 | staff | Início · Agenda · Clientes · Estoque |
 
-A nav aprovada para o futuro (`Início · Agenda · Clientes · Insights ·
-Financeiro · Estoque`) **não** foi aplicada: o Financeiro não existe no app
-real, e aba vazia é promessa falsa. A reordenação entra junto com a tela.
-Questionário continua fora do rodapé.
+Esta é a **navegação final aprovada**, e ela entrou junto com a tela do
+Financeiro — não antes. A reordenação estava aprovada desde 17/08 e foi
+segurada de propósito: aba vazia é promessa falsa. Questionário continua fora
+do rodapé.
+
+O rodapé é desenhado por capability (`aplicarNavPorPapel()`), não por papel:
+a aba que o papel não alcança sai da tela, sem nenhuma condicional nova.
 
 ## Regra para o Financeiro
 
 Qualquer backend novo do Financeiro nasce com `is_owner()` como requisito —
 policy, RPC ou Edge Function. Não é retrofit.
+
+O **Financeiro V1 (18/08/2026) não precisou de backend nenhum** — nenhum grant,
+nenhuma RPC, nenhuma view. Calcula no browser sobre `appointments` e
+`services`, que a Agenda e a Home já leem. Foi decisão explícita **não** abrir
+`appointment_services` (hoje `REVOKE ALL` para o browser) só para o ranking
+por serviço fechar: não se abre superfície de dado por conveniência de tela.
+Ver [[Financeiro]] e [[ADR 0016 - Financeiro V1 e o valor da agenda]].
 
 ## Evolução
 
@@ -122,5 +133,5 @@ por condicionais. `current_staff_id()` já existe para o dia em que
 
 ## Links
 
-[[Supabase e Database]] · [[Insights]] · [[Financeiro - futuro]] ·
+[[Supabase e Database]] · [[Insights]] · [[Financeiro]] ·
 [[Clientes]] · [[ADR 0015 - RBAC V1 - staff opera tudo, owner ve o negocio]]

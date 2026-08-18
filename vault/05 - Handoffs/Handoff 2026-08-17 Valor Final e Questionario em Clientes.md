@@ -72,7 +72,7 @@ aprovados **como direção visual**. Nada disso existe no app real.
 `preview_start` com `orenzi-preview` (porta 3100).
 
 Spec do Financeiro V1 e da separação Insights × Financeiro: ver
-[[Financeiro - futuro]] e [[Insights]].
+[[Financeiro]] e [[Insights]].
 
 ## Próxima iniciativa — RBAC
 
@@ -121,7 +121,7 @@ financeira que fale de dinheiro recebido. Ver [[Production Blockers]].
 
 ## Links
 
-[[Estado Atual do Produto]] · [[Financeiro - futuro]] · [[Insights]] ·
+[[Estado Atual do Produto]] · [[Financeiro]] · [[Insights]] ·
 [[Questionario]] · [[Clientes]] · [[Payments - Stripe]] ·
 [[Supabase e Database]] · [[Technical Debt]] · [[Production Blockers]] ·
 [[ADR 0010 - Questionario e consulta manual]]

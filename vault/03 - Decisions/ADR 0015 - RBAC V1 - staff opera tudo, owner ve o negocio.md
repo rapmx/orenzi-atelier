@@ -71,4 +71,4 @@ existente, sem condicional por e-mail e sem redesign (a linha de stats é
 
 ## Links
 
-[[RBAC]] · [[Insights]] · [[Financeiro - futuro]] · [[ADR Index]]
+[[RBAC]] · [[Insights]] · [[Financeiro]] · [[ADR Index]]

@@ -4,6 +4,25 @@
 **modelo visual de referência** do app — o padrão que as outras telas foram
 levadas a seguir.
 
+⚠ **Redesenho pós-Financeiro pendente (18/08/2026).** Com o [[Financeiro]] em
+produção, a divisão passou a ser:
+
+```
+Insights   = operational diagnosis      (ocupação, ritmo, €/h)
+Financeiro = monetary value evolution   (€ absoluto, ticket, mix, trajetória)
+```
+
+O preview `preview/insights-pos-financeiro.html` está **aprovado e não
+portado**: hero vira ocupação com barra de capacidade, os indicadores viram
+`Atendimentos · Horas ocupadas · Clientes novas · Conversão`, "Tendência" migra
+para **Evolução** no Financeiro e "Onde está o dinheiro" vira **Eficiência por
+serviço** (só €/h, sem € absoluto).
+
+Até isso acontecer, as duas abas mostram o mesmo valor por caminhos diferentes —
+**consequência aceita e temporária**, registrada em
+[[ADR 0016 - Financeiro V1 e o valor da agenda]]. Nada da Insights foi tocado
+em 18/08 além de ela ser owner-only.
+
 ## O que define a tela
 
 **Honestidade das métricas derivadas.** É o princípio explicitamente preservado
@@ -44,4 +63,5 @@ timeline. Ver [[Agenda]].
 
 ## Links
 
-[[Agenda]] · [[Clientes]] · [[Schedule Availability]] · [[Estado Atual do Produto]]
+[[Agenda]] · [[Clientes]] · [[Financeiro]] · [[RBAC]] · [[Schedule Availability]] ·
+[[Estado Atual do Produto]]

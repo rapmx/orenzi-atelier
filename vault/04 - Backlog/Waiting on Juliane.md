@@ -36,7 +36,11 @@ barata da lista.
 - ~~**[[Login]]**~~ — sessão expirada **decidida pelo Raphael em 15/08/2026**:
   caminho central de fim de sessão, sessão do Supabase sem timeout próprio e sem
   "lembrar de mim". Nada pendente com a Juliane
-- **[[Financeiro - futuro]]** — o que "receita" significa para ela
+- ~~**Financeiro**~~ — o que "receita" significa foi **decidido em 18/08/2026**
+  sem depender dela: o Financeiro V1 é o valor da **agenda**, não caixa
+  ([[ADR 0016 - Financeiro V1 e o valor da agenda]]). Volta a depender dela
+  quando a tela falar de dinheiro recebido, e aí o bloqueio é a Cancellation
+  Policy V2, não a definição. Ver [[Financeiro]]
 
 ## Links
 

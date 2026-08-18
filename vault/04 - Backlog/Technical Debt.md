@@ -104,6 +104,32 @@ visual. A splash lida com isso sem depender de rejeição (`markReady` no
 **Gatilho para atacar:** a primeira vez que alguém reportar "sumiu tudo do
 painel" sem erro visível.
 
+**Valor por serviço não decompõe multi-serviço** (18/08/2026, com o
+[[Financeiro]]). `final_price` é total por appointment e
+`appointment_services` tem `REVOKE ALL` para o browser desde a blindagem da
+Booking V2 — então o ranking por serviço agrupa pelo `service_id` legado, que a
+Booking V2 grava como o **primeiro** serviço. Num multi-serviço o valor inteiro
+cai nele.
+
+O **total** do período continua correto (soma appointments, não serviços); é o
+**ranking** que pode não fechar. `finValidar()` reporta a diferença como nota,
+nunca como falha silenciosa. **Não foi "corrigido" de propósito**: dividir
+proporcionalmente inventaria precisão que o dado não tem, e abrir grant em
+`appointment_services` para desenhar um bloco seria abrir superfície de dado
+por conveniência de tela. **Gatilho para atacar:** a mesma rodada que resolver o
+Stripe não ler `final_price` — as duas são a decomposição do valor por item.
+Ver [[ADR 0016 - Financeiro V1 e o valor da agenda]].
+
+**`animateFills()` depende só de `requestAnimationFrame`.** Numa aba sem
+composição de frames (segundo plano, painel oculto) o rAF não corre e as barras
+de "Onde está o dinheiro" e do Estoque ficam em largura **zero** — gráfico
+vazio, não gráfico sem animação. `finAnimarBarras()` e `finRolar()` já nascem
+com a rede de `setTimeout` (o mesmo padrão de `morphAvatar()`,
+`splashBoot()` e `insShowHelp()`); `animateFills()` não foi tocada em 18/08
+porque é caminho compartilhado por três telas e não era escopo da rodada.
+Contido, não resolvido: quando a aba volta a ficar visível o rAF corre e as
+barras aparecem.
+
 **Acessibilidade.** A auditoria de 03/08 achou **zero** ocorrência de
 `:focus-visible`, `<label for>`, `role=` e `aria-live` no projeto inteiro.
 `app/ds/orenzi-base.css` passou a dar o anel de foco a todo controle nativo, e

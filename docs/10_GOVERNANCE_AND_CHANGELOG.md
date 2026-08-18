@@ -493,6 +493,54 @@ Antes de aprovar qualquer mudança:
 > estado corrente do produto em
 > `vault/00 - Start Here/Estado Atual do Produto.md`.
 
+## [1.5.0] — 2026-08-18
+
+Financeiro V1 e a navegação final. **Nenhum token global mudou** — a aba foi
+construída inteira sobre a família visual já existente da Insights (`.ins-period`,
+`.ins-answer`, `.ins-kpis`, `.ins-svc`, `.ins-chart-card`), sem hex, raio,
+sombra ou duração nova.
+
+⚠ **Por que minor e não major.** Pelo §13, alterar valor de token é major. Não
+houve alteração de token: o que entrou foram classes **novas e locais**
+(`.fin-*`, `.an-*`) e uma **exceção de conteúdo registrada** (§24.1 de
+[06](06_CONTENT_GUIDELINES.md)), que restringe em vez de afrouxar.
+
+### Adicionado
+- **§24.1 de [06](06_CONTENT_GUIDELINES.md) — abreviação monetária em escala de
+  gráfico.** `€1k` / `€1,5k` passa a ser permitido **exclusivamente** em rótulo
+  de tick de eixo analítico, sob três condições cumulativas (é régua e não
+  quantia; o valor exato existe em outro lugar da tela; o `aria-label` descreve
+  por extenso). Fora disso, abreviar dinheiro continua proibido — inclusive num
+  eixo que não cumpra as três.
+- **Distribuição Analytical** (`.fin-an-*`): escala com topo arredondado em
+  passos de 1 / 2 / 2,5 / 5 × 10ⁿ, baseline explícita, gridlines nos ticks,
+  barras de `border-radius: 0` e no máximo 26px, sem sombra, sem gradiente,
+  sem glow, sem curva elástica. O período corrente é marcado por um tick de 2px
+  sob o eixo, **nunca** por anel ou halo.
+- **Padrão de reserva de largura por sizer** (`.an-medida` / `.an-sizer`): um
+  irmão invisível em fluxo normal com o pior caso da string reserva a largura da
+  caixa, e o número deixa de causar layout shift ao mudar. Substitui a largura
+  em `ch`, que erra porque o símbolo e o separador não medem o mesmo que um
+  dígito nem em tabular. Também é o que dá largura à coluna do eixo Y, cujos
+  filhos são todos `position: absolute` e mediriam **zero**.
+- **`.ins-svc-pct`** — participação percentual do serviço, mesma anatomia de
+  `.ins-svc-hour`.
+- **`.fin-from` / `.fin-final`** — marcadores de "a partir de" e "Valor final".
+  Distinção por **peso e tom, nunca por cor**: nenhum dos dois é estado de
+  alerta, e cor ali viraria semáforo onde não há problema.
+- **Rodapé com seis abas** para `owner` e quatro para `staff`. `nav button`
+  passou a `flex: 1 1 0` e o corpo do rótulo baixa por degraus em ≤400px e
+  ≤350px, porque "Financeiro" é o rótulo mais longo do app. Verificado sem
+  overflow e sem scroll horizontal em 320 / 375 / 390 / 430.
+
+### Pendente
+- **Redesenho da Insights** para a divisão `Insights = diagnóstico operacional`
+  / `Financeiro = evolução do valor`. Preview aprovado, não portado. Enquanto
+  não entrar, "Onde está o dinheiro" e "Tendência" continuam na Insights e
+  repetem, por outro caminho, o que o Financeiro mostra.
+
+---
+
 ## [1.4.0] — 2026-08-15
 
 Agenda Visual V2 (commit `f36d908`). Redesenho **só visual** da timeline —

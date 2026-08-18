@@ -51,6 +51,9 @@ edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
 | Hora no painel | `fmtTime()` |
 | Tela inicial, KPIs, ocupação | `renderHome()`, `occupancyPct()` |
 | Insights, gráfico de tendência | `renderInsights()`, `computeIndicatorsData()` |
+| Financeiro (valor da agenda) | `// FINANCEIRO · V1`, `renderFinanceiro()`, `finComputePeriod()`, `finContentHtml()` |
+| Distribuição Analytical (eixo, readout, roll) | `finAnalyticalHtml()`, `finEscalaNice()`, `finTick()`, `finPintarReadout()`, `finRolar()` |
+| Invariantes do Financeiro (console) | `finValidar()` |
 | Agenda, sobreposição, pausa | `renderAgenda()`, `layoutAppts()`, `segmentsOf()` |
 | Bloqueio manual de agenda | `openAgendaAddMenu()`, `openBlockModal()`, `saveScheduleBlock()`, `openBlockDetailSheet()`, `confirmDeleteScheduleBlock()`, `busyBlocksForStaffOnDate()` |
 | Folha de tela cheia (os 3 sheets da Agenda) | `.o-fullsheet` / `.o-wizard-sheet` no `<style>`, `.modal-overlay.is-fullsheet` |
@@ -62,9 +65,15 @@ edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
 | Splash e boot | `// ── SPLASH — CICLO DE VIDA` (fim do script), `markReady()`, `splashBoot()`, `#splash` no `<style>` |
 | Qual tela aparece | `render()` |
 
-Abas da nav: **Início · Insights · Agenda · Clientes · Estoque**.
+Abas da nav, **owner**: **Início · Agenda · Clientes · Insights · Financeiro ·
+Estoque**. Abas da nav, **staff**: **Início · Agenda · Clientes · Estoque** — o
+rodapé é desenhado por capability, não por papel (`aplicarNavPorPapel()`).
+
 Estoque ocupou o lugar de Equipe em 02/08/2026 — com uma profissional só,
-"Profissionais" era uma tela de uma linha.
+"Profissionais" era uma tela de uma linha. A ordem acima é a **navegação final
+aprovada**, aplicada em 18/08/2026 junto com a tela do Financeiro: a
+reordenação estava aprovada desde 17/08 mas foi segurada de propósito, porque
+aba sem tela é promessa falsa.
 
 ⚠ **Questionário saiu do rodapé em 17/08/2026.** Deixou de ser destino de
 primeiro nível e virou **capability contextual de Clientes**. O fluxo não
@@ -432,6 +441,8 @@ Quem consome:
 | Insights — Hero, Tendência, deltas, ticket | `insSumRevenue()` |
 | Insights — "Onde está o dinheiro" e o €/h | `insServicos()` |
 | Insights — impacto estimado das Sugestões | `insClientesAtrasadas()` |
+| Financeiro — Hero, Indicadores, Evolução, Distribuição | `insSumRevenue()`, `finDistribuicao()` |
+| Financeiro — "Valor por serviço" e o histórico | `finServicos()`, `finHistLinha()` |
 | Perfil da cliente — "Total investido" | `clientStats()` |
 | Perfil da cliente — valor por visita (`.ti-price`) | markup de `renderClientDetail()` |
 | Detalhe do atendimento — bloco de valor | `apptValorSectionHtml()` |
@@ -517,7 +528,196 @@ dados operacionais. Fechar isso exigiria tirar dela o valor final — o
 produto escolheu o operacional.
 
 **Qualquer backend novo do Financeiro nasce com `is_owner()` como
-requisito.** Não é opcional e não é para depois.
+requisito.** Não é opcional e não é para depois. O Financeiro V1 (18/08/2026)
+não precisou de backend nenhum — ver "Financeiro V1" abaixo —, e é por isso que
+não abriu grant: se um dia precisar, nasce fechado.
+
+### Financeiro V1 — valor da agenda, não caixa (18/08/2026)
+
+```
+Financeiro V1 = agenda value, not cash accounting
+
+Insights   = operational diagnosis
+Financeiro = monetary value evolution
+```
+
+A aba responde **uma** pergunta: *quanto vale a agenda, e como esse valor está
+mudando ao longo do tempo?* Não é caixa, contabilidade, conciliação bancária,
+recebimento, lucro, margem nem comissão — e a distinção **não** é de
+vocabulário: nenhum número desta tela sai de `payments` nem do Stripe. Tudo vem
+de `state.appointments`, que é a **agenda**.
+
+Por isso a copy fala em "valor", "em atendimentos", "já atendidos", "ainda
+agendado", "total do período", "ticket médio" e "valor por serviço", e **nunca**
+em recebido, caixa, pago, a receber, faturamento, lucro, margem, comissão,
+transação ou extrato. O app não sabe o que entrou na conta; sabe o que foi
+marcado e o que foi cobrado. Enquanto
+`LIVE PAYMENTS BLOCKED UNTIL CANCELLATION POLICY V2 IS APPROVED` valer, essa
+fronteira é obrigatória, não estilística.
+
+**owner-only, e não por retrofit.** `financeiro` já era capability de `owner`
+desde a fundação do RBAC; o que entrou em 18/08 foi a tela e a rota. Quem
+protege é o guard central de `render()` — o rodapé só esconde. Nada aqui abriu
+grant novo: cada número sai de dado que a Agenda, a Home e o perfil da cliente
+já precisam ler.
+
+#### Ordem dos blocos (não reordenar sem pedido)
+
+```
+Período → Hero → Indicadores → Evolução → Distribuição
+        → Valor por serviço → Histórico de atendimentos
+```
+
+**Evolução vem antes de Distribuição de propósito**: a pergunta da aba é "quanto
+vale e está subindo?", e a trajetória precede a leitura interna do período. Não
+existe bloco de comparativos — Hero, Indicadores e Evolução já respondem isso
+três vezes.
+
+#### Período
+
+Seletor próprio (`#finPeriod`), estado próprio (`state.financeiroPeriod`,
+default `mes`). O da Insights **não** é reaproveitado: as duas abas respondem
+perguntas diferentes, e um período compartilhado faria a troca numa mexer
+silenciosamente na outra. O que é compartilhado é a **matemática** —
+`insWindow()`, `insApptsBetween()`, `insSumRevenue()`, `insDelta()`,
+`insPeriodLabels()`, `insTrendSeries()` e `insTrendSvg()` servem as duas. Duas
+implementações de "quanto vale este mês" divergiriam em silêncio.
+
+#### Classificação temporal — tempo, nunca status
+
+```
+starts_at <  agora  → já atendido
+starts_at >= agora  → ainda agendado
+```
+
+O produto não tem fluxo para marcar concluído/não compareceu, e derivar isso de
+`status = 'confirmed'` seria inventar. Cancelados já saem na leitura
+(`loadAppointments()` filtra `cancelled`) e o hold de pagamento nunca entra em
+`state.appointments`. O instante do corte é `janela.cut` — o **mesmo** que
+`insApptsBetween()` usa —, e é isso que faz a soma da Distribuição fechar
+exatamente com o Hero.
+
+#### Distribuição · Analytical
+
+A variação aprovada é a **Analytical**; as variações horizontal e vertical do
+protótipo **não** foram portadas e não existe switch A/B em produção.
+
+A diferença é **matemática**, não de gosto. Normalizar pelo maior dado (maior =
+100%) faz a maior barra sempre encostar no teto e tira a unidade da altura — só
+compara colunas entre si. `finEscalaNice()` arredonda o máximo para cima até um
+passo redondo (1, 2, 2,5 ou 5 × 10ⁿ) e desenha contra **esse** topo:
+
+- topo ≥ maior barra, sempre;
+- eixo começa em €0 e o último tick **é** o topo;
+- entre 3 e 6 ticks;
+- a altura passa a ter unidade monetária — dá para ler sem tocar.
+
+Buckets por nível: Semana → 7 dias · Mês → semanas do mês (a primeira e a última
+podem ser **parciais**, alinhadas à segunda-feira) · Ano → 12 meses.
+
+⚠ **`€1k` / `€1,5k` no eixo é EXCEÇÃO deliberada e local.** `docs/06 §24` proíbe
+abreviar dinheiro, e a proibição continua valendo em **todo** valor que a Juliane
+lê como quantia — Hero, Indicadores, readout, valor por serviço, histórico. No
+eixo é **régua**, não quantia. Ver `finTick()`, e `docs/06 §24` para o registro
+da exceção.
+
+⚠ **A coluna do eixo Y só tem largura por causa do `.an-sizer`**, um irmão
+invisível em fluxo normal com o rótulo de tick mais **largo** (não o maior valor:
+`€1,5k` é mais largo que `€2k`). Todos os ticks são `position: absolute` — eles
+**precisam** ser, para cair na altura do próprio valor — e uma caixa cujos filhos
+são todos absolutos mede **zero**. Sem o sizer o tick mais largo sai do `main` e
+é cortado pela borda da tela. Não trocar por largura fixa: `ch` erra, porque o
+símbolo e o separador não medem o mesmo que um dígito nem em tabular.
+
+#### Readout — nós estáveis, roll com retarget
+
+O readout é montado **uma vez por repintura**; `finPintarReadout()` nunca toca em
+`innerHTML`. Destruir e recriar os nós a cada toque reinicia toda transição e
+força o repaint do bloco — é exatamente esse o "blink" que o desenho evita. Cada
+número tem seu próprio sizer com o pior caso **do período**, então a caixa não
+muda de largura quando o valor rola.
+
+`finRolar()` conta do valor **que está na tela** até o novo (easeOutCubic, 260ms,
+sem overshoot). O retarget é a parte que importa: tocar rápido de uma barra para
+outra cancela o rAF pendente e recomeça a partir do valor exibido, nunca do
+destino anterior — sem isso as animações se acumulam e o número "treme".
+
+⚠ **Rede de segurança de `setTimeout` em `finRolar()` e `finAnimarBarras()`.**
+`requestAnimationFrame` **não** dispara em aba sem composição de frames (segundo
+plano, painel oculto, aparelho economizando bateria). Sem o timer o número
+congela no valor **antigo** e as barras ficam em altura zero — um gráfico vazio,
+que é pior que um gráfico sem animação. Mesmo padrão de `morphAvatar()`,
+`splashBoot()` e `insShowHelp()`. **Verificado nesta rodada**: com a aba oculta o
+readout assenta no valor certo e as barras aparecem.
+
+`prefers-reduced-motion`: troca direta, sem roll, sem fade dependente de rAF e
+sem estado órfão (nenhum rAF nem timer pendente).
+
+#### Valor por serviço — limitação conhecida, não escondida
+
+Este bloco é do **Financeiro**: € absoluto e participação (%). O **€/h fica na
+Insights** — um é "quanto vale", o outro é "quanto rende por hora de cadeira".
+
+⚠ **O ranking por serviço pode não reconciliar com o total do período**, e a
+causa é de **dado**, não de tela:
+
+- o valor canônico é do atendimento **inteiro** (`final_price` é total por
+  appointment; `total_price` é a soma dos snapshots);
+- a decomposição por serviço vive em `appointment_services`, que tem
+  `REVOKE ALL ... FROM anon, authenticated` desde
+  `booking_v2_harden_grants` — **o browser não alcança essa tabela, nem para o
+  owner**;
+- então o agrupamento é pelo `service_id` **legado**, que a Booking V2 grava como
+  `p_service_ids[1]`: o **primeiro** serviço. Num multi-serviço o valor inteiro
+  cai no primeiro serviço.
+
+Duas decisões explícitas, para não serem reabertas por engano:
+
+1. **Não dividir proporcionalmente.** Sem os snapshots não há como fazer isso sem
+   inventar precisão, e uma divisão silenciosa é pior que uma atribuição
+   declaradamente grosseira.
+2. **Não abrir grant em `appointment_services`** só para desenhar um bloco. O
+   **total** do período continua correto (soma appointments, não serviços) — é o
+   **ranking** que pode não fechar. `finValidar()` reporta a diferença como
+   `nota`, nunca como falha silenciosa.
+
+#### Histórico
+
+Prévia de 3 + "Ver mais (N)" que expande **inline** — nunca modal, nunca página
+nova, nunca toast. Teto de 30 linhas (`FIN_HIST_MAX`): acima disso a lista
+vira carregamento progressivo (`docs/09`), e a V1 mostra os mais recentes e
+**diz** que é um recorte em vez de prometer um botão que entregaria centenas de
+linhas de uma vez.
+
+Três estados de valor, e a distinção é de **peso e tom**, nunca de cor (nem
+"estimado" nem "final" é estado de alerta):
+
+| Situação | Como aparece |
+|---|---|
+| valor final definido | `€370` + `Valor final` |
+| serviço de preço variável, sem valor final | `a partir de` + `€290` |
+| serviço de preço fixo | `€70`, sem marcador |
+
+⚠ **`€0` com valor final é legítimo** e não pode virar "a partir de" nem cair no
+fallback — a comparação é contra `null` (`valorSeDefinido()`), nunca truthiness.
+
+#### Invariantes
+
+`finValidar()` no console do painel, para os três períodos:
+
+```
+total = já atendido + ainda agendado
+Σ distribuição.feito    = já atendido
+Σ distribuição.agendado = ainda agendado
+ticket × atendimentos   = já atendido
+topo da escala >= maior barra · eixo em 0 · último tick = topo · 3–6 ticks
+evolução usa só períodos fechados
+Σ serviços = já atendido        (nota, não falha — ver limitação acima)
+```
+
+Existem porque esta aba é feita de somas que **têm** que fechar entre si: se a
+distribuição parar de somar o total, o console denuncia em vez de a tela mentir
+bonito.
 
 ### Questionário: onde ele mora (17/08/2026)
 

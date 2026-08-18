@@ -438,6 +438,32 @@ conhecida — ver `CLAUDE.md`.
 ⚠ **`€0` e "sem valor" são coisas diferentes.** Nunca mostre zero para dado
 ausente.
 
+### 24.1 Abreviação em escala de gráfico — exceção única (18/08/2026)
+
+**Não se abrevia dinheiro.** A regra acima vale em todo valor que a cliente lê
+como **quantia**: hero, indicadores, readout, valor por serviço, histórico,
+totais, preço de serviço.
+
+A **única** exceção aprovada é o **rótulo de tick do eixo de um gráfico
+analítico**, onde o número é **régua**, não quantia:
+
+| Contexto | Formato | Exemplo |
+|---|---|---|
+| Tick de eixo, abaixo de mil | inteiro, sem abreviar | `€200` |
+| Tick de eixo, mil ou mais | `k`, vírgula decimal | `€1k`, `€1,5k` |
+
+Condições para a exceção valer, todas ao mesmo tempo:
+
+1. o número é **rótulo de escala**, e não um valor que alguém possa copiar,
+   somar ou comunicar;
+2. o valor exato da mesma grandeza está disponível em outro lugar da tela — no
+   Financeiro, o readout do gráfico e o hero;
+3. o `aria-label` do gráfico continua descrevendo os valores **por extenso**.
+
+Origem: eixo Y da Distribuição Analytical do Financeiro (`finTick()`). Fora
+desse padrão, abreviar dinheiro continua proibido — inclusive num eixo que não
+cumpra as três condições acima.
+
 ---
 
 ## 25. Quantidades

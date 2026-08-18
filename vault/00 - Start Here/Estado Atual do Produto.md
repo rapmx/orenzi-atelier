@@ -1,7 +1,9 @@
 # Estado Atual do Produto
 
-Snapshot em **15/08/2026**, HEAD `f36d908`. Confirmado contra o repo e contra o
-Supabase de produção — não reconstruído por memória.
+Snapshot em **18/08/2026**. Confirmado contra o repo e contra o Supabase de
+produção — não reconstruído por memória. O snapshot anterior era de 15/08
+(HEAD `f36d908`); o que mudou desde então: `final_price`, Questionário dentro
+de Clientes, **RBAC V1** e **Financeiro V1**.
 
 ## Fechado / maduro
 
@@ -13,7 +15,9 @@ Supabase de produção — não reconstruído por memória.
 | **Schedule blocking** | em produção desde 13/08 | [[Schedule Availability]] |
 | **Stripe — depósito 20%** | **SANDBOX apenas** | [[Payments - Stripe]] |
 | **Questionário V2** | concluído 15/08, migration aplicada | [[Questionario]] |
-| **Insights** | encerrado (commit `42e6e43`) | [[Insights]] |
+| **Insights** | encerrado (commit `42e6e43`) · redesenho pós-Financeiro **pendente** | [[Insights]] |
+| **RBAC V1** | owner e staff, em produção desde 18/08 | [[RBAC]] |
+| **Financeiro V1** | valor da agenda, owner-only, 18/08 | [[Financeiro]] |
 | **Home / Início** | padrão visual de referência do app | [[Insights]] |
 | **Clientes** | Fase 3 concluída, VIP manual | [[Clientes]] |
 | **Estoque** | Fase 1 concluída; DS só planejado | [[Estoque]] |
@@ -28,7 +32,7 @@ Supabase de produção — não reconstruído por memória.
 | Frente | Estado |
 |---|---|
 | **Password Recovery** | aberta pelo Login V2; só entra end-to-end — [[Product Backlog]] |
-| **Financeiro** | conceito, sem escopo — [[Financeiro - futuro]] |
+| ~~**Financeiro**~~ | **V1 entregue em 18/08/2026** — ver "Fechado / maduro" |
 | **Appointment Detail** | auditoria aberta, sem especificação — ver [[Product Backlog]] |
 | **Client History** | regra escrita, nada implementado — [[Product Backlog]] |
 | **Product Map / SaaS** | **só depois do Orenzi finalizado** |
@@ -38,6 +42,16 @@ Supabase de produção — não reconstruído por memória.
 Fotos reais do Questionário · Cancellation Policy V2 · onboarding Stripe
 (KYC/IBAN) · WhatsApp Business · domínio + Resend.
 Detalhe em [[Waiting on Juliane]].
+
+## Navegação
+
+| Papel | Rodapé |
+|---|---|
+| owner | Início · Agenda · Clientes · Insights · Financeiro · Estoque |
+| staff | Início · Agenda · Clientes · Estoque |
+
+Navegação **final aprovada**, aplicada em 18/08 junto com a tela do Financeiro.
+Questionário é capability contextual de Clientes, fora do rodapé.
 
 ## Ordem acordada das próximas frentes
 
@@ -55,11 +69,13 @@ foram entregues, `app/ds/*.css` existe e é carregado. Ver [[Source of Truth]].
 
 ## Último handoff
 
-`160856b` (17/08/2026) — valor final do atendimento e Questionário movido para
-dentro de Clientes. Próximo bloco: **RBAC**.
-Ver [[Handoff 2026-08-17 Valor Final e Questionario em Clientes]].
+**18/08/2026** — Financeiro V1 portado do preview aprovado, navegação final
+aplicada. Antes dele, na mesma data, o RBAC V1. Próximo bloco: **redesenho da
+Insights** (preview `insights-pos-financeiro.html`, aprovado e não portado).
+Ver [[Handoff 2026-08-18 Financeiro V1]].
 
 ## Links
 
 [[Orenzi Overview]] · [[Production Blockers]] · [[Technical Debt]] ·
-[[Product Backlog]] · [[Handoff 2026-08-17 Valor Final e Questionario em Clientes]]
+[[Product Backlog]] · [[Financeiro]] · [[RBAC]] ·
+[[Handoff 2026-08-18 Financeiro V1]]
