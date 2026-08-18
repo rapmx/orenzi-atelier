@@ -3132,7 +3132,7 @@ const state = { tab: 'inicio', role: undefined, booting: false, painelAtivo: fal
 // ganhar `manager`/`receptionist`, entra uma linha aqui em vez de uma
 // caçada por condicionais pelo arquivo.
 const ROLE_CAPABILITIES = {
-  owner: ['inicio', 'agenda', 'clients', 'questionario', 'estoque', 'insights', 'financeiro'],
+  owner: ['inicio', 'agenda', 'clients', 'questionario', 'estoque', 'insights', 'financeiro', 'client.lifetime_value'],
   staff: ['inicio', 'agenda', 'clients', 'questionario', 'estoque'],
 };
 
@@ -3151,12 +3151,19 @@ function canAccess(cap) {
   return !!caps && caps.indexOf(cap) !== -1;
 }
 
-// Destino quando o guard recusa a aba corrente. `inicio` é o destino
-// natural (é a tela de abertura dos dois papéis); a varredura existe só
-// para um papel futuro que não a tenha.
+// Nem toda capability e rota. `financeiro` ainda nao tem tela e
+// `client.lifetime_value` nunca sera uma — sao permissao, nao destino. Esta
+// lista existe para o fallback do guard nunca mandar a tela para um lugar
+// que render() nao sabe desenhar.
+const TABS_ROTEAVEIS = ['inicio', 'agenda', 'clients', 'estoque', 'insights', 'questionario'];
+
+// Destino quando o guard recusa a aba corrente. `inicio` e o destino natural
+// (e a tela de abertura dos dois papeis); a varredura existe so para um papel
+// futuro que nao a tenha.
 function primeiraTabPermitida() {
   const caps = ROLE_CAPABILITIES[state.role] || [];
-  return caps.indexOf('inicio') !== -1 ? 'inicio' : (caps[0] || null);
+  if (caps.indexOf('inicio') !== -1) return 'inicio';
+  return caps.find(c => TABS_ROTEAVEIS.indexOf(c) !== -1) || null;
 }
 
 // O rodapé é desenhado por capability, não por papel: a aba que o papel não
@@ -3756,6 +3763,13 @@ const CLIENT_SORTS = [
   { key: 'vip', label: 'VIP primeiro' },
 ];
 
+// "Maior gasto" ordena pelo valor acumulado da cliente — o mesmo dado
+// gerencial do "Total investido", so que como ranking. Some junto, senao a
+// staff leria a mesma informacao pela ordem da lista.
+function clientSortsDisponiveis() {
+  return CLIENT_SORTS.filter(s => s.key !== 'gasto' || canAccess('client.lifetime_value'));
+}
+
 // Junta cliente + métricas uma vez só: filtrar, ordenar e desenhar o cartão
 // precisam dos mesmos números, e clientStats() varre todos os agendamentos.
 function clientsWithStats() {
@@ -3791,7 +3805,10 @@ function filteredSortedClients() {
   else if (filtro === 'frequentes') rows = rows.filter(r => r.visits >= CLIENT_FREQUENT_VISITS);
   else if (filtro === 'inativos') rows = rows.filter(r => r.status === 'inativa');
 
-  const ordem = state.clientSort || 'recentes';
+  // Normaliza antes de ordenar: `state.clientSort` sobrevive em memoria e um
+  // papel sem a capability nao pode herdar a ordenacao por gasto.
+  let ordem = state.clientSort || 'recentes';
+  if (ordem === 'gasto' && !canAccess('client.lifetime_value')) ordem = 'recentes';
   const porNome = (a, b) => (a.c.name || '').localeCompare(b.c.name || '', 'pt-BR');
   rows.sort((a, b) => {
     if (ordem === 'nome') return porNome(a, b);
@@ -7112,7 +7129,8 @@ function renderClientsList() {
   if (!wrap) return;
   const rows = filteredSortedClients();
   const buscando = !!(state.clientSearch || '').trim();
-  const rotuloOrdem = (CLIENT_SORTS.find(s => s.key === state.clientSort) || CLIENT_SORTS[0]).label;
+  const ordensOk = clientSortsDisponiveis();
+  const rotuloOrdem = (ordensOk.find(s => s.key === state.clientSort) || ordensOk[0]).label;
 
   if (!state.clients.length) {
     wrap.innerHTML = emptyStateHtml({
@@ -7174,10 +7192,12 @@ function renderClientsList() {
               <span class="ccm-icon" aria-hidden="true">${ICONS.calendar}</span>
               <span class="ccm-val">${visits}</span><span class="ccm-lbl">visitas</span>
             </span>
+            ${canAccess('client.lifetime_value') ? `
             <span class="cc-metric">
               <span class="ccm-icon" aria-hidden="true">${ICONS.money}</span>
               <span class="ccm-val">€${spent.toFixed(0)}</span><span class="ccm-lbl">gasto</span>
             </span>
+            ` : ''}
             <span class="cc-status is-${status}"><span class="ccs-dot" aria-hidden="true"></span>${rotuloStatus}</span>
           </div>
         </button>
@@ -7316,7 +7336,7 @@ function openClientSortSheet() {
     <div class="modal-overlay" id="modalOverlay">
       <div class="modal-sheet">
         <h2>Ordenar por</h2>
-        ${CLIENT_SORTS.map(s => `
+        ${clientSortsDisponiveis().map(s => `
           <button class="sheet-option ${state.clientSort === s.key ? 'is-selected' : ''}" data-sort="${s.key}">
             <span>${s.label}</span>
             <span class="so-check">${ICONS.check}</span>
@@ -7515,8 +7535,10 @@ function renderClientDetail() {
     <div class="stat-row">
       <div class="stat"><span class="stat-icon">${ICONS.bag}</span><div class="val">${visits}</div><div class="lbl">Visitas</div></div>
       <div class="divider"></div>
+      ${canAccess('client.lifetime_value') ? `
       <div class="stat"><span class="stat-icon">${ICONS.money}</span><div class="val">€${spent.toFixed(0)}</div><div class="lbl">Total investido</div></div>
       <div class="divider"></div>
+      ` : ''}
       <div class="stat">
         <span class="stat-icon">${ICONS.calendar}</span>
         <div class="val">${lastVisitShort ? `${lastVisitShort.day} ${lastVisitShort.mon}` : '—'}</div>

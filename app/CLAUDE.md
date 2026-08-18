@@ -485,12 +485,21 @@ Financeiro depois, e isso **não** dá a ela acesso ao Financeiro.
 
 #### O que é operacional e o que é gerencial
 
+```
+individual appointment value       = operational
+aggregated customer monetary value = managerial
+```
+
+A linha divisória é **agregação**, não "ser dinheiro": o preço de UM
+atendimento é o que se cobra da cliente na cadeira e é da assistente; somar
+os atendimentos dela ao longo do tempo é leitura de negócio.
+
 | Dado | Classificação | Quem vê |
 |---|---|---|
 | Home inteira (panorama, ritmo, próxima oportunidade, tendência) | operacional — **zero valor monetário**, tudo é contagem de agendamentos | os dois |
 | Preço de um atendimento na timeline do perfil (`.ti-price`) | operacional — é o que se cobra da cliente na cadeira | os dois |
 | Bloco de valor do atendimento (`apptValorSectionHtml`) | operacional | os dois |
-| "Total investido" no perfil (`clientStats`) | **gerencial de borda** — agregado lifetime de UMA cliente | os dois, por ora |
+| "Total investido" no perfil, `€ gasto` no cartão da lista e a ordenação "Maior gasto" | **gerencial** — valor monetário AGREGADO de uma cliente | owner |
 | Insights inteira (receita, ticket, €/h, tendência, sugestões) | gerencial | owner |
 | `booking_visits` (Canais) | gerencial — **único dataset exclusivo da Insights** | owner, e fechado na RLS |
 | `services`/`staff`/`staff_services` escrita | administrativo — o painel **não tem tela** para isso | owner |

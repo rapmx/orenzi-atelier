@@ -46,6 +46,29 @@ O papel vive em `app_accounts`, tabela sem grant para o browser, lida só por
   owner-only: é administrativo e o painel não tem tela para isso. Se um dia
   a assistente precisar editar preço pelo app, a decisão se reabre.
 
+## Adendo — 18/08/2026: valor agregado da cliente é gerencial
+
+A V1 tinha deixado "Total investido" visível para os dois papéis, marcado
+como classificação em aberto. Fechada assim:
+
+```
+individual appointment value       = operational
+aggregated customer monetary value = managerial
+```
+
+`staff` deixa de ver **três** superfícies do mesmo dado — o indicador no
+perfil, o `€ gasto` no cartão da lista e a ordenação "Maior gasto". Esconder
+só o primeiro seria teatro: o ranking entrega a mesma informação.
+
+Continua visível para `staff`: preço de cada atendimento na timeline, o
+bloco de valor e o `final_price`. `appointmentRevenue()` não foi tocada — a
+regra é de exibição, não de cálculo.
+
+Implementado com a capability `client.lifetime_value` no guard central já
+existente, sem condicional por e-mail e sem redesign (a linha de stats é
+`flex: 1` e fecha em duas colunas sozinha).
+
+
 ## Links
 
 [[RBAC]] · [[Insights]] · [[Financeiro - futuro]] · [[ADR Index]]

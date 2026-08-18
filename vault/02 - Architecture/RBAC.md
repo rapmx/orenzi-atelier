@@ -55,12 +55,23 @@ tem acesso: **fail closed**, nunca `staff` por padrão.
 
 ## Classificação dos dados
 
+```
+individual appointment value       = operational
+aggregated customer monetary value = managerial
+```
+
+A linha divisória é **agregação**, não "ser dinheiro". O preço de um
+atendimento é o que se cobra da cliente na cadeira — operacional, e é da
+assistente. Somar os atendimentos dela ao longo do tempo é leitura de
+negócio. É a mesma fronteira do `final_price`: registrar o valor é
+operacional, analisar o acumulado não é.
+
 | Dado | Classificação |
 |---|---|
 | Home (panorama, ritmo, oportunidade, tendência) | operacional — não tem número monetário nenhum |
 | Preço de um atendimento (timeline e bloco de valor) | operacional |
 | `final_price` e a RPC que o escreve | operacional |
-| "Total investido" no perfil | gerencial de borda — mantido para os dois em V1 |
+| "Total investido", `€ gasto` no cartão da lista, ordenação "Maior gasto" | gerencial — **owner-only desde 18/08/2026** |
 | Insights (receita, ticket, €/h, sugestões) | gerencial |
 | `booking_visits` | gerencial, e **exclusivo da Insights** — fechado na RLS |
 | Escrita de `services`/`staff`/`staff_services` | administrativo — não existe tela no painel |
