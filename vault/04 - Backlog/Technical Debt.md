@@ -120,15 +120,12 @@ por conveniência de tela. **Gatilho para atacar:** a mesma rodada que resolver 
 Stripe não ler `final_price` — as duas são a decomposição do valor por item.
 Ver [[ADR 0016 - Financeiro V1 e o valor da agenda]].
 
-**`animateFills()` depende só de `requestAnimationFrame`.** Numa aba sem
-composição de frames (segundo plano, painel oculto) o rAF não corre e as barras
-de "Onde está o dinheiro" e do Estoque ficam em largura **zero** — gráfico
-vazio, não gráfico sem animação. `finAnimarBarras()` e `finRolar()` já nascem
-com a rede de `setTimeout` (o mesmo padrão de `morphAvatar()`,
-`splashBoot()` e `insShowHelp()`); `animateFills()` não foi tocada em 18/08
-porque é caminho compartilhado por três telas e não era escopo da rodada.
-Contido, não resolvido: quando a aba volta a ficar visível o rAF corre e as
-barras aparecem.
+~~**`animateFills()` depende só de `requestAnimationFrame`.**~~ **Resolvido em
+18/08/2026**, na rodada da Insights pós-Financeiro. A função ganhou a mesma rede
+de `setTimeout` de `finRolar()`, `finAnimarBarras()`, `morphAvatar()` e
+`splashBoot()`, e passou a cobrir também as barras novas (capacidade do Hero,
+ranking de eficiência, faixa de canais). Verificado com a aba oculta: as barras
+assentam na largura certa mesmo sem composição de frames.
 
 **Acessibilidade.** A auditoria de 03/08 achou **zero** ocorrência de
 `:focus-visible`, `<label for>`, `role=` e `aria-live` no projeto inteiro.

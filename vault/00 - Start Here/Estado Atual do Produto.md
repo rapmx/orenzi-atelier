@@ -15,7 +15,7 @@ de Clientes, **RBAC V1** e **Financeiro V1**.
 | **Schedule blocking** | em produção desde 13/08 | [[Schedule Availability]] |
 | **Stripe — depósito 20%** | **SANDBOX apenas** | [[Payments - Stripe]] |
 | **Questionário V2** | concluído 15/08, migration aplicada | [[Questionario]] |
-| **Insights** | encerrado (commit `42e6e43`) · redesenho pós-Financeiro **pendente** | [[Insights]] |
+| **Insights** | V2 pós-Financeiro em produção desde 18/08 | [[Insights]] |
 | **RBAC V1** | owner e staff, em produção desde 18/08 | [[RBAC]] |
 | **Financeiro V1** | valor da agenda, owner-only, 18/08 | [[Financeiro]] |
 | **Home / Início** | padrão visual de referência do app | [[Insights]] |
@@ -69,13 +69,19 @@ foram entregues, `app/ds/*.css` existe e é carregado. Ver [[Source of Truth]].
 
 ## Último handoff
 
-**18/08/2026** — Financeiro V1 portado do preview aprovado, navegação final
-aplicada. Antes dele, na mesma data, o RBAC V1. Próximo bloco: **redesenho da
-Insights** (preview `insights-pos-financeiro.html`, aprovado e não portado).
-Ver [[Handoff 2026-08-18 Financeiro V1]].
+**18/08/2026** — três blocos no mesmo dia: **RBAC V1**, **Financeiro V1** e a
+**Insights pós-Financeiro**. Com o terceiro, a separação
+`Insights = diagnóstico operacional` / `Financeiro = valor monetário` está
+fechada nas duas pontas: nenhum valor absoluto sobrou na Insights, e nenhum
+diagnóstico operacional foi para o Financeiro.
+
+Os dois previews aprovados foram portados; **não há preview pendente**.
+Ver [[Handoff 2026-08-18 Insights pos-Financeiro]] e
+[[Handoff 2026-08-18 Financeiro V1]].
 
 ## Links
 
 [[Orenzi Overview]] · [[Production Blockers]] · [[Technical Debt]] ·
-[[Product Backlog]] · [[Financeiro]] · [[RBAC]] ·
+[[Product Backlog]] · [[Financeiro]] · [[Insights]] · [[RBAC]] ·
+[[Handoff 2026-08-18 Insights pos-Financeiro]] ·
 [[Handoff 2026-08-18 Financeiro V1]]

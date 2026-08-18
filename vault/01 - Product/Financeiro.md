@@ -42,10 +42,10 @@ A divisão que resolve a sobreposição das duas:
 | Ocupação, ritmo, capacidade | **Insights** | não tem quantia nenhuma |
 | Evolução do valor por período fechado | **Financeiro** | é a trajetória do dinheiro |
 
-⚠ **A Insights ainda não foi redesenhada.** O preview
-`preview/insights-pos-financeiro.html` está aprovado e **não** foi portado: em
-18/08 a Insights continua com "Tendência" e "Onde está o dinheiro" como
-estavam. A implementação da nova Insights é rodada própria — ver [[Insights]].
+✅ **A Insights foi redesenhada em 18/08/2026**, na rodada seguinte. "Tendência"
+e "Onde está o dinheiro" saíram de lá; o Hero dela virou ocupação. A separação
+está fechada nas duas pontas — nenhum valor absoluto sobrou na Insights, e
+nenhum diagnóstico operacional veio para cá. Ver [[Insights]].
 
 ## Ordem dos blocos — não reordenar sem pedido
 

@@ -493,6 +493,58 @@ Antes de aprovar qualquer mudança:
 > estado corrente do produto em
 > `vault/00 - Start Here/Estado Atual do Produto.md`.
 
+## [1.6.0] — 2026-08-18
+
+Insights pós-Financeiro. Fecha a separação que a 1.5.0 abriu pela metade:
+`Insights = diagnóstico operacional` / `Financeiro = valor monetário da agenda`.
+**Nenhum token global mudou.**
+
+⚠ **Por que minor e não major.** Pelo §13, remover componente é major. As
+classes removidas (`.ins-map*`, `.ins-space-*`) eram **locais da Insights**:
+não constam da lista de componentes autorizados de
+[04](04_COMPONENT_LIBRARY.md) e não estavam em [03](03_DESIGN_SYSTEM.md).
+
+### Adicionado
+- **Hero operacional** (`.ihe-*`): número grande é uma **taxa**, com barra de
+  capacidade embaixo. Deliberadamente **sem cartão e sem eixo** — é o que
+  separa esta abertura da do Financeiro à primeira olhada. As duas telas não
+  podem parecer a mesma.
+- **Tiles de capacidade** (`.ihe-esp`, `.ihe-tile`) em grade de 4 ou 5
+  colunas, com três degraus tonais por ratio absoluto. Fatia futura sai com
+  **contorno tracejado**, nunca preenchida: passado vazio é ociosidade, futuro
+  vazio é oportunidade.
+- **Ranking de eficiência** (`.ihe-ef-*`) com grupo de amostra curta recolhido
+  e expansível inline, sem posição numérica e com a explicação escrita **uma
+  vez** no grupo em vez de um selo repetido por linha.
+- **`.ins-sub`** — subtítulo de seção, o mesmo papel do `.fin-sub` do
+  Financeiro.
+
+### Alterado
+- **Degrau tonal dos tiles: 0,55/0,20 → 0,70/0,40.** Este salão opera entre 15%
+  e 50% de ocupação; com o corte antigo praticamente toda fatia caía em "muito
+  livre" e a grade ficava escura, sem contraste entre uma semana cheia e uma
+  vazia. Um degrau que nunca distingue não é degrau.
+- **Horas passaram a admitir uma casa decimal** (`insFmtHoras()`,
+  [06 §25](06_CONTENT_GUIDELINES.md)). O Hero mostrava `81% de ocupação` com a
+  legenda `7h de 9h` — e 7/9 é 78%. Ou o número grande sustenta a legenda, ou
+  um dos dois está mentindo.
+- **`animateFills()` ganhou rede de `setTimeout`** e passou a cobrir as barras
+  novas. Sem ela, numa aba sem composição de frames as barras ficavam em
+  largura **zero** — gráfico vazio, não gráfico sem animação.
+
+### Removido
+- **`.ins-map*`** — a tabela dia×faixa da Semana. Os três níveis do "Onde há
+  espaço" passaram a ter uma gramática só: tiles. **Custo aceito**: a dimensão
+  manhã/tarde saiu do bloco de exibição; continua viva na Sugestão de espaço.
+- **`.ins-space-row` / `.ins-space-grid` / `.ins-space-tile`** — substituídas
+  por `.ihe-esp` / `.ihe-tile`.
+
+### Resolvido
+- A pendência registrada em 1.5.0 ("redesenho da Insights") **fechou no mesmo
+  dia**. Não há preview aprovado pendente.
+
+---
+
 ## [1.5.0] — 2026-08-18
 
 Financeiro V1 e a navegação final. **Nenhum token global mudou** — a aba foi

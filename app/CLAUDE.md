@@ -50,8 +50,13 @@ edição — confirme com `grep -n "^// ──" painel.html` antes de confiar.
 | Leitura do banco | `loadAll()`, `load*()` |
 | Hora no painel | `fmtTime()` |
 | Tela inicial, KPIs, ocupação | `renderHome()`, `occupancyPct()` |
-| Insights, gráfico de tendência | `renderInsights()`, `computeIndicatorsData()` |
+| Insights (diagnóstico operacional) | `renderInsights()`, `insComputePeriod()`, `insContentHtml()` |
+| Ocupação, capacidade, horas | `insOccupancy()`, `insCapacityMinutes()`, `insOpenDays()`, `insFmtHoras()` |
+| Onde há espaço (tiles, YTD, futuro tracejado) | `insSpaceBlock()`, `insMapStep()`, `insSegStatus()` |
+| Eficiência por serviço (€/h, piso de amostra) | `insEficiencia()`, `insMinServico()`, `insEfLinhaHtml()` |
+| Invariantes da Insights (console) | `insValidar()` |
 | Financeiro (valor da agenda) | `// FINANCEIRO · V1`, `renderFinanceiro()`, `finComputePeriod()`, `finContentHtml()` |
+| Gráfico de linha (hoje só do Financeiro) | `insTrendSeries()`, `insTrendSvg()`, `finAnimateChart()` |
 | Distribuição Analytical (eixo, readout, roll) | `finAnalyticalHtml()`, `finEscalaNice()`, `finTick()`, `finPintarReadout()`, `finRolar()` |
 | Invariantes do Financeiro (console) | `finValidar()` |
 | Agenda, sobreposição, pausa | `renderAgenda()`, `layoutAppts()`, `segmentsOf()` |
@@ -438,8 +443,8 @@ Quem consome:
 
 | Tela | Função |
 |---|---|
-| Insights — Hero, Tendência, deltas, ticket | `insSumRevenue()` |
-| Insights — "Onde está o dinheiro" e o €/h | `insServicos()` |
+| Insights — peso INVISÍVEL de ordenação das Sugestões | `insSumRevenue()` |
+| Insights — o €/h de "Eficiência por serviço" | `insServicos()` → `insEficiencia()` |
 | Insights — impacto estimado das Sugestões | `insClientesAtrasadas()` |
 | Financeiro — Hero, Indicadores, Evolução, Distribuição | `insSumRevenue()`, `finDistribuicao()` |
 | Financeiro — "Valor por serviço" e o histórico | `finServicos()`, `finHistLinha()` |
@@ -511,7 +516,7 @@ os atendimentos dela ao longo do tempo é leitura de negócio.
 | Preço de um atendimento na timeline do perfil (`.ti-price`) | operacional — é o que se cobra da cliente na cadeira | os dois |
 | Bloco de valor do atendimento (`apptValorSectionHtml`) | operacional | os dois |
 | "Total investido" no perfil, `€ gasto` no cartão da lista e a ordenação "Maior gasto" | **gerencial** — valor monetário AGREGADO de uma cliente | owner |
-| Insights inteira (receita, ticket, €/h, tendência, sugestões) | gerencial | owner |
+| Insights inteira (ocupação, capacidade, €/h, sugestões) | gerencial | owner |
 | `booking_visits` (Canais) | gerencial — **único dataset exclusivo da Insights** | owner, e fechado na RLS |
 | `services`/`staff`/`staff_services` escrita | administrativo — o painel **não tem tela** para isso | owner |
 
@@ -718,6 +723,203 @@ evolução usa só períodos fechados
 Existem porque esta aba é feita de somas que **têm** que fechar entre si: se a
 distribuição parar de somar o total, o console denuncia em vez de a tela mentir
 bonito.
+
+### Insights pós-Financeiro — diagnóstico operacional (18/08/2026)
+
+```
+Insights   = operational diagnosis
+Financeiro = monetary value evolution
+```
+
+A Insights responde **"como o salão está operando, o que está acontecendo e
+onde existe oportunidade de melhorar?"**. Ela **não** responde "quanto vale a
+agenda" — isso é do [Financeiro](#financeiro-v1--valor-da-agenda-não-caixa).
+
+| Bloco | Onde vive | Por quê |
+|---|---|---|
+| Ocupação, capacidade, ritmo, espaço livre | **Insights** | não tem quantia nenhuma |
+| €/h de cadeira | **Insights** | é produtividade de cadeira |
+| € absoluto por serviço, participação % | **Financeiro** | é "quanto vale" |
+| Ticket, evolução do valor, histórico monetário | **Financeiro** | idem |
+
+#### O que saiu da Insights nesta rodada
+
+| Saiu | Para onde |
+|---|---|
+| Hero de receita (`.ins-answer` com `formatCurrency`) | virou Hero de **ocupação** |
+| KPI "Gasto médio" | ticket é do Financeiro |
+| Bloco "Tendência" | virou **Evolução** no Financeiro |
+| "Onde está o dinheiro" (€ absoluto + barra por receita) | virou **Eficiência por serviço**, só €/h |
+| Considerações de receita e de gasto médio | substituídas por **horas ocupadas** |
+| "Potencial estimado: +€X" nas Sugestões | virou impacto em **horas e atendimentos** |
+| Sugestão do Ano citando receita absoluta | passou a citar **tempo de cadeira** |
+
+#### A única quantia permitida
+
+⚠ **Todo `€` da Insights é uma TAXA POR HORA.** Em três formas de escrita, e
+nenhuma outra:
+
+```
+€107/h                      ranking e sugestões
+€107 por hora de cadeira    prosa (hoje não usada — a leitura usa /h)
+€/h                         o token solto, na nota de amostra curta
+```
+
+`insValidar()` remove essas três do HTML renderizado e **falha se sobrar
+qualquer `€`**. Não é contagem por bloco: pega Hero, Indicadores,
+Considerações, Sugestões e qualquer bloco futuro de uma vez. Se alguém
+reintroduzir um valor absoluto, o console denuncia em vez de as duas telas
+voltarem a responder a mesma coisa.
+
+#### Ordem dos blocos (não reordenar sem pedido)
+
+```
+Período → Hero → Indicadores → Considerações → Sugestões
+        → Onde há espaço → Eficiência por serviço → Como as clientes chegam
+```
+
+**Considerações e Sugestões vêm antes dos blocos de evidência**, e não depois:
+são a única parte da tela que já fez a leitura pela usuária. Os blocos abaixo
+existem para conferir essa leitura — quem já confia nela não precisa rolar.
+
+#### Hero — ocupação, e os números têm de se sustentar
+
+```
+ocupação = horas ocupadas ÷ capacidade do período DECORRIDO
+
+horas ocupadas = Σ (ends_at − starts_at) dos atendimentos realizados
+capacidade     = dias ABERTOS × 540min × profissionais ATIVAS
+```
+
+- **Delta sempre em pontos percentuais.** 22% → 27% é `+5 p.p.`, nunca `+23%`.
+  A tela inteira gira em torno de uma taxa; tratar a variação de uma taxa como
+  variação percentual é o erro clássico dessa família de indicador.
+- **A capacidade do período anterior tem janela própria.** Nunca copiada da
+  atual: dois meses não têm o mesmo número de dias abertos até o mesmo dia do
+  mês, e derivar um do outro erra as horas *e* o delta.
+- ⚠ **As horas NÃO são arredondadas na origem** (`horasUsadas` é
+  `minutos / 60`, exato). Arredondar ali quebrava a sustentação do número
+  principal: 435min de 540min é **81%**, mas "7h de 9h" lê **78%**. Quem
+  arredonda é a exibição, via `insFmtHoras()` — inteiro quando é inteiro, uma
+  casa decimal com vírgula quando não é (`docs/06 §25`). Hoje o Hero mostra
+  `7,3h ocupadas · 1,8h livres de 9h`, e 7,3/9 = 81%. `insValidar()` exige essa
+  igualdade **sem tolerância**.
+- ⚠ **A capacidade conta o dia corrente inteiro.** `insOpenDays()` conta dias,
+  não horas decorridas: às 10h de uma terça o denominador já inclui as 9h
+  daquele dia. Comportamento auditado e preservado — mudá-lo mexeria em toda
+  conta de ocupação do app, inclusive na Home.
+
+#### Timeframes e capacidade
+
+| Nível | Hero mede | Compara com |
+|---|---|---|
+| Semana | a semana até agora | mesmo ponto da semana passada |
+| Mês | do dia 1 até agora | mesmo ponto do mês passado |
+| **Ano** | **YTD** — 1º de janeiro até agora | mesmo ponto do ano passado |
+
+⚠ **O Ano é year-to-date, e isso é obrigatório.** Setembro–dezembro **não**
+entram como "hora livre" de um acumulado em agosto: não se conta capacidade de
+um período que ainda não começou. Vem de graça de `insWindow('ano', 0)`
+(`start` = 1º de janeiro, `cut` = agora), e `insValidar()` verifica os três
+lados — início em janeiro, corte em agora, comparação com o ano anterior.
+
+#### Onde há espaço — janela diferente do Hero, de propósito
+
+```
+Hero            = período DECORRIDO       (é uma taxa: precisa de
+                                           denominador que já aconteceu)
+Onde há espaço  = pode incluir o FUTURO do mesmo período, quando esse
+                  futuro ainda é acionável
+```
+
+| Nível | Fatia | Janela |
+|---|---|---|
+| Semana | dias abertos | a semana inteira; o que não aconteceu sai tracejado |
+| Mês | semanas | o mês inteiro — espaço daqui a duas semanas ainda é vendável |
+| Ano | meses | **só o decorrido**; quatro meses à frente não são acionáveis |
+
+**Passado vazio é ociosidade** (um fato); **futuro vazio é oportunidade**. Os
+dois nunca são somados como se fossem a mesma métrica: o futuro sai com
+**contorno tracejado**, nunca preenchido, e a leitura em prosa separa as duas
+em frases distintas. O tracejado substituiu o `opacity: .5` anterior, que dizia
+"menos importante" quando o certo é "ainda dá para vender".
+
+⚠ **Fatia com capacidade ZERO não aparece.** 31/08/2026 cai numa segunda e o
+salão fecha segunda: mostrar "0h" tracejado prometeria espaço num dia em que
+ninguém atende.
+
+⚠ **A tabela dia×faixa da Semana saiu.** Os três níveis passaram a ter uma
+gramática só — tiles. Antes a Semana era uma tabela de 3 faixas × 7 dias e os
+outros dois eram tiles, e as três leituras não se pareciam. **Custo aceito**: a
+dimensão "manhã / início da tarde / fim da tarde" deixou de aparecer no bloco
+de exibição. Ela continua viva onde decide alguma coisa — `insDayFaixaMatrix()`
+alimenta a Sugestão de espaço ("ofereça a manhã de quinta").
+
+#### Eficiência por serviço
+
+Ranking por **€/h de cadeira**. Mostra posição, serviço, €/h, quantidade e
+duração média por atendimento. **Não** mostra valor absoluto nem participação —
+isso é o bloco do Financeiro.
+
+⚠ **Dois pisos de amostra, e a diferença é de propósito:**
+
+| Constante | Para quê | Valor |
+|---|---|---|
+| `INS_MIN_SERVICO` | o app **afirmar** algo sobre um serviço numa Consideração ou Sugestão | 4 |
+| `insMinServico(kind)` | um serviço **entrar** no ranking de €/h | 2 / 3 / 8 |
+
+Uma frase declarada exige mais base que uma linha de ranking. O `3` do Mês é um
+afrouxamento deliberado do `4`: com o piso literal este salão deixaria **um**
+serviço no ranking e esconderia cinco — um "ranking" de uma linha. Direção
+aprovada no preview, que documenta a mesma conta.
+
+- **A escala da barra sai do maior RANQUEADO**, nunca do conjunto: deixar um
+  serviço de 2 atendimentos definir o topo faria a régua depender justamente do
+  número mais frágil.
+- Serviços abaixo do piso **não somem** — vão para um grupo recolhido
+  (`+N serviços ainda com pouca amostra`) que expande **inline**. Sem posição
+  numérica (usam `·`), porque numerar daria a entender que a ordem entre eles
+  significa alguma coisa, e com a explicação escrita **uma vez** no grupo em vez
+  de um selo repetido em toda linha.
+
+#### Clientes novas e conversão
+
+- **Clientes novas** = `clients.created_at` dentro da janela (`insNewClients`).
+  Quem já era cliente e voltou não conta. Regra pré-existente, auditada e
+  reaproveitada.
+- **Conversão do booking** = visitas e agendamentos contados na **mesma**
+  janela (`insConversao`). Conta o que foi *marcado* na janela, não o que
+  *aconteceu* nela — uma visita de hoje que gera atendimento na semana que vem é
+  conversão de hoje. Abaixo de **10 visitas** devolve `null` e a taxa não
+  aparece: amostra pequena demais para virar percentagem.
+- ⚠ `booking_visits` é **owner-only na RLS** desde o RBAC V1, e continua. A
+  Insights é a única consumidora.
+
+#### Peso invisível das Sugestões
+
+⚠ **A ordenação das Sugestões (`impacto`) continua usando ticket e
+receita/hora.** É invisível — nunca chega à tela — e serve só para decidir qual
+das candidatas aparece primeiro. Trocar o peso mudaria **quais** sugestões a
+Juliane vê, o que é mudança de comportamento e não estava no escopo. É por isso
+que `insComputePeriod()` ainda calcula `receita` e `ticket`.
+
+#### Invariantes
+
+`insValidar()` no console do painel, nos três períodos:
+
+```
+ocupação = horas ocupadas ÷ capacidade      (sem tolerância)
+capacidade = dias abertos × expediente × profissionais ativas
+capacidade anterior tem janela própria
+delta de ocupação em p.p.
+Ano começa em 1º de janeiro · vai até agora · compara com o ano anterior
+Ano não mostra fatia futura · cobre janeiro até o mês corrente
+Σ horas por serviço = horas ocupadas
+Σ canais = atendimentos do período
+atendimentos = os do Financeiro             (as duas telas, o mesmo salão)
+todo € da tela é uma taxa por hora
+sem vocabulário do Financeiro na tela
+```
 
 ### Questionário: onde ele mora (17/08/2026)
 

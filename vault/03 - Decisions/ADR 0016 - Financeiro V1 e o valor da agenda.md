@@ -68,10 +68,11 @@ existia desde a fundação, justamente para não precisar de retrofit.
   Para `staff` o rodapé continua com quatro abas.
 - `€1k` / `€1,5k` passa a ser exceção **registrada** de `docs/06 §24`, válida só
   em rótulo de tick de eixo analítico e sob três condições — ver `§24.1`.
-- A Insights **não** foi redesenhada nesta rodada. Ela continua com "Tendência"
-  e "Onde está o dinheiro", e por um período as duas abas mostram o mesmo valor
-  por caminhos diferentes. O preview `insights-pos-financeiro.html` está
-  aprovado e é a próxima rodada.
+- A Insights **não** foi redesenhada nesta rodada, e por um período as duas abas
+  mostraram o mesmo valor por caminhos diferentes. **Resolvido no mesmo dia**:
+  a Insights pós-Financeiro entrou em 18/08/2026 e a sobreposição acabou. A
+  trava contra o retorno dela é `insValidar()`, que falha se qualquer € que
+  não seja taxa por hora aparecer na Insights. Ver [[Insights]].
 - Nenhum backend novo, nenhum grant novo. Se o Financeiro V2 precisar de
   backend, ele nasce com `is_owner()` — [[ADR 0015 - RBAC V1 - staff opera tudo, owner ve o negocio]].
 

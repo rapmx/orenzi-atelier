@@ -1,19 +1,19 @@
 # Graph Report - PROJECT ORENZI  (2026-08-18)
 
 ## Corpus Check
-- Large corpus: 164 files · ~500,412 words. Semantic extraction will be expensive (many Claude tokens). Consider running on a subfolder.
+- Large corpus: 165 files · ~512,265 words. Semantic extraction will be expensive (many Claude tokens). Consider running on a subfolder.
 
 ## Summary
-- 830 nodes · 2159 edges · 44 communities (39 shown, 5 thin omitted)
-- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 54 edges (avg confidence: 0.52)
+- 836 nodes · 2180 edges · 43 communities (38 shown, 5 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 54 edges (avg confidence: 0.52)
 - Token cost: 70,960 input · 3,496 output
 
 ## Community Hubs (Navigation)
 - Booking Acquisition Flow
-- Community 1
 - Booking Management
-- Community 3
+- Community 2
 - Client and Hair Profiles
+- Community 4
 - Community 5
 - Community 6
 - Client Quiz and Matching
@@ -21,24 +21,23 @@
 - Community 9
 - Community 10
 - Community 11
-- Landing Page Navigation
-- UI Components and Dialogs
-- Community 14
-- Community 15
-- Project Documentation and Assets
+- Community 12
+- Community 13
 - Daily Appointment Summary
-- Community 18
-- Community 19
+- Community 15
+- Landing Page Navigation
+- Community 17
+- UI Components and Dialogs
+- Project Documentation and Assets
 - Community 20
 - Community 21
 - Community 22
-- Community 23
 - PWA Web Manifest
+- Community 24
 - Community 25
+- Community 26
 - Availability and Capacity Integration
-- Community 27
 - Community 28
-- Community 29
 - Appointment Email Notifications
 - Design System Showcase
 - Small App Icon
@@ -46,16 +45,16 @@
 - Appointment Event Logging
 
 ## God Nodes (most connected - your core abstractions)
-1. `esc()` - 32 edges
+1. `esc()` - 33 edges
 2. `render()` - 30 edges
 3. `renderStepBody()` - 29 edges
 4. `renderCTA()` - 26 edges
-5. `prefersReducedMotion()` - 26 edges
-6. `renderStepBody()` - 25 edges
+5. `renderStepBody()` - 25 edges
+6. `prefersReducedMotion()` - 25 edges
 7. `renderClientDetail()` - 22 edges
 8. `renderApptDetail()` - 22 edges
 9. `renderHome()` - 20 edges
-10. `insContentHtml()` - 19 edges
+10. `insContentHtml()` - 20 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Orenzi Logo Icon` --conceptually_related_to--> `Admin Panel`  [INFERRED]
@@ -76,127 +75,123 @@
 - **Orenzi Web Surfaces** — app_index, app_agendar, app_gerenciar, app_painel [EXTRACTED 1.00]
 - **Scheduling and Management Flow** — app_agendar, app_gerenciar, app_painel [INFERRED 0.80]
 
-## Communities (44 total, 5 thin omitted)
+## Communities (43 total, 5 thin omitted)
 
 ### Community 0 - "Booking Acquisition Flow"
 Cohesion: 0.05
-Nodes (111): accentForCategory(), ACQUISITION_SOURCES, addDaysIso(), anySelectedPriceVaries(), availabilityKey(), bindCalendar(), bindProcessing(), bindStepData() (+103 more)
+Nodes (110): accentForCategory(), ACQUISITION_SOURCES, addDaysIso(), anySelectedPriceVaries(), availabilityKey(), bindCalendar(), bindProcessing(), bindStepData() (+102 more)
 
-### Community 1 - "Community 1"
-Cohesion: 0.05
-Nodes (78): appointmentBookedValue(), appointmentRevenue(), apptValorSectionHtml(), finAnalyticalHtml(), finBindPeriod(), finBuckets(), finComposicaoTexto(), finComputePeriod() (+70 more)
-
-### Community 2 - "Booking Management"
+### Community 1 - "Booking Management"
 Cohesion: 0.09
 Nodes (64): addDaysIso(), availabilityKey(), bindCalendar(), bindManage(), bindReschedulePicker(), bindRescheduleReview(), buildAvailability(), closeCalendar() (+56 more)
 
-### Community 3 - "Community 3"
-Cohesion: 0.06
-Nodes (63): bindBlockDynamicFields(), blockCtaLabel(), blockDynamicFieldsHtml(), busyBlocksForStaffOnDate(), closeFullSheet(), computeAvailableSlots(), dateInputValue(), dayAvailabilityLevel() (+55 more)
+### Community 2 - "Community 2"
+Cohesion: 0.07
+Nodes (62): appointmentBookedValue(), appointmentRevenue(), apptValorSectionHtml(), finBuckets(), finComputePeriod(), finDistribuicao(), finHistLinha(), finServicos() (+54 more)
 
-### Community 4 - "Client and Hair Profiles"
+### Community 3 - "Client and Hair Profiles"
 Cohesion: 0.04
-Nodes (52): ADR-0010, animateCounters(), app, CATEGORY_COLOR_FALLBACK, CATEGORY_COLORS, CLIENT_FILTERS, CLIENT_SORTS, DIAS_SEMANA (+44 more)
+Nodes (53): ADR-0010, animateCounters(), app, CATEGORY_COLOR_FALLBACK, CATEGORY_COLORS, CLIENT_FILTERS, CLIENT_SORTS, colorForId() (+45 more)
+
+### Community 4 - "Community 4"
+Cohesion: 0.07
+Nodes (45): loadPolicy(), loadServices(), loadStaffCatalog(), loadStaffForService(), loadServices(), loadStaff(), PUBLIC, public.appointment_events (+37 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.07
-Nodes (45): addDaysTo(), agendaHeaderHtml(), agendaMonthLabel(), agendaOffsetMinutes(), agendaPageEl(), apptTimeRange(), bindAgendaHeader(), bindAgendaPager() (+37 more)
+Cohesion: 0.06
+Nodes (37): public.booking_operation_requests, admin, CORS_HEADERS, RESEND_API_KEY, sha256Hex(), STRIPE_SECRET_KEY, admin, buildCreatedEmail() (+29 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.12
-Nodes (39): ajustarQuantidade(), aplicarFiltroEstoque(), bindQtyHold(), bindStockCards(), bindStockToolbar(), clearStockSearch(), closeModal(), consumoDiario() (+31 more)
+Cohesion: 0.08
+Nodes (44): addDaysTo(), agendaHeaderHtml(), agendaMonthLabel(), agendaOffsetMinutes(), agendaPageEl(), apptTimeRange(), attachTimelineScrollbarFade(), bindAgendaHeader() (+36 more)
 
 ### Community 7 - "Client Quiz and Matching"
-Cohesion: 0.13
-Nodes (31): loadClientQuestionnaires(), qt(), qtr(), quizAnswerLabel(), quizBack(), quizBindClientRows(), quizBindShell(), quizConfirmExit() (+23 more)
+Cohesion: 0.12
+Nodes (36): esc(), loadClientQuestionnaires(), qt(), qtr(), quizAnswerLabel(), quizBack(), quizBindClientRows(), quizBindShell() (+28 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.12
-Nodes (29): alternarFavorito(), aplicarNavPorPapel(), apptPhotoSectionHtml(), attachTimelineScrollbarFade(), bindTimelineApptClicks(), bindTimelineBlockClicks(), canAccess(), clientQuizSectionHtml() (+21 more)
+Nodes (28): abrirCliente(), aplicarNavPorPapel(), bindClientsToolbar(), canAccess(), clearClientSearch(), clientSortsDisponiveis(), clientStatus(), clientsWithStats() (+20 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.10
-Nodes (29): animateFills(), finAnimarBarras(), finAnimateChart(), finAssinatura(), finBindHelp(), finBindHistorico(), finIndicePadrao(), finLigarAnalytical() (+21 more)
+Cohesion: 0.11
+Nodes (25): auth.users, checkSession(), confirmarSessaoExpirada(), encerrarSessaoUI(), loginErro(), loginLimparErro(), markReady(), renderLogin() (+17 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.11
-Nodes (18): public.booking_operation_requests, admin, CORS_HEADERS, RESEND_API_KEY, sha256Hex(), STRIPE_SECRET_KEY, public._create_booking_core(), public.create_booking_hold_orchestrated() (+10 more)
+Cohesion: 0.12
+Nodes (24): animateFills(), finAnimarBarras(), finAnimateChart(), finAssinatura(), finBindHelp(), finBindHistorico(), finBindPeriod(), finIndicePadrao() (+16 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.15
-Nodes (19): apptCard(), bindClientsToolbar(), clearClientSearch(), clientSortsDisponiveis(), clientStats(), clientStatus(), clientsWithStats(), colorForId() (+11 more)
+Cohesion: 0.19
+Nodes (20): ajustarQuantidade(), alternarFavorito(), bindQtyHold(), bindStockCards(), closeModal(), fmtQtd(), movementsHtml(), gravar() (+12 more)
 
-### Community 12 - "Landing Page Navigation"
+### Community 12 - "Community 12"
+Cohesion: 0.13
+Nodes (21): paintWizardShell(), paintWizStep(), updateWizChrome(), wizBindQuickAddClient(), wizBindStepClient(), wizBindStepConfirm(), wizBindStepTime(), wizCanGoBack() (+13 more)
+
+### Community 13 - "Community 13"
+Cohesion: 0.16
+Nodes (20): aplicarFiltroEstoque(), bindStockToolbar(), clearStockSearch(), consumoDiario(), daysAgoLabel(), diasRestantes(), estoqueAtualizadoEm(), filteredSortedProducts() (+12 more)
+
+### Community 14 - "Daily Appointment Summary"
+Cohesion: 0.16
+Nodes (20): appointmentsOnDate(), apptCard(), bestDayForEncaixe(), dayAggregate(), dayPanoramaCardHtml(), distributionBarsHtml(), fmtTime(), formatDurationShort() (+12 more)
+
+### Community 15 - "Community 15"
+Cohesion: 0.17
+Nodes (20): bindBlockDynamicFields(), blockCtaLabel(), blockDynamicFieldsHtml(), closeFullSheet(), dateInputValue(), fullSheetEl(), fullSheetIsOpen(), fullSheetNavigate() (+12 more)
+
+### Community 16 - "Landing Page Navigation"
 Cohesion: 0.14
 Nodes (10): header, navLinks, navToggle, observer, paint(), realIndex(), restart(), settle() (+2 more)
 
-### Community 13 - "UI Components and Dialogs"
+### Community 17 - "Community 17"
+Cohesion: 0.16
+Nodes (18): finAnalyticalHtml(), finComposicaoTexto(), finContentHtml(), finDistTitulo(), finEscalaNice(), finEvoSub(), finHistorico(), finPararRoll() (+10 more)
+
+### Community 18 - "UI Components and Dialogs"
 Cohesion: 0.19
 Nodes (12): closeConfirmDialog(), onEnd(), remove(), confirmDialog(), escapeHtml(), focusableChildren(), prefersReducedMotion(), resetButton() (+4 more)
 
-### Community 14 - "Community 14"
-Cohesion: 0.18
-Nodes (15): loadStaffCatalog(), loadStaffForService(), loadStaff(), public.staff_services, public.create_public_booking(), public.appointment_services, public.staff, public.staff_services (+7 more)
-
-### Community 15 - "Community 15"
-Cohesion: 0.19
-Nodes (17): checkSession(), confirmarSessaoExpirada(), encerrarSessaoUI(), loginErro(), loginLimparErro(), markReady(), renderLogin(), renderSemAcesso() (+9 more)
-
-### Community 16 - "Project Documentation and Assets"
+### Community 19 - "Project Documentation and Assets"
 Cohesion: 0.15
 Nodes (16): Booking Page, Orenzi Logo Icon, App Technical Documentation, Favicon 32px, Management Page, Landing Page, Admin Panel, Appointments Table (+8 more)
 
-### Community 17 - "Daily Appointment Summary"
-Cohesion: 0.20
-Nodes (16): appointmentsOnDate(), bestDayForEncaixe(), dayAggregate(), dayPanoramaCardHtml(), distributionBarsHtml(), formatDurationShort(), isSalonOpenDay(), nextAvailableSlot() (+8 more)
-
-### Community 18 - "Community 18"
-Cohesion: 0.24
-Nodes (13): loadAppointments(), lookupByToken(), public.appointments, public.appointments, public._create_booking_core(), public.get_booking_by_token(), public.appointment_events, public.appointment_services (+5 more)
-
-### Community 19 - "Community 19"
-Cohesion: 0.36
-Nodes (9): PUBLIC, public.appointment_events, public.appointment_services, public.create_public_booking(), public.get_booking_by_token(), public.lock_staff_for_booking(), public.appointments, public.services (+1 more)
-
 ### Community 20 - "Community 20"
-Cohesion: 0.18
-Nodes (9): loadPolicy(), public.cancellation_policies, public.cancellation_policies, public.cancellation_policies, public.get_booking_by_token(), public.appointment_events, public.appointment_services, public.cancellation_policies (+1 more)
+Cohesion: 0.17
+Nodes (16): busyBlocksForStaffOnDate(), computeAvailableSlots(), dayAvailabilityLevel(), scheduleBlockOverlapsDay(), scheduleBlocksForDay(), segmentsOf(), wizBindStepDate(), wizClient() (+8 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.20
-Nodes (8): admin, buildCreatedEmail(), cryptoProvider, HANDLED, money(), RESEND_API_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+Cohesion: 0.17
+Nodes (9): loadAll(), loadBookingVisits(), loadMovements(), loadProducts(), loadScheduleBlocks(), saveScheduleBlock(), public.schedule_blocks_set_updated_at, public.schedule_blocks (+1 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.27
-Nodes (8): auth.users, resolverPapel(), public.app_accounts_set_updated_at, public.app_accounts, public.current_app_role(), public.current_staff_id(), public.is_owner(), trg_app_accounts_updated_at
+Cohesion: 0.47
+Nodes (11): apptPhotoSectionHtml(), loadAppointments(), renderApptDetail(), wizSaveAppointment(), lookupByToken(), public.appointments, public.appointments, public.appointments (+3 more)
 
-### Community 23 - "Community 23"
-Cohesion: 0.22
-Nodes (10): abrirCliente(), loadAll(), loadBookingVisits(), loadClients(), loadMovements(), loadProducts(), morphAvatar(), normalizeIePhone() (+2 more)
-
-### Community 24 - "PWA Web Manifest"
+### Community 23 - "PWA Web Manifest"
 Cohesion: 0.25
 Nodes (7): background_color, display, icons, name, short_name, start_url, theme_color
 
-### Community 25 - "Community 25"
+### Community 24 - "Community 24"
 Cohesion: 0.25
-Nodes (5): loadScheduleBlocks(), public.schedule_blocks_set_updated_at, public.schedule_blocks, public.staff, trg_schedule_blocks_set_updated_at
+Nodes (8): colorForService(), emptyStateHtml(), iconForService(), wizBindStepService(), wizFilteredServices(), wizRenderServiceList(), wizServiceRowHtml(), wizServicesUsageOrder()
 
-### Community 26 - "Availability and Capacity Integration"
+### Community 25 - "Community 25"
+Cohesion: 0.43
+Nodes (6): insBindRail(), atualizarDots(), atualizarHint(), indiceAtual(), passo(), insDrill()
+
+### Community 26 - "Community 26"
+Cohesion: 0.38
+Nodes (7): insShowHelp(), fechar(), onKey(), loadClients(), normalizeIePhone(), openNewClientSheet(), public.clients
+
+### Community 27 - "Availability and Capacity Integration"
 Cohesion: 0.57
 Nodes (6): public.get_busy_slots(), public.get_chair_load(), public.staff_work_blocks(), appointments, schedule_blocks, services
 
-### Community 27 - "Community 27"
-Cohesion: 0.33
-Nodes (6): loadServices(), public.services, public.services, public.services, public.schedule_blocks_guard_conflict(), public.services
-
 ### Community 28 - "Community 28"
-Cohesion: 0.53
-Nodes (4): public.booking_operation_requests, public.cancel_booking_by_token_orchestrated(), public.create_public_booking_orchestrated(), public.reschedule_booking_by_token_orchestrated()
-
-### Community 29 - "Community 29"
-Cohesion: 0.60
-Nodes (6): public.get_busy_slots(), public.get_chair_load(), public.staff_work_blocks(), appointments, schedule_blocks, services
+Cohesion: 0.33
+Nodes (6): clientQuizSectionHtml(), clientStats(), confirmDeleteScheduleBlock(), fmtDate(), openBlockDetailSheet(), wizRecentClients()
 
 ## Knowledge Gaps
 - **107 isolated node(s):** `name`, `short_name`, `start_url`, `display`, `background_color` (+102 more)
@@ -206,17 +201,17 @@ Nodes (6): public.get_busy_slots(), public.get_chair_load(), public.staff_work_b
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `renderApptDetail()` connect `Community 8` to `Community 1`, `Client and Hair Profiles`, `Community 6`, `Community 11`, `Community 18`, `Community 19`?**
+- **Why does `renderApptDetail()` connect `Community 22` to `Community 2`, `Client and Hair Profiles`, `Community 4`, `Community 8`, `Community 11`, `Daily Appointment Summary`, `Community 28`?**
   _High betweenness centrality (0.110) - this node is a cross-community bridge._
-- **Why does `wizSaveAppointment()` connect `Community 3` to `Client and Hair Profiles`, `Community 5`, `Community 6`, `Community 8`, `Community 18`, `Community 19`, `Community 23`?**
+- **Why does `wizSaveAppointment()` connect `Community 22` to `Client and Hair Profiles`, `Community 4`, `Community 6`, `Community 11`, `Community 12`, `Community 20`, `Community 21`?**
   _High betweenness centrality (0.100) - this node is a cross-community bridge._
-- **Why does `loadBooking()` connect `Booking Management` to `Community 18`, `Community 19`, `Community 20`?**
+- **Why does `loadBooking()` connect `Booking Management` to `Community 4`?**
   _High betweenness centrality (0.092) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `renderCTA()` (e.g. with `confirmPayment()` and `closePolicy()`) actually correct?**
   _`renderCTA()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `name`, `short_name`, `start_url` to the rest of the system?**
   _107 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Booking Acquisition Flow` be split into smaller, more focused modules?**
-  _Cohesion score 0.05339435545385202 - nodes in this community are weakly interconnected._
-- **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.051615051615051616 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.053563111318118306 - nodes in this community are weakly interconnected._
+- **Should `Booking Management` be split into smaller, more focused modules?**
+  _Cohesion score 0.0875 - nodes in this community are weakly interconnected._
