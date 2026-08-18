@@ -1052,53 +1052,165 @@ window.supabase = {
   }
   .ins-chart-foot strong { color: var(--color-text); font-family: var(--font-heading); font-weight: 600; }
 
-  /* Onde há espaço — fractal por timeframe. Três degraus discretos em
-     token existente; ratio ABSOLUTO (não relativo ao máximo do conjunto),
-     pra um único vazio grande não espremer o resto no mesmo degrau
-     "cheio". O número em toda célula garante que a leitura não dependa
-     só de cor (docs/07 §12). */
-  .ins-map { width: 100%; border-collapse: separate; border-spacing: 3px; margin-top: var(--space-1); }
-  .ins-map th {
-    font-family: var(--font-body); font-size: var(--text-micro-size); font-weight: var(--text-micro-weight);
-    color: var(--color-neutral-600); padding: 0 0 2px; text-align: center;
-  }
-  .ins-map th.ins-map-lbl {
-    font-size: 12px; font-weight: 400; color: var(--color-neutral-600);
-    text-align: left; white-space: nowrap; padding: 0 var(--space-1) 0 0; width: 1%;
-  }
-  .ins-map-cell {
-    text-align: center; font-size: 12px; font-weight: 700; height: 40px;
-    border-radius: var(--radius-sm); font-variant-numeric: tabular-nums;
-    background: var(--color-neutral-200); color: var(--color-neutral-700);
-  }
-  .ins-map-cell.is-livre { background: var(--color-accent-100); color: var(--color-text); }
-  .ins-map-cell.is-muito-livre { background: var(--color-accent-700); color: var(--color-bg); }
-  /* R4.1: dia encerrado esmaece — a cor do degrau continua correta (é um
-     fato histórico), só perde destaque visual pra não competir com o que
-     ainda é oportunidade. Token existente (opacity), nada novo. */
-  .ins-map th.is-passado { opacity: 0.5; }
-  .ins-map-cell.is-passado { opacity: 0.6; }
-  .ins-map-legend { font-size: var(--text-micro-size); font-weight: var(--text-micro-weight); color: var(--color-neutral-600); margin: var(--space-3) 0 0; }
+  /* ── HERO OPERACIONAL (18/08/2026) ─────────────────────────────
+     A resposta da aba passou a ser uma TAXA, não uma quantia — a
+     quantia é do Financeiro. Por isso o número grande vem com uma barra
+     de capacidade embaixo: a percentagem sozinha não diz de quanto ela
+     é fração, e "27% de 99h" é informação diferente de "27% de 1.458h".
 
-  /* Nível Mês (semanas, uma linha) e Ano (meses, grade 6×2) — mesma
-     paleta tonal das células da semana, geometria própria de cada nível. */
-  .ins-space-row { display: flex; gap: var(--space-2); }
-  .ins-space-row .ins-space-tile { flex: 1; }
-  .ins-space-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-2); }
-  .ins-space-tile {
+     Deliberadamente SEM cartão e SEM gráfico com eixo — é o que separa
+     esta abertura da do Financeiro à primeira olhada. As duas telas não
+     podem parecer a mesma. */
+  .ihe { padding-top: var(--space-1); }
+  .ihe-eyebrow {
+    font-size: var(--text-micro-size); font-weight: var(--text-micro-weight);
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-neutral-600); margin: 0;
+  }
+  .ihe-row { display: flex; align-items: baseline; gap: var(--space-3); margin-top: var(--space-2-5); flex-wrap: wrap; }
+  .ihe-val {
+    font-family: var(--font-heading); font-size: var(--text-display-size); font-weight: 600;
+    line-height: var(--leading-tight); letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+  }
+  .ihe-word { font-size: var(--text-body-size); color: var(--color-neutral-700); }
+  .ihe-vs { font-size: var(--text-caption-size); color: var(--color-neutral-600); margin: var(--space-2) 0 0; }
+
+  /* Barra de capacidade — ocupado vs. disponível no período DECORRIDO.
+     Não é decoração: é o denominador da taxa acima, desenhado. */
+  .ihe-cap { margin-top: var(--space-4); }
+  .ihe-cap-track {
+    height: 10px; border-radius: var(--radius-full); background: var(--color-accent-100);
+    overflow: hidden; display: flex;
+  }
+  .ihe-cap-fill {
+    height: 100%; width: 0; background: var(--color-accent-700);
+    border-radius: var(--radius-full);
+    transition: width var(--motion-route) var(--ease-out);
+  }
+  .ihe-cap-legend {
+    display: flex; justify-content: space-between; gap: var(--space-3);
+    margin-top: var(--space-2); font-size: 12px; color: var(--color-neutral-600);
+    font-variant-numeric: tabular-nums;
+  }
+  .ihe-cap-legend b { font-family: var(--font-heading); font-weight: 600; color: var(--color-text); }
+
+  .ihe-foot {
+    display: flex; align-items: center; gap: var(--space-2);
+    margin-top: var(--space-4); padding-top: var(--space-3);
+    border-top: var(--border-width) solid var(--color-divider);
+    font-size: var(--text-caption-size); color: var(--color-neutral-700);
+  }
+  .ihe-foot strong {
+    font-family: var(--font-heading); font-weight: 600; font-size: var(--text-body-strong-size);
+    color: var(--color-text); font-variant-numeric: tabular-nums;
+  }
+  .ihe-foot-ic { display: flex; color: var(--color-neutral-600); flex-shrink: 0; }
+  .ihe-foot-ic svg { width: 15px; height: 15px; }
+
+  /* Subtítulo de seção — a Insights passou a ter um por bloco, como o
+     Financeiro. Escopado por #insContent, para o título continuar com
+     --space-3 em qualquer outra tela que use .ins-title. */
+  #insContent .ins-title { margin-bottom: var(--space-1); }
+  .ins-sub { font-size: var(--text-caption-size); color: var(--color-neutral-600); margin: 0 0 var(--space-3-5); }
+
+  /* ── ONDE HÁ ESPAÇO — tiles, degraus tonais ────────────────────
+     Uma única gramática para os três níveis (dias, semanas, meses):
+     antes a Semana era uma tabela dia×faixa e os outros dois eram
+     tiles, e as três leituras não se pareciam. Três degraus por RATIO
+     ABSOLUTO de horas livres, nunca relativo ao máximo do conjunto —
+     um único vazio grande não pode espremer o resto no mesmo degrau.
+     O número aparece em toda célula: a leitura não depende só de cor
+     (docs/07 §12). */
+  .ihe-esp { display: grid; gap: var(--space-2); }
+  .ihe-esp.is-4 { grid-template-columns: repeat(4, 1fr); }
+  .ihe-esp.is-5 { grid-template-columns: repeat(5, 1fr); }
+  .ihe-esp.is-6 { grid-template-columns: repeat(6, 1fr); }
+  .ihe-tile {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    border-radius: var(--radius-sm); padding: var(--space-2) 2px; min-height: 48px;
+    border-radius: var(--radius-sm); padding: var(--space-2) 2px; min-height: 52px;
     background: var(--color-neutral-200); color: var(--color-neutral-700);
   }
-  .ins-space-tile .ist-lbl { font-size: var(--text-micro-size); font-weight: var(--text-micro-weight); opacity: 0.85; }
-  .ins-space-tile .ist-val { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .ins-space-tile.is-livre { background: var(--color-accent-100); color: var(--color-text); }
-  .ins-space-tile.is-muito-livre { background: var(--color-accent-700); color: var(--color-bg); }
-  /* R4.1: em Mês/Ano a leitura principal é histórica (retrospectiva), então
-     aqui é o FUTURO que esmaece — o oposto da Semana, e de propósito: a
-     pergunta que cada nível responde primeiro muda (ver docs da entrega). */
-  .ins-space-tile.is-futuro { opacity: 0.5; }
-  .ins-space-tile.is-atual { box-shadow: inset 0 0 0 var(--border-width-emphasis) var(--color-accent-700); }
+  .ihe-tile.is-livre { background: var(--color-accent-100); color: var(--color-text); }
+  .ihe-tile.is-muito-livre { background: var(--color-accent-700); color: var(--color-bg); }
+  /* Fatia que ainda não aconteceu — contorno tracejado, nunca
+     preenchimento. É OPORTUNIDADE, não ociosidade: o mesmo número quer
+     dizer coisas opostas nos dois casos, e somá-los como se fossem a
+     mesma métrica é o erro que o R4.1 já tinha corrigido. O tracejado
+     substitui o `opacity: .5` anterior, que dizia "menos importante"
+     quando o certo é "ainda dá para vender". */
+  .ihe-tile.is-futuro { background: transparent; border: 1px dashed var(--color-accent); color: var(--color-neutral-700); }
+  .ihe-tile-h { font-family: var(--font-heading); font-size: var(--text-body-strong-size); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ihe-tile-l { font-size: 10px; font-weight: 400; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .ihe-esp-legend { font-size: var(--text-micro-size); font-weight: var(--text-micro-weight); color: var(--color-neutral-600); margin: var(--space-3) 0 0; }
+
+  /* ── EFICIÊNCIA POR SERVIÇO ────────────────────────────────────
+     Sucessora de "Onde está o dinheiro". Só €/h de cadeira: o valor
+     absoluto e a participação no período foram para o Financeiro. A
+     barra mede eficiência contra o serviço mais eficiente RANQUEADO —
+     nunca contra valor absoluto, e nunca calibrada por um serviço de
+     amostra frágil. */
+  .ihe-ef { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2-5) 0; }
+  .ihe-ef + .ihe-ef { border-top: var(--border-width) solid var(--color-divider); }
+  .ihe-ef-pos {
+    flex: 0 0 20px; font-family: var(--font-heading); font-size: 12px; font-weight: 600;
+    color: var(--color-neutral-600); font-variant-numeric: tabular-nums;
+  }
+  .ihe-ef-body { flex: 1; min-width: 0; }
+  .ihe-ef-name { font-size: var(--text-body-strong-size); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ihe-ef-track { display: block; height: 5px; border-radius: var(--radius-full); background: var(--color-accent-100); overflow: hidden; margin-top: 6px; }
+  .ihe-ef-fill {
+    display: block; height: 100%; border-radius: var(--radius-full); background: var(--color-accent-600);
+    width: 0; transition: width var(--motion-emphasized) var(--ease-out);
+  }
+  .ihe-ef-meta { font-size: 12px; color: var(--color-neutral-600); margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .ihe-ef-right { text-align: right; flex-shrink: 0; }
+  .ihe-ef-hora { font-family: var(--font-heading); font-size: var(--text-body-strong-size); font-weight: 600; font-variant-numeric: tabular-nums; }
+  /* Grupo de amostra curta — recolhido por padrão. O rótulo do GRUPO diz
+     UMA vez o que antes seria um selo repetido em quase toda linha. */
+  .ihe-ef-mais {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; min-height: var(--touch-target-min); margin-top: var(--space-2);
+    background: none; border: none; border-top: var(--border-width) solid var(--color-divider);
+    font-family: var(--font-body); font-size: var(--text-caption-size); font-weight: 600;
+    color: var(--color-accent-700); cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--motion-instant) var(--ease-standard);
+  }
+  .ihe-ef-mais:active { transform: scale(0.98); }
+  .ihe-ef-mais:focus-visible { box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+  .ihe-ef-mais svg { width: 15px; height: 15px; transition: transform var(--motion-standard) var(--ease-standard); }
+  .ihe-ef-mais.is-less svg { transform: rotate(180deg); }
+  .ihe-ef-curtos {
+    overflow: hidden; height: 0; opacity: 0;
+    transition: height var(--motion-route) var(--ease-standard), opacity var(--motion-fast) var(--ease-standard);
+  }
+  .ihe-ef-curtos.is-open { opacity: 1; }
+  /* Sem posição no ranking: eles não estão ranqueados, e numerar daria a
+     entender que a ordem entre eles significa alguma coisa. */
+  .ihe-ef.is-curto .ihe-ef-pos { color: var(--color-neutral-300); }
+  .ihe-ef.is-curto .ihe-ef-name,
+  .ihe-ef.is-curto .ihe-ef-hora { color: var(--color-neutral-700); }
+  .ihe-ef.is-curto .ihe-ef-fill { background: var(--color-neutral-300); }
+  .ihe-ef-nota {
+    font-size: 12px; color: var(--color-neutral-600); line-height: var(--leading-normal);
+    margin: var(--space-3) 0 var(--space-1);
+  }
+
+  /* ── COMO AS CLIENTES CHEGAM ───────────────────────────────────
+     Sem uma quantia sequer — origem e conversão, nada de dinheiro. */
+  .ihe-ch-bar { display: flex; height: 10px; border-radius: var(--radius-full); overflow: hidden; }
+  .ihe-ch-bar span { display: block; width: 0; transition: width var(--motion-route) var(--ease-out); }
+  .ihe-ch-keys {
+    display: flex; flex-wrap: wrap; gap: var(--space-3-5); margin-top: var(--space-3);
+    font-size: 12px; color: var(--color-neutral-700); font-variant-numeric: tabular-nums;
+  }
+  .ihe-ch-keys span { display: inline-flex; align-items: center; gap: 6px; }
+  .ihe-ch-keys i { width: 9px; height: 9px; border-radius: var(--radius-full); flex-shrink: 0; }
+  .ihe-ch-conv {
+    font-size: var(--text-caption-size); color: var(--color-neutral-700);
+    margin: var(--space-4) 0 0; padding-top: var(--space-3);
+    border-top: var(--border-width) solid var(--color-divider); font-variant-numeric: tabular-nums;
+  }
+  .ihe-ch-conv strong { color: var(--color-text); font-family: var(--font-heading); font-weight: 600; }
 
   /* Onde está o dinheiro */
   .ins-svc { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2-5) 0; }
@@ -1130,10 +1242,11 @@ window.supabase = {
 
   @media (max-width: 360px) {
     .ins-kpis { column-gap: var(--space-3); }
-    .ins-map { border-spacing: 2px; }
-    .ins-map-cell { height: 36px; font-size: var(--text-micro-size); }
-    .ins-map th.ins-map-lbl { font-size: var(--text-micro-size); font-weight: 400; }
-    .ins-space-tile { min-height: 42px; }
+    /* Tile do "Onde há espaço": 12 meses do Ano cabem em 4 colunas × 2
+       linhas; o que aperta a 360px é a altura, não a largura. */
+    .ihe-tile { min-height: 46px; padding: var(--space-2) 1px; }
+    .ihe-tile-l { font-size: 9.5px; }
+    .ihe-esp { gap: 5px; }
   }
 
   /* Help dos indicadores — R4.1: micro-diálogo centralizado, não a folha
@@ -1174,6 +1287,11 @@ window.supabase = {
 
   @media (prefers-reduced-motion: reduce) {
     .ins-period-pill, .ins-period button, .ins-card.is-actionable, .ins-svc-fill, .ins-dots i, .ins-rail-hint { transition: none; }
+    /* Barras da Insights pós-Financeiro: capacidade do Hero, ranking de
+       eficiência e faixa de canais. Todas nascem em 0 e crescem — sob
+       movimento reduzido elas aparecem prontas. */
+    .ihe-cap-fill, .ihe-ef-fill, .ihe-ch-bar span, .ihe-ef-curtos, .ihe-ef-mais, .ihe-ef-mais svg { transition: none; }
+    .ihe-ef-mais:active { transform: none; }
     .ins-period button:active, .ins-card.is-actionable:active { transform: none; }
     .ins-rail { scroll-behavior: auto; }
     .ins-rail-hint.is-teaching { animation: none; }
@@ -4029,7 +4147,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', role: undefined, booting: false, painelAtivo: false, appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, clientQuestionnaires: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, financeiroPeriod: 'mes', financeiroChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', role: undefined, booting: false, painelAtivo: false, appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, clientQuestionnaires: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', financeiroPeriod: 'mes', financeiroChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
 
 // ── RBAC V1 · papel e capabilities (18/08/2026) ───────────────
 // Dois papéis: `owner` (a Juliane) e `staff` (a assistente). A assistente
@@ -4793,10 +4911,19 @@ function animateCounters(root) {
     requestAnimationFrame(tick);
   });
 }
+// Toda barra que nasce em 0 e cresce até `data-target-width`. A lista é
+// explícita de propósito: um seletor genérico por atributo pegaria
+// qualquer elemento que passasse a usar o mesmo dataset por outro motivo.
 function animateFills(root) {
-  root.querySelectorAll('.dr-fill, .adc-bar-fill, .ins-svc-fill').forEach(el => {
-    requestAnimationFrame(() => { el.style.width = el.dataset.targetWidth + '%'; });
-  });
+  const alvos = root.querySelectorAll('.dr-fill, .adc-bar-fill, .ins-svc-fill, .ihe-cap-fill, .ihe-ef-fill, .ihe-ch-bar span');
+  const aplicar = () => alvos.forEach(el => { el.style.width = el.dataset.targetWidth + '%'; });
+  requestAnimationFrame(aplicar);
+  // ⚠ REDE DE SEGURANÇA: requestAnimationFrame NÃO dispara em aba sem
+  // composição de frames (segundo plano, painel oculto, aparelho
+  // economizando bateria). Sem isto as barras ficam em largura ZERO — um
+  // gráfico vazio, que é pior que um gráfico sem animação. Mesmo padrão de
+  // `finRolar()`, `finAnimarBarras()`, `morphAvatar()` e `splashBoot()`.
+  setTimeout(aplicar, 320);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -5099,18 +5226,41 @@ function renderHome() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// INSIGHTS · "Como o negócio está indo — e o que dá para fazer"
+// INSIGHTS · diagnóstico operacional
 //
-// Arquitetura aprovada nas Fases 1–3 (preview/insights-v2-r2.html),
-// refinada no R4. Cada bloco responde UMA pergunta, nesta ordem:
-//   Hero .............. como estou indo?
-//   Considerações ..... o que merece ser observado?   (condicional)
-//   Sugestões ......... o que posso fazer agora?
-//   Indicadores ....... como está minha operação?
-//   Tendência ......... estou crescendo?
-//   Onde há espaço .... onde ainda posso vender mais / onde ficou ocioso?
-//   Onde está o dinheiro  o que está gerando receita?
-//   Como as clientes chegam  qual canal está funcionando?
+// A aba responde: "como o salão está operando, o que está acontecendo e
+// onde existe oportunidade de melhorar?"
+//
+// Ela NÃO responde "quanto vale a agenda?" — isso é do Financeiro desde
+// 18/08/2026, e a separação é definitiva:
+//
+//     Insights   = diagnóstico operacional
+//                  capacidade · comportamento · eficiência ·
+//                  oportunidade · aquisição · sugestões
+//
+//     Financeiro = valor monetário da agenda
+//                  valor · ticket · evolução · valor absoluto por
+//                  serviço · histórico
+//
+// ⚠ A ÚNICA quantia permitida nesta tela é o €/h de "Eficiência por
+// serviço", porque ele é produtividade de cadeira e não valor do
+// período. Nenhum outro € pode aparecer — nem no Hero, nem nos
+// Indicadores, nem nas Considerações, nem nas Sugestões.
+// `insValidar()` verifica isso no console e falha se alguém reintroduzir.
+//
+// Cada bloco responde UMA pergunta, nesta ordem:
+//   Hero .................... quanto da minha capacidade está ocupada?
+//   Indicadores ............. como está minha operação?
+//   Considerações ........... o que merece ser observado?  (condicional)
+//   Sugestões ............... o que posso fazer agora?
+//   Onde há espaço .......... onde ainda cabe atendimento?
+//   Eficiência por serviço .. o que rende mais por hora de cadeira?
+//   Como as clientes chegam . qual canal está funcionando?
+//
+// Considerações e Sugestões vêm ANTES dos blocos de evidência (espaço,
+// eficiência, canais) e não depois: são a única parte da tela que já fez
+// a leitura pela usuária. Os blocos abaixo existem para conferir essa
+// leitura — quem já confia nela não precisa rolar.
 //
 // Um único seletor (Semana · Mês · Ano) governa a aba inteira — não
 // existe toggle local. Dois períodos simultâneos na mesma tela
@@ -5125,6 +5275,19 @@ function renderHome() {
 // (ocioso, um fato) de futuro (ainda disponível, uma oportunidade) em
 // vez de comparar os dois como se fossem a mesma métrica (R4.1). A troca
 // de período ganhou uma cápsula que desliza e conteúdo que não pisca.
+//
+// 18/08/2026 — pós-Financeiro. Saíram: o Hero de receita, o KPI "Gasto
+// médio", o bloco "Tendência" (virou "Evolução" no Financeiro) e "Onde
+// está o dinheiro" (virou "Eficiência por serviço", só €/h). Entrou o
+// Hero de ocupação com barra de capacidade. O "Onde há espaço" perdeu a
+// tabela dia×faixa da Semana e passou a ter uma gramática só — tiles —
+// nos três níveis.
+//
+// ⚠ Peso de ordenação das Sugestões (`impacto`) CONTINUA usando ticket e
+// receita/hora. É invisível: nunca chega à tela, e serve só para decidir
+// qual das três sugestões candidatas aparece primeiro. Trocar o peso
+// mudaria QUAIS sugestões a Juliane vê, o que é mudança de comportamento
+// e não de escopo desta rodada.
 // ══════════════════════════════════════════════════════════════
 
 const INSIGHTS_PERIODS = [
@@ -5154,6 +5317,12 @@ const INS_MIN_SEMANAS_MEDIA = 4;   // semanas fechadas pra existir "sua média"
 const INS_MIN_HORAS_LIVRES = 2;    // abaixo disso "espaço livre" é ruído
 const INS_ATRASO_FATOR = 1.5;      // 1,5× o intervalo dela = passou do ponto
 const INS_MIN_CLIENTES_RITMO_ANO = 8; // amostra mínima pra falar de ritmo de retorno no Ano
+
+// Chevron DESCENDENTE, compartilhado por Insights e Financeiro: os dois
+// têm um grupo que expande inline e gira o ícone 180°. `ICONS.chevron`
+// não serve — ele aponta para a direita, que é o affordance de "entra
+// aqui" das listas, e não o de "abre para baixo".
+const INS_CHEVRON_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
 
 // ── Janela do período ─────────────────────────────────────────
 // `cut` é o "mesmo ponto" do período: para o atual é agora; para o
@@ -5281,10 +5450,40 @@ function insComputePeriod(kind) {
   const novas = insNewClients(atual.start, atual.cut);
   const antNovas = insNewClients(anterior.start, anterior.cut);
 
+  // ── Horas do Hero operacional (18/08/2026) ──
+  // O numerador é a duração REAL reservada na agenda; o denominador é a
+  // capacidade do período DECORRIDO — só dias em que o salão abre, só
+  // profissionais ativas, contra o expediente real (9h–18h).
+  //
+  // ⚠ A capacidade do período ANTERIOR é calculada sobre a janela dele,
+  // nunca copiada da atual: dois meses não têm o mesmo número de dias
+  // abertos até o mesmo dia do mês, e derivar um do outro erra as horas
+  // e o delta. É a mesma razão pela qual `antOcup` já usava
+  // `anterior.start`/`anterior.cut`.
+  //
+  // No Ano isso é year-to-date por construção: `atual.start` é 1º de
+  // janeiro e `atual.cut` é agora, então setembro–dezembro nunca entram
+  // como "hora livre" de um acumulado.
+  //
+  // ⚠ As horas NÃO são arredondadas aqui. A ocupação sai dos minutos, e
+  // arredondar o numerador na origem quebra a sustentação do número
+  // principal da tela: 435min de 540min é 81%, mas "7h de 9h" lê 78%. A
+  // Insights inteira existe sob a regra de que nenhum número aparece se
+  // não puder ser sustentado pelos outros — então o valor fica exato e
+  // quem arredonda é a exibição, via insFmtHoras().
+  const minUsados = realizados.reduce((s, a) => s + insApptMinutes(a), 0);
+  const antMinUsados = antRealizados.reduce((s, a) => s + insApptMinutes(a), 0);
+
   return {
     kind, atual, anterior, realizados, agendados, antRealizados,
     receita, antReceita, ticket, antTicket, ocup, antOcup, novas, antNovas,
     agendado: insSumRevenue(agendados),
+    atendimentos: realizados.length,
+    antAtendimentos: antRealizados.length,
+    horasUsadas: minUsados / 60,
+    horasCap: insCapacityMinutes(atual.start, atual.cut) / 60,
+    antHorasUsadas: antMinUsados / 60,
+    antHorasCap: insCapacityMinutes(anterior.start, anterior.cut) / 60,
     labels: insPeriodLabels(kind),
     suficiente: realizados.length >= INS_MIN_APPTS_PERIODO,
   };
@@ -5293,8 +5492,9 @@ function insComputePeriod(kind) {
 // ── Variação ──────────────────────────────────────────────────
 // Sem base anterior não existe variação — devolve null e a tela não
 // mostra delta nenhum, em vez de inventar "+100%".
-function insDelta(cur, prev, tipo) {
+function insDelta(cur, prev, tipo, sufixo) {
   if (cur === null || cur === undefined || prev === null || prev === undefined) return null;
+  const un = sufixo || '';
   if (tipo === 'pp') {
     const diff = Math.round(cur - prev);
     if (!diff) return null;
@@ -5304,7 +5504,7 @@ function insDelta(cur, prev, tipo) {
   if (tipo === 'abs') {
     const diff = Math.round(cur - prev);
     if (!diff) return null;
-    return { dir: diff > 0 ? 'up' : 'down', text: String(Math.abs(diff)) };
+    return { dir: diff > 0 ? 'up' : 'down', text: String(Math.abs(diff)) + un };
   }
   const pct = Math.round(((cur - prev) / prev) * 100);
   if (!pct) return null;
@@ -5412,6 +5612,70 @@ function insServicos(list) {
 }
 
 const INS_DIA_NOME = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const WEEKDAY_LABELS_3 = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+// Horas para leitura humana. Inteiro quando é inteiro, uma casa decimal
+// com vírgula quando não é (docs/06 §25).
+//
+// A casa decimal não é preciosismo: sem ela o Hero mostra "81% de
+// ocupação" ao lado de "7h ocupadas de 9h", e 7/9 é 78%. Ou o número
+// grande sustenta a legenda, ou um dos dois está mentindo.
+function insFmtHoras(h) {
+  const n = Number(h) || 0;
+  const arred = Math.round(n * 10) / 10;
+  return Number.isInteger(arred)
+    ? String(arred)
+    : arred.toFixed(1).replace('.', ',');
+}
+
+// Rótulo do período em curso. Vive aqui, entre as constantes
+// compartilhadas, porque quem o consome é o FINANCEIRO (o rodapé do
+// card de Evolução) — a Insights deixou de ter gráfico de tendência em
+// 18/08/2026.
+function insEmCursoLabel(kind) {
+  if (kind === 'semana') return 'Esta semana';
+  if (kind === 'mes') return 'Este mês';
+  return 'Este ano';
+}
+
+// ── Eficiência por serviço (18/08/2026) ──────────────────────
+// Sucessora de "Onde está o dinheiro". A pergunta mudou de "quanto
+// rendeu" para "quanto rende por hora de cadeira" — o valor absoluto e a
+// participação no período foram para o Financeiro.
+//
+// `min` é a duração MÉDIA por atendimento do serviço, derivada da
+// duração real reservada (ends_at − starts_at), não do catálogo: é o que
+// de fato ocupou a cadeira.
+function insEficiencia(list) {
+  return insServicos(list)
+    .filter(s => s.hora !== null && s.minutos > 0)
+    .map(s => ({ nome: s.nome, hora: s.hora, qtd: s.qtd, minutos: s.minutos, min: Math.round(s.minutos / s.qtd) }))
+    .sort((a, b) => b.hora - a.hora);
+}
+
+// Piso de amostra para RANQUEAR um serviço no bloco de eficiência.
+//
+// ⚠ São DOIS pisos diferentes no arquivo, e a diferença é de propósito:
+//
+//   INS_MIN_SERVICO (4)     — piso para o app AFIRMAR alguma coisa sobre
+//                             um serviço numa Consideração ou Sugestão
+//                             ("teste X como complemento"). Uma frase
+//                             declarada exige mais base que uma linha de
+//                             ranking.
+//   insMinServico(kind)     — piso para um serviço ENTRAR no ranking de
+//                             €/h. Escala por timeframe, seguindo o
+//                             precedente que insMinQuedaServico(kind) já
+//                             abriu: o mesmo número absoluto significa
+//                             coisas diferentes numa semana e num ano.
+//
+// O 3 do Mês é um afrouxamento deliberado do 4: com o piso literal este
+// salão deixaria UM serviço no ranking e esconderia cinco — um "ranking"
+// de uma linha. Direção aprovada no preview.
+function insMinServico(kind) {
+  if (kind === 'semana') return 2;
+  if (kind === 'ano') return 8;
+  return 3;
+}
 
 // ══════════════════════════════════════════════════════════════
 // "ONDE SOBRA ESPAÇO" · fractal
@@ -5481,15 +5745,26 @@ function insFractalMeses(atual) {
   }));
 }
 
-// Três degraus em token existente, por RATIO absoluto (não relativo ao
-// máximo do conjunto) — um único vazio grande não pode mais espremer
-// todas as outras células no mesmo degrau "cheio".
+// Três degraus em token existente, por RATIO ABSOLUTO de horas livres
+// sobre a capacidade da própria fatia — nunca relativo ao máximo do
+// conjunto, senão um único vazio grande espreme todas as outras células
+// no mesmo degrau.
+//
+// ⚠ Os cortes subiram de 0,55/0,20 para 0,70/0,40 em 18/08/2026, seguindo
+// o preview aprovado. Motivo: este salão opera entre 15% e 27% de
+// ocupação, ou seja, 73% a 85% de tempo livre — com o corte antigo
+// PRATICAMENTE TODA fatia caía em "muito livre" e a grade inteira ficava
+// escura, sem contraste nenhum entre uma semana cheia e uma vazia. Um
+// degrau que nunca distingue não é degrau.
+//
+// Devolve string vazia no degrau mais cheio: o visual "cheio" é o próprio
+// `.ihe-tile` base, sem classe modificadora.
 function insMapStep(livre, cap) {
-  if (!cap || livre <= 0) return 'is-cheio';
+  if (!cap || livre <= 0) return '';
   const r = livre / cap;
-  if (r >= 0.55) return 'is-muito-livre';
-  if (r >= 0.20) return 'is-livre';
-  return 'is-cheio';
+  if (r >= 0.70) return 'is-muito-livre';
+  if (r >= 0.40) return 'is-livre';
+  return '';
 }
 
 // R4.1 — correção semântica: a versão anterior misturava capacidade
@@ -5506,89 +5781,119 @@ function insSegStatus(s, hoje) {
   return 'atual';
 }
 
-// Monta o bloco "Onde há espaço" — HTML pronto por nível fractal.
+// Monta o bloco "Onde há espaço" — uma gramática só para os três
+// níveis (18/08/2026). Antes a Semana era uma tabela dia×faixa e Mês/Ano
+// eram tiles: três leituras que não se pareciam. Agora é sempre a mesma
+// grade de tiles, e o que muda é a fatia:
+//
+//     Semana → dias abertos      Mês → semanas      Ano → meses
+//
+// ⚠ A JANELA de cada nível é diferente da janela do Hero, e isso é
+// deliberado:
+//
+//   Hero            = período DECORRIDO (é uma taxa: precisa de um
+//                     denominador que já aconteceu)
+//   Onde há espaço  = pode incluir o futuro do MESMO período, quando
+//                     esse futuro ainda é acionável
+//
+//   · Semana: janela = a semana inteira. O que ainda não aconteceu é
+//     marcado como futuro; se hoje é domingo, não sobra fatia futura.
+//   · Mês: janela = o mês inteiro. Espaço daqui a duas semanas ainda é
+//     vendável, e costuma ser a melhor sugestão da tela.
+//   · Ano: janela = SÓ O DECORRIDO (year-to-date). Quatro meses à frente
+//     deixam de ser acionáveis, e mostrar "setembro tem 189h livres" em
+//     agosto seria contar como ociosidade um período que não começou.
+//     Aqui as duas janelas coincidem com as do Hero, de propósito.
+//
+// Passado vazio é ociosidade (um fato); futuro vazio é oportunidade. Os
+// dois nunca são somados como se fossem a mesma métrica — o futuro sai
+// com contorno tracejado, nunca preenchido.
 function insSpaceBlock(P) {
   const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const agora = new Date();
 
+  let fatias, grade, legendaBase;
   if (P.kind === 'semana') {
-    const dias = insOpenDays(P.atual.start, P.atual.end); // semana inteira, passada + futura
-    const m = insDayFaixaMatrix(dias);
-    const flat = m.celulas.flat();
-    if (!flat.some(c => c.cap > 0)) return { temEspaco: false };
-
-    // "Ainda disponível" (hoje + futuro, bookável de verdade) e "já
-    // aconteceu" (só dias estritamente antes de hoje) respondem perguntas
-    // diferentes — oportunidade vs. fato histórico — e nunca viram uma
-    // frase só.
-    let melhorDisp = null, melhorPassado = null;
-    flat.forEach(c => {
-      if (c.data >= hoje) { if (!melhorDisp || c.livre > melhorDisp.livre) melhorDisp = c; }
-      else { if (!melhorPassado || c.livre > melhorPassado.livre) melhorPassado = c; }
+    fatias = insOpenDays(P.atual.start, P.atual.end).map(d => {
+      const ate = new Date(d); ate.setDate(ate.getDate() + 1);
+      return { label: WEEKDAY_LABELS_3[d.getDay()], labelCompleto: INS_DIA_NOME[d.getDay()], de: new Date(d), ate };
     });
-
-    let leitura;
-    if (melhorDisp && melhorDisp.livre >= INS_MIN_HORAS_LIVRES) {
-      leitura = `Você ainda tem espaço nesta semana — o maior é <em>${m.faixas[melhorDisp.faixa].nome.toLowerCase()} de ${INS_DIA_NOME[melhorDisp.dia]}</em>, ${melhorDisp.livre}h livres.`;
-    } else if (melhorPassado && melhorPassado.livre >= INS_MIN_HORAS_LIVRES) {
-      leitura = `Esta semana já fechou. <em>${m.faixas[melhorPassado.faixa].nome.toLowerCase()} de ${INS_DIA_NOME[melhorPassado.dia]}</em> foi onde mais sobrou tempo ocioso — ${melhorPassado.livre}h.`;
-    } else {
-      leitura = 'A agenda desta semana está cheia.';
-    }
-
-    const html = `
-      <table class="ins-map">
-        <thead><tr><th></th>${dias.map(d => `<th scope="col" class="${d < hoje ? 'is-passado' : ''}">${WEEKDAY_LABELS_3[d.getDay()]}</th>`).join('')}</tr></thead>
-        <tbody>
-          ${m.celulas.map((linha, fi) => `<tr>
-            <th scope="row" class="ins-map-lbl">${m.faixas[fi].nome}</th>
-            ${linha.map(c => `<td class="ins-map-cell ${insMapStep(c.livre, c.cap)}${c.data < hoje ? ' is-passado' : ''}">${c.livre}h</td>`).join('')}
-          </tr>`).join('')}
-        </tbody>
-      </table>
-      <p class="ins-map-legend">Dias já encerrados aparecem esmaecidos · quanto mais escuro, mais espaço</p>`;
-    return { temEspaco: true, leitura, html };
+    grade = 'is-5';
+    legendaBase = 'Horas livres por dia';
+  } else if (P.kind === 'mes') {
+    fatias = insFractalSemanas(P.atual);
+    grade = 'is-5';
+    legendaBase = 'Horas livres por semana';
+  } else {
+    // Year-to-date: só os meses que já começaram. `insFractalMeses`
+    // devolve os 12 — o corte é aqui, e é ele que faz a soma das
+    // capacidades das fatias fechar com o denominador do Hero.
+    fatias = insFractalMeses(P.atual).filter(m => m.de <= agora);
+    grade = 'is-4';
+    legendaBase = 'Horas livres por mês';
   }
 
-  const mensal = P.kind === 'mes';
-  const segs = mensal ? insFractalSemanas(P.atual) : insFractalMeses(P.atual);
-  const linha = segs.map(s => {
-    const cap = insCapacityMinutes(s.de, s.ate);
-    const usados = insApptsBetween(s.de, s.ate).reduce((sum, a) => sum + insApptMinutes(a), 0);
-    return { label: s.label, labelCompleto: s.labelCompleto, cap: Math.round(cap / 60), livre: Math.round(Math.max(0, cap - usados) / 60), status: insSegStatus(s, hoje) };
-  });
+  const linha = fatias.map(s => {
+    // No Ano o mês corrente entra pela fatia DECORRIDA dele, não pelo mês
+    // inteiro — senão o acumulado ganharia capacidade que ainda não
+    // existe e a soma deixaria de bater com o Hero.
+    const ate = (P.kind === 'ano' && s.ate > agora) ? agora : s.ate;
+    const cap = insCapacityMinutes(s.de, ate);
+    const usados = insApptsBetween(s.de, ate).reduce((sum, a) => sum + insApptMinutes(a), 0);
+    return {
+      label: s.label, labelCompleto: s.labelCompleto,
+      cap: Math.round(cap / 60),
+      livre: Math.round(Math.max(0, cap - usados) / 60),
+      status: insSegStatus({ de: s.de, ate }, hoje),
+    };
+  }).filter(c => c.cap > 0);
+
   if (!linha.some(c => c.cap > 0)) return { temEspaco: false };
 
-  // O ranking histórico usa SÓ segmentos encerrados — o atual ainda está
-  // em andamento (menos tempo passado = "livre" artificialmente alto) e o
-  // futuro nunca aconteceu. Nenhum dos dois entra na comparação.
-  const encerrados = linha.filter(c => c.status === 'encerrado' && c.cap > 0);
+  // O ranking histórico usa SÓ fatias encerradas — a atual ainda está em
+  // andamento (menos tempo decorrido = "livre" artificialmente alto) e a
+  // futura nunca aconteceu. Nenhuma das duas entra na comparação.
+  const encerradas = linha.filter(c => c.status === 'encerrado' && c.cap > 0);
   const atualSeg = linha.find(c => c.status === 'atual' && c.cap > 0);
+  const futuras = linha.filter(c => c.status === 'futuro');
   let melhorHistorico = null;
-  encerrados.forEach(c => { if (!melhorHistorico || c.livre > melhorHistorico.livre) melhorHistorico = c; });
+  encerradas.forEach(c => { if (!melhorHistorico || c.livre > melhorHistorico.livre) melhorHistorico = c; });
 
-  const verbo = mensal ? 'sobrou' : 'houve'; // Ano é retrospectivo por natureza — a própria pergunta aprovada já vem no passado
+  const unidade = P.kind === 'semana' ? 'dia' : (P.kind === 'mes' ? 'semana' : 'mês');
   const partes = [];
   if (melhorHistorico && melhorHistorico.livre >= INS_MIN_HORAS_LIVRES) {
-    // Nome completo em frase narrativa ("Agosto", não "Ago") — abreviação
-    // só nos tiles, onde o espaço é compacto de propósito (R4.2).
-    partes.push(`<em>${esc(melhorHistorico.labelCompleto)}</em> é onde mais ${verbo} espaço ${mensal ? 'este mês' : 'este ano'} — ${melhorHistorico.livre}h livres.`);
-  } else if (!encerrados.length) {
-    partes.push(mensal ? 'O mês ainda está no começo — sem semanas encerradas para comparar.' : 'O ano ainda está no começo — sem meses encerrados para comparar.');
+    // Nome completo em frase narrativa ("Agosto", não "Ago") — a
+    // abreviação é só do tile, onde o espaço é compacto de propósito.
+    partes.push(`<em>${esc(melhorHistorico.labelCompleto)}</em> é o maior vazio ${P.kind === 'ano' ? 'do ano até aqui' : (P.kind === 'mes' ? 'do mês' : 'da semana')} — ${melhorHistorico.livre}h livres de ${melhorHistorico.cap}h.`);
+  } else if (!encerradas.length) {
+    partes.push(`O período ainda está no começo — nenhum ${unidade} encerrado para comparar.`);
   } else {
-    partes.push(`A agenda ficou cheia em ${mensal ? 'todas as semanas encerradas deste mês' : 'todos os meses encerrados deste ano'}.`);
+    partes.push('A agenda ficou cheia em tudo que já se encerrou neste período.');
   }
-  // Disponibilidade futura é uma frase À PARTE, explicitamente rotulada —
+  // Disponibilidade futura é frase À PARTE e explicitamente rotulada —
   // nunca dentro do ranking histórico acima.
-  if (atualSeg && atualSeg.livre >= INS_MIN_HORAS_LIVRES) {
+  const livreFuturo = futuras.reduce((s, c) => s + c.livre, 0);
+  if (livreFuturo >= INS_MIN_HORAS_LIVRES) {
+    partes.push(`Ainda há <em>${livreFuturo}h</em> sem nada marcado no restante ${P.kind === 'semana' ? 'da semana' : 'do mês'}.`);
+  } else if (atualSeg && atualSeg.livre >= INS_MIN_HORAS_LIVRES) {
     partes.push(`${esc(atualSeg.labelCompleto)} ainda tem ${atualSeg.livre}h disponíveis.`);
   }
-  const leitura = partes.join(' ');
 
-  const tiles = linha.map(c => `<div class="ins-space-tile ${insMapStep(c.livre, c.cap)}${c.status === 'futuro' ? ' is-futuro' : ''}${c.status === 'atual' ? ' is-atual' : ''}"><span class="ist-lbl">${esc(c.label)}</span><span class="ist-val">${c.livre}h</span></div>`).join('');
+  const tiles = linha.map(c => `
+    <div class="ihe-tile${c.status === 'futuro' ? ' is-futuro' : (insMapStep(c.livre, c.cap) ? ' ' + insMapStep(c.livre, c.cap) : '')}"
+      title="${esc(c.labelCompleto)}: ${c.livre}h livres de ${c.cap}h${c.status === 'futuro' ? ' · ainda vai acontecer' : ''}">
+      <span class="ihe-tile-h">${c.livre}h</span>
+      <span class="ihe-tile-l">${esc(c.label)}</span>
+    </div>`).join('');
+
+  const legenda = P.kind === 'ano'
+    ? `${legendaBase} · ${esc(P.labels.eyebrow.toLowerCase())}, o mesmo intervalo do indicador acima`
+    : (futuras.length ? `${legendaBase} · tracejado = ainda vai acontecer` : `${legendaBase} · quanto mais escuro, mais espaço`);
+
   const html = `
-    <div class="${mensal ? 'ins-space-row' : 'ins-space-grid'}">${tiles}</div>
-    <p class="ins-map-legend">${mensal ? 'Semanas futuras' : 'Meses futuros'} aparecem esmaecidos · o atual tem contorno · quanto mais escuro, mais espaço</p>`;
-  return { temEspaco: true, leitura, html };
+    <div class="ihe-esp ${grade}" role="img" aria-label="${esc(linha.map(c => `${c.labelCompleto}: ${c.livre} horas livres de ${c.cap}`).join('. '))}">${tiles}</div>
+    <p class="ihe-esp-legend">${legenda}</p>`;
+  return { temEspaco: true, leitura: partes.join(' '), html };
 }
 
 // Só para a Sugestão de espaço: sempre olha ~30 dias PRA FRENTE,
@@ -5826,26 +6131,27 @@ function insBuildAtencao(P) {
   const cand = [];
   const push = c => { if (c) cand.push({ ...c, timeframe: P.kind }); };
 
-  // Receita, ocupação, gasto médio, clientes novas — os quatro comparam
-  // SEMPRE P contra o mesmo ponto do período anterior, então já são
-  // timeframe-aware por construção. Cada um vira consideração positiva
-  // OU negativa, nunca as duas ao mesmo tempo.
+  // Ocupação, horas ocupadas, clientes novas — os três comparam SEMPRE P
+  // contra o mesmo ponto do período anterior, então já são timeframe-aware
+  // por construção. Cada um vira consideração positiva OU negativa, nunca
+  // as duas ao mesmo tempo.
+  //
+  // ⚠ "Receita" e "gasto médio" saíram daqui em 18/08/2026. Não é limpeza
+  // de copy: uma Consideração que diz "a receita cresceu 12%" é leitura de
+  // VALOR, e valor é a pergunta do Financeiro. Se voltarem, as duas telas
+  // voltam a responder a mesma coisa.
   const metricas = [
-    { d: insDelta(P.receita, P.antReceita, 'pct'), categoria: 'receita', sinal: 'receita', piso: 10,
-      icone: ICONS.trendUp, iconeNeg: ICONS.trendDown,
-      up: v => `A receita cresceu ${v} em relação ${P.labels.rel}`,
-      down: v => `A receita caiu ${v} em relação ${P.labels.rel}`,
-      ev: () => `${formatCurrency(P.receita)} contra ${formatCurrency(P.antReceita)}` },
     { d: insDelta(P.ocup, P.antOcup, 'pp'), categoria: 'ocupacao', sinal: 'ocupacao', piso: 5,
       icone: ICONS.target, iconeNeg: ICONS.target,
       up: v => `A ocupação melhorou ${v}`,
       down: v => `A ocupação caiu ${v}`,
       ev: () => `${P.ocup}% agora, contra ${P.antOcup}% ${P.labels.vs}` },
-    { d: insDelta(P.ticket, P.antTicket, 'pct'), categoria: 'gasto_medio', sinal: 'gasto_medio', piso: 10,
-      icone: ICONS.money, iconeNeg: ICONS.money,
-      up: v => `O gasto médio subiu ${v}`,
-      down: v => `O gasto médio caiu ${v}`,
-      ev: () => `${formatCurrency(P.ticket)} contra ${formatCurrency(P.antTicket)} ${P.labels.vs}` },
+    { d: insDelta(P.horasUsadas, P.antHorasUsadas, 'abs'), categoria: 'horas', sinal: 'horas_ocupadas', piso: 4,
+      // sem sufixo de propósito: o título já escreve o "h" depois de ${v}
+      icone: ICONS.clock, iconeNeg: ICONS.clock,
+      up: v => `Você trabalhou ${v}h a mais que ${P.labels.vs}`,
+      down: v => `Você trabalhou ${v}h a menos que ${P.labels.vs}`,
+      ev: () => `${insFmtHoras(P.horasUsadas)}h de atendimento, contra ${insFmtHoras(P.antHorasUsadas)}h ${P.labels.vs}` },
     { d: insDelta(P.novas, P.antNovas, 'abs'), categoria: 'clientes_novas', sinal: 'clientes_novas', piso: 2,
       icone: ICONS.userPlus, iconeNeg: ICONS.userPlus,
       up: v => `Clientes novas aumentaram — mais ${v} que ${P.labels.vs}`,
@@ -5935,14 +6241,28 @@ function insBuildAtencao(P) {
       }
     }
 
-    const svcTop = insServicos(P.realizados)[0];
-    if (svcTop && P.realizados.length >= INS_MIN_SERVICO) {
-      const pct = Math.round((svcTop.qtd / P.realizados.length) * 100);
+    // Concentração de serviço medida em TEMPO DE CADEIRA, não em contagem
+    // (18/08/2026). Um serviço de 150min e um de 45min contam igual na
+    // contagem e ocupam três vezes mais na agenda — e a pergunta da
+    // Insights é sobre capacidade. Esta é a consideração "determinado
+    // serviço ocupa muito tempo de cadeira" do preview aprovado.
+    const minutosPorServico = new Map();
+    let minutosTotais = 0;
+    P.realizados.forEach(a => {
+      const nome = (a.service && a.service.name) || 'Outro';
+      const m = insApptMinutes(a);
+      minutosPorServico.set(nome, (minutosPorServico.get(nome) || 0) + m);
+      minutosTotais += m;
+    });
+    let svcTop = null;
+    minutosPorServico.forEach((min, nome) => { if (!svcTop || min > svcTop.min) svcTop = { nome, min }; });
+    if (svcTop && minutosTotais > 0 && P.realizados.length >= INS_MIN_SERVICO) {
+      const pct = Math.round((svcTop.min / minutosTotais) * 100);
       if (pct >= 40) {
         push({ categoria: 'servico_' + svcTop.nome, valencia: 'neutral', sinal: 'concentracao_servico',
-          peso: pct * 0.5, confianca: insConfianca(pct, 40), icone: ICONS.tag,
-          titulo: `${svcTop.nome} concentra boa parte do seu mix`,
-          evidencia: `${pct}% dos atendimentos do período` });
+          peso: pct * 0.5, confianca: insConfianca(pct, 40), icone: ICONS.clock,
+          titulo: `${svcTop.nome} é o serviço que mais ocupa cadeira`,
+          evidencia: `${Math.round(svcTop.min / 60)}h no período — ${pct}% de todo o tempo trabalhado` });
       }
     }
 
@@ -5991,7 +6311,7 @@ function insSugestoesSemana(P) {
       confianca: insConfianca(prox.faltam, 1), icone: ICONS.calendar,
       titulo: `Abra ${prox.faltam} horário${prox.faltam === 1 ? '' : 's'} na próxima semana`,
       evidencia: `Ela tem ${prox.marcados} atendimento${prox.marcados === 1 ? '' : 's'} · sua média é ${prox.media}`,
-      impactoTexto: `Potencial estimado: +${formatCurrency(impacto)}`,
+      impactoTexto: `Abrir esses horários põe a próxima semana na sua média.`,
       acao: 'Abrir agenda', destino: { tipo: 'agenda', data: prox.inicio } });
   }
 
@@ -6004,7 +6324,7 @@ function insSugestoesSemana(P) {
     push({ categoria: 'clientes', sinal: 'clientes_atrasadas_agora', impacto,
       confianca: insConfianca(atrasadas.length, 1), icone: ICONS.phone, titulo,
       evidencia: `Passaram mais tempo que o padrão delas sem voltar — ${top[0].semanas} semanas, contra as ${top[0].intervaloSemanas} habituais`,
-      impactoTexto: P.ticket ? `Potencial estimado: +${formatCurrency(impacto)}` : '',
+      impactoTexto: `Cada uma já passou do intervalo em que costuma voltar.`,
       acao: 'Ver clientes',
       destino: { tipo: 'clientes', ids: atrasadas.map(c => c.id), label: `${atrasadas.length} cliente${atrasadas.length === 1 ? '' : 's'} que ${atrasadas.length === 1 ? 'passou' : 'passaram'} do intervalo habitual` } });
   }
@@ -6018,7 +6338,7 @@ function insSugestoesSemana(P) {
       confianca: insConfianca(melhor.livre, INS_MIN_HORAS_LIVRES), icone: ICONS.clock,
       titulo: `Ofereça ${nomeFaixa === 'manhã' ? 'a manhã' : 'o ' + nomeFaixa} de ${nomeDia}`,
       evidencia: `É o seu maior vazio nos próximos dias — ${melhor.livre}h livres`,
-      impactoTexto: impacto ? `Potencial estimado: +${formatCurrency(impacto)}` : '',
+      impactoTexto: `São ${melhor.livre}h que ainda dá tempo de preencher.`,
       acao: 'Abrir agenda', destino: { tipo: 'agenda', data: melhor.data } });
   }
 
@@ -6102,16 +6422,20 @@ function insSugestoesAno(P) {
 
   const servicos = insServicos(P.realizados).filter(s => s.qtd >= INS_MIN_SERVICO && s.hora);
 
-  // A · o líder de receita não é o líder de €/h — revisar o papel dele no mix.
+  // A · o serviço que mais OCUPA CADEIRA não é o que mais rende por hora
+  // — revisar o papel dele no mix. Até 18/08/2026 a comparação era contra
+  // o líder de RECEITA; receita saiu desta tela, e tempo de cadeira é a
+  // grandeza que a Insights realmente governa.
   if (servicos.length >= 2) {
-    const liderReceita = servicos.slice().sort((a, b) => b.receita - a.receita)[0];
+    const liderTempo = servicos.slice().sort((a, b) => b.minutos - a.minutos)[0];
     const liderHora = servicos.slice().sort((a, b) => b.hora - a.hora)[0];
-    if (liderReceita.nome !== liderHora.nome && liderHora.hora >= liderReceita.hora * 1.3) {
-      const participacao = Math.round((liderReceita.qtd / P.realizados.length) * 100);
-      push({ categoria: 'servico_' + liderReceita.nome, sinal: 'mix_servico_vs_valor', impacto: liderReceita.receita * 0.08,
-        confianca: insConfianca(liderHora.hora / liderReceita.hora, 1.3), icone: ICONS.tag,
-        titulo: `Revise o papel de ${liderReceita.nome} no seu mix`,
-        evidencia: `${participacao}% dos atendimentos e ${formatCurrency(liderReceita.receita)} de receita, mas ${formatCurrency(liderReceita.hora)}/h contra ${formatCurrency(liderHora.hora)}/h de ${liderHora.nome}`,
+    if (liderTempo.nome !== liderHora.nome && liderHora.hora >= liderTempo.hora * 1.3) {
+      const horas = Math.round(liderTempo.minutos / 60);
+      const pctTempo = Math.round(liderTempo.minutos / servicos.reduce((s, x) => s + x.minutos, 0) * 100);
+      push({ categoria: 'servico_' + liderTempo.nome, sinal: 'mix_servico_vs_valor', impacto: liderTempo.minutos,
+        confianca: insConfianca(liderHora.hora / liderTempo.hora, 1.3), icone: ICONS.clock,
+        titulo: `Revise o papel de ${liderTempo.nome} no seu mix`,
+        evidencia: `${horas}h de cadeira no ano — ${pctTempo}% do seu tempo — a ${formatCurrency(liderTempo.hora)}/h, contra ${formatCurrency(liderHora.hora)}/h de ${liderHora.nome}`,
         impactoTexto: 'Não é sobre subir ou baixar preço — é sobre o que esse número já diz.',
         acao: '', destino: null });
     }
@@ -6230,44 +6554,83 @@ function renderInsights() {
 function insContentHtml(P) {
   const atencao = insBuildAtencao(P);
   const sugestoes = insBuildSugestoes(P);
-  const serie = insTrendSeries(P.kind);
-  const temSerie = serie.some(p => p.total > 0);
-  const servicos = insServicos(P.realizados);
-  const maxRec = Math.max(1, ...servicos.map(s => s.receita));
   const espaco = insSpaceBlock(P);
   const canais = insCanais(P.realizados);
   const conv = insConversao(P);
   const totalCanal = canais.reduce((s, c) => s + c.n, 0);
 
-  const dReceita = insDelta(P.receita, P.antReceita, 'pct');
+  // Ranking só com quem tem base. A escala da barra sai do MAIOR
+  // RANQUEADO — deixar um serviço de 2 atendimentos definir o topo faria
+  // a régua depender justamente do número mais frágil.
+  const piso = insMinServico(P.kind);
+  const eficiencia = insEficiencia(P.realizados);
+  const ranqueados = eficiencia.filter(s => s.qtd >= piso);
+  const curtos = eficiencia.filter(s => s.qtd < piso);
+  const maxEf = Math.max(1, ...(ranqueados.length ? ranqueados : eficiencia).map(s => s.hora));
+
+  const dOcup = insDelta(P.ocup, P.antOcup, 'pp');
+  const horasLivres = Math.max(0, P.horasCap - P.horasUsadas);
+
+  // KPIs OPERACIONAIS. "Gasto médio" saiu daqui em 18/08/2026 — ticket é
+  // do Financeiro. O que sobra responde capacidade, comportamento e
+  // aquisição, e nenhum deles é uma quantia.
   const kpis = [
-    { l: 'Atendimentos', v: String(P.realizados.length), d: insDelta(P.realizados.length, P.antRealizados.length, 'abs') },
-    { l: 'Gasto médio', v: P.ticket === null ? '—' : formatCurrency(P.ticket), d: insDelta(P.ticket, P.antTicket, 'pct'),
-      help: 'Valor médio faturado por atendimento no período selecionado.' },
-    { l: 'Ocupação', v: P.ocup === null ? '—' : `${P.ocup}%`, d: insDelta(P.ocup, P.antOcup, 'pp'),
-      help: 'Percentual das horas disponíveis da agenda que foram ocupadas por atendimentos.' },
-    { l: 'Clientes novas', v: P.novas === null ? '—' : String(P.novas), d: insDelta(P.novas, P.antNovas, 'abs') },
+    { l: 'Atendimentos', v: String(P.atendimentos), d: insDelta(P.atendimentos, P.antAtendimentos, 'abs') },
+    { l: 'Horas ocupadas', v: `${insFmtHoras(P.horasUsadas)}h`, d: insDelta(P.horasUsadas, P.antHorasUsadas, 'abs', 'h'),
+      help: 'Soma da duração de todos os atendimentos já realizados no período. É o numerador da ocupação — o denominador é a capacidade dos dias em que o salão abriu.' },
+    { l: 'Clientes novas', v: P.novas === null ? '—' : String(P.novas), d: insDelta(P.novas, P.antNovas, 'abs'),
+      help: 'Clientes cujo cadastro foi criado dentro deste período. Quem já era cliente e voltou não conta aqui.' },
+    { l: 'Conversão do booking', v: conv ? `${conv.pct}%` : '—', d: null,
+      help: 'Quantas visitas à página de agendamento viraram agendamento no período. Não inclui quem marcou por WhatsApp ou direto com você. Abaixo de 10 visitas a taxa não aparece — a amostra é pequena demais.' },
   ];
 
   return `
-    <section class="ins-answer" aria-label="Receita realizada">
-      <p class="ins-eyebrow">${esc(P.labels.eyebrow)}</p>
-      <div class="ins-answer-row">
-        <span class="ins-answer-value">${formatCurrency(P.receita)}</span>
-        <span class="ins-answer-word">realizados</span>
-        ${dReceita ? `<span class="ins-delta is-${dReceita.dir}">${dReceita.dir === 'up' ? '↑' : '↓'} ${dReceita.text}</span>` : ''}
+    <section class="ihe" aria-label="Ocupação do período">
+      <p class="ihe-eyebrow">${esc(P.labels.eyebrow)}</p>
+      <div class="ihe-row">
+        <span class="ihe-val">${P.ocup === null ? '—' : `${P.ocup}%`}</span>
+        <span class="ihe-word">de ocupação</span>
+        ${insDeltaHtml(dOcup, 'ins-delta')}
       </div>
-      ${dReceita ? `<p class="ins-answer-vs">${formatCurrency(P.antReceita)} ${esc(P.labels.vs)}</p>` : ''}
-      ${P.agendado > 0 ? `
-        <div class="ins-answer-ahead">
-          <span class="ins-ahead-ic" aria-hidden="true">${ICONS.calendar}</span>
-          <span><strong>${formatCurrency(P.agendado)}</strong> já agendados ${esc(P.labels.restante)}</span>
+      ${dOcup ? `<p class="ihe-vs">${P.antOcup}% ${esc(P.labels.vs)}</p>` : ''}
+
+      ${P.horasCap > 0 ? `
+        <div class="ihe-cap">
+          <div class="ihe-cap-track" role="img"
+            aria-label="${insFmtHoras(P.horasUsadas)} horas ocupadas de ${insFmtHoras(P.horasCap)} horas disponíveis no período decorrido">
+            <span class="ihe-cap-fill" data-target-width="${Math.min(100, Math.round(P.horasUsadas / P.horasCap * 100))}"></span>
+          </div>
+          <div class="ihe-cap-legend">
+            <span><b>${insFmtHoras(P.horasUsadas)}h</b> ocupadas</span>
+            <span><b>${insFmtHoras(horasLivres)}h</b> livres de ${insFmtHoras(P.horasCap)}h</span>
+          </div>
         </div>` : ''}
+
+      <div class="ihe-foot">
+        <span class="ihe-foot-ic" aria-hidden="true">${ICONS.calendar}</span>
+        <span><strong>${P.atendimentos}</strong> atendimento${P.atendimentos === 1 ? '' : 's'} no período</span>
+      </div>
+    </section>
+
+    <section class="ins-floor">
+      <h2 class="ins-title">Indicadores</h2>
+      <p class="ins-sub">Comparados ${esc(P.labels.vs)}</p>
+      <div class="ins-kpis">
+        ${kpis.map(k => `
+          <div class="ins-kpi">
+            <div class="ins-kpi-lbl">${esc(k.l)}${k.help ? ` <button type="button" class="ins-kpi-help" data-help-label="${esc(k.l)}" data-help-text="${esc(k.help)}" aria-label="O que é ${esc(k.l)}">?</button>` : ''}</div>
+            <div class="ins-kpi-row">
+              <span class="ins-kpi-val">${esc(k.v)}</span>
+              ${insDeltaHtml(k.d, 'ins-kpi-delta')}
+            </div>
+          </div>`).join('')}
+      </div>
     </section>
 
     ${atencao.length ? `
     <section class="ins-floor">
       <h2 class="ins-title">Considerações</h2>
+      <p class="ins-sub">O que os números deste período dizem</p>
       <div class="ins-stack">${atencao.map(a => `
         <div class="ins-alert">
           <span class="ins-alert-ic" aria-hidden="true">${a.icone}</span>
@@ -6282,6 +6645,7 @@ function insContentHtml(P) {
     ${sugestoes.length ? `
     <section class="ins-floor">
       <h2 class="ins-title">Sugestões</h2>
+      <p class="ins-sub">O que dá para fazer com a agenda deste período</p>
       <div class="ins-rail-wrap">
         <div class="ins-rail" id="insRail">${sugestoes.map(insCardHtml).join('')}</div>
         ${sugestoes.length > 1 ? `<span class="ins-rail-hint" id="insRailHint" aria-hidden="true">${ICONS.chevron}</span>` : ''}
@@ -6290,36 +6654,8 @@ function insContentHtml(P) {
     </section>` : ''}
 
     <section class="ins-floor">
-      <h2 class="ins-title">Indicadores</h2>
-      <div class="ins-kpis">
-        ${kpis.map((k, i) => `
-          <div class="ins-kpi">
-            <div class="ins-kpi-lbl">${k.l}${k.help ? ` <button type="button" class="ins-kpi-help" data-help-label="${esc(k.l)}" data-help-text="${esc(k.help)}" aria-label="O que é ${esc(k.l)}">?</button>` : ''}</div>
-            <div class="ins-kpi-row">
-              <span class="ins-kpi-val">${k.v}</span>
-              ${insDeltaHtml(k.d, 'ins-kpi-delta')}
-            </div>
-          </div>`).join('')}
-      </div>
-    </section>
-
-    <section class="ins-floor">
-      <h2 class="ins-title">Tendência</h2>
-      ${temSerie ? `
-        <div class="ins-chart-card">
-          <div id="insChartWrap">${insTrendSvg(serie)}</div>
-          <p class="ins-chart-foot">
-            ${esc(insEmCursoLabel(P.kind))} está em curso — <strong>${formatCurrency(P.receita)}</strong> até aqui
-          </p>
-        </div>` : emptyStateHtml({
-          icon: ICONS.bars, compact: true,
-          title: 'Sem histórico suficiente para comparar.',
-          caption: 'A tendência aparece quando houver períodos fechados com atendimento.',
-        })}
-    </section>
-
-    <section class="ins-floor">
       <h2 class="ins-title">Onde há espaço</h2>
+      <p class="ins-sub">${esc(insEspacoSub(P.kind))}</p>
       ${espaco.temEspaco ? `
         <p class="ins-read">${espaco.leitura}</p>
         ${espaco.html}
@@ -6331,38 +6667,38 @@ function insContentHtml(P) {
     </section>
 
     <section class="ins-floor">
-      <h2 class="ins-title">Onde está o dinheiro</h2>
-      ${servicos.length ? `
-        ${insServicosLeitura(servicos)}
-        ${servicos.map(s => `
-          <div class="ins-svc">
-            <div class="ins-svc-body">
-              <div class="ins-svc-name">${esc(s.nome)}</div>
-              <span class="ins-svc-track"><span class="ins-svc-fill" data-target-width="${Math.round(s.receita / maxRec * 100)}"></span></span>
-              <div class="ins-svc-meta">${s.qtd} atendimento${s.qtd === 1 ? '' : 's'}</div>
-            </div>
-            <div class="ins-svc-right">
-              <div class="ins-svc-rev">${formatCurrency(s.receita)}</div>
-              ${s.hora !== null ? `<span class="ins-svc-hour">${formatCurrency(s.hora)}/h</span>` : ''}
-            </div>
-          </div>`).join('')}
+      <h2 class="ins-title">Eficiência por serviço</h2>
+      <p class="ins-sub">Quanto cada serviço rende por hora de cadeira</p>
+      ${eficiencia.length ? `
+        ${insEficienciaLeitura(ranqueados)}
+        ${ranqueados.map((s, i) => insEfLinhaHtml(s, i + 1, maxEf, false)).join('')}
+        ${curtos.length ? `
+          <div class="ihe-ef-curtos" id="insEfCurtos"><div id="insEfCurtosInner">
+            <p class="ihe-ef-nota">Menos de ${piso} atendimento${piso === 1 ? '' : 's'} no período — o €/h destes ainda oscila muito de um atendimento para o outro, então eles ficam fora do ranking.</p>
+            ${curtos.map(s => insEfLinhaHtml(s, '·', maxEf, true)).join('')}
+          </div></div>
+          <button type="button" class="ihe-ef-mais" id="insEfMais"
+            aria-expanded="false" aria-controls="insEfCurtos">
+            <span id="insEfMaisLabel">+${curtos.length} serviço${curtos.length === 1 ? '' : 's'} ainda com pouca amostra</span>${INS_CHEVRON_DOWN}
+          </button>` : ''}
       ` : emptyStateHtml({
-          icon: ICONS.money, compact: true,
+          icon: ICONS.clock, compact: true,
           title: 'Nenhum atendimento neste período.',
-          caption: 'A receita por serviço aparece com o primeiro atendimento.',
+          caption: 'A eficiência por serviço aparece com o primeiro atendimento.',
         })}
     </section>
 
     <section class="ins-floor">
       <h2 class="ins-title">Como as clientes chegam</h2>
+      <p class="ins-sub">Origem dos ${P.atendimentos} atendimento${P.atendimentos === 1 ? '' : 's'} do período</p>
       ${totalCanal ? `
-        <div class="ins-ch-bar">
-          ${canais.map(c => `<span style="width:${Math.round(c.n / totalCanal * 100)}%;background:${c.cor}"></span>`).join('')}
+        <div class="ihe-ch-bar" role="img" aria-label="${esc(canais.map(c => `${c.n} ${c.label.toLowerCase()}`).join(', '))}">
+          ${canais.map(c => `<span style="background:${c.cor}" data-target-width="${Math.round(c.n / totalCanal * 100)}"></span>`).join('')}
         </div>
-        <div class="ins-ch-keys">
+        <div class="ihe-ch-keys">
           ${canais.map(c => `<span><i style="background:${c.cor}"></i>${c.n} ${esc(c.label.toLowerCase())}</span>`).join('')}
         </div>
-        ${conv ? `<p class="ins-ch-conv"><strong>${conv.pct}%</strong> de conversão · ${conv.visitas} visitas à página geraram ${conv.agendamentos} agendamento${conv.agendamentos === 1 ? '' : 's'} no período</p>` : ''}
+        ${conv ? `<p class="ihe-ch-conv"><strong>${conv.pct}%</strong> de conversão — ${conv.visitas} visita${conv.visitas === 1 ? '' : 's'} à página de agendamento ${conv.visitas === 1 ? 'gerou' : 'geraram'} ${conv.agendamentos} agendamento${conv.agendamentos === 1 ? '' : 's'} no período.</p>` : ''}
       ` : emptyStateHtml({
           icon: ICONS.users, compact: true,
           title: 'Nenhum atendimento neste período.',
@@ -6372,20 +6708,49 @@ function insContentHtml(P) {
   `;
 }
 
-function insEmCursoLabel(kind) {
-  if (kind === 'semana') return 'Esta semana';
-  if (kind === 'mes') return 'Este mês';
-  return 'Este ano';
+// Subtítulo do "Onde há espaço" — precisa dizer QUAL janela está sendo
+// desenhada, porque ela é deliberadamente diferente da do Hero em dois
+// dos três níveis. Sem esta linha a tela mostraria dois denominadores
+// diferentes sem explicar por quê.
+function insEspacoSub(kind) {
+  if (kind === 'semana') return 'Capacidade ainda livre em cada dia da semana';
+  if (kind === 'mes') return 'Capacidade ainda livre por semana — inclui o que ainda vai acontecer';
+  return 'Capacidade ainda livre por mês — só o ano decorrido';
 }
-const WEEKDAY_LABELS_3 = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-function insServicosLeitura(servicos) {
-  const comHora = servicos.filter(s => s.hora !== null && s.qtd >= INS_MIN_SERVICO);
-  if (comHora.length < 2) return '';
-  const porHora = comHora.slice().sort((a, b) => b.hora - a.hora);
-  const campeao = porHora[0], maisVendido = comHora[0];
-  if (campeao.nome === maisVendido.nome) return '';
-  return `<p class="ins-read"><em>${esc(campeao.nome)}</em> rende ${formatCurrency(campeao.hora)} por hora de cadeira — ${esc(maisVendido.nome.toLowerCase())} rende ${formatCurrency(maisVendido.hora)}.</p>`;
+// Uma linha do ranking. `pos` é o número quando ranqueado e `·` quando é
+// amostra curta: numerar os curtos daria a entender que a ordem entre
+// eles significa alguma coisa.
+function insEfLinhaHtml(s, pos, maxEf, curto) {
+  return `
+    <div class="ihe-ef${curto ? ' is-curto' : ''}">
+      <div class="ihe-ef-pos">${esc(String(pos))}</div>
+      <div class="ihe-ef-body">
+        <div class="ihe-ef-name">${esc(s.nome)}</div>
+        <span class="ihe-ef-track"><span class="ihe-ef-fill" data-target-width="${Math.round(s.hora / maxEf * 100)}"></span></span>
+        <div class="ihe-ef-meta">${s.qtd} atendimento${s.qtd === 1 ? '' : 's'} · ${s.min}min cada</div>
+      </div>
+      <div class="ihe-ef-right">
+        <div class="ihe-ef-hora">${formatCurrency(s.hora)}/h</div>
+      </div>
+    </div>`;
+}
+
+// Leitura do ranking — só entre RANQUEADOS, e só quando há contraste
+// real. Compara o mais eficiente com o menos eficiente do ranking, que é
+// a leitura que o preview aprovou; a versão anterior comparava o campeão
+// de €/h com o campeão de RECEITA, e receita saiu desta tela.
+function insEficienciaLeitura(ranqueados) {
+  if (ranqueados.length < 2) return '';
+  const topo = ranqueados[0];
+  const base = ranqueados[ranqueados.length - 1];
+  if (!(topo.hora >= base.hora * 1.25)) return '';
+  const vezes = topo.min <= base.min / 2 ? ' — e ocupa menos da metade do tempo por atendimento' : '';
+  // As DUAS pontas saem com a unidade. "rende €107 por hora contra €72 de
+  // coloração" deixa o segundo número elíptico — e um valor sem unidade,
+  // nesta tela, lê como quantia do período, que é exatamente o que a
+  // separação com o Financeiro proíbe.
+  return `<p class="ins-read"><em>${esc(topo.nome)}</em> rende ${formatCurrency(topo.hora)}/h de cadeira contra ${formatCurrency(base.hora)}/h de ${esc(base.nome.toLowerCase())}${vezes}.</p>`;
 }
 
 // ── Ajuda dos indicadores ───────────────────────────────────────
@@ -6448,7 +6813,42 @@ function insRenderContentExtras(P) {
   animateFills(document.getElementById('insContent') || app);
   insBindRail(insBuildSugestoes(P));
   insBindHelp();
-  insAnimateChart();
+  insBindEficiencia();
+}
+
+// Expansão INLINE do grupo de amostra curta — nunca modal, nunca página
+// nova. Altura em px para poder animar, solta em `auto` no fim: presa em
+// px o bloco cortaria se o texto quebrasse em mais linhas (rotação, fonte
+// grande do sistema).
+function insBindEficiencia() {
+  const btn = document.getElementById('insEfMais');
+  const wrap = document.getElementById('insEfCurtos');
+  const inner = document.getElementById('insEfCurtosInner');
+  const label = document.getElementById('insEfMaisLabel');
+  if (!btn || !wrap || !inner) return;
+  const texto = label.textContent;
+  let aberto = false;
+
+  btn.onclick = () => {
+    aberto = !aberto;
+    btn.setAttribute('aria-expanded', String(aberto));
+    btn.classList.toggle('is-less', aberto);
+    label.textContent = aberto ? 'Esconder os de pouca amostra' : texto;
+
+    if (aberto) {
+      wrap.classList.add('is-open');
+      wrap.style.height = inner.offsetHeight + 'px';
+      const solta = () => { if (aberto) wrap.style.height = 'auto'; };
+      wrap.addEventListener('transitionend', solta, { once: true });
+      setTimeout(solta, 400); // rede de segurança: sem composição de
+                              // frames o transitionend não dispara
+    } else {
+      wrap.style.height = inner.offsetHeight + 'px';
+      void wrap.offsetHeight;            // reflow SÍNCRONO de propósito
+      wrap.classList.remove('is-open');
+      wrap.style.height = '0px';
+    }
+  };
 }
 
 function insBindHelp() {
@@ -6650,20 +7050,11 @@ function insDrill(destino) {
 // Entrada única por sessão: a linha se desenha na primeira visita e
 // assenta direto nas seguintes. Verificação de movimento reduzido em
 // JS, porque a sequência é orquestrada aqui e o @media não a alcança.
-function insAnimateChart() {
-  const path = document.getElementById('insTrendLine');
-  if (!path) return;
-  if (state.insightsChartEntered || prefersReducedMotion()) return;
-  state.insightsChartEntered = true;
-  const len = path.getTotalLength();
-  path.style.transition = 'none';
-  path.style.strokeDasharray = String(len);
-  path.style.strokeDashoffset = String(len);
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    path.style.transition = 'stroke-dashoffset var(--motion-route) var(--ease-out)';
-    path.style.strokeDashoffset = '0';
-  }));
-}
+// `insAnimateChart()` foi removida em 18/08/2026 junto com o bloco
+// "Tendência": a evolução do valor virou "Evolução" no Financeiro, que
+// tem a sua própria (`finAnimateChart`, sobre `#finTrendLine`).
+// `insTrendSeries()` e `insTrendSvg()` CONTINUAM aqui — quem as consome
+// agora é o Financeiro.
 
 
 // ══════════════════════════════════════════════════════════════
@@ -6711,11 +7102,7 @@ const FIN_PERIODS = [
 const FIN_HIST_PREVIEW = 3;
 const FIN_HIST_MAX = 30;
 
-// `ICONS.chevron` aponta para a DIREITA (é o affordance de "entra
-// aqui", usado nas listas). "Ver mais" abre para baixo e gira 180° ao
-// abrir, então precisa do chevron descendente — mesmo traço, mesma
-// espessura, só a direção muda.
-const FIN_CHEVRON_DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+// (definido junto da Insights — `INS_CHEVRON_DOWN`)
 
 const FIN_MES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const FIN_MES_NOME = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -7315,7 +7702,7 @@ function finContentHtml(P) {
         ${ocultos.length ? `
           <button type="button" class="fin-see-more" id="finSeeMore"
             aria-expanded="false" aria-controls="finHistMore">
-            <span id="finSeeMoreLabel">Ver mais (${ocultos.length})</span>${FIN_CHEVRON_DOWN}
+            <span id="finSeeMoreLabel">Ver mais (${ocultos.length})</span>${INS_CHEVRON_DOWN}
           </button>` : ''}
       ` : emptyStateHtml({
           icon: ICONS.history, compact: true,
@@ -7541,6 +7928,158 @@ function finValidar() {
   });
 
   linhas.push(`\npapel: ${state.role || '(sem papel)'} · canAccess("financeiro") = ${canAccess('financeiro')}`);
+  linhas.push(falhas ? `\n${falhas} FALHA(S)` : '\ntodos os invariantes fecharam');
+  console.log(linhas.join('\n'));
+  return falhas === 0;
+}
+
+// ── Invariantes ───────────────────────────────────────────────
+// Escrevem no console, não na tela. Existem por duas razões distintas:
+//
+//   1. a Insights é feita de RAZÕES (ocupação, €/h, conversão), e uma
+//      razão só significa alguma coisa se o numerador e o denominador
+//      forem os que a tela diz que são;
+//   2. a separação com o Financeiro é uma regra de PRODUTO que nada no
+//      código impede de vazar. Um `formatCurrency` a mais numa
+//      Consideração reintroduz a sobreposição em silêncio — aqui ele
+//      falha alto.
+//
+// Chamado por `insValidar()` no console do painel.
+function insValidar() {
+  const linhas = [];
+  let falhas = 0;
+  const ok = (cond, rotulo, obtido) => {
+    if (!cond) falhas++;
+    linhas.push(`${cond ? 'ok   ' : 'FALHA'} ${rotulo}${cond ? '' : ' → ' + obtido}`);
+  };
+  const staffAtiva = Math.max(1, profissionaisAtivos().length);
+  const capHoras = (de, ate) =>
+    insOpenDays(de, ate).length * WORK_MINUTES_PER_DAY * staffAtiva / 60;
+
+  INSIGHTS_PERIODS.forEach(({ key }) => {
+    const P = insComputePeriod(key);
+    linhas.push(`── ${key} ──`);
+
+    // ── Ocupação é DERIVADA, nunca digitada ──
+    // Sem tolerância: a percentagem TEM de sair das horas, senão o Hero
+    // mostra um número que a própria legenda dele contradiz.
+    const ocupCalc = P.horasCap > 0 ? Math.min(100, Math.round(P.horasUsadas / P.horasCap * 100)) : null;
+    ok(P.ocup === ocupCalc, 'ocupação = horas ocupadas ÷ capacidade',
+      `${insFmtHoras(P.horasUsadas)}/${insFmtHoras(P.horasCap)} = ${ocupCalc}% ≠ ${P.ocup}%`);
+    ok(P.horasCap === 0 || P.horasUsadas <= P.horasCap, 'horas ocupadas cabem na capacidade',
+      `${P.horasUsadas}h > ${P.horasCap}h`);
+
+    // A capacidade sai de DIAS ABERTOS × expediente × profissionais ativas
+    // — nunca de dias corridos. Recontar aqui prova que o denominador do
+    // Hero é o mesmo que o resto da tela usa.
+    ok(capHoras(P.atual.start, P.atual.cut) === P.horasCap,
+      'capacidade = dias abertos × expediente × profissionais ativas',
+      `${insOpenDays(P.atual.start, P.atual.cut).length} dias → ${insFmtHoras(capHoras(P.atual.start, P.atual.cut))}h ≠ ${insFmtHoras(P.horasCap)}h`);
+
+    // O período ANTERIOR tem capacidade PRÓPRIA. Derivá-la da atual erra
+    // as horas e o delta: dois meses não têm o mesmo número de dias
+    // abertos até o mesmo dia do mês.
+    ok(capHoras(P.anterior.start, P.anterior.cut) === P.antHorasCap,
+      'capacidade anterior tem janela própria',
+      `${insFmtHoras(capHoras(P.anterior.start, P.anterior.cut))}h ≠ ${insFmtHoras(P.antHorasCap)}h`);
+
+    // Delta de ocupação em PONTOS PERCENTUAIS, nunca em %: 22% → 27% é
+    // +5 p.p., não +23%.
+    const d = insDelta(P.ocup, P.antOcup, 'pp');
+    ok(!d || /p\.p\.$/.test(d.text), 'delta de ocupação em pontos percentuais', d && d.text);
+
+    // ── Ano é year-to-date ──
+    if (key === 'ano') {
+      const agora = new Date();
+      ok(P.atual.start.getMonth() === 0 && P.atual.start.getDate() === 1,
+        'Ano começa em 1º de janeiro', P.atual.start.toDateString());
+      ok(P.atual.cut <= agora && P.atual.cut.getFullYear() === agora.getFullYear(),
+        'Ano vai até agora, não até 31 de dezembro', P.atual.cut.toDateString());
+      ok(P.anterior.start.getFullYear() === P.atual.start.getFullYear() - 1,
+        'comparação do Ano é o mesmo ponto do ano anterior', String(P.anterior.start.getFullYear()));
+    }
+
+    // ── Onde há espaço ──
+    const esp = insSpaceBlock(P);
+    if (esp.temEspaco) {
+      // Conta ABERTURAS de tile: `ihe-tile-h` e `ihe-tile-l` contêm a
+      // mesma substring e contariam três por fatia.
+      const nTiles = (esp.html.match(/class="ihe-tile[ "]/g) || []).length;
+      const nFuturo = (esp.html.match(/is-futuro/g) || []).length;
+      ok(!/>-\d+h</.test(esp.html), 'nenhuma fatia tem horas livres negativas', 'há fatia negativa');
+      if (key === 'ano') {
+        // YTD: a janela do espaço TEM de coincidir com a do Hero, e
+        // nenhuma fatia pode ser de um mês que ainda não começou.
+        ok(nFuturo === 0, 'Ano não mostra fatia futura', `${nFuturo} fatias futuras`);
+        ok(nTiles === new Date().getMonth() + 1,
+          'Ano cobre janeiro até o mês corrente, e só', `${nTiles} meses`);
+      }
+      linhas.push(`nota  espaço: ${nTiles} fatia(s), ${nFuturo} ainda por acontecer`);
+    }
+
+    // ── Eficiência: piso por timeframe e escala do ranking ──
+    const piso = insMinServico(key);
+    const ef = insEficiencia(P.realizados);
+    const rk = ef.filter(s => s.qtd >= piso);
+    const ct = ef.filter(s => s.qtd < piso);
+    ok(rk.every(s => s.qtd >= piso), `todo ranqueado tem ≥ ${piso} atendimentos`, rk.map(s => s.qtd).join(','));
+    ok(ct.every(s => s.qtd < piso), 'todo recolhido está abaixo do piso', ct.map(s => s.qtd).join(','));
+    ok(rk.length + ct.length === ef.length, 'nenhum serviço some da tela',
+      `${rk.length}+${ct.length} ≠ ${ef.length}`);
+    // A régua sai do maior RANQUEADO: deixar um serviço de amostra frágil
+    // definir o topo faria a escala depender do número menos confiável.
+    if (rk.length) {
+      const maxRank = Math.max(...rk.map(s => s.hora));
+      ok(maxRank === rk[0].hora, 'escala do ranking vem do primeiro ranqueado',
+        `${maxRank} ≠ ${rk[0].hora}`);
+      ok(ct.every(s => s.hora <= maxRank) || ct.some(s => s.hora > maxRank),
+        'serviço de pouca amostra pode passar da régua, e a barra satura', '');
+    }
+    // Σ minutos por serviço tem de reconstruir as horas ocupadas.
+    const horasEf = ef.reduce((s, x) => s + x.minutos, 0) / 60;
+    ok(Math.abs(horasEf - P.horasUsadas) < 0.02, 'Σ horas por serviço = horas ocupadas',
+      `${insFmtHoras(horasEf)}h ≠ ${insFmtHoras(P.horasUsadas)}h`);
+    linhas.push(`nota  eficiência: ${rk.length} ranqueado(s), ${ct.length} recolhido(s), piso ${piso}`);
+
+    // ── Canais ──
+    const canais = insCanais(P.realizados);
+    const somaCanal = canais.reduce((s, c) => s + c.n, 0);
+    ok(somaCanal === P.atendimentos, 'Σ canais = atendimentos do período',
+      `${somaCanal} ≠ ${P.atendimentos}`);
+
+    // ── Coerência com o Financeiro ──
+    // As duas telas descrevem o MESMO salão. Se a contagem divergir, uma
+    // delas está filtrando algo que a outra não filtra.
+    const F = finComputePeriod(key);
+    ok(F.atendimentos === P.atendimentos, 'atendimentos = os do Financeiro',
+      `Financeiro ${F.atendimentos} ≠ Insights ${P.atendimentos}`);
+
+    // ── Nada de dinheiro que não seja €/h ──
+    // Não é contagem por bloco: remove do HTML todo `€<número>/h` e exige
+    // que NENHUM símbolo sobre. Pega o Hero, os Indicadores, as
+    // Considerações, as Sugestões e qualquer bloco futuro de uma vez só —
+    // e `€/h` continua permitido onde ele legitimamente aparece (a
+    // Eficiência e as Sugestões que citam eficiência).
+    // Três formas legítimas da MESMA grandeza (€ por hora de cadeira):
+    //   `€107/h`                     — ranking e sugestões
+    //   `€107 por hora de cadeira`   — a leitura em prosa do ranking
+    //   `€/h`                        — o token solto, na nota de amostra
+    // Qualquer € que sobre depois de remover as três é valor ABSOLUTO, e
+    // valor absoluto é do Financeiro.
+    const html = insContentHtml(P);
+    const sobra = html
+      .replace(/€\s?[\d.,]+\s?\/h/g, '')
+      .replace(/€\s?[\d.,]+ por hora/g, '')
+      .replace(/€\/h/g, '');
+    const vazando = (sobra.match(/€/g) || []).length;
+    ok(vazando === 0, 'todo € da tela é uma taxa por hora',
+      `${vazando} símbolo(s) de valor absoluto: ${(sobra.match(/€[^<\s]{0,14}/g) || []).slice(0, 3).join(' | ')}`);
+    ok(!/Gasto médio|Ticket médio|Receita|receita|Faturamento|Total investido/.test(html),
+      'sem vocabulário do Financeiro na tela',
+      (html.match(/Gasto médio|Ticket médio|Receita|receita|Faturamento|Total investido/) || [])[0]);
+  });
+
+  linhas.push(`\npapel: ${state.role || '(sem papel)'} · canAccess("insights") = ${canAccess('insights')}`);
   linhas.push(falhas ? `\n${falhas} FALHA(S)` : '\ntodos os invariantes fecharam');
   console.log(linhas.join('\n'));
   return falhas === 0;
