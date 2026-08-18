@@ -562,6 +562,10 @@ window.supabase = {
       // ou um id fake pra seguir o fluxo sem persistir — mesmo espírito da
       // "escrita" abaixo, que devolve sucesso sem gravar.
       rpc: function (fnName, params) {
+        // O demo mostra o produto COMPLETO, entao o papel simulado e owner —
+        // e o que faz Insights aparecer aqui. O guard de capability e o mesmo
+        // do painel real: quem muda e so a resposta desta linha.
+        if (fnName === 'current_app_role') return Promise.resolve({ data: 'owner', error: null });
         if (fnName === 'find_or_create_client') {
           const existente = mockData('clients').find(c => c.phone === params.p_phone);
           return Promise.resolve({ data: existente ? existente.id : 'demo-client-novo', error: null });
@@ -3775,7 +3779,59 @@ const SUPABASE_ANON_KEY = 'sb_publishable_c2b9NNovCdvQ64_Sfiiecg_H_5M0FIg';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const state = { tab: 'inicio', booting: false, painelAtivo: false, appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, clientQuestionnaires: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+const state = { tab: 'inicio', role: undefined, booting: false, painelAtivo: false, appointments: [], paymentHolds: [], scheduleBlocks: [], clients: [], staff: [], services: [], products: [], bookingVisits: [], agendaDate: new Date(), selectedClientId: null, selectedApptId: null, clientPhotos: {}, apptPhotos: {}, clientQuestionnaires: {}, viewQuestionnaire: null, quiz: quizFreshState(), insightsPeriod: 'mes', insightsChartEntered: false, insightsSugestoesEnsinado: false, clientContext: null, clientSearch: '', clientFilter: 'todos', clientSort: 'recentes', clientsScrollTop: 0, movements: [], stockMovExpanded: false, stockSearch: '', stockFilter: 'todos', stockSort: 'atencao', userLabel: '', enteringApptId: null };
+
+// ── RBAC V1 · papel e capabilities (18/08/2026) ───────────────
+// Dois papéis: `owner` (a Juliane) e `staff` (a assistente). A assistente
+// opera o salão INTEIRO — Agenda, Clientes, Questionário e Estoque — e a
+// única restrição de produto é gerencial: Insights e Financeiro são do
+// owner. Ela NÃO é uma profissional limitada aos próprios atendimentos:
+// não existe filtro por `staff_id` em lugar nenhum, e isso é de propósito.
+//
+// O papel vem de `app_accounts`, sempre pela RPC `current_app_role()` —
+// nunca por e-mail, nome ou string no código, e nunca lendo a tabela
+// direto (ela não tem grant para o browser, e é isso que impede
+// auto-promoção).
+//
+// Declarativo em vez de `if (role === 'owner')` espalhado: quando o SaaS
+// ganhar `manager`/`receptionist`, entra uma linha aqui em vez de uma
+// caçada por condicionais pelo arquivo.
+const ROLE_CAPABILITIES = {
+  owner: ['inicio', 'agenda', 'clients', 'questionario', 'estoque', 'insights', 'financeiro'],
+  staff: ['inicio', 'agenda', 'clients', 'questionario', 'estoque'],
+};
+
+// Duas entradas da lista NÃO são abas do rodapé, e as duas precisam estar aí:
+//
+// `questionario` é rota interna — capability contextual de Clientes desde
+// 17/08/2026. Sem ela, o guard recusaria justamente o fluxo que a
+// assistente mais usa.
+//
+// `financeiro` é autorização nascendo ANTES da tela: quando o Financeiro
+// existir, ele já encontra o papel resolvido e o guard de pé, em vez de
+// precisar de retrofit de RBAC. Não desenha aba nenhuma hoje — o rodapé só
+// mostra o que tem tela.
+function canAccess(cap) {
+  const caps = ROLE_CAPABILITIES[state.role];
+  return !!caps && caps.indexOf(cap) !== -1;
+}
+
+// Destino quando o guard recusa a aba corrente. `inicio` é o destino
+// natural (é a tela de abertura dos dois papéis); a varredura existe só
+// para um papel futuro que não a tenha.
+function primeiraTabPermitida() {
+  const caps = ROLE_CAPABILITIES[state.role] || [];
+  return caps.indexOf('inicio') !== -1 ? 'inicio' : (caps[0] || null);
+}
+
+// O rodapé é desenhado por capability, não por papel: a aba que o papel não
+// alcança sai da tela. Isso é conforto, não proteção — quem protege é o
+// guard de `render()` e, no dado exclusivo, a RLS.
+function aplicarNavPorPapel() {
+  document.querySelectorAll('nav button[data-tab]').forEach(b => {
+    b.style.display = canAccess(b.dataset.tab) ? '' : 'none';
+  });
+}
 
 const STAFF_COLORS = [
   { bg: '#edefe4', border: '#7c8468', text: '#4c5439' },
@@ -10757,6 +10813,16 @@ function openProductModal(id) {
 }
 
 function render() {
+  // Guard central de capability. Esconder o botao nao e proteger: `state.tab`
+  // e alcancavel por codigo (caminho novo, bug, rota interna) e sem esta linha
+  // a Insights desenharia para a assistente com os dados ja em memoria. O
+  // rodape e redesenhado junto para os dois nunca discordarem.
+  aplicarNavPorPapel();
+  if (!canAccess(state.tab)) {
+    const destino = primeiraTabPermitida();
+    if (!destino) { renderSemAcesso(); return; }
+    state.tab = destino;
+  }
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === state.tab));
   // O + flutuante é do Estoque e da lista de Clientes — a Agenda tem o dela
   // embutido na pílula do mês (#agendaAddBtn, dentro de renderAgenda()).
@@ -10834,6 +10900,54 @@ function setAuthedChrome(visivel) {
   // Sem isto o Login carrega 100px de espaço reservado a uma nav que não
   // está na tela — e o cartão fica descentrado no eixo vertical.
   document.body.style.paddingBottom = visivel ? '' : '0';
+}
+
+// ── RBAC · papel resolvido no boot (18/08/2026) ───────────────
+// Sempre pela RPC, nunca pela tabela: `app_accounts` não tem grant para o
+// browser, e é isso que impede alguém de se promover editando a própria
+// linha. Erro de rede ou papel desconhecido devolvem `null` e caem no
+// fail-closed abaixo — negar por omissão é o comportamento correto aqui.
+// Tratar falha como `staff` daria painel a quem talvez não devesse ter
+// nenhum, e é exatamente o erro que este RBAC existe para não cometer.
+async function resolverPapel() {
+  try {
+    const { data, error } = await sb.rpc('current_app_role');
+    if (error) { console.error(error); return null; }
+    return (data === 'owner' || data === 'staff') ? data : null;
+  } catch (e) { console.error(e); return null; }
+}
+
+// Conta autenticada sem linha em `app_accounts`, ou com `active = false`.
+// Não é erro de login: as credenciais valem: o que falta é concessão de
+// acesso. Por isso a copy fala em liberar acesso e não em senha errada —
+// mandar a pessoa tentar a senha de novo seria mentira.
+//
+// NENHUM dado chega à tela antes daqui: `loadAll()` só roda depois do papel
+// resolvido, então esta tela não é uma aba escondida com dados por trás —
+// é a ausência de painel. O "Sair" vive dentro do cartão porque
+// `setAuthedChrome(false)` esconde o header inteiro, e sem ele a pessoa
+// ficaria presa sem caminho para trocar de conta.
+function renderSemAcesso() {
+  setAuthedChrome(false);
+  app.innerHTML = `
+    <div class="login-screen">
+      <div class="login-mark">
+        <div class="wordmark">ORENZI</div>
+        <div class="wordmark-sub">ATELIER</div>
+      </div>
+      <div class="login-card">
+        <h1 class="login-title">Acesso não liberado</h1>
+        <p class="login-note" role="status">Esta conta ainda não tem acesso ao painel. Peça para a Juliane liberar.</p>
+        <button class="o-btn o-btn-secondary" type="button" id="semAcessoSair">Sair</button>
+      </div>
+    </div>`;
+  const sair = document.getElementById('semAcessoSair');
+  if (sair) sair.onclick = async () => {
+    logoutIntencional = true;
+    try { await sb.auth.signOut(); } catch (e) { /* sair é local de qualquer forma */ }
+    state.role = undefined;
+    encerrarSessaoUI({ expirada: false });
+  };
 }
 
 function renderLogin(opts) {
@@ -11013,7 +11127,16 @@ async function checkSession() {
     const email = (session.user && session.user.email) || '';
     const apelido = email.split('@')[0].replace(/[._-]+/g, ' ').trim();
     state.userLabel = apelido ? apelido.charAt(0).toUpperCase() + apelido.slice(1) : 'Painel';
+    // ── RBAC: o papel e resolvido ANTES de qualquer dado entrar na tela.
+    // A ordem importa. `loadAll()` sao 8 consultas e a Home desenha no
+    // `finally`; resolver o papel depois deixaria a assistente ver o painel
+    // montado com o rodape completo por uma fracao de segundo — e vazamento
+    // de fracao de segundo continua sendo vazamento. Sem papel, nada carrega.
+    const papel = await resolverPapel();
+    if (!papel) { renderSemAcesso(); markReady('READY_PANEL'); return; }
+    state.role = papel;
     setAuthedChrome(true);
+    aplicarNavPorPapel();
     // O painel ainda não tem dado nenhum. Enquanto isso a Home não pode
     // afirmar "Nenhum atendimento hoje" — o que se sabe é que ainda não se
     // sabe. loadAll() desliga no `finally`.
@@ -11044,6 +11167,9 @@ function encerrarSessaoUI(opts) {
   if (!state.painelAtivo) return;
   state.painelAtivo = false;
   state.booting = false;
+  // O papel morre com a sessao. Sem isto, entrar com OUTRA conta na mesma
+  // aba herdaria o papel da anterior ate o proximo resolverPapel() voltar.
+  state.role = undefined;
   closeModal();
   document.querySelectorAll('.o-dialog-overlay').forEach(el => el.remove());
   setKioskMode(false);

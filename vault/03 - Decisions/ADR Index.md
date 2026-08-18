@@ -21,6 +21,7 @@ Decisões congeladas. **Não reabrir sem o Raphael pedir.**
 - [[ADR 0012 - Hold como pending, nao entidade nova]] — 14/08 · hold é status, não tabela
 - [[ADR 0010 - Questionario e consulta manual]] — 15/08 · não deriva regra nenhuma, de propósito
 - [[ADR 0014 - Graphify reaberto com escopo enxuto]] — 15/08 · **substitui a recusa de 02/08**
+- [[ADR 0015 - RBAC V1 - staff opera tudo, owner ve o negocio]] — 18/08 · staff opera o salão inteiro; Insights e Financeiro são de owner
 
 Todos com status **aceito**.
 

@@ -436,6 +436,80 @@ Quem consome:
 | Perfil da cliente — valor por visita (`.ti-price`) | markup de `renderClientDetail()` |
 | Detalhe do atendimento — bloco de valor | `apptValorSectionHtml()` |
 
+### RBAC V1 — owner e staff (18/08/2026)
+
+```
+owner  → operacional + gerencial
+staff  → operacional
+
+capabilities exclusivas de owner: Insights · Financeiro
+```
+
+**`staff` NÃO é uma profissional limitada aos próprios atendimentos.** Não
+existe `appointment.staff_id = current_staff_id()` em lugar nenhum, e não
+deve passar a existir sem o Raphael pedir. A assistente opera o salão
+inteiro: cria, edita, remarca, cancela, bloqueia horário, mexe em Clientes,
+no Questionário e no Estoque. A única restrição é gerencial.
+
+**Escrever dado operacional ≠ acessar análise financeira.** `final_price`
+continua liberado para `staff` (`set_appointment_final_price`): quem avalia
+o cabelo e define o valor pode ser a assistente. Esse dado alimenta o
+Financeiro depois, e isso **não** dá a ela acesso ao Financeiro.
+
+#### Onde mora cada peça
+
+| Camada | O quê |
+|---|---|
+| `app_accounts` | `user_id`, `staff_id` (nullable), `role`, `active`. **Sem grant para o browser** — inalcançável pelo PostgREST |
+| `current_app_role()` · `is_owner()` · `current_staff_id()` | `SECURITY DEFINER STABLE`, `EXECUTE` só para `authenticated` |
+| `ROLE_CAPABILITIES` | mapa declarativo no painel — a lista de capabilities por papel |
+| `canAccess(cap)` · `primeiraTabPermitida()` · `aplicarNavPorPapel()` | guard e rodapé |
+| `resolverPapel()` · `renderSemAcesso()` | boot e fail-closed |
+
+- **Papel é dado, nunca string no código.** Nada de `if (email === ...)`.
+  A leitura é sempre pela RPC — `app_accounts` não tem grant para o browser,
+  e é isso que impede auto-promoção.
+- **`questionario` e `financeiro` estão em `ROLE_CAPABILITIES` mas não são
+  abas do rodapé.** O primeiro é rota interna (capability de Clientes desde
+  17/08); o segundo é autorização nascendo **antes** da tela, para o
+  Financeiro não precisar de retrofit. O rodapé só desenha o que tem tela —
+  não existe aba Financeiro vazia.
+- **Ordem do boot importa.** `checkSession()` resolve o papel **antes** de
+  `loadAll()`. Resolver depois deixaria a assistente ver o painel montado
+  com o rodapé completo por uma fração de segundo.
+- **Fail closed.** `current_app_role()` nulo, papel desconhecido ou erro de
+  rede caem em `renderSemAcesso()` — sem nav, sem header, sem dado
+  carregado. Nunca tratar falha como `staff`.
+- **O papel morre com a sessão** (`encerrarSessaoUI()` zera `state.role`):
+  outra conta na mesma aba herdaria o papel anterior.
+
+#### O que é operacional e o que é gerencial
+
+| Dado | Classificação | Quem vê |
+|---|---|---|
+| Home inteira (panorama, ritmo, próxima oportunidade, tendência) | operacional — **zero valor monetário**, tudo é contagem de agendamentos | os dois |
+| Preço de um atendimento na timeline do perfil (`.ti-price`) | operacional — é o que se cobra da cliente na cadeira | os dois |
+| Bloco de valor do atendimento (`apptValorSectionHtml`) | operacional | os dois |
+| "Total investido" no perfil (`clientStats`) | **gerencial de borda** — agregado lifetime de UMA cliente | os dois, por ora |
+| Insights inteira (receita, ticket, €/h, tendência, sugestões) | gerencial | owner |
+| `booking_visits` (Canais) | gerencial — **único dataset exclusivo da Insights** | owner, e fechado na RLS |
+| `services`/`staff`/`staff_services` escrita | administrativo — o painel **não tem tela** para isso | owner |
+
+⚠ **A Insights não tem endpoint próprio**: ela calcula tudo no browser a
+partir de `state.appointments` + `state.services`, que a Agenda, a Home e o
+perfil da cliente precisam ler. Fechar `total_price`/`final_price` para
+`staff` protegeria a tela e quebraria o registro do valor final — que é
+operacional e é dela. **Não criar RPC agregada para Insights**: ela não
+acrescentaria proteção enquanto as linhas operacionais continuarem
+legíveis, e RPC que não protege é só indireção. A proteção da Insights é
+capability (UI + guard) mais RLS no que é exclusivo dela. Limite conhecido e
+aceito: uma assistente com devtools consegue recomputar receita a partir dos
+dados operacionais. Fechar isso exigiria tirar dela o valor final — o
+produto escolheu o operacional.
+
+**Qualquer backend novo do Financeiro nasce com `is_owner()` como
+requisito.** Não é opcional e não é para depois.
+
 ### Questionário: onde ele mora (17/08/2026)
 
 **O Questionário não é mais navegação de primeiro nível.** É uma capability
